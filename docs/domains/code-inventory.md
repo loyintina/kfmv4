@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit b7bb40a1 · 生成于 2026-08-16 -->
+<!-- 基准 commit d3a2d7fd · 生成于 2026-08-16 -->
 
 # 代码清单（机械层）
 
@@ -168,12 +168,12 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（11 文件 · 2669 行）
+## server（11 文件 · 2676 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/obs.ts | 893 | fetchDeepseekBalance, setupObsRoutes, setupObsPages, parseInbox, collectAuditPending, parseStack, collectSys, collectArchive, normalizeIso, collectPulse, collectPerms, buildRolesData, collectRoles |
-| src/server/routes/files.ts | 458 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
+| src/server/routes/files.ts | 465 | pickSessionCompactToken, FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 324 | WsServer |
 | src/server/index.ts | 188 | — |
 | src/server/path-utils.ts | 172 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
@@ -184,12 +184,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（166 文件 · 19315 行）
+## infra（167 文件 · 19339 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 968 | — |
-| tests/regression.test.ts | 662 | — |
+| tests/regression.test.ts | 663 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -322,6 +322,7 @@
 | tests/hand-drag.test.ts | 30 | — |
 | scripts/deploy.sh | 29 | — |
 | .githooks/pre-push | 28 | — |
+| tests/compact-list.test.ts | 23 | — |
 | tests/check-deploy-freshness.test.ts | 19 | — |
 | tests/env-test-isolation.mjs | 19 | — |
 | tests/probes/gen-permission-map/src/server/ai/tools/index.ts | 19 | getToolDefinitions, getAllTools |
@@ -663,8 +664,9 @@
 - tests/floating-state.test.ts → src/client/modules/floating-shared.ts
 - tests/reset-hooks.ts → src/client/modules/card-registry.ts
 
-### infra → server（14 边）
+### infra → server（15 边）
 
+- tests/compact-list.test.ts → src/server/routes/files.ts
 - tests/obs-audit-pending.test.ts → src/server/routes/obs.ts
 - tests/obs-roles.test.ts → src/server/routes/obs.ts
 - tests/obs-track-time.test.ts → src/server/routes/obs.ts
@@ -691,4 +693,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 319 文件 · 55638 行 · 跨域边 274 条
+合计 320 文件 · 55669 行 · 跨域边 275 条
