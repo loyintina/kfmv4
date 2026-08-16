@@ -96,3 +96,6 @@ kfmv4 的「一切皆卡片」与 dsh 的「一切皆插件」在 NA 统一。
 | `dsh/paper/paper-digest.md` | 论文增量笔记（对照 cordis-mechanics 源码解剖的增量认知 19 条 + 规格书 v0 修订清单 12 条 + 不采用清单；与 paradigm-notes 互补：那份是论文内概念地图，这份是落地修订依据） |
 | `/root/kfmv4/docs/ledger/agent-inbox/` | **跨线评审信箱**（2026-08-15 自本目录迁出，升为 kfmv4 通用 agent 信箱；README 含机制/规则/状态列） |
 | `inbox/kfmv4-9.0-评审回信.md` | 9.0 会话回评审：七条全收裁决清单 + 对 NA 的反向输入（池结构/三者分离/headless 布局） |
+| `na/connection-provider.md` | 连接 provider 设计页 v0（规格书 §8 九字段；阶段 2 边界手术第一刀；2026-08-15 已投 agent-inbox 送审） |
+| `na/terminal-emulator.md` | 终端模拟器设计页 v0（§8 九字段；边界手术第二刀，termview 注册化；2026-08-16 已投 agent-inbox 送审） |
+| `na/input-ime.md` | 输入/IME 域设计页 v0（§8 九字段；边界手术第三刀；含修饰键状态搬迁方案 A/B 分叉待评审拍板；2026-08-16 已投 agent-inbox 送审） |

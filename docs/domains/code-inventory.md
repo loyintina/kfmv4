@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit add590ba · 生成于 2026-08-13 -->
+<!-- 基准 commit f64d6dfb · 生成于 2026-08-16 -->
 
 # 代码清单（机械层）
 
@@ -73,22 +73,22 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（28 文件 · 4517 行）
+## client-shell（28 文件 · 4549 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/obs-emblem.ts | 494 | EmblemRect, EmblemRects, initObsEmblems |
-| src/client/modules/hand.ts | 432 | HandRect, initHand |
+| src/client/modules/hand.ts | 437 | HandRect, initHand |
 | src/client/modules/ui-registry.ts | 352 | UIElementType, UIElementState, InteractiveElement, Rect, RectGetter, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 221 | initGestures |
 | src/client/modules/confirm-dialog.ts | 192 | ConfirmOptions, showConfirm |
+| src/client/modules/obs-hud.ts | 186 | initObsHud |
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
-| src/client/modules/obs-hud.ts | 159 | initObsHud |
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
 | src/client/main.ts | 132 | — |
 | src/client/modules/app.ts | 131 | initApp |
@@ -106,7 +106,7 @@
 | src/client/modules/hand-geometry.ts | 11 | handHitTest |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（57 文件 · 12524 行）
+## ai-chat（57 文件 · 12528 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -125,7 +125,7 @@
 | src/server/ai/tools/omp/browser/tab-supervisor.ts | 342 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs, resolveTabWorkerEntry |
 | src/client/modules/orb-chat-host.ts | 335 | ChatHostDeps, initChatHost |
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
-| src/shared/chat-protocol/to-openai-messages.ts | 297 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
+| src/shared/chat-protocol/to-openai-messages.ts | 301 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
 | src/server/ai/session-store.ts | 258 | markSessionScript, appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/run-manager.ts | 240 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
@@ -183,12 +183,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（163 文件 · 19138 行）
+## infra（164 文件 · 19189 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 968 | — |
-| tests/regression.test.ts | 659 | — |
+| tests/regression.test.ts | 660 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -303,6 +303,7 @@
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | tests/doc-scripts.test.ts | 51 | — |
 | tests/permissions.test.ts | 50 | — |
+| tests/reasoning-l2.test.ts | 50 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
 | package.json | 49 | — |
 | tests/semantic-audit.test.ts | 48 | — |
@@ -576,7 +577,7 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（28 边）
+### infra → ai-chat（29 边）
 
 - tests/browser-tool.test.ts → src/server/ai/tools/omp/browser/tab-supervisor.ts
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
@@ -590,6 +591,7 @@
 - tests/protocol-reducer.test.ts → src/shared/chat-protocol/messages.ts
 - tests/protocol-reducer.test.ts → src/shared/chat-protocol/reducer.ts
 - tests/provider-env.test.ts → src/server/ai/chat.ts
+- tests/reasoning-l2.test.ts → src/shared/chat-protocol/to-openai-messages.ts
 - tests/run-manager.test.ts → src/server/ai/chat.ts
 - tests/run-manager.test.ts → src/server/ai/run-manager.ts
 - tests/run-manager.test.ts → src/server/ai/tools/omp/bash.ts
@@ -682,4 +684,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 315 文件 · 55213 行 · 跨域边 269 条
+合计 316 文件 · 55300 行 · 跨域边 270 条
