@@ -437,8 +437,12 @@ export async function doSend(
     // tryAutoResume 曾内联复制简化版 → 无压缩/不过滤空壳/content:null 严格端点 400）。
     // 会话文件是全量真相源（永不压缩），apiMessages 是投影——压缩只发生在那一处。
     const noCompact = localStorage.getItem('kfm-no-compact') === '1'; // 灰度逃生门：=1 跳过压缩发全量
+    // L4 会话压缩：会话 meta.compacts 最后一条的 cutIndex → 投影跳过远期
+    // （摘要由服务端注入 system 尾部，见 chat.ts；真相源 messages 全量不动）
+    const lastCompact = (window as { __kfmLastCompact?: { cutIndex: number } }).__kfmLastCompact;
     const { apiMessages, compactSaved } = toOpenAiMessages(messages, {
       compact: !noCompact,
+      ...(lastCompact ? { compactCutIndex: lastCompact.cutIndex } : {}),
       isTodoDismissed: (todos) => {
         try { return (localStorage.getItem(TODO_DISMISS_KEY) || '') === todosFingerprint(todos); } catch { return false; }
       },

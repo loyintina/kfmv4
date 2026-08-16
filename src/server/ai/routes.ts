@@ -75,6 +75,14 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
     // 面板会话传了也忽略（面板的合法读取面就是全仓+私有区）。
     const readJailRoot = sessionClass === 'script' && typeof readRoot === 'string' && readRoot.trim()
       ? resolve(readRoot) : undefined;
+    // L4 会话压缩（/compact）：从真相源读 compacts 最后一条摘要，拼进 extraSystem
+    // （__KFM_COMPACT__ 前缀，chat.ts 据此注入 system 尾部；摘要固化后跨轮不变，
+    // system 前缀缓存不受影响；客户端不传摘要，服务端从真相源自取——可寻址的丢失）
+    const compacts = sessionStore.getCompacts(sessionId);
+    const compactSummary = compacts.length > 0 ? compacts[compacts.length - 1].summary : '';
+    const mergedExtraSystem = compactSummary
+      ? `__KFM_COMPACT__${compactSummary}${typeof extraSystem === 'string' && extraSystem ? '\n\n' + extraSystem : ''}`
+      : (typeof extraSystem === 'string' ? extraSystem : undefined);
     const run = startRunFn(
       sessionId, messages,
       model || 'deepseek-v4-flash',
@@ -83,7 +91,7 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
       typeof roleFile === 'string' ? roleFile : undefined,
       undefined, // streamFn 默认
       toolWhitelist,
-      typeof extraSystem === 'string' ? extraSystem : undefined,
+      mergedExtraSystem,
       typeof maxTokens === 'number' && Number.isFinite(maxTokens) && maxTokens > 0 ? Math.floor(maxTokens) : undefined,
       params && typeof params === 'object' && !Array.isArray(params) ? params as Record<string, unknown> : undefined,
       jailRoot,

@@ -247,6 +247,14 @@ export async function* streamChat(
   const roleSystem = assembleRoleSystemPrompt(roleFile);
   if (roleSystem) systemParts.push(roleSystem);
   systemParts.push(...staticSystemParts);
+  // L4 会话压缩（/compact）：固化摘要注入 system 尾部（roleSystem/静态段之后）。
+  // 摘要固化后跨轮不变——system 前缀缓存不受影响；需要细节时 AI 可用 read 工具
+  // 回读会话文件（可寻址的丢失，不是遗忘）。来源：meta.compacts 最后一条。
+  const compactSummary = (extraSystem && extraSystem.startsWith('__KFM_COMPACT__'))
+    ? extraSystem.slice('__KFM_COMPACT__'.length) : '';
+  if (compactSummary) {
+    systemParts.push(`# 此前对话的固化摘要（/compact 生成，覆盖更早的历史；原文在会话文件可回读）\n\n${compactSummary}`);
+  }
   // 严格端点适配（BAR-QWEN-01，2026-08-05）：硅基流动 Qwen 系 400
   // 「System message must be at the beginning」——多条 system 段被拒。
   // 所有 system 段合并为单条（\n\n 拼接），内容/顺序不变，缓存前缀不受影响。

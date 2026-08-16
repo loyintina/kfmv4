@@ -262,3 +262,27 @@ export function appendUserMessage(sessionId: string, text: string, model?: strin
   if (provider) s.meta.providerId = provider;
   _scheduleFlush(sessionId, s);
 }
+
+// ========== 会话压缩（L4 /compact，2026-08-16 立项） ==========
+// 真相源追加式：compacts 数组只增不改——每次 /compact 追加一条固化摘要，
+// 投影层按最后一条构造 [system+摘要] + [cutIndex 后消息]。宪法第四条：
+// messages 全量永不删，摘要只是投影构造方式的参数。
+export interface SessionCompact {
+  cutIndex: number;        // 覆盖到第几条消息（不含）——messages[0..cutIndex) 由摘要代表
+  summary: string;         // 固化摘要（结构化模板产出，一次生成永不重算）
+  model: string;           // 生成摘要的模型（deepseek-v4-flash）
+  createdAt: string;
+}
+
+export function appendCompact(sessionId: string, c: SessionCompact): void {
+  const s = _get(sessionId);
+  const arr = Array.isArray(s.meta.compacts) ? (s.meta.compacts as SessionCompact[]) : [];
+  arr.push(c);
+  s.meta.compacts = arr;
+  _scheduleFlush(sessionId, s);
+}
+
+export function getCompacts(sessionId: string): SessionCompact[] {
+  const s = _get(sessionId);
+  return Array.isArray(s.meta.compacts) ? (s.meta.compacts as SessionCompact[]) : [];
+}

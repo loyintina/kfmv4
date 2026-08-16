@@ -44,6 +44,9 @@ export interface ToOpenAiOptions {
   compact: boolean;
   /** todo dismiss 指纹判定（客户端 localStorage 注入）；缺省视为未 dismiss。 */
   isTodoDismissed?: (todos: Array<{ content: string; status: string }>) => boolean;
+  /** L4 会话压缩（/compact）：最后一条固化摘要。设置时 messages[0..compactCutIndex)
+   *  不进载荷——由服务端注入的摘要消息代表（system 尾部追加，见 chat.ts）。 */
+  compactCutIndex?: number;
 }
 
 export interface ToOpenAiResult {
@@ -123,6 +126,11 @@ export function toOpenAiMessages(messages: ChatMessage[], opts: ToOpenAiOptions)
     const dismissed = todos.length > 0 && opts.isTodoDismissed ? opts.isTodoDismissed(todos) : false;
     todoAnnotation = todoResultAnnotation({ dismissed, aiRoundsAfter: todoAiRoundsAfter });
   }
+  // L4 会话压缩（/compact）：messages[0..compactCutIndex) 由固化摘要代表（服务端
+  // 注入 system 尾部），投影跳过该区间——两处循环起点同为 compactCutIndex。
+  // 豁免边界（G1）/todo（G4）扫描仍走全量 messages（真相源索引，与投影起点无关）。
+  const l4From = (typeof opts.compactCutIndex === 'number' && opts.compactCutIndex >= 0)
+    ? Math.min(opts.compactCutIndex, messages.length) : 0;
   // 跨调用标注预扫描（契约第九节：标注只向后看——每个调用的 ctx 只由它之前的
   // 调用决定，旧压缩行永不因后续消息改变，prompt 缓存前缀稳定）。
   // 压缩器保持纯函数，此处在压缩循环前产出每个工具块的 CompactionCtx。
@@ -225,7 +233,7 @@ export function toOpenAiMessages(messages: ChatMessage[], opts: ToOpenAiOptions)
   }
   let compactSaved = 0;
   const apiMessages: OpenAiMessage[] = [];
-  for (let mi = 0; mi < messages.length; mi++) {
+  for (let mi = l4From; mi < messages.length; mi++) {
     const m = messages[mi];
     if (!m) continue;
     const compactable = compact && mi < compactExemptFrom; // G1 豁免期外的旧消息才压
