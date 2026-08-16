@@ -4,6 +4,20 @@ export function pickSessionCompactToken(p: Record<string, unknown>): number | un
   return typeof p['compactToken'] === 'number' ? p['compactToken'] : undefined;
 }
 
+/** 从会话顶层 JSON 提取最后一条 compact 的 cutIndex（L4 压缩裁剪边界；无则 undefined——未压缩会话向后兼容）。
+ *  2026-08-16 修复：客户端 doSend 的 window.__kfmLastCompact 只有读取点没有赋值点（L4 裁剪从未生效，
+ *  真实请求载荷 297k tokens 超 256k 模型上限）——改走接口透传。 */
+export function pickCompactCutIndex(p: Record<string, unknown>): number | undefined {
+  const compacts = p['compacts'];
+  if (!Array.isArray(compacts) || compacts.length === 0) return undefined;
+  const last = compacts[compacts.length - 1];
+  if (last && typeof last === 'object') {
+    const cut = (last as Record<string, unknown>)['cutIndex'];
+    if (typeof cut === 'number') return cut;
+  }
+  return undefined;
+}
+
 /**
  * routes/files.ts — 文件 CRUD API 端点
  *
@@ -227,6 +241,7 @@ export function setupFileRoutes(router: Router): void {
             messageCount,
             tokenCount,
             ...(pickSessionCompactToken(p) !== undefined && { compactToken: pickSessionCompactToken(p) }),
+            ...(pickCompactCutIndex(p) !== undefined && { compactCutIndex: pickCompactCutIndex(p) }),
             ...(typeof p['fullTokenCount'] === 'number' && { fullTokenCount: p['fullTokenCount'] }),
           });
         } catch { /* skip corrupt */ }

@@ -437,12 +437,15 @@ export async function doSend(
     // tryAutoResume 曾内联复制简化版 → 无压缩/不过滤空壳/content:null 严格端点 400）。
     // 会话文件是全量真相源（永不压缩），apiMessages 是投影——压缩只发生在那一处。
     const noCompact = localStorage.getItem('kfm-no-compact') === '1'; // 灰度逃生门：=1 跳过压缩发全量
-    // L4 会话压缩：会话 meta.compacts 最后一条的 cutIndex → 投影跳过远期
+    // L4 会话压缩：当前会话的 compactCutIndex → 投影跳过远期
     // （摘要由服务端注入 system 尾部，见 chat.ts；真相源 messages 全量不动）
-    const lastCompact = (window as { __kfmLastCompact?: { cutIndex: number } }).__kfmLastCompact;
+    // 2026-08-16 修复：曾读 window.__kfmLastCompact——该全局只有读取点没有赋值点，L4 裁剪从未生效，
+    // 真实请求载荷 297k tokens 超 256k 模型上限；改从 sessionStore.list（接口透传的真相源字段）取。
+    const currentSession = sessionStore.list.find(s => s.id === _sendSessionId);
+    const lastCutIndex = currentSession?.compactCutIndex;
     const { apiMessages, compactSaved } = toOpenAiMessages(messages, {
       compact: !noCompact,
-      ...(lastCompact ? { compactCutIndex: lastCompact.cutIndex } : {}),
+      ...(typeof lastCutIndex === 'number' ? { compactCutIndex: lastCutIndex } : {}),
       isTodoDismissed: (todos) => {
         try { return (localStorage.getItem(TODO_DISMISS_KEY) || '') === todosFingerprint(todos); } catch { return false; }
       },
