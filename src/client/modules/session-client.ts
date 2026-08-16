@@ -65,6 +65,26 @@ export function countTextMessages(messages: SessionMessage[]): number {
   return messages.filter(m => extractMessageText(m).trim()).length;
 }
 
+/** 从服务端会话元数据项解析 Session（纯函数，可单测）。
+ *  2026-08-16 修复：补 compactToken 解析——曾缺导致三数字 b 透传断链（BAR-COMPACT-L4-01e）。 */
+export function parseSessionItem(s: Record<string, unknown>): Session | null {
+  if (typeof s['id'] !== 'string' || typeof s['title'] !== 'string') return null;
+  return {
+    id: s['id'],
+    title: s['title'],
+    createdAt: typeof s['createdAt'] === 'string' ? s['createdAt'] : '',
+    updatedAt: typeof s['updatedAt'] === 'string' ? s['updatedAt'] : '',
+    ...(typeof s['manuallyNamed'] === 'boolean' && { manuallyNamed: s['manuallyNamed'] }),
+    ...(typeof s['providerId'] === 'string' && { providerId: s['providerId'] }),
+    ...(typeof s['modelId'] === 'string' && { modelId: s['modelId'] }),
+    messageCount: typeof s['messageCount'] === 'number' ? s['messageCount'] : 0,
+    tokenCount: typeof s['tokenCount'] === 'number' ? s['tokenCount'] : 0,
+    ...(typeof s['compactToken'] === 'number' && { compactToken: s['compactToken'] }),
+    ...(typeof s['fullTokenCount'] === 'number' && { fullTokenCount: s['fullTokenCount'] }),
+    messages: [], // 元数据加载不含消息，需要时通过 getMessages() 按需加载
+  };
+}
+
 // ========== 保存前清洗：深拷贝 + 剥离 UI-only 字段 ==========
 // saveMessages 的快照引用共享问题：旧代码 messages.map(m => ({ role, content: m.content }))
 // 只浅拷贝外层，content 数组和 block 对象仍是引用。当 _saveChain 异步执行 _doSaveMessages
@@ -200,21 +220,8 @@ export const sessionStore = {
         const sessions: Session[] = [];
         for (const item of data.sessions) {
           if (!item || typeof item !== 'object') continue;
-          const s = item as Record<string, unknown>;
-          if (typeof s['id'] !== 'string' || typeof s['title'] !== 'string') continue;
-          sessions.push({
-            id: s['id'],
-            title: s['title'],
-            createdAt: typeof s['createdAt'] === 'string' ? s['createdAt'] : '',
-            updatedAt: typeof s['updatedAt'] === 'string' ? s['updatedAt'] : '',
-            ...(typeof s['manuallyNamed'] === 'boolean' && { manuallyNamed: s['manuallyNamed'] }),
-            ...(typeof s['providerId'] === 'string' && { providerId: s['providerId'] }),
-            ...(typeof s['modelId'] === 'string' && { modelId: s['modelId'] }),
-            messageCount: typeof s['messageCount'] === 'number' ? s['messageCount'] : 0,
-            tokenCount: typeof s['tokenCount'] === 'number' ? s['tokenCount'] : 0,
-            ...(typeof s['fullTokenCount'] === 'number' && { fullTokenCount: s['fullTokenCount'] }),
-            messages: [], // 元数据加载不含消息，需要时通过 getMessages() 按需加载
-          });
+          const parsed = parseSessionItem(item as Record<string, unknown>);
+          if (parsed) sessions.push(parsed);
         }
         this.list = sessions;
       }
