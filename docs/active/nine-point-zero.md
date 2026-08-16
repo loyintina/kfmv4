@@ -47,7 +47,8 @@
 | 服务 | 收编 v8 内容 | 契约 | 状态 |
 |------|--------------|------|------|
 | card-types broker | 卡片注册表（155 行）+ singleton 声明（修订注） | №6 | ✅ 定稿 |
-| tool-host 工具宿主 | tools/index.ts 170 + types.ts 109 框架；各工具插件：omp/browser Ⓟ2422 / omp/debug Ⓟ1274 / 小工具群 Ⓟ677 / 自指工具 Ⓟ323（含 kfm-hand-press、restart） | №10 候选 | **待讨论（下一议题）** |
+| tool-host 工具宿主 | tools/index.ts 170 + types.ts 109 框架；各工具插件：omp/browser Ⓟ2422 / omp/debug Ⓟ1274 / 小工具群 Ⓟ677 / 自指工具 Ⓟ323（含 kfm-hand-press、restart） | №10 | ✅ 定稿 |
+| ledger-service 账本 | tool-exec.jsonl 机制提为通用 append-only 服务（执行账/裁决审计/操作审计） | №10 附属 | ✅ 定稿 |
 | session-store | 会话存储与压缩（sessions/）+ routes/compact.ts Ⓟ126 | — | 待设计 |
 | pool-system | API卡/角色卡/配置卡/会话卡的数据层 + routes/proxy Ⓟ93 + routes/providers Ⓟ65 + env-store Ⓟ102 | №3 附属 | 待设计 |
 | agent-service | 流式对话 / 工具循环 / prompt-assembler + **server 对话管线：chat.ts Ⓟ571 / run-manager Ⓟ239 / routes Ⓟ160** | №2 附属 | 待设计 |
@@ -126,6 +127,8 @@
   └─ dynamic-prompt-files ← 眼睛包(№5)（段 ← 布局服务直读几何）
   └─ 布局插件（浮卡工作台 / tmux 全屏卡 / headless）← 渲染宿主
   └─ 顶栏(№8) ← 槽位插件（徽标/余额/系统三格/光球/tmux标签）；tmux 服务归 №1 连接家族
+  └─ tool-host(№10) ← 工具插件包（core-tools / kfm-tools / browser / debug）
+       ← permission-engine（闸①②裁决）/ ledger-service（闸④账本）
 ```
 
 ## 推进日志
@@ -140,11 +143,12 @@
   OBS HUD 消解归 №8；契约 №9 窗口卡定稿（五部件/挂点/四元组自配置不命名/
   启动器统一入口/收起≠销毁）+ №6 singleton 修订注；**全覆盖盘点**：src/ 36,012 行
   基线，已规划 63%，未规划 13,331 行全部登记入台账（工具宿主列为 №10 候选）；
-  "效果非代码"原则 + 全覆盖军规拍板。
+  "效果非代码"原则 + 全覆盖军规拍板；
+  契约 №10 工具宿主定稿（骨架固定+闸可插拔+只收不放 / 四家族归堆 /
+  重子系统懒加载 / ledger-service 同稿）。
 
 ## 待讨论
 
-- **契约 №10：工具宿主（tool-host）**——未覆盖最大块 Ⓟ4975，下一议题；
 - persistence：新建 or session-store 兼任；
 - apk 卡 / file.card stub 归宿；mode-system Ⓟ446 归属（启动器 or 布局）；
 - 窗口卡完全体的剩余工程细节（№9 已定骨架）；

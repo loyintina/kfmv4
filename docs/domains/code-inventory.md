@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit d3a2d7fd · 生成于 2026-08-16 -->
+<!-- 基准 commit 23642064 · 生成于 2026-08-16 -->
 
 # 代码清单（机械层）
 
@@ -106,7 +106,7 @@
 | src/client/modules/hand-geometry.ts | 11 | handHitTest |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（57 文件 · 12607 行）
+## ai-chat（57 文件 · 12614 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -115,7 +115,7 @@
 | src/server/ai/tools/omp/browser/tab-worker.ts | 921 | WorkerCore |
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
 | src/server/ai/chat.ts | 572 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
-| src/client/modules/session-client.ts | 531 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
+| src/client/modules/session-client.ts | 538 | SessionMessage, Session, extractMessageText, countTextMessages, parseSessionItem, sessionStore |
 | src/client/modules/orb-chat-run.ts | 516 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/client/modules/ws-channel.ts | 432 | wsChannel, initWsChannel |
 | src/server/ai/eyes.ts | 432 | EYES_PATH, genEyes |
@@ -184,12 +184,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（167 文件 · 19339 行）
+## infra（168 文件 · 19373 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 968 | — |
-| tests/regression.test.ts | 663 | — |
+| tests/regression.test.ts | 664 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -319,6 +319,7 @@
 | tests/reset-hooks.ts | 41 | — |
 | tests/obs-audit-pending.test.ts | 38 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
+| tests/session-parse.test.ts | 33 | — |
 | tests/hand-drag.test.ts | 30 | — |
 | scripts/deploy.sh | 29 | — |
 | .githooks/pre-push | 28 | — |
@@ -581,7 +582,7 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（31 边）
+### infra → ai-chat（32 边）
 
 - tests/browser-tool.test.ts → src/server/ai/tools/omp/browser/tab-supervisor.ts
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
@@ -604,6 +605,7 @@
 - tests/server-routes.test.ts → src/server/ai/tools/index.ts
 - tests/session-flush.test.ts → src/server/ai/session-store.ts
 - tests/session-invalidate.test.ts → src/server/ai/session-store.ts
+- tests/session-parse.test.ts → src/client/modules/session-client.ts
 - tests/session-security.test.ts → src/server/ai/routes.ts
 - tests/to-openai-messages.test.ts → src/shared/chat-protocol/messages.ts
 - tests/to-openai-messages.test.ts → src/shared/chat-protocol/to-openai-messages.ts
@@ -693,4 +695,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 320 文件 · 55669 行 · 跨域边 275 条
+合计 321 文件 · 55710 行 · 跨域边 276 条

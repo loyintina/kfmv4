@@ -1084,3 +1084,95 @@ broker 的 CardTypeDef 增加可选字段 `singleton?: boolean`（默认 false�
 - 军规：设计地图的组件台账 + 共享基础件表 + 域外表，**合计必须覆盖
   capability-map.md 与 src/ 全量文件**；每行要么有契约、要么有归宿、
   要么明确拍板移除——不允许"忘了"。
+
+---
+
+### 契约 №10：工具宿主（tool-host）+ 账本服务（ledger-service）
+
+> 定稿时间：2026-08-16
+> 拍板人：用户（"骨架固定 + 闸可插拔 + 只收不放" / 重子系统独立插件懒加载 /
+> 可见性留口子 / 账本独立成服务）
+
+#### 这是什么
+
+v8 `tools/index.ts`（170 行静态 Map + executeTool 扼点）的插件化。
+server 侧服务插件；工具 = 插件，注册即生效，卸载即注销——
+"容器+供稿项"第五次复用（卡片 broker / 池卡 tab / 包 / 顶栏槽位之后）。
+
+#### 接口表
+
+```ts
+interface ToolHost {
+  registerTool(def: KfmTool): () => void   // 注册=效果，返回函数=注销
+  list(): ToolDef[]                         // 池卡工具池 tab 的数据源
+  execute(name, params, ctx, onUpdate?): Promise<ToolResult>  // 扼点
+}
+
+// KfmTool 沿用 v8 已验证接口，不动：
+//   name / description / category / parameters(JSON Schema)
+//   execute(params, ctx, onUpdate?) 流式中间输出 + AbortSignal 中止
+// ToolContext 沿用：cwd / wsServer / signal / sandboxRoot / readRoot
+```
+
+#### 扼点管线：骨架固定 + 闸可插拔 + 只收不放
+
+```
+调用 → ① 监狱闸（写监狱/读监狱，路径越界构造性拒绝）
+     → ② 权限闸（permission-engine 裁决 allow/deny/ask）
+     → ③ 执行（AbortSignal 贯通）
+     → ④ 账本（ledger-service 追加一行）
+```
+
+- **骨架固定**：四道闸的顺序、"所有调用必经此门"由宿主保证，不可插拔；
+- **闸可插拔**：①②的裁决逻辑由 permission-engine 等安全插件提供——
+  未来安全大更新 = 换插件，不碰宿主（用户拍板理由：安全模式本来就是
+  后来加的，其开发过程就是一次插件开发）；
+- **只收不放**（沿用 v8 读监狱注释的铁律）：插件只能让访问面变窄，
+  不能变宽；宿主自带不可卸基线（不得写出项目根）。安全插件卸载后
+  剩下的是基线，不是真空——可插拔永远不构成降级攻击面。
+
+#### 工具家族归堆（17 个现有工具的归宿）
+
+| 家族 | 内容 | 9.0 形态 |
+|---|---|---|
+| 小工具群 | bash/read/write/edit/grep/glob/eval/todo/checkpoint/rewind/web-search Ⓟ677 | core-tools 包（一包多工具） |
+| 自指工具 | logs / restart / hand(kfm-hand-press) / browser-eval Ⓟ323 | kfm-tools 包 |
+| browser 子系统 | puppeteer + worker + stealth Ⓟ2422 | 独立插件包，懒加载（用时拉起 chrome），卸载真杀进程 |
+| debug 子系统 | CDP 调试 Ⓟ1274 | 独立插件包，同上 |
+
+#### 账本服务（ledger-service，随本契约一并定稿）
+
+- 独立小服务插件：`append(ns, record)`——往指定名字的 append-only
+  JSONL 账本追加一行；写失败吞掉不阻塞（v8 现有纪律）；
+- 使用方：tool-host（tool-exec 执行账）、permission-engine（裁决审计）、
+  №8 清空 tmux（操作审计）；
+- **文件即接口**：读端是现成的运维周报脚本，不进运行时——"数据还给文件"。
+
+#### 与已拍板体系的接口
+
+- **工具可带 UI**（2026-08-16 拍板）：KfmTool 注册时可选声明 cardType，
+  经 №6 broker 注册 UI 卡类型；todo 卡为首例；池卡工具池 tab 的
+  "有 UI"标记由此枚举白送；
+- 池卡工具池 tab = `host.list()` 的只读视图；
+- **可见性**：v1 全量可见；留口子——agent 组合未来可声明工具子集。
+
+#### 三状态归属
+
+- 登记类：工具注册 + 卡类型注册 → 逆序摘；browser/debug 包的进程是
+  登记类的大件（卸载=杀 chrome）；
+- 发射类：已流出的 onUpdate 输出不撤；
+- 数据类：账本文件归 ledger-service（append-only，永不回写）；
+  工具自身的运行缓存是私有草稿。
+
+#### 考题
+
+- A 档（契约）：假工具注册→出现在 list→execute 通→unload→list 消失
+  且 execute 返回未知工具；监狱闸：沙箱外 write 被拒（基线在权限插件
+  卸载后仍生效——只收不放）；账本追加可观察；
+- B 档（冒烟）：browser 插件懒加载拉起 chrome→卸载→进程树无残留；
+- C 档（对照）：17 个工具逐一与 v8 行为对照（参数 schema/错误文本一致）。
+
+#### 状态
+
+✅ 定稿（2026-08-16：骨架固定+闸可插拔+只收不放 / KfmTool 接口沿用 /
+四家族归堆 / 重子系统懒加载 / ledger-service 同稿定稿 / 可见性留口子）
