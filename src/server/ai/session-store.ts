@@ -129,7 +129,10 @@ function _get(sessionId: string): SessionState {
  * isTodoDismissed 是客户端 localStorage 信号，服务端缺省（投影标注 ±30 字符，可忽略）。
  */
 // 导出供测试（tokenCount 口径 = 真实 API 载荷含 reasoning；BAR-REASONING-L2-01 配套）
-export function _computeStats(messages: ChatMessage[]): { messageCount: number; tokenCount: number; fullTokenCount: number } {
+export function _computeStats(
+  messages: ChatMessage[],
+  compacts?: SessionCompact[],
+): { messageCount: number; tokenCount: number; compactToken: number; fullTokenCount: number } {
   let mc = 0, fc = 0;
   for (const msg of messages) {
     if (!msg || !Array.isArray(msg.content)) continue;
@@ -146,7 +149,13 @@ export function _computeStats(messages: ChatMessage[]): { messageCount: number; 
       }
     }
   }
-  const { apiMessages } = toOpenAiMessages(messages, { compact: true });
+  // L4 会话压缩（/compact）：把最后一条摘要的 cutIndex 传给投影，让 tokenCount
+  // 反映真实 API 载荷（摘要代表的历史不再进载荷）。b = 摘要本身 token（compactToken）。
+  const lastCompact = compacts && compacts.length > 0 ? compacts[compacts.length - 1] : null;
+  const { apiMessages } = toOpenAiMessages(messages, {
+    compact: true,
+    ...(lastCompact ? { compactCutIndex: lastCompact.cutIndex } : {}),
+  });
   // tc = 压缩投影后的真实 API 载荷字符数：content + tool_calls + reasoning_content。
   // reasoning_content 必须算（用户判断「发给 API 有没有超窗口」的真实参考——近期
   // 豁免区内 reasoning 真实上行）；L2 剥离远期 reasoning 后本数字相应变小，
@@ -155,7 +164,14 @@ export function _computeStats(messages: ChatMessage[]): { messageCount: number; 
     s + (m.content?.length || 0) + (m.tool_calls ? JSON.stringify(m.tool_calls).length : 0)
       + (typeof (m as { reasoning_content?: unknown }).reasoning_content === 'string'
         ? ((m as { reasoning_content?: string }).reasoning_content as string).length : 0), 0);
-  return { messageCount: mc, tokenCount: Math.round(tc / 3), fullTokenCount: Math.round(fc / 3) };
+  // compactToken = 摘要本身 token（a/b/c 三数字的 b）
+  const compactToken = lastCompact ? Math.round(lastCompact.summary.length / 3) : 0;
+  return {
+    messageCount: mc,
+    tokenCount: Math.round(tc / 3),          // a：摘要后实际发给 API 的压缩载荷
+    compactToken,                            // b：摘要本身的 token
+    fullTokenCount: Math.round(fc / 3),      // c：会话全量真相源
+  };
 }
 
 /** 落盘（同步 writeFileSync）。曾用 async writeFile + writing/pendingWrite 锁串行化，
@@ -165,12 +181,14 @@ export function _computeStats(messages: ChatMessage[]): { messageCount: number; 
  *  防抖 200ms 已合并写入频率，单次 sync 写毫秒级，面板无感。 */
 function _writeToDisk(sessionId: string, s: SessionState): void {
   s.dirty = false;
-  const { messageCount, tokenCount, fullTokenCount } = _computeStats(s.ctx.messages);
+  const compacts = Array.isArray(s.meta.compacts) ? (s.meta.compacts as SessionCompact[]) : undefined;
+  const { messageCount, tokenCount, compactToken, fullTokenCount } = _computeStats(s.ctx.messages, compacts);
   const out = {
     ...s.meta,
     messages: s.ctx.messages,
     messageCount,
     tokenCount,
+    compactToken,
     fullTokenCount,
     updatedAt: new Date().toISOString(),
   };

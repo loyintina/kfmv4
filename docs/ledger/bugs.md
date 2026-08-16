@@ -232,3 +232,4 @@
 | BAR-REASONING-L2-01 | chat-protocol | 远期 reasoning_content 不上行（L2 剥离：豁免期外思考链剥离、近期保留、带tools分支按 deepseek 兼容保留） | `1810b9c1` | ✅ 已钉（revert 验证红→绿） |
 | BAR-REASONING-L2-01b | session-store | tokenCount 口径含 reasoning_content——用户看它判断真实 API 载荷是否超窗口；tc 累加 content+tool_calls+reasoning_content；纯文本 reasoning 不上行（投影层既有设计）不计入，fullTokenCount（真相源）含全部 | 待提交 | ✅ 已钉（差分断言 ±1 容差，revert 验证红→绿） | `tests/token-count.test.ts` |
 | BAR-COMPACT-L4-01 | chat-protocol | L4 会话压缩投影（/compact）：compactCutIndex 跳过远期消息进投影——豁免边界 G1/G4 扫描保持全量（真相源索引），主循环起点 min(cutIndex, len)；重复压缩 cutIndex 前移；无 cutIndex 向后兼容 | 待提交 | ✅ 已钉（revert l4From=0 → 3 failed 真红→绿） | `tests/compact-l4.test.ts` |
+| BAR-COMPACT-L4-01c | session-store | 会话卡三数字（a/b/c）：a=tokenCount 带 compactCutIndex（真 gap 修复——原来 _computeStats 没传 cutIndex，compact 后 a 不变）；b=compactToken 摘要 token；c=fullTokenCount 真相源不动 | 待提交 | ✅ 已钉（revert 去掉 cutIndex 传入 → 1 failed 真红→绿） | `tests/token-count.test.ts` |

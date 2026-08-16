@@ -43,6 +43,8 @@ export interface Session {
   messageCount?: number;
   /** 估算 token 数（压缩投影口径：实际发给 API 的量级） */
   tokenCount?: number;
+  /** 摘要 token（L4 /compact 后摘要本身；无 compact 时为 undefined → 界面退化为双数字） */
+  compactToken?: number;
   /** 全量会话 token 估算（含 reasoning 与全部工具 I/O；与 tokenCount 并列显示「压缩/全量」） */
   fullTokenCount?: number;
 }

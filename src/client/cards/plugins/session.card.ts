@@ -279,11 +279,15 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       const metaRow = document.createElement('div');
       metaRow.style.cssText = 'display:flex;gap:8px;font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.5)';
-      // 双 token 显示「压缩/全量」：压缩后 = 实际发给 API 的量级，全量 = 会话文件原始大小
-      const tokenText = session.fullTokenCount
-        ? `${formatTokens(session.tokenCount)}/${formatTokens(session.fullTokenCount)}`
-        : formatTokens(session.tokenCount);
-      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${session.messageCount ?? countTextMessages(session.messages)} 条</span><span title="压缩后/全量 token">${tokenText}</span>`;
+      // 三 token 显示「API载荷/摘要/全量」（a/b/c，2026-08-16 用户定稿）：
+      // a = 摘要后实际发给 API 的压缩载荷，b = 摘要本身 token，c = 会话文件全量真相源。
+      // 有 compact 时显三数字；无 compact 时 b=0 → 退化为「载荷/全量」双数字。
+      const a = formatTokens(session.tokenCount);
+      const b = typeof session.compactToken === 'number' ? formatTokens(session.compactToken) : null;
+      const c = session.fullTokenCount ? formatTokens(session.fullTokenCount) : null;
+      const tokenText = b && c
+        ? `${a}/${b}/${c}` : (c ? `${a}/${c}` : a);
+      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${session.messageCount ?? countTextMessages(session.messages)} 条</span><span title="API载荷/摘要/全量 token">${tokenText}</span>`;
 
       item.appendChild(titleRow);
       item.appendChild(metaRow);

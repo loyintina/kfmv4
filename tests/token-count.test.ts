@@ -47,3 +47,25 @@ regression('BAR-REASONING-L2-01b', 'session-store', '纯文本 reasoning 不计�
   const fcBase = _computeStats(noToolMsgs).fullTokenCount;
   assert.ok(fullTokenCount > fcBase, 'fullTokenCount 含纯文本 reasoning（真相源口径）');
 });
+
+// ===== L4 /compact 三数字（a/b/c）：tokenCount 反映 cutIndex + compactToken（BAR-COMPACT-L4-01 配套）=====
+regression('BAR-COMPACT-L4-01c', 'session-store', '有 compact 时 tokenCount 反映 cutIndex（a 变小）+ compactToken 正确（b）', () => {
+  const msgs: any[] = [
+    { role: 'user', content: [{ type: 'text', text: 'Q1 远期' }], ts: 1 },
+    { role: 'ai', content: [{ type: 'text', text: 'A1 远期长答案'.repeat(20) }] },
+    { role: 'user', content: [{ type: 'text', text: 'Q2 近期' }], ts: 2 },
+    { role: 'ai', content: [{ type: 'text', text: 'A2 近期' }] },
+  ];
+  const compacts = [{ cutIndex: 2, summary: 'S'.repeat(99), model: 'deepseek/deepseek-v4-flash', createdAt: '' }];
+  const without = _computeStats(msgs);                    // 无 compact：全量投影
+  const withC = _computeStats(msgs, compacts);            // 有 compact：跳过 cutIndex 前
+  // a：tokenCount 应明显变小（远期消息被摘要代表，不再进载荷）
+  assert.ok(withC.tokenCount < without.tokenCount, `compact 后 tokenCount 应变小：${without.tokenCount} → ${withC.tokenCount}`);
+  // b：compactToken = summary/3（±1 舍入容差）
+  const expectedB = Math.round(99 / 3);
+  assert.ok(Math.abs(withC.compactToken - expectedB) <= 1, `compactToken 应 ≈ ${expectedB}，实测 ${withC.compactToken}`);
+  // c：fullTokenCount 不变（真相源全量，摘要不删原文）
+  assert.strictEqual(withC.fullTokenCount, without.fullTokenCount, 'fullTokenCount 不受 compact 影响（真相源不动）');
+  // 无 compact 时 compactToken = 0（旧会话向后兼容）
+  assert.strictEqual(without.compactToken, 0, '无 compact 时 compactToken = 0');
+});
