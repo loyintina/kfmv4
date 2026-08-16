@@ -1,3 +1,9 @@
+/** 从会话顶层 JSON 提取 compactToken（L4 摘要 token；无则 undefined——旧会话向后兼容）。
+ *  2026-08-16 修复：sessions/list 曾不透传 compactToken → 会话卡显示不到三数字 b。 */
+export function pickSessionCompactToken(p: Record<string, unknown>): number | undefined {
+  return typeof p['compactToken'] === 'number' ? p['compactToken'] : undefined;
+}
+
 /**
  * routes/files.ts — 文件 CRUD API 端点
  *
@@ -167,7 +173,7 @@ export function setupFileRoutes(router: Router): void {
       const sessionsDir = path.join(KFM_DATA_DIR, 'sessions');
       if (!fs.existsSync(sessionsDir)) { res.json({ sessions: [] }); return; }
       const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
-      const sessions: Array<{ id: string; title: string; createdAt: string; updatedAt: string; manuallyNamed?: boolean; providerId?: string; modelId?: string; messageCount: number; tokenCount: number; fullTokenCount?: number }> = [];
+      const sessions: Array<{ id: string; title: string; createdAt: string; updatedAt: string; manuallyNamed?: boolean; providerId?: string; modelId?: string; messageCount: number; tokenCount: number; compactToken?: number; fullTokenCount?: number }> = [];
       for (const file of files) {
         try {
           const raw = fs.readFileSync(path.join(sessionsDir, file), 'utf-8');
@@ -220,6 +226,7 @@ export function setupFileRoutes(router: Router): void {
             ...(typeof p['modelId'] === 'string' && { modelId: p['modelId'] }),
             messageCount,
             tokenCount,
+            ...(pickSessionCompactToken(p) !== undefined && { compactToken: pickSessionCompactToken(p) }),
             ...(typeof p['fullTokenCount'] === 'number' && { fullTokenCount: p['fullTokenCount'] }),
           });
         } catch { /* skip corrupt */ }

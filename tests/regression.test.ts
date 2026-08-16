@@ -60,6 +60,7 @@ import './hand-drag.test.js';
 import './reasoning-l2.test.js';
 import './token-count.test.js';
 import './compact-l4.test.js';
+import './compact-list.test.js';
 import './obs-audit-pending.test.js';
 import './obs-track-time.test.js';
 import './viewport-visibility.test.js';
