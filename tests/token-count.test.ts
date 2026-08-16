@@ -29,7 +29,7 @@ regression('BAR-REASONING-L2-01', 'session-store', 'tokenCount 包含带 tools �
   assert.ok(Math.abs((withR - withoutR) - expectedDiff) <= 1, `差值应 ≈ reasoning 200/3 = ${expectedDiff}，实测 ${withR - withoutR}`);
 });
 
-regression('BAR-REASONING-L2-01', 'session-store', '纯文本 reasoning 不计入 tokenCount（投影层本就不上行）', () => {
+regression('BAR-REASONING-L2-01b', 'session-store', '纯文本 reasoning 不计入 tokenCount（投影层本就不上行）', () => {
   const msgs: any[] = [
     { role: 'user', content: [{ type: 'text', text: 'q1' }], ts: 1 },
     { role: 'ai', content: [{ type: 'text', text: 'hello', reasoning: 'R'.repeat(200) }] }, // 纯文本：reasoning 不上行
