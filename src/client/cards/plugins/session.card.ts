@@ -13,7 +13,7 @@ import { log } from '../../modules/logger.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
 import { createCustomSelect } from '../../modules/custom-select.js';
 import type { Session } from '../../modules/session-client.js';
-import { sessionStore, extractMessageText as extractMsgText, countTextMessages } from '../../modules/session-client.js';
+import { sessionStore, extractMessageText as extractMsgText, countTextMessages, parseSessionItem } from '../../modules/session-client.js';
 import { Z } from '../../modules/z-index-layers.js';
 import { innerCardStyle, flashSaved } from '../card-ui.js';
 
@@ -68,21 +68,10 @@ async function loadSessions(): Promise<Session[]> {
     const sessions: Session[] = [];
     for (const item of data.sessions) {
       if (!item || typeof item !== 'object') continue;
-      const s = item as Record<string, unknown>;
-      if (typeof s['id'] !== 'string' || typeof s['title'] !== 'string') continue;
-      sessions.push({
-        id: s['id'],
-        title: s['title'],
-        createdAt: typeof s['createdAt'] === 'string' ? s['createdAt'] : '',
-        updatedAt: typeof s['updatedAt'] === 'string' ? s['updatedAt'] : '',
-        ...(typeof s['manuallyNamed'] === 'boolean' && { manuallyNamed: s['manuallyNamed'] }),
-        ...(typeof s['providerId'] === 'string' && { providerId: s['providerId'] }),
-        ...(typeof s['modelId'] === 'string' && { modelId: s['modelId'] }),
-        messageCount: typeof s['messageCount'] === 'number' ? s['messageCount'] : 0,
-        tokenCount: typeof s['tokenCount'] === 'number' ? s['tokenCount'] : 0,
-        ...(typeof s['fullTokenCount'] === 'number' && { fullTokenCount: s['fullTokenCount'] }),
-        messages: [], // 元数据加载不含消息，气泡预览时按需拉取
-      });
+      // 2026-08-16：解析唯一生产者 parseSessionItem（曾内联复制一份、漏 compactToken，
+      // 导致会话卡三数字 b 拿不到——BAR-COMPACT-L4-01e 系列断链的最后一环）
+      const parsed = parseSessionItem(item as Record<string, unknown>);
+      if (parsed) sessions.push(parsed);
     }
     return sessions;
   } catch { return []; }
