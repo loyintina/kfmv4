@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit f64d6dfb · 生成于 2026-08-16 -->
+<!-- 基准 commit e322a4d4 · 生成于 2026-08-16 -->
 
 # 代码清单（机械层）
 
@@ -106,7 +106,7 @@
 | src/client/modules/hand-geometry.ts | 11 | handHitTest |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（57 文件 · 12528 行）
+## ai-chat（57 文件 · 12535 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -126,7 +126,7 @@
 | src/client/modules/orb-chat-host.ts | 335 | ChatHostDeps, initChatHost |
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
 | src/shared/chat-protocol/to-openai-messages.ts | 301 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
-| src/server/ai/session-store.ts | 258 | markSessionScript, appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
+| src/server/ai/session-store.ts | 265 | markSessionScript, _computeStats, appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/run-manager.ts | 240 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
@@ -183,12 +183,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（164 文件 · 19189 行）
+## infra（165 文件 · 19240 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 968 | — |
-| tests/regression.test.ts | 660 | — |
+| tests/regression.test.ts | 661 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -304,6 +304,7 @@
 | tests/doc-scripts.test.ts | 51 | — |
 | tests/permissions.test.ts | 50 | — |
 | tests/reasoning-l2.test.ts | 50 | — |
+| tests/token-count.test.ts | 50 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
 | package.json | 49 | — |
 | tests/semantic-audit.test.ts | 48 | — |
@@ -577,7 +578,7 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（29 边）
+### infra → ai-chat（30 边）
 
 - tests/browser-tool.test.ts → src/server/ai/tools/omp/browser/tab-supervisor.ts
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
@@ -603,6 +604,7 @@
 - tests/to-openai-messages.test.ts → src/shared/chat-protocol/messages.ts
 - tests/to-openai-messages.test.ts → src/shared/chat-protocol/to-openai-messages.ts
 - tests/to-openai-messages.test.ts → src/shared/tool-compaction/index.ts
+- tests/token-count.test.ts → src/server/ai/session-store.ts
 - tests/tool-compaction.test.ts → src/shared/tool-compaction/index.ts
 - tests/tool-schema.test.ts → src/server/ai/tools/index.ts
 - tests/viewport-visibility.test.ts → src/client/modules/viewport-visibility.ts
@@ -684,4 +686,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 316 文件 · 55300 行 · 跨域边 270 条
+合计 317 文件 · 55358 行 · 跨域边 271 条
