@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit e322a4d4 · 生成于 2026-08-16 -->
+<!-- 基准 commit e3094d26 · 生成于 2026-08-16 -->
 
 # 代码清单（机械层）
 
@@ -106,7 +106,7 @@
 | src/client/modules/hand-geometry.ts | 11 | handHitTest |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（57 文件 · 12535 行）
+## ai-chat（57 文件 · 12587 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -114,9 +114,9 @@
 | src/client/data/waiting-hints.ts | 1108 | WAITING_HINTS |
 | src/server/ai/tools/omp/browser/tab-worker.ts | 921 | WorkerCore |
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
-| src/server/ai/chat.ts | 564 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
+| src/server/ai/chat.ts | 572 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
 | src/client/modules/session-client.ts | 529 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
-| src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
+| src/client/modules/orb-chat-run.ts | 516 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/client/modules/ws-channel.ts | 432 | wsChannel, initWsChannel |
 | src/server/ai/eyes.ts | 432 | EYES_PATH, genEyes |
 | src/shared/tool-compaction/index.ts | 370 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
@@ -125,14 +125,14 @@
 | src/server/ai/tools/omp/browser/tab-supervisor.ts | 342 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs, resolveTabWorkerEntry |
 | src/client/modules/orb-chat-host.ts | 335 | ChatHostDeps, initChatHost |
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
-| src/shared/chat-protocol/to-openai-messages.ts | 301 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
-| src/server/ai/session-store.ts | 265 | markSessionScript, _computeStats, appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
+| src/shared/chat-protocol/to-openai-messages.ts | 309 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
+| src/server/ai/session-store.ts | 289 | markSessionScript, _computeStats, appendEvent, flush, flushSync, invalidateSession, appendUserMessage, SessionCompact, appendCompact, getCompacts |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/run-manager.ts | 240 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
 | src/server/ai/tools/index.ts | 171 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
+| src/server/ai/routes.ts | 161 | StartRunFn, setupAiRoutes |
 | src/server/ai/page-state.ts | 156 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
-| src/server/ai/routes.ts | 153 | StartRunFn, setupAiRoutes |
 | src/server/ai/permissions.ts | 135 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/ai/prompt-assembler.ts | 124 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
@@ -168,27 +168,28 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 2540 行）
+## server（11 文件 · 2669 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/obs.ts | 893 | fetchDeepseekBalance, setupObsRoutes, setupObsPages, parseInbox, collectAuditPending, parseStack, collectSys, collectArchive, normalizeIso, collectPulse, collectPerms, buildRolesData, collectRoles |
 | src/server/routes/files.ts | 458 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 324 | WsServer |
-| src/server/index.ts | 186 | — |
+| src/server/index.ts | 188 | — |
 | src/server/path-utils.ts | 172 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/ai/permissions.ts | 135 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
+| src/server/routes/compact.ts | 127 | compactRouter, computeCutIndex |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/env-store.ts | 103 | ENV_PATH, parseEnv, loadEnvFile, isEnvRef, ResolvedKey, resolveKey, envNameForProvider, upsertEnvVar |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（165 文件 · 19240 行）
+## infra（166 文件 · 19293 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 968 | — |
-| tests/regression.test.ts | 661 | — |
+| tests/regression.test.ts | 662 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -297,6 +298,7 @@
 | scripts/check/check-inbox-heartbeat.mjs | 54 | — |
 | tests/tool-schema.test.ts | 54 | — |
 | scripts/check/check-secrets.mjs | 52 | — |
+| tests/compact-l4.test.ts | 52 | — |
 | tests/gen-pipeline.test.ts | 52 | — |
 | scripts/check/check-agent-script-docs.mjs | 51 | — |
 | scripts/check/check-consistency.mjs | 51 | — |
@@ -578,13 +580,14 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（30 边）
+### infra → ai-chat（31 边）
 
 - tests/browser-tool.test.ts → src/server/ai/tools/omp/browser/tab-supervisor.ts
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
 - tests/chat-protocol.test.ts → src/server/ai/chat.ts
 - tests/client-logic.test.ts → src/client/modules/session-client.ts
 - tests/client-logic.test.ts → src/shared/message-normalize.ts
+- tests/compact-l4.test.ts → src/shared/chat-protocol/to-openai-messages.ts
 - tests/invariants.test.ts → src/server/ai/chat.ts
 - tests/omp-glob.test.ts → src/server/ai/tools/omp/glob.ts
 - tests/omp-glob.test.ts → src/server/ai/tools/types.ts
@@ -677,13 +680,15 @@
 - tests/session-security.test.ts → src/server/path-utils.ts
 - tests/session-security.test.ts → src/server/ws-server.ts
 
-### server → ai-chat（5 边）
+### server → ai-chat（7 边）
 
 - src/server/ai/permissions.ts → src/server/ai/tools/types.ts
 - src/server/index.ts → src/server/ai/routes.ts
+- src/server/routes/compact.ts → src/server/ai/session-store.ts
+- src/server/routes/compact.ts → src/shared/chat-protocol/to-openai-messages.ts
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 - src/server/ws-server.ts → src/server/ai/eyes.ts
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 317 文件 · 55358 行 · 跨域边 271 条
+合计 319 文件 · 55592 行 · 跨域边 274 条
