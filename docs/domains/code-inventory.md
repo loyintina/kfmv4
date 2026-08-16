@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 23642064 · 生成于 2026-08-16 -->
+<!-- 基准 commit db6ecd25 · 生成于 2026-08-16 -->
 
 # 代码清单（机械层）
 
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（32 文件 · 8428 行）
+## floating-card（32 文件 · 8417 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -44,7 +44,7 @@
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 807 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 793 | — |
-| src/client/cards/plugins/session.card.ts | 623 | — |
+| src/client/cards/plugins/session.card.ts | 612 | — |
 | src/client/cards/plugins/api.card.ts | 596 | — |
 | src/client/modules/card-stack.ts | 508 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 308 | — |
@@ -184,12 +184,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（168 文件 · 19373 行）
+## infra（169 文件 · 19407 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 968 | — |
-| tests/regression.test.ts | 664 | — |
+| tests/regression.test.ts | 665 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -319,6 +319,7 @@
 | tests/reset-hooks.ts | 41 | — |
 | tests/obs-audit-pending.test.ts | 38 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
+| tests/session-card-parser.test.ts | 33 | — |
 | tests/session-parse.test.ts | 33 | — |
 | tests/hand-drag.test.ts | 30 | — |
 | scripts/deploy.sh | 29 | — |
@@ -695,4 +696,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 321 文件 · 55710 行 · 跨域边 276 条
+合计 322 文件 · 55733 行 · 跨域边 276 条
