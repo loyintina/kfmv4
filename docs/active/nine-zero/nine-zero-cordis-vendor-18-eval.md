@@ -3,8 +3,8 @@
 > 这是什么：dsh vendor README 的 18 条 Cordis 本地强化逐条评估——**移植必要性
 > 判据 = 9.0 契约语义是否需要**（9.0 线会签标准）。这是采用裁决 2（版本来源 (c)）
 > 的评估初稿。
-> 别的去哪找：采用决策 → `../ledger/agent-inbox/kfmv4-9.0-cordis-adoption-verdict.md`；
-> dsh 强化原文 → `/opt/dsh-src/vendor/README.md`；9.0 契约 → `../active/nine-zero-preface.md`。
+> 别的去哪找：采用决策 → `../../ledger/agent-inbox/kfmv4-9.0-cordis-adoption-verdict.md`；
+> dsh 强化原文 → `/opt/dsh-src/vendor/README.md`；9.0 契约 → `./nine-zero-preface.md`。
 > 状态：**初稿**（卡萝主笔，待 9.0 线会签 + 茉莉维护者验收——移植若改变 ctx 语义
 > 可观察行为，现有 576 测试必须全绿）。
 

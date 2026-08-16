@@ -4,7 +4,7 @@
 > 的对照审查（有没有多、有没有少）；② 用同一逻辑拆分的 **dsh 能力地图**
 > （cordis 本体 + 分层插件），验证「cordis 内核 + 分类插件」是否成立。
 > 别的去哪找：9.0 台账 → nine-point-zero.md；dsh 包清单 → `/opt/dsh-src/packages/`；
-> 采用决策 → `../ledger/agent-inbox/kfmv4-9.0-cordis-adoption-verdict.md`。
+> 采用决策 → `../../ledger/agent-inbox/kfmv4-9.0-cordis-adoption-verdict.md`。
 > 状态：初稿（待 9.0 线确认台账补行；待用户过目后决定投递）。
 
 ---

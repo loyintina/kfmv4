@@ -442,8 +442,8 @@ research:
     title: 9.0 会前酝酿（一切皆插件，2026-08-15 登记）
     note: 2026-08-15 登记入栈——评审送审 5 条（agent-inbox）触发 STACK 归位
     detail: |-
-      kfmv4 9.0 组件化设计——`docs/active/nine-zero-preface.md`（会前酝酿
-      态：逐项讨论逐项记结论，收敛后转正式设计）+ `docs/active/nine-point-zero.md`
+      kfmv4 9.0 组件化设计——`docs/active/nine-zero/nine-zero-preface.md`（会前酝酿
+      态：逐项讨论逐项记结论，收敛后转正式设计）+ `docs/active/nine-zero/nine-point-zero.md`
       （设计地图：功能台账/契约索引/依赖图/推进日志，2026-08-16 立档，与
       preface 配套：地图 + 决策史）。渲染底座分层（宿主内核/布局插件）+
       组件契约（终端卡三层/对话卡纯渲染壳/池卡）+ 契约 №1~№8 已定稿；议题 2

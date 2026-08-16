@@ -1,7 +1,10 @@
 > 这是什么：9.0 大重构的**设计地图**——全部内容的功能台账 + 契约索引 + 依赖图 + 推进日志。
 > 别的去哪找：拍板结论与决策史 → nine-zero-preface.md（会前酝酿记录）；组件契约正文
-> → 同文档 №1~№9（转正时迁出分文件）；评审往来 → ../ledger/agent-inbox/；
-> v8 功能总目录（机械生成）→ ../domains/capability-map.md。
+> → 同文档 №1~№9（转正时迁出分文件）；评审往来 → ../../ledger/agent-inbox/；
+> v8 功能总目录（机械生成）→ ../../domains/capability-map.md；
+> 配套材料 → nine-zero-capability-review.md（台账审查+dsh 能力地图）·
+> nine-zero-cordis-vendor-18-eval.md（18 条强化评估）·
+> nine-zero-implicit-globals-audit.md（隐式全局普查）。
 
 # 9.0 设计地图
 

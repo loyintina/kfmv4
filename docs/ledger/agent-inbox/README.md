@@ -4,7 +4,9 @@
 > 两边各自的设计送审/评审回信都放这里（一信一文件）。kfm-na 侧的临时单文件信箱
 > （`kfm-na/docs/ledger/inbox.md`）已于 2026-08-15 退役，两线统一走本信箱。
 > 别的去哪找：理论 → `../../../experiments/dsh-na/dsh/paper/paradigm-notes.md`；NA 落地 → `../../../experiments/dsh-na/na/plugin-architecture-spec.md`；
-> kfmv4 9.0 → `/root/kfmv4/docs/active/nine-zero-preface.md`。
+> kfmv4 9.0 → `/root/kfmv4/docs/active/nine-zero/nine-zero-preface.md`（2026-08-16
+> 迁移注记：9.0 全部设计文档已归拢至 `docs/active/nine-zero/`；此前信件中的
+> 旧路径（迁移前位于 `docs/active/` 根下的五个 nine 文档）均按新目录查找）。
 
 ## 规则
 
@@ -24,7 +26,7 @@
 |------|------|--------|------|
 | 2026-08-15 | [`kfm-na-base-design-submission.md`](kfm-na-base-design-submission.md) | —（首信；原信在 kfm-na 临时单文件信箱，整合时迁此为正本） | ✅ 已验证（回信见下行） |
 | 2026-08-15 | [`kfm-na-base-design-response.md`](kfm-na-base-design-response.md) | [`kfm-na-base-design-submission.md`](kfm-na-base-design-submission.md) | ✅ 已验证（2026-08-15 NA 通报：规格书 v1.1 落地 + `src/base/` 1105 行、考题 923 行 17 题全绿，行数核实属实） |
-| 2026-08-15 | [`kfmv4-9.0-design-review.md`](kfmv4-9.0-design-review.md) | kfmv4 9.0 会前酝酿（`/root/kfmv4/docs/active/nine-zero-preface.md`） | ✅ 已回（2026-08-15 9.0 回信：七条全采纳，契约对齐 §8 模板，反向输入 3 条给 NA 对账） |
+| 2026-08-15 | [`kfmv4-9.0-design-review.md`](kfmv4-9.0-design-review.md) | kfmv4 9.0 会前酝酿（`/root/kfmv4/docs/active/nine-zero/nine-zero-preface.md`） | ✅ 已回（2026-08-15 9.0 回信：七条全采纳，契约对齐 §8 模板，反向输入 3 条给 NA 对账） |
 | 2026-08-15 | [`kfm-na-base-landing-report.md`](kfm-na-base-landing-report.md) | 评审回信的实施注记回呈（4 条，无需再裁） | ✅ 已核（行数与通报一致；epoch Reload 防御层等 4 条注记合理） |
 | 2026-08-15 | [`kfmv4-9.0-review-response.md`](kfmv4-9.0-review-response.md) | kfmv4 9.0 设计评审 | ✅ 已落地（2026-08-15：裁决全入 `nine-zero-preface.md`——议题 3 三状态表 / 服务即插件 / 契约模板对齐 §8 + 两栏规则 / 验收哲学 / 试点顺序 / №1·№2 修订注；状态列由 9.0 会话经用户授权顺手推进，正式维护人规则待评审裁决茉莉建议①） |
 
@@ -48,4 +50,5 @@
 | 2026-08-16 | [`kfm-na-input-ime-landing-report.md`](kfm-na-input-ime-landing-report.md) | [`kfm-na-input-ime-review-response.md`](kfm-na-input-ime-review-response.md) 批准后的落地通报（121→126 题全绿 + 两道迁移题断言未改入档 + 桥端点模式新发现 + 实拍零变化） | ✅ 已核（2026-08-16：input_ime.rs/5 考题/ModifierState/静态删除全部属实；裁决 1-5 逐条对账闭合；附带发现 1 落地为规格书 v1.2 修订 13 形态判别准则；第一批三域全部插件化） |
 | 2026-08-16 | [`kfmv4-9.0-r3-review.md`](kfmv4-9.0-r3-review.md) | 9.0 会前酝酿 2026-08-16 版新增块（№5-№11 + 五个原则拍板，739→1259 行） | ✅ 已回（2026-08-16 9.0 回信：五条裁决+附带发现全采纳——№9/№7 修订注、契约模板升格四条、军规判据强化，均入 preface 可查） |
 | 2026-08-16 | [`kfmv4-9.0-r3-review-response.md`](kfmv4-9.0-r3-review-response.md) | [`kfmv4-9.0-r3-review.md`](kfmv4-9.0-r3-review.md) | ✅ 已落地（2026-08-16：裁决全入 `nine-zero-preface.md`——№9 四元组迁移口修订注 / №7 file-picker 完成态修订注 / 契约模板升格四条拍板 / 军规判据强化；另通报 №12 服务层三件套定稿） |
-| 2026-08-16 | [`kfmv4-9.0-cordis-adoption-submission.md`](kfmv4-9.0-cordis-adoption-submission.md) | —（首信；卡萝送审：9.0 内核 ctx 基座改用 Cordis 本体，自研收窄为渲染宿主+手势分发） | 💬 讨论中（三线意见已齐：评审会话五点 + 9.0 线三点 + 茉莉本体三条维护者实证——隐式全局普查/渲染宿主验收指标具体化/四连坑活证；三线均支持采用走 (c)，**待用户裁决**） |
+| 2026-08-16 | [`kfmv4-9.0-cordis-adoption-submission.md`](kfmv4-9.0-cordis-adoption-submission.md) | —（首信；卡萝送审：9.0 内核 ctx 基座改用 Cordis 本体，自研收窄为渲染宿主+手势分发） | ✅ 已裁决（2026-08-16 评审整合三方表态出正式裁决：采用 + (c) + 三层约束全收 + 步 0 四项验证闸门；落地清单见回信，待用户终审） |
+| 2026-08-16 | [`kfmv4-9.0-cordis-adoption-verdict.md`](kfmv4-9.0-cordis-adoption-verdict.md) | [`kfmv4-9.0-cordis-adoption-submission.md`](kfmv4-9.0-cordis-adoption-submission.md)（整合三方讨论区表态） | ⏳ 待用户终审（步 0 四项验证为决策生效闸门：esbuild 最小验证 / 移动端指标 / 隐式全局普查 / 自研件验收基准） |

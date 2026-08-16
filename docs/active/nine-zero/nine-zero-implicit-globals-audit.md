@@ -2,8 +2,8 @@
 
 > 这是什么：9.0 采用 Cordis 前的**隐式全局状态清单**——迁移工作量的真实下限信号
 > （茉莉 2026-08-16 于 Cordis 采用讨论区提议，卡萝执行）。
-> 别的去哪找：采用决策 → `../ledger/agent-inbox/kfmv4-9.0-cordis-adoption-verdict.md`；
-> 9.0 台账 → nine-point-zero.md；三状态归属表 → `../active/nine-zero-preface.md` 议题 3。
+> 别的去哪找：采用决策 → `../../ledger/agent-inbox/kfmv4-9.0-cordis-adoption-verdict.md`；
+> 9.0 台账 → nine-point-zero.md；三状态归属表 → `./nine-zero-preface.md` 议题 3。
 
 > 定性标准（茉莉定义）：Cordis 模型里隐式全局**每一个都必须变成显式的 ctx
 > 效果/coeffect**，否则 inject 时找不到提供者。逐个定性：该成效果的成效果、

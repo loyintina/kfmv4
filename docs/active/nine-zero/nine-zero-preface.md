@@ -1,6 +1,6 @@
 > 这是什么：9.0 大重构的**会前酝酿记录**——正式设计开始前的方向讨论与已拍板结论。
 > 别的去哪找：9.0 设计地图 → nine-point-zero.md（2026-08-16 已立，台账/索引/日志）；
-> 理论基础 → ../experiments/dsh-na/dsh/paper/paradigm-notes.md；项目远景 → vision.md；**评审往来 → ../ledger/agent-inbox/（跨线评审信箱，评审意见与裁决状态列在此）**
+> 理论基础 → ../../experiments/dsh-na/dsh/paper/paradigm-notes.md；项目远景 → vision.md；**评审往来 → ../../ledger/agent-inbox/（跨线评审信箱，评审意见与裁决状态列在此）**
 
 # 9.0 会前酝酿
 
@@ -151,7 +151,7 @@ kfmv4 本地增补与定调：
 5. **termview-wasm 可行性**（远期探索；评审高 3 + 茉莉裁决 3：不进 9.0
    验收承诺。硬障碍：softbuffer Android 专属 / 浏览器事件循环 vs winit）
 6. **多 agent 协作基建**（评审送审 5 条，2026-08-15 收进，见
-   `../ledger/agent-inbox/kfmv4-inbox-mechanism-response.md` §五）：
+   `../../ledger/agent-inbox/kfmv4-inbox-mechanism-response.md` §五）：
    ① 通用化立项（agent-inbox 升通用多 agent 信箱？）② 状态停滞检查
    （评审给的设计草案，脚本未立项——立项后按实际路径登记）③ 契约头四字段
    机读 schema（provides/depends/status/修订规则）④ 回执契约（四类信件
