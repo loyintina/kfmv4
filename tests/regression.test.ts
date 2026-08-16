@@ -64,6 +64,7 @@ import './compact-list.test.js';
 import './session-parse.test.js';
 import './session-card-parser.test.js';
 import './compact-cutindex.test.js';
+import './compact-live-query.test.js';
 import './obs-audit-pending.test.js';
 import './obs-track-time.test.js';
 import './viewport-visibility.test.js';

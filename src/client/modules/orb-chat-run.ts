@@ -439,10 +439,19 @@ export async function doSend(
     const noCompact = localStorage.getItem('kfm-no-compact') === '1'; // 灰度逃生门：=1 跳过压缩发全量
     // L4 会话压缩：当前会话的 compactCutIndex → 投影跳过远期
     // （摘要由服务端注入 system 尾部，见 chat.ts；真相源 messages 全量不动）
-    // 2026-08-16 修复：曾读 window.__kfmLastCompact——该全局只有读取点没有赋值点，L4 裁剪从未生效，
-    // 真实请求载荷 297k tokens 超 256k 模型上限；改从 sessionStore.list（接口透传的真相源字段）取。
-    const currentSession = sessionStore.list.find(s => s.id === _sendSessionId);
-    const lastCutIndex = currentSession?.compactCutIndex;
+    // 2026-08-16 修复链：曾读 window.__kfmLastCompact（只有读取点没有赋值点，L4 裁剪从未生效，
+    // 载荷 297k 超 256k）；改从 sessionStore.list 取——但 list 是页面加载时的快照，compact 后
+    // 不刷新 → 拿不到 cutIndex 仍发全量（用户实测 401「k3-256k supports only 256K context」）。
+    // 本次根治：实时查服务端 compacts 接口（真相源），不依赖任何客户端快照。
+    let lastCutIndex: number | undefined;
+    try {
+      const cRes = await fetch(`${apiBase}session/compacts/${encodeURIComponent(_sendSessionId)}`);
+      if (cRes.ok) {
+        const compacts = await cRes.json() as Array<{ cutIndex?: number }>;
+        const last = compacts.length ? compacts[compacts.length - 1] : null;
+        if (last && typeof last.cutIndex === 'number') lastCutIndex = last.cutIndex;
+      }
+    } catch { /* 查不到则退化为不裁剪（现状） */ }
     const { apiMessages, compactSaved } = toOpenAiMessages(messages, {
       compact: !noCompact,
       ...(typeof lastCutIndex === 'number' ? { compactCutIndex: lastCutIndex } : {}),
