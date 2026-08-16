@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 902928f5 · 生成于 2026-08-16 -->
+<!-- 基准 commit 976ee179 · 生成于 2026-08-16 -->
 
 # 代码清单（机械层）
 
@@ -106,7 +106,7 @@
 | src/client/modules/hand-geometry.ts | 11 | handHitTest |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（57 文件 · 12621 行）
+## ai-chat（57 文件 · 12631 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -125,8 +125,8 @@
 | src/server/ai/tools/omp/browser/tab-supervisor.ts | 342 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs, resolveTabWorkerEntry |
 | src/client/modules/orb-chat-host.ts | 335 | ChatHostDeps, initChatHost |
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
+| src/server/ai/session-store.ts | 317 | markSessionScript, _computeStats, appendEvent, flush, flushSync, invalidateSession, appendUserMessage, SessionCompact, appendCompact, getCompacts |
 | src/shared/chat-protocol/to-openai-messages.ts | 309 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
-| src/server/ai/session-store.ts | 307 | markSessionScript, _computeStats, appendEvent, flush, flushSync, invalidateSession, appendUserMessage, SessionCompact, appendCompact, getCompacts |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/run-manager.ts | 240 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
@@ -168,12 +168,12 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（11 文件 · 2691 行）
+## server（11 文件 · 2693 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/obs.ts | 893 | fetchDeepseekBalance, setupObsRoutes, setupObsPages, parseInbox, collectAuditPending, parseStack, collectSys, collectArchive, normalizeIso, collectPulse, collectPerms, buildRolesData, collectRoles |
-| src/server/routes/files.ts | 480 | pickSessionCompactToken, pickCompactCutIndex, FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
+| src/server/routes/files.ts | 482 | pickWindowTokenCount, pickCompactCutIndex, FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 324 | WsServer |
 | src/server/index.ts | 188 | — |
 | src/server/path-utils.ts | 172 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
@@ -184,7 +184,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（170 文件 · 19447 行）
+## infra（170 文件 · 19450 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -279,8 +279,8 @@
 | scripts/check/check-experiment-registry.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
+| tests/token-count.test.ts | 75 | — |
 | experiments/coldstart/tools/theme-code.mjs | 75 | — |
-| tests/token-count.test.ts | 72 | — |
 | scripts/check/check-code-doc-refs.mjs | 69 | — |
 | scripts/check/check-card-meta.mjs | 68 | — |
 | scripts/check/check-ledger-commits.mjs | 68 | — |
@@ -699,4 +699,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 323 文件 · 55795 行 · 跨域边 278 条
+合计 323 文件 · 55810 行 · 跨域边 278 条
