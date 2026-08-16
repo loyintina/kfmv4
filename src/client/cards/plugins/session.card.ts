@@ -272,7 +272,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       // a = 摘要后实际发给 API 的压缩载荷，b = 摘要本身 token，c = 会话文件全量真相源。
       // 有 compact 时显三数字；无 compact 时 b=0 → 退化为「载荷/全量」双数字。
       const a = formatTokens(session.tokenCount);
-      const b = typeof session.compactToken === 'number' ? formatTokens(session.compactToken) : null;
+      const b = typeof session.windowTokenCount === 'number' && session.windowTokenCount > 0 ? formatTokens(session.windowTokenCount) : null;
       const c = session.fullTokenCount ? formatTokens(session.fullTokenCount) : null;
       const tokenText = b && c
         ? `${a}/${b}/${c}` : (c ? `${a}/${c}` : a);

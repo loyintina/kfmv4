@@ -48,8 +48,8 @@ regression('BAR-REASONING-L2-01b', 'session-store', '纯文本 reasoning 不计�
   assert.ok(fullTokenCount > fcBase, 'fullTokenCount 含纯文本 reasoning（真相源口径）');
 });
 
-// ===== L4 /compact 三数字（a/b/c）：tokenCount 反映 cutIndex + compactToken（BAR-COMPACT-L4-01 配套）=====
-regression('BAR-COMPACT-L4-01c', 'session-store', '有 compact 时 tokenCount 反映 cutIndex（a 变小）+ compactToken 正确（b）', () => {
+// ===== L4 /compact 三数字（a/b/c）：tokenCount 反映 cutIndex + windowTokenCount（BAR-COMPACT-L4-01 配套）=====
+regression('BAR-COMPACT-L4-01c', 'session-store', '有 compact 时 tokenCount 反映 cutIndex（a 变小）+ windowTokenCount 正确（b=窗口全量）', () => {
   const msgs: any[] = [
     { role: 'user', content: [{ type: 'text', text: 'Q1 远期' }], ts: 1 },
     { role: 'ai', content: [{ type: 'text', text: 'A1 远期长答案'.repeat(20) }] },
@@ -61,11 +61,14 @@ regression('BAR-COMPACT-L4-01c', 'session-store', '有 compact 时 tokenCount �
   const withC = _computeStats(msgs, compacts);            // 有 compact：跳过 cutIndex 前
   // a：tokenCount 应明显变小（远期消息被摘要代表，不再进载荷）
   assert.ok(withC.tokenCount < without.tokenCount, `compact 后 tokenCount 应变小：${without.tokenCount} → ${withC.tokenCount}`);
-  // b：compactToken = summary/3（±1 舍入容差）
-  const expectedB = Math.round(99 / 3);
-  assert.ok(Math.abs(withC.compactToken - expectedB) <= 1, `compactToken 应 ≈ ${expectedB}，实测 ${withC.compactToken}`);
+  // b：windowTokenCount = 窗口全量（cutIndex 之后消息的 text+reasoning+工具 I/O 未压缩全量 /3）
+  // 窗口 = messages[2:] = 'Q2 近期'(4) + 'A2 近期'(4) = 8 字符（fc 口径是真相源字段，不含 ts 前缀）
+  const expectedB = Math.round((4 + 4) / 3);
+  assert.ok(Math.abs(withC.windowTokenCount - expectedB) <= 1, `windowTokenCount 应 ≈ ${expectedB}（窗口全量），实测 ${withC.windowTokenCount}`);
   // c：fullTokenCount 不变（真相源全量，摘要不删原文）
   assert.strictEqual(withC.fullTokenCount, without.fullTokenCount, 'fullTokenCount 不受 compact 影响（真相源不动）');
-  // 无 compact 时 compactToken = 0（旧会话向后兼容）
-  assert.strictEqual(without.compactToken, 0, '无 compact 时 compactToken = 0');
+  // c-b = 摘要覆盖掉的量：窗口外消息（i<2）的文本都在差值里
+  assert.ok(withC.fullTokenCount > withC.windowTokenCount, 'c 应 > b（摘要覆盖掉的部分计入 c 不计入 b）');
+  // 无 compact 时 windowTokenCount = 0（旧会话向后兼容 → 界面退化双数字）
+  assert.strictEqual(without.windowTokenCount, 0, '无 compact 时 windowTokenCount = 0');
 });

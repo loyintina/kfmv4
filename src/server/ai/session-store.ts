@@ -132,26 +132,35 @@ function _get(sessionId: string): SessionState {
 export function _computeStats(
   messages: ChatMessage[],
   compacts?: SessionCompact[],
-): { messageCount: number; tokenCount: number; compactToken: number; fullTokenCount: number } {
-  let mc = 0, fc = 0;
-  for (const msg of messages) {
+): { messageCount: number; tokenCount: number; windowTokenCount: number; fullTokenCount: number } {
+  let mc = 0, fc = 0, wc = 0;
+  const lastCompact = compacts && compacts.length > 0 ? compacts[compacts.length - 1] : null;
+  // b（windowTokenCount）口径：从摘要边界到最新消息的「窗口全量」token——
+  // 与 c（fullTokenCount）同口径（text+reasoning+工具 I/O 全量），但只累加 cutIndex 之后的消息。
+  // 三数字语义：c-b = 摘要覆盖掉的量；b-a = 工具压缩+思考摘除省下的量。
+  const cutIndex = lastCompact ? lastCompact.cutIndex : -1;
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
     if (!msg || !Array.isArray(msg.content)) continue;
+    const inWindow = i >= cutIndex; // cutIndex=-1（无 compact）时全部在窗口内，但 wc 仅在 lastCompact 存在时有意义
     let counted = false;
     for (const b of msg.content) {
       if (!b) continue;
       if (b.type === 'text') {
-        fc += ((typeof b.text === 'string' ? b.text.length : 0) + (typeof b.reasoning === 'string' ? b.reasoning.length : 0));
+        const add = ((typeof b.text === 'string' ? b.text.length : 0) + (typeof b.reasoning === 'string' ? b.reasoning.length : 0));
+        fc += add; if (inWindow) wc += add;
         if (!counted && typeof b.text === 'string' && b.text.trim()) { mc++; counted = true; }
       } else if (b.type === 'tool') {
-        if (b.input) fc += JSON.stringify(b.input).length;
+        let add = 0;
+        if (b.input) add += JSON.stringify(b.input).length;
         const rc = b.result?.content;
-        if (Array.isArray(rc)) for (const c of rc) { if (c?.text) fc += String(c.text).length; }
+        if (Array.isArray(rc)) for (const c of rc) { if (c?.text) add += String(c.text).length; }
+        fc += add; if (inWindow) wc += add;
       }
     }
   }
   // L4 会话压缩（/compact）：把最后一条摘要的 cutIndex 传给投影，让 tokenCount
-  // 反映真实 API 载荷（摘要代表的历史不再进载荷）。b = 摘要本身 token（compactToken）。
-  const lastCompact = compacts && compacts.length > 0 ? compacts[compacts.length - 1] : null;
+  // 反映真实 API 载荷（摘要代表的历史不再进载荷）。
   const { apiMessages } = toOpenAiMessages(messages, {
     compact: true,
     ...(lastCompact ? { compactCutIndex: lastCompact.cutIndex } : {}),
@@ -164,12 +173,13 @@ export function _computeStats(
     s + (m.content?.length || 0) + (m.tool_calls ? JSON.stringify(m.tool_calls).length : 0)
       + (typeof (m as { reasoning_content?: unknown }).reasoning_content === 'string'
         ? ((m as { reasoning_content?: string }).reasoning_content as string).length : 0), 0);
-  // compactToken = 摘要本身 token（a/b/c 三数字的 b）
-  const compactToken = lastCompact ? Math.round(lastCompact.summary.length / 3) : 0;
+  // windowTokenCount = 窗口全量 token（a/b/c 三数字的 b）：摘要边界之后消息的未压缩全量
+  // （与 c 同口径、只算 cutIndex 之后）。无 compact 时 0 → 界面退化为双数字。
+  const windowTokenCount = lastCompact ? Math.round(wc / 3) : 0;
   return {
     messageCount: mc,
     tokenCount: Math.round(tc / 3),          // a：摘要后实际发给 API 的压缩载荷
-    compactToken,                            // b：摘要本身的 token
+    windowTokenCount,                        // b：摘要窗口内全量 token（未压缩）
     fullTokenCount: Math.round(fc / 3),      // c：会话全量真相源
   };
 }
@@ -182,13 +192,13 @@ export function _computeStats(
 function _writeToDisk(sessionId: string, s: SessionState): void {
   s.dirty = false;
   const compacts = Array.isArray(s.meta.compacts) ? (s.meta.compacts as SessionCompact[]) : undefined;
-  const { messageCount, tokenCount, compactToken, fullTokenCount } = _computeStats(s.ctx.messages, compacts);
+  const { messageCount, tokenCount, windowTokenCount, fullTokenCount } = _computeStats(s.ctx.messages, compacts);
   const out = {
     ...s.meta,
     messages: s.ctx.messages,
     messageCount,
     tokenCount,
-    compactToken,
+    windowTokenCount,
     fullTokenCount,
     updatedAt: new Date().toISOString(),
   };

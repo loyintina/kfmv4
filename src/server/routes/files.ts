@@ -1,7 +1,9 @@
-/** 从会话顶层 JSON 提取 compactToken（L4 摘要 token；无则 undefined——旧会话向后兼容）。
- *  2026-08-16 修复：sessions/list 曾不透传 compactToken → 会话卡显示不到三数字 b。 */
-export function pickSessionCompactToken(p: Record<string, unknown>): number | undefined {
-  return typeof p['compactToken'] === 'number' ? p['compactToken'] : undefined;
+/** 从会话顶层 JSON 提取 windowTokenCount（L4 窗口全量 token b：摘要边界到最新的未压缩量；
+ *  >0 才返回——0/缺省视为无摘要，界面退化为双数字）。
+ *  2026-08-16：原名 compactToken（摘要本身 token），用户定稿口径改为窗口全量
+ *  （c-b=摘要覆盖量，b-a=压缩节省量），字段名同步改 windowTokenCount 避免误导。 */
+export function pickWindowTokenCount(p: Record<string, unknown>): number | undefined {
+  return typeof p['windowTokenCount'] === 'number' && p['windowTokenCount'] > 0 ? p['windowTokenCount'] : undefined;
 }
 
 /** 从会话顶层 JSON 提取最后一条 compact 的 cutIndex（L4 压缩裁剪边界；无则 undefined——未压缩会话向后兼容）。
@@ -187,7 +189,7 @@ export function setupFileRoutes(router: Router): void {
       const sessionsDir = path.join(KFM_DATA_DIR, 'sessions');
       if (!fs.existsSync(sessionsDir)) { res.json({ sessions: [] }); return; }
       const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
-      const sessions: Array<{ id: string; title: string; createdAt: string; updatedAt: string; manuallyNamed?: boolean; providerId?: string; modelId?: string; messageCount: number; tokenCount: number; compactToken?: number; fullTokenCount?: number }> = [];
+      const sessions: Array<{ id: string; title: string; createdAt: string; updatedAt: string; manuallyNamed?: boolean; providerId?: string; modelId?: string; messageCount: number; tokenCount: number; windowTokenCount?: number; fullTokenCount?: number }> = [];
       for (const file of files) {
         try {
           const raw = fs.readFileSync(path.join(sessionsDir, file), 'utf-8');
@@ -240,7 +242,7 @@ export function setupFileRoutes(router: Router): void {
             ...(typeof p['modelId'] === 'string' && { modelId: p['modelId'] }),
             messageCount,
             tokenCount,
-            ...(pickSessionCompactToken(p) !== undefined && { compactToken: pickSessionCompactToken(p) }),
+            ...(pickWindowTokenCount(p) !== undefined && { windowTokenCount: pickWindowTokenCount(p) }),
             ...(pickCompactCutIndex(p) !== undefined && { compactCutIndex: pickCompactCutIndex(p) }),
             ...(typeof p['fullTokenCount'] === 'number' && { fullTokenCount: p['fullTokenCount'] }),
           });

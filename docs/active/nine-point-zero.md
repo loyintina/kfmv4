@@ -49,13 +49,12 @@
 | card-types broker | 卡片注册表（155 行）+ singleton 声明（修订注） | №6 | ✅ 定稿 |
 | tool-host 工具宿主 | tools/index.ts 170 + types.ts 109 框架；各工具插件：omp/browser Ⓟ2422 / omp/debug Ⓟ1274 / 小工具群 Ⓟ677 / 自指工具 Ⓟ323（含 kfm-hand-press、restart） | №10 | ✅ 定稿 |
 | ledger-service 账本 | tool-exec.jsonl 机制提为通用 append-only 服务（执行账/裁决审计/操作审计） | №10 附属 | ✅ 定稿 |
-| session-store | 会话存储与压缩（sessions/）+ routes/compact.ts Ⓟ126 | — | 待设计 |
-| pool-system | API卡/角色卡/配置卡/会话卡的数据层 + routes/proxy Ⓟ93 + routes/providers Ⓟ65 + env-store Ⓟ102 | №3 附属 | 待设计 |
-| agent-service | 流式对话 / 工具循环 / prompt-assembler + **server 对话管线：chat.ts Ⓟ571 / run-manager Ⓟ239 / routes Ⓟ160** | №2 附属 | 待设计 |
+| session-store | 会话存储与压缩（sessions/）+ routes/compact.ts Ⓟ126；落盘纪律自管（承重墙） | №12 | ✅ 定稿 |
+| pool-system | API卡/角色卡/配置卡/会话卡的数据层 + routes/proxy Ⓟ93 + routes/providers Ⓟ65 + env-store Ⓟ102 + **workspaces/ 点亮**（agent 工作区维） | №3 附属 + №12 | ✅ 定稿 |
+| agent-service | 流式对话 / 工具循环 / prompt 装配线 + **server 对话管线：chat.ts Ⓟ571 / run-manager Ⓟ239 / routes Ⓟ160** | №2 附属 + №12 | ✅ 定稿 |
 | dynamic-prompt-files | prompts/dynamic/ 目录管理 | №5 附属 | 待设计 |
 | tree-data | 懒加载（tree-loader / list-recursive） | №7 附属 | 待设计 |
-| file-io | routes/files.ts 文件 CRUD Ⓟ457 | — | 待设计 |
-| persistence | 落盘基建——**src/ 无实体文件**（逻辑散在 session-store / orb-chat-run） | — | 待裁决：新建 or session-store 兼任 |
+| file-io | routes/files.ts 文件 CRUD Ⓟ457（池文件与通用读写走它） | №12 附属 | 待设计 |
 | theme | theme.ts | — | 待设计 |
 | permission-engine | 权限裁决 + 读写监狱（permissions.ts + path-utils.ts 路径监狱 Ⓟ171） | — | 待设计（已拍板提为服务插件 2026-08-16） |
 | style-registry | 样式注册表 Ⓟ161（有状态注册表 → 服务插件） | — | 待设计 |
@@ -132,6 +131,8 @@
   └─ 顶栏(№8) ← 槽位插件（徽标/余额/系统三格/光球/tmux标签）；tmux 服务归 №1 连接家族
   └─ tool-host(№10) ← 工具插件包（core-tools / kfm-tools / browser / debug）
        ← permission-engine（闸①②裁决）/ ledger-service（闸④账本）
+  └─ agent-service(№12) ← tool-host / session-store(№12) / pool-system(№12)
+       ← file-io；workspaces/ = agent 工作区维（pool-system 管）
 ```
 
 ## 推进日志
@@ -150,11 +151,13 @@
   契约 №10 工具宿主定稿（骨架固定+闸可插拔+只收不放 / 四家族归堆 /
   重子系统懒加载 / ledger-service 同稿）；UI 皮肤包拍板（默认=深蓝意志）；
   契约 №11 布局壳定稿（全屏层叠默认+headless / 浮卡降多端适配远期包 /
-  点卡直接全屏）+ №9 几何户口简化修订注；mode-system 读码消解归 №7。
+  点卡直接全屏）+ №9 几何户口简化修订注；mode-system 读码消解归 №7；
+  契约 №12 服务层三件套定稿（persistence 不新建 / workspaces 点亮 /
+  active.json 葬礼）；r3 评审五条全采纳（№9/№7 修订注 + 契约模板升格四条 +
+  军规判据强化：归宿=可执行迁移路径）。
 
 ## 待讨论
 
-- persistence：新建 or session-store 兼任；
 - apk 卡 / file.card stub 归宿；
 - 窗口卡完全体的剩余工程细节（№9 已定骨架 + 几何户口简化修订注）；
 - 议题 5（termview-wasm 远期）/ 议题 6（协作基建，归主开发线）/ wechat 模式

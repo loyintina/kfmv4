@@ -43,8 +43,8 @@ export interface Session {
   messageCount?: number;
   /** 估算 token 数（压缩投影口径：实际发给 API 的量级） */
   tokenCount?: number;
-  /** 摘要 token（L4 /compact 后摘要本身；无 compact 时为 undefined → 界面退化为双数字） */
-  compactToken?: number;
+  /** 窗口全量 token（L4 /compact 后：摘要边界到最新的未压缩量；无 compact 时 undefined → 界面退化双数字） */
+  windowTokenCount?: number;
   /** L4 压缩裁剪边界（最后一条 compact 的 cutIndex）——doSend 投影跳远期用（2026-08-16 修复 256k 超限：
    *  曾 window.__kfmLastCompact 只读不写，L4 裁剪从未生效，载荷 297k 超上限） */
   compactCutIndex?: number;
@@ -82,7 +82,7 @@ export function parseSessionItem(s: Record<string, unknown>): Session | null {
     ...(typeof s['modelId'] === 'string' && { modelId: s['modelId'] }),
     messageCount: typeof s['messageCount'] === 'number' ? s['messageCount'] : 0,
     tokenCount: typeof s['tokenCount'] === 'number' ? s['tokenCount'] : 0,
-    ...(typeof s['compactToken'] === 'number' && { compactToken: s['compactToken'] }),
+    ...(typeof s['windowTokenCount'] === 'number' && { windowTokenCount: s['windowTokenCount'] }),
     ...(typeof s['compactCutIndex'] === 'number' && { compactCutIndex: s['compactCutIndex'] }),
     ...(typeof s['fullTokenCount'] === 'number' && { fullTokenCount: s['fullTokenCount'] }),
     messages: [], // 元数据加载不含消息，需要时通过 getMessages() 按需加载
