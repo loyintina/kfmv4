@@ -58,6 +58,7 @@ import './session-flush.test.js';
 import './browser-tool.test.js';
 import './hand-drag.test.js';
 import './reasoning-l2.test.js';
+import './token-count.test.js';
 import './obs-audit-pending.test.js';
 import './obs-track-time.test.js';
 import './viewport-visibility.test.js';

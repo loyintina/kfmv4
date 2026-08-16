@@ -128,7 +128,8 @@ function _get(sessionId: string): SessionState {
  * 会话卡并列显示「压缩/全量」，让压缩收益与窗口占用同时可见。
  * isTodoDismissed 是客户端 localStorage 信号，服务端缺省（投影标注 ±30 字符，可忽略）。
  */
-function _computeStats(messages: ChatMessage[]): { messageCount: number; tokenCount: number; fullTokenCount: number } {
+// 导出供测试（tokenCount 口径 = 真实 API 载荷含 reasoning；BAR-REASONING-L2-01 配套）
+export function _computeStats(messages: ChatMessage[]): { messageCount: number; tokenCount: number; fullTokenCount: number } {
   let mc = 0, fc = 0;
   for (const msg of messages) {
     if (!msg || !Array.isArray(msg.content)) continue;
@@ -146,8 +147,14 @@ function _computeStats(messages: ChatMessage[]): { messageCount: number; tokenCo
     }
   }
   const { apiMessages } = toOpenAiMessages(messages, { compact: true });
+  // tc = 压缩投影后的真实 API 载荷字符数：content + tool_calls + reasoning_content。
+  // reasoning_content 必须算（用户判断「发给 API 有没有超窗口」的真实参考——近期
+  // 豁免区内 reasoning 真实上行）；L2 剥离远期 reasoning 后本数字相应变小，
+  // 剥离收益在界面显形（BAR-REASONING-L2-01 配套）。
   const tc = apiMessages.reduce((s, m) =>
-    s + (m.content?.length || 0) + (m.tool_calls ? JSON.stringify(m.tool_calls).length : 0), 0);
+    s + (m.content?.length || 0) + (m.tool_calls ? JSON.stringify(m.tool_calls).length : 0)
+      + (typeof (m as { reasoning_content?: unknown }).reasoning_content === 'string'
+        ? ((m as { reasoning_content?: string }).reasoning_content as string).length : 0), 0);
   return { messageCount: mc, tokenCount: Math.round(tc / 3), fullTokenCount: Math.round(fc / 3) };
 }
 
