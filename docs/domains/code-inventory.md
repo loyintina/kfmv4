@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit e3094d26 · 生成于 2026-08-16 -->
+<!-- 基准 commit b7bb40a1 · 生成于 2026-08-16 -->
 
 # 代码清单（机械层）
 
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（32 文件 · 8424 行）
+## floating-card（32 文件 · 8428 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -44,7 +44,7 @@
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 807 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 793 | — |
-| src/client/cards/plugins/session.card.ts | 619 | — |
+| src/client/cards/plugins/session.card.ts | 623 | — |
 | src/client/cards/plugins/api.card.ts | 596 | — |
 | src/client/modules/card-stack.ts | 508 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 308 | — |
@@ -106,7 +106,7 @@
 | src/client/modules/hand-geometry.ts | 11 | handHitTest |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（57 文件 · 12587 行）
+## ai-chat（57 文件 · 12607 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -115,7 +115,7 @@
 | src/server/ai/tools/omp/browser/tab-worker.ts | 921 | WorkerCore |
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
 | src/server/ai/chat.ts | 572 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
-| src/client/modules/session-client.ts | 529 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
+| src/client/modules/session-client.ts | 531 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
 | src/client/modules/orb-chat-run.ts | 516 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/client/modules/ws-channel.ts | 432 | wsChannel, initWsChannel |
 | src/server/ai/eyes.ts | 432 | EYES_PATH, genEyes |
@@ -126,7 +126,7 @@
 | src/client/modules/orb-chat-host.ts | 335 | ChatHostDeps, initChatHost |
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
 | src/shared/chat-protocol/to-openai-messages.ts | 309 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
-| src/server/ai/session-store.ts | 289 | markSessionScript, _computeStats, appendEvent, flush, flushSync, invalidateSession, appendUserMessage, SessionCompact, appendCompact, getCompacts |
+| src/server/ai/session-store.ts | 307 | markSessionScript, _computeStats, appendEvent, flush, flushSync, invalidateSession, appendUserMessage, SessionCompact, appendCompact, getCompacts |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/run-manager.ts | 240 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
@@ -184,7 +184,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（166 文件 · 19293 行）
+## infra（166 文件 · 19315 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -280,6 +280,7 @@
 | scripts/check/docs-status.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
 | experiments/coldstart/tools/theme-code.mjs | 75 | — |
+| tests/token-count.test.ts | 72 | — |
 | scripts/check/check-code-doc-refs.mjs | 69 | — |
 | scripts/check/check-card-meta.mjs | 68 | — |
 | scripts/check/check-ledger-commits.mjs | 68 | — |
@@ -306,7 +307,6 @@
 | tests/doc-scripts.test.ts | 51 | — |
 | tests/permissions.test.ts | 50 | — |
 | tests/reasoning-l2.test.ts | 50 | — |
-| tests/token-count.test.ts | 50 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
 | package.json | 49 | — |
 | tests/semantic-audit.test.ts | 48 | — |
@@ -691,4 +691,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 319 文件 · 55592 行 · 跨域边 274 条
+合计 319 文件 · 55638 行 · 跨域边 274 条

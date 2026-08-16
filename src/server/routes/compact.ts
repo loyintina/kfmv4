@@ -41,7 +41,7 @@ export function computeCutIndex(messages: unknown[]): number {
   return 0; // 不足 12 轮用户消息 = 没有值得压缩的量（全保）
 }
 
-compactRouter.post('/api/session/compact', async (req: Request, res: Response) => {
+compactRouter.post('/session/compact', async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.body as { sessionId?: string };
     if (!sessionId || typeof sessionId !== 'string') {
@@ -77,7 +77,7 @@ compactRouter.post('/api/session/compact', async (req: Request, res: Response) =
       .slice(0, 120000); // 输入截断保护（flash 128k 窗口）
 
     // 调 deepseek-v4-flash 生成摘要
-    const keyRes = resolveKey('${KFM_PROVIDER_KEY}'); // deepseek 的 key 按现有约定（env-store 中文名 fallback）
+    const keyRes = resolveKey('${KFM_PROVIDER_DEEPSEEK}'); // deepseek 的 key 按现有约定（env-store 中文名 fallback）
     if (!keyRes.value) {
       res.status(500).json({ error: `摘要模型 key 解析失败: ${keyRes.missingVar || 'unknown'}` });
       return;
@@ -120,7 +120,7 @@ compactRouter.post('/api/session/compact', async (req: Request, res: Response) =
 });
 
 // GET /api/session/compacts/:id —— 查询已有压缩（调试/展示用）
-compactRouter.get('/api/session/compacts/:id', (req: Request, res: Response) => {
+compactRouter.get('/session/compacts/:id', (req: Request, res: Response) => {
   const list = getCompacts(String(req.params.id));
   res.json(list.map(c => ({ ...c, summary: c.summary.slice(0, 200) + (c.summary.length > 200 ? '…' : '') })));
 });
