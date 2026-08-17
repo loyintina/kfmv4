@@ -91,6 +91,21 @@
 - `WORKBENCH_SPEC.md`：购物车交互/蜡笔光标 SVG/模式色系/API 契约。
 - `WORKBENCH_PHASE4.md`：文件渲染器类型路由 + 预览/编辑双模式 + KaTeX/Mermaid CDN。
 
+
+## 会话卡三数字 token 显示（2026-08-16 L4 配套，BAR-COMPACT-L4-01c/h）
+
+会话卡 token 统计三数字：a = 实际请求载荷（带 compactCutIndex 的投影，
+工具压缩+思考摘除后）/ b = 摘要窗口全量（cutIndex 之后未压缩，无 compact
+时缺省退化为双数字）/ c = 文件全量真相源。口径：字符/3（实测 Kimi 中文
+密度 0.328 ≈ 1/3，与 sync-counts 同口径）。
+
+- 数据链唯一生产者：session-client.parseSessionItem（sessions/list →
+  Session 对象；卡片/其他消费方不得内联复制解析——BAR-COMPACT-L4-01f
+  静态钉守卫）；
+- 服务端来源：_computeStats 带 compacts 参数，windowTokenCount 落盘；
+  files.ts pickWindowTokenCount（>0 才透传）；
+- 钉子：tests/token-count.test.ts（L4-01c，含 c>b 差值语义断言）。
+
 ## 文件清单
 
 <!-- gen:contract-list 自动生成，禁止手改（源：code-inventory） -->
