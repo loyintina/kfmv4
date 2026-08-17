@@ -168,6 +168,28 @@ cordis service 面。逐项对照与分类依据见 `nine-zero-dsh-sourcing.md`�
 - 集成：mcp / lsp / acp / e2b；
 - 观测：runtime-diagnostics / telemetry。
 
+## dsh 插件兼容面（远期立项，2026-08-17 用户拍板登记）
+
+**定位**：kfmv4 作为 Cordis 宿主，具备承接 dsh 插件的能力——三层递进：
+
+1. **Cordis 层（天然兼容，已白送）**：只依赖 `ctx`/事件/注册表的 Cordis 插件，
+   9.0 直接可装——采用裁决的隐藏红利；
+2. **服务层（服务名映射）**：依赖 dsh 服务（`systemPrompt`/`webServer`/`session`
+   等）的插件需同名服务或适配器——**依赖取材清单的接口对齐做实**（agent-service/
+   session-store 对齐 dsh 服务面 = 兼容面的地基）；
+3. **转化器（轻量工具，非运行时）**：读 dsh 插件 cordis.yml 组成 + inject 声明
+   → 生成 kfmv4 组成 + 服务映射表（dsh 服务名 → kfmv4 服务名/适配器状态）。
+
+**第一个实验对象**：`dsh-routing-suite`（已装于 dsh 环境，2026-08-17；只依赖
+systemPrompt + webServer，小且干净、已审计）——agent-service 落地后验证
+"一行 patch 搬进 kfmv4"，成了就写转化器规范。
+
+**边界**：依赖 dsh 深层服务（agent-loop 内部/session schema）的插件转化成本高，
+v1 只承诺轻服务插件；双向兼容不是目标——kfmv4 是 Cordis 的另一个宿主，
+转化器搬能力，不跑 dsh。
+
+**触发条件**：agent-service 落地（8.9）后验证实验 → 状态：🌙 远期（9.x）。
+
 ## 开工拓扑（一页版）
 
 ```
