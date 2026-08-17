@@ -6,7 +6,13 @@
 > nine-zero-cordis-vendor-18-eval.md（18 条强化评估）·
 > nine-zero-implicit-globals-audit.md（隐式全局普查）·
 > nine-zero-infra-inventory.md（第二阶段基线：基建层盘点）·
-> nine-zero-semantic-map-cordis-side.md（三方语义映射表 Cordis 侧）。
+> nine-zero-semantic-map-cordis-side.md（三方语义映射表 Cordis 侧）·
+> nine-zero-plugin-map.html（卡萝 2026-08-17 绘：沙漏模型插件全景图，
+> archify 交互式，含契约 0–9 机制层 + L0–L3 代码世界分层）·
+> nine-zero-dev-task-map.md（开发任务图：全景图的任务版，含 dsh 取材层，派活依据）·
+> nine-zero-dsh-sourcing.md（dsh 取材总清单：任务×资产逐项对照，卡萝初稿，
+> 2026-08-17 经卡萝审计修正：压缩挂点的 pruner/spill 是有状态服务插件，
+> 非纯函数 lib——以取材清单与任务图 L1「压缩挂点」行为准）。
 
 # 9.0 设计地图
 
@@ -234,7 +240,9 @@
 
 - ~~内核：ctx 基座待 Cordis 采用终审~~ → ✅ 用户终审通过（2026-08-17）；
   **步 0 四项验证启动**（9.0 线主笔，茉莉会签指标；步 0-3 有存量材料
-  nine-zero-implicit-globals-audit.md）；
+  nine-zero-implicit-globals-audit.md；NA 线提议：验收三数字两端同口径——
+  web 端数字 9.0 定，NA 供原生侧实测值互证，步 0-4 承接
+  `kfm-na-design-freeze-response.md` §二）；
 - **第二阶段进行中**：开篇四块契约 0→1→2→3 逐块讨论（契约 0 机制三件套
   ✅ 定稿 2026-08-17；**当前：契约 1 降生协议**——开题拍板：形态=A 降生链
   （结构化清单+断言，CLAUDE.md 启动节由它生成）+ 两种降生区分（全新降生

@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit bd991be9 · 生成于 2026-08-16 -->
+<!-- 基准 commit 7609d47a · 生成于 2026-08-17 -->
 
 # 代码清单（机械层）
 
@@ -36,11 +36,11 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（32 文件 · 8417 行）
+## floating-card（32 文件 · 8426 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/generated/scripts-catalog.ts | 1355 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
+| src/client/generated/scripts-catalog.ts | 1364 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 807 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 793 | — |
@@ -184,7 +184,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（171 文件 · 19481 行）
+## infra（178 文件 · 19681 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -213,6 +213,7 @@
 | tests/renderer.test.ts | 215 | — |
 | tests/to-openai-messages.test.ts | 208 | — |
 | tests/smoke/smoke.mjs | 199 | — |
+| scripts/check/check-migration-baseline.mjs | 187 | — |
 | scripts/agent/semantic-chain.mjs | 185 | — |
 | scripts/check/gen-code-inventory.mjs | 184 | — |
 | tests/chat-protocol.test.ts | 169 | — |
@@ -232,8 +233,8 @@
 | scripts/check/check-doc-linerefs.mjs | 137 | — |
 | tests/viewport-visibility.test.ts | 137 | — |
 | experiments/coldstart/tools/judge-batch.mjs | 135 | — |
+| scripts/check/chain.mjs | 134 | STEPS |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
-| scripts/check/chain.mjs | 133 | STEPS |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
@@ -352,6 +353,12 @@
 | tests/probes/checks/build.mjs | 3 | — |
 | tests/probes/doc-scripts/scripts/check/check-real.mjs | 3 | STEPS |
 | tests/probes/bar-ledger/tests/probe.ts | 2 | — |
+| tests/probes/check-migration-baseline/scripts/check/chain.mjs | 2 | STEPS |
+| tests/probes/check-migration-baseline/scripts/check-a.mjs | 2 | — |
+| tests/probes/check-migration-baseline/src/client/cards/plugins/only.card.ts | 2 | — |
+| tests/probes/check-migration-baseline/src/client/modules/orb-chat-run.ts | 2 | — |
+| tests/probes/check-migration-baseline/src/server/tools/read.tool.ts | 2 | — |
+| tests/probes/check-migration-baseline/tests/a.test.ts | 2 | — |
 | tests/probes/checks/scripts/check/chain.mjs | 2 | STEPS |
 | tests/probes/doc-symbols/src/probe.ts | 2 | realFoo |
 | tests/probes/sync-counts/scripts/check/check-a.mjs | 2 | — |
@@ -700,4 +707,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 324 文件 · 55850 行 · 跨域边 278 条
+合计 331 文件 · 56059 行 · 跨域边 278 条

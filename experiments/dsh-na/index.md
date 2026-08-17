@@ -99,3 +99,9 @@ kfmv4 的「一切皆卡片」与 dsh 的「一切皆插件」在 NA 统一。
 | `na/connection-provider.md` | 连接 provider 设计页 v0（规格书 §8 九字段；阶段 2 边界手术第一刀；2026-08-15 已投 agent-inbox 送审） |
 | `na/terminal-emulator.md` | 终端模拟器设计页 v0（§8 九字段；边界手术第二刀，termview 注册化；2026-08-16 已投 agent-inbox 送审） |
 | `na/input-ime.md` | 输入/IME 域设计页 v0（§8 九字段；边界手术第三刀；含修饰键状态搬迁方案 A/B 分叉待评审拍板；2026-08-16 已投 agent-inbox 送审） |
+| `na/cordis-rs-gap-audit.md` | cordis-na 差距审计与四阶段路线图（E3 十行对账 + G1~G7 清单；2026-08-16 送审、评审四条裁决全收落档；阶段 1 搬家 2026-08-17 闭环） |
+| `na/cordis-na-liveness-gate.md` | cordis-na 阶段 2 设计页（G2 活性闸 panic 语义 + G3/G4 缓建桩 + G5 政策归层；2026-08-18 已投 agent-inbox 送审） |
+
+> 实验族契约 9 登记状态（2026-08-17 契约定稿口径）：本线 = **现役结晶中**——
+> kfm-na 已独立为产物项目（`/root/kfm-na`，走正常代码+文档世界），cordis-na
+> 在长（`crates/cordis-na`）；本目录只留研究/设计/送审件，门内自由、门口登记。

@@ -28,6 +28,7 @@
 | 14 | 契约优先原则 | cordis-na 差异表(审计文档 §三 阶段 3 待写):冲突时差异入档,不让上游语义改写契约 | 审计文档;规格书 v1.3 | 与 9.0 采用裁决 4 同原则;NA 侧的执行点=差异表+不采用清单 |
 | 15 | 降生协议(八步降生链) | `Base::new(Vec<PluginEntry>)` 启动配置表(启动读一次)+ `load` 注册期依赖环检测(`CycleDetected` 报错不静默挂起)+ refresh 拓扑激活 | fiber.rs:117, 148-186, 259 | 配置驱动降生同构 dsh cordis.yml;NA 的「降生」=编译期插件集+启动配置表,拓扑序由 refresh 不动点循环保证 |
 | 16 | 静态/动态注入分层 | 静态层=编译期插件集(`Base::new`/`load`,代码即配置);动态层=`PluginEntry.config: Option<ConfigParser>` 惰性解析+`config_value` 缓存(启动读一次,重载不重复解析) | fiber.rs:61-65, 96-97 | 与 dsh「静态吃前缀缓存/动态低频刷新」同构;NA 无缓存问题(rlib 直链),分层动机是「未激活不解析」 |
+| 17 | 部署/重启(部署运维族;kfm-restart 路径) | **编译期固定插件集 = 更新即重编+重装+重连**;无运行时移除/DISPOSED(不采用清单);NA 为瘦客户端,终端真状态在服务器 tmux,APK 重启=断开重连,观察等价代价≈0;唯一人工环节=Android 安装器确认(系统安全边界) | fiber.rs 五态无 DISPOSED;审计文档 §四 | 与 kfmv4 侧 kfm-restart(WASM 产物+服务端重启+客户端 reload)**同名不同机制**,对账勿混;本地状态(本地 PTY/缓存)立项时第一约束=状态外置+serialize 交班(9.0 服务即插件思路)。2026-08-17 用户拍板补行 |
 
 ## 验证清单(全部实读,非凭记忆)
 
@@ -37,6 +38,11 @@
 - fiber.rs:35 五态;fiber.rs:379-425 卸载三相;fiber.rs:441 epoch;fiber.rs:245 service_count
 - fiber.rs:148-186 注册期环检测;fiber.rs:117 启动配置表
 - effect.rs:18-49 LIFO+take-once;ctx.rs:209/242 effect/fork
+
+## 追加行(拼接视图待 9.0 线同步)
+
+- **行 17(部署/重启)**:2026-08-17 用户拍板新增,NA 侧已填;Cordis 侧与
+  9.0 侧待各自补列,拼接视图(`nine-zero-semantic-map.md`)由 9.0 线同步。
 
 ## 给 9.0 线与 Cordis 侧的拼接说明
 

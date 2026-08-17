@@ -1,0 +1,40 @@
+{
+  "version": "8.6.0",
+  "capturedAt": "2026-08-17T00:00:00.000Z",
+  "testCount": 576,
+  "checkCount": 46,
+  "chainSteps": 60,
+  "faces": {
+    "cards": {
+      "count": 11,
+      "hash": "aaa"
+    },
+    "tools": {
+      "count": 16,
+      "hash": "bbb"
+    },
+    "cmds": {
+      "count": 1,
+      "hash": "ccc"
+    },
+    "workflows": {
+      "count": 21,
+      "hash": "ddd"
+    }
+  },
+  "features": {
+    "cards": [
+      "a.card.ts",
+      "b.card.ts"
+    ],
+    "tools": [
+      "read.tool.ts"
+    ],
+    "cmds": [
+      "'/compact'"
+    ],
+    "workflows": [
+      "audit.yaml"
+    ]
+  }
+}

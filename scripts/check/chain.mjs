@@ -46,6 +46,7 @@ export const STEPS = [
   'node scripts/check/check-uncommitted.mjs',
   'node scripts/check/check-deploy-freshness.mjs',
   'node scripts/check/check-versions.mjs',
+  'node scripts/check/check-migration-baseline.mjs',
   'node scripts/check/check-checks.mjs',
   'node scripts/check/check-doc-coverage.mjs',
   'node scripts/check/check-code-map-coverage.mjs',

@@ -1044,6 +1044,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "账本 commit 引用对账（v8.3 语义审计机械化 M3）"
   },
   {
+    "name": "check-migration-baseline.mjs",
+    "file": "scripts/check/check-migration-baseline.mjs",
+    "category": "检查器",
+    "description": "迁移基线矩阵（M1，8.x 五道闸第一闸）",
+    "permission": "构建链内只读检查（无网络、无写盘副作用）",
+    "prompt": "无（机械检查）",
+    "effect": "迁移基线矩阵（M1，8.x 五道闸第一闸）"
+  },
+  {
     "name": "check-mutation-anchors.mjs",
     "file": "scripts/check/check-mutation-anchors.mjs",
     "category": "检查器",

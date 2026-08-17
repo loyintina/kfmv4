@@ -38,6 +38,21 @@
 3. **人拍板**：tag 永远是人工动作（git mutation）。advisor 建议可被人覆写——
    v8.3.1 即判例（advisor 建议 minor，人按主题判据改判 patch）。
 
+## 发布注记模板（9.0 小步）
+
+9.0 采用 `8.x.y` 小步串行后，每个小步的发布注记建议按以下模板登记，方便后续审计：
+
+```text
+版本：8.8.3
+主线：终端/tmux 优先
+小步：8.8.3 默认全屏终端
+工坊线：D2/D3 当前状态
+dsh 取材：terminal-bash / ui-layout / ui-slots
+Rust 内核：alacritty_terminal WASM 评估结论
+删旧：旧首页默认路由
+人工实拍：通过 / 未通过
+```
+
 ## 操作步骤
 
 照 ../workflows/release.yaml 的 steps：package.json 版本 → README 版本标记 →
