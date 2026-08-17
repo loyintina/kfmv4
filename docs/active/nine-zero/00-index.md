@@ -21,10 +21,12 @@
 | 能力审查（v8 能力 vs 9.0 契约覆盖） | `nine-zero-capability-review.md` |
 | Cordis vendor 18 条强化评估 | `nine-zero-cordis-vendor-18-eval.md` |
 | 隐式全局普查（window.__kfm* 清单） | `nine-zero-implicit-globals-audit.md` |
+| 9.0 开发任务图（插件全景任务版 / 派活依据） | `nine-zero-dev-task-map.md` |
+| dsh 取材总清单（任务×资产逐项对照 / 取材分类） | `nine-zero-dsh-sourcing.md` |
 | 跨线评审往来（33 封信原始裁决） | `../../ledger/agent-inbox/` |
 | NA 插件架构规格书（v1.3） | `../../../experiments/dsh-na/na/plugin-architecture-spec.md` |
 
-## 文档地图（本目录 11 份）
+## 文档地图（本目录 12 份）
 
 ```
 nine-zero/
@@ -33,6 +35,8 @@ nine-zero/
 ├── nine-zero-phase1-contracts.md     ← 一阶段契约 №1~№16（1508 行）
 ├── nine-zero-phase2-contracts.md     ← 二阶段契约 0-9（22KB）
 ├── nine-zero-decision-index.md       ← 决策索引（33 封信 → 一张表）
+├── nine-zero-dev-task-map.md         ← 开发任务图（插件全景任务版，派活依据）
+├── nine-zero-dsh-sourcing.md        ← dsh 取材总清单（任务×资产对照）
 ├── nine-point-zero.md                ← 台账（组件归宿/军规）
 ├── nine-zero-infra-inventory.md      ← 基建层盘点（六族）
 ├── nine-zero-semantic-map.md         ← 三方语义映射（拼接视图）

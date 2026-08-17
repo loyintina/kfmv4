@@ -12,6 +12,8 @@ reads:
   - active/nine-zero/nine-zero-semantic-map-cordis-side.md（三方语义映射表 Cordis 侧——降生协议附表材料）
   - active/nine-zero/nine-zero-infra-inventory.md（第二阶段基线盘点——基建层六族台账）
   - active/nine-zero/nine-zero-phase2-contracts.md（第二阶段契约 0-9 全文——基建层插件化定稿）
+  - active/nine-zero/nine-zero-dsh-sourcing.md（dsh 取材总清单——任务图修订与 L1 实现来源标注的前置材料）
+  - active/nine-zero/nine-zero-dev-task-map.md（9.0 开发任务图——派活依据与进度追踪）
   - active/nine-zero/00-index.md（9.0 文档地图入口——「找什么→去哪」，设计前必读）
   - active/nine-zero/nine-zero-phase1-contracts.md（第一阶段契约 №1~№16 全文——运行时插件化定稿）
   - active/nine-zero/nine-zero-decision-index.md（9.0 决策索引——裁决史一张表，查「为什么这么定」）
