@@ -14,7 +14,10 @@ steps:
   2. ledger/history.md 加版本条目（`- vX.Y.Z` 行）
   3. git commit "release: vX.Y.Z — 一句话"
   4. git tag vX.Y.Z
-  5. npm run check 全绿（check-versions 验 tag+条目+标记一致）
+  5. node scripts/check/check-migration-baseline.mjs --record（M1：记基线快照
+     随 tag 提交——测试数/检查器数/链步数/四功能面；8.x 期间每版必录）
+  6. npm run check 全绿（check-versions 验 tag+条目+标记一致 + migration-baseline
+     verify 对账新基线）
 writes:
   - package.json
   - ledger/history.md
