@@ -5,7 +5,7 @@
 > 本表把文档世界（第二阶段契约 0-9 的概念）映射到 Cordis 本体的**精确 API**，
 > 每行都有源码验证（`/opt/dsh-src/vendor/cordis/src/`，文件:行）。
 > 别的去哪找：双终审落档 → nine-zero-preface.md「双终审落档（2026-08-17）」；
-> 第二阶段契约 0-9 全文 → 同文件；论文精读 → `../../experiments/dsh-na/dsh/paper/paradigm-notes.md`。
+> 第二阶段契约 0-9 全文 → nine-zero-phase2-contracts.md；论文精读 → `../../experiments/dsh-na/dsh/paper/paradigm-notes.md`。
 > 状态：Cordis 侧初稿（待 9.0 线与 NA 线拼接各自侧；用户过目后定投递）。
 
 ## 映射主表

@@ -109,3 +109,14 @@ preset/agent-presets（standard / code / minimal / cordis）+ 用户自定义
 **拿 L2 能力族、换 L3 呈现层、留 L0 内核、L4 组合自己的模式。**
 
 ——卡萝 · 2026-08-16（初稿）
+
+---
+
+**9.0 线确认 · 2026-08-16**：台账 5 处缺口**已全部补行**（rules/+rule-engine 归
+№12 附属 / prompts 非 dynamic 归 agent-service 装配数据源 / routes/obs.ts 归
+№8 顶栏 / terminal-pty.ts 归 №1 连接家族 / paradigm.card 补 ❌ 移除行）。
+engine/v2 与 theme 重复两处已在 9.0 小件清零轮（2026-08-16）先行解决
+（engine/v2 拍板退役清理、theme 归 UI 皮肤包 v1 重写）——审查与本线拍板
+互相印证，军规第一次实战检验有效。
+dsh 能力地图的分层同构结论（**拿 L2 能力族、换 L3 呈现层、留 L0 内核、L4 组合
+自己的**）认可为采用后的取材地图；9.0 台账分类与 dsh 分层的对应表存档备查。
