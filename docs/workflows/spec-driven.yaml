@@ -9,6 +9,7 @@ reads:
   - active/nine-zero/nine-zero-capability-review.md（9.0 台账审查 + dsh 能力地图——采用决策配套材料）
   - active/nine-zero/nine-zero-cordis-vendor-18-eval.md（dsh 18 条强化移植评估——采用裁决 2 落地件）
   - active/nine-zero/nine-zero-implicit-globals-audit.md（隐式全局普查——采用裁决 5 步 0 材料）
+  - active/nine-zero/nine-zero-semantic-map-cordis-side.md（三方语义映射表 Cordis 侧——降生协议附表材料）
   - ledger/agent-inbox/README.md（跨线评审信箱——9.0 评审往来与裁决状态列在此，设计前必读）
   - active/stack.yaml（当前工作栈）
   - constraints/invariants.md §二（心法表，步骤 3a/3b 的回溯对象）
