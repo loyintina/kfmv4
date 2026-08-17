@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "KFM v4 9.0 插件全景",
+    "subtitle": "沙漏模型 · 总览：文档世界机制 × 代码世界插件（成员明细见各层 sublabel）",
+    "output": "nine-zero-plugin-map.html",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "mechanisms",
+      "type": "backend",
+      "label": "文档世界 · 机制层",
+      "sublabel": "契约0-9：机制三件套 / 降生协议 / broker / 信箱事件面 / 户籍 / 六族",
+      "pos": [
+        300,
+        60
+      ],
+      "size": [
+        300,
+        56
+      ]
+    },
+    {
+      "id": "agent",
+      "type": "cloud",
+      "label": "agent",
+      "sublabel": "沙漏中点 · 唯一跨界实体",
+      "pos": [
+        370,
+        220
+      ],
+      "size": [
+        220,
+        56
+      ]
+    },
+    {
+      "id": "core",
+      "type": "security",
+      "label": "L0 内核（不可插拔）",
+      "sublabel": "Cordis 本体(依赖引入) · 渲染宿主 · 手势分发",
+      "pos": [
+        300,
+        360
+      ],
+      "size": [
+        300,
+        56
+      ]
+    },
+    {
+      "id": "services",
+      "type": "backend",
+      "label": "L1 服务插件",
+      "sublabel": "broker · tool-host · agent-service · session · pool · 压缩 · permission · tree · 眼睛",
+      "pos": [
+        100,
+        500
+      ],
+      "size": [
+        420,
+        60
+      ]
+    },
+    {
+      "id": "cards",
+      "type": "frontend",
+      "label": "L2 卡片插件",
+      "sublabel": "终端卡 · 窗口卡 · 池卡 · 文件树卡 · 手 · 顶栏",
+      "pos": [
+        560,
+        500
+      ],
+      "size": [
+        320,
+        60
+      ]
+    },
+    {
+      "id": "shell",
+      "type": "frontend",
+      "label": "L3 布局与包",
+      "sublabel": "布局壳(全屏/headless) · 启动器 · 眼睛包 · 皮肤包 · 动画包(远期)",
+      "pos": [
+        300,
+        640
+      ],
+      "size": [
+        300,
+        56
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "文档世界（上世界）",
+      "wraps": [
+        "mechanisms"
+      ],
+      "pad": 12
+    },
+    {
+      "kind": "region",
+      "label": "代码世界（下世界）",
+      "wraps": [
+        "core",
+        "services",
+        "cards",
+        "shell"
+      ],
+      "pad": 12
+    }
+  ],
+  "connections": [
+    {
+      "id": "b1",
+      "from": "mechanisms",
+      "to": "agent",
+      "label": "降生注入/事件/约束",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "b2",
+      "from": "agent",
+      "to": "core",
+      "label": "运行于",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "b3",
+      "from": "agent",
+      "to": "services",
+      "label": "对话/工具循环",
+      "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "left"
+    },
+    {
+      "id": "b4",
+      "from": "agent",
+      "to": "cards",
+      "label": "交互/呈现",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "id": "b5",
+      "from": "core",
+      "to": "services",
+      "label": "ctx 基座",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "b6",
+      "from": "core",
+      "to": "cards",
+      "label": "渲染/手势",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "b7",
+      "from": "services",
+      "to": "cards",
+      "label": "数据/服务依赖",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": -24
+    },
+    {
+      "id": "b8",
+      "from": "shell",
+      "to": "cards",
+      "label": "几何/焦点/装载",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "bottom"
+    }
+  ]
+}
