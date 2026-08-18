@@ -609,11 +609,14 @@ function _appendLocalToolCard(name: string, input: Record<string, unknown>): voi
     if (!area) return;
     const id = `localtool_${++_localToolCardSeq}`;
     const wrap = document.createElement('div');
-    wrap.className = 'tool-card local-tool';
+    // 复用真实工具卡类名 orb-tool-card（SCSS 已定义；之前用 tool-card 不命中 → 白字大卡片事故）
+    wrap.className = 'orb-tool-card local-tool';
     wrap.dataset.localToolId = id;
+    wrap.style.cssText = 'max-width:100%;padding:5px 10px;border-radius:8px;font-size:var(--card-font-size,10px);margin:4px 0;border-left:3px solid rgba(167,139,250,0.7);background:rgba(139,124,246,0.08);color:rgba(255,255,255,0.85)';
     wrap.innerHTML =
-      `<div class="tool-card-header"><span class="tool-name">${name}</span><span class="tool-status" data-role="status">运行中…</span></div>` +
-      `<pre class="tool-input"></pre><pre class="tool-output" data-role="output"></pre>`;
+      `<div style="display:flex;gap:6px;align-items:center"><span style="opacity:0.7">⚙</span><span class="tool-name" style="font-weight:600">${name}</span><span class="tool-status" data-role="status" style="opacity:0.6">运行中…</span></div>` +
+      `<pre class="tool-input" style="margin:4px 0 0;font-size:inherit;white-space:pre-wrap;word-break:break-all;opacity:0.75"></pre>` +
+      `<pre class="tool-output" data-role="output" style="margin:4px 0 0;font-size:inherit;white-space:pre-wrap;word-break:break-all"></pre>`;
     (wrap.querySelector('.tool-input') as HTMLElement).textContent = JSON.stringify(input, null, 2);
     area.appendChild(wrap);
     _localToolCards.set(id, {
@@ -621,13 +624,6 @@ function _appendLocalToolCard(name: string, input: Record<string, unknown>): voi
       statusEl: wrap.querySelector('[data-role="status"]') as HTMLElement,
       outputEl: wrap.querySelector('[data-role="output"]') as HTMLElement,
     });
-    // 若样式缺失则最小内联兜底（不抢工具卡样式的所有权——只在 class 不存在时）
-    try {
-      const cs = getComputedStyle(wrap);
-      if (cs.border === '0px none rgb(0, 0, 0)' && !wrap.offsetWidth) {
-        wrap.style.cssText = 'border:1px solid rgba(128,128,160,.35);border-radius:8px;padding:8px;margin:6px 0;font-size:12px;';
-      }
-    } catch { /* 计算样式不可用就算了 */ }
   } catch { /* DOM 不可用不阻塞 */ }
 }
 
