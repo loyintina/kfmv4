@@ -463,14 +463,18 @@ export async function doSend(
     const _autoCompactIfNeeded = async (): Promise<void> => {
       if (noCompact) return;
       try {
-        // 窗口查 providers.json contextWindow（k3=1M / k3-256k=262144；缺省保守 131072）
+        // 窗口查 providers.json contextWindow（仅登记验证过的值：k3=1M / k3-256k=262144 /
+        // deepseek-v4-flash=1M；2026-08-18 洛实测 119k 误触发——整表曾是批量 131072 占位，
+        // 尺未校准。未登记窗口的模型：跳过预检（宁漏勿错，超限走溢出恢复兜底），
+        // 绝不拿假尺误压缩用户上下文）
         const pRes = await fetch(`${apiBase}providers/list`).catch(() => null);
-        let window = 131072;
+        let window: number | undefined;
         if (pRes && pRes.ok) {
           const provs = await pRes.json() as Array<{ id?: string; models?: string[]; contextWindow?: Record<string, number> }>;
           const pv = provs?.find(x => x && x.models && x.models.includes(model as string));
-          window = pv?.contextWindow?.[model as string] ?? 131072;
+          window = pv?.contextWindow?.[model as string];
         }
+        if (typeof window !== 'number' || window <= 0) return; // 未登记窗口：跳过预检
         // 当轮负载 = 投影字符 × 实测密度 0.558（Kimi 探针）+ 12k 固定开销
         // （system 10k + tools 2k——实测值，见当日 usage 拆解）
         const load = Math.round(JSON.stringify(apiMessages).length * 0.558 + 12000);

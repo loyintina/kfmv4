@@ -27,7 +27,7 @@ export const DOMAIN_SRC = {
     'src/client/generated/',
   ],
   'client-shell': [
-    'src/client/main.ts', 'src/client/modules/app.ts', 'src/client/modules/ui.ts',
+    'src/client/main.ts', 'src/client/ctx.ts', 'src/client/modules/app.ts', 'src/client/modules/ui.ts',
     'src/client/modules/dom-refs.ts', 'src/client/modules/state.ts',
     'src/client/modules/renderer-lifecycle.ts', 'src/client/modules/ui-registry.ts',
     'src/client/modules/gesture-registry.ts', 'src/client/modules/animation-registry.ts',

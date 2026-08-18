@@ -5,6 +5,9 @@
  * 当前保留：光球面板、AI输入栏、日志系统、侧栏容器（空壳）。
  * 堆叠卡片面板：右侧边缘左滑唤出。
  */
+// 9.0 L0 内核：Cordis 根总线必须是第一个副作用 import（总线出生点，
+// 接线六点①，8.7.1）——总线先于一切 v8 init 出生
+import { rootCtx, bootLog, ctxChurn, bootCtxSelfTest } from './ctx.js';
 import { KFMState, API } from './modules/state.js';
 import { markAppReady } from './modules/app-lifecycle.js';
 
@@ -44,6 +47,9 @@ import { anim } from './modules/animation-registry.js';
   anim,
   cardRegistry,
   gestureRegistry: gestures,
+  // 9.0 L0 内核挂调试桥（不新增顶层暴露，随调试桥 8.12.5 统一删）：
+  // rootCtx 供守视直读 fiber 状态，ctxChurn 供 in-situ 泄漏实测
+  ctx: { rootCtx, bootLog, ctxChurn },
 };
 // 额外暴露顶层引用，供 kfmv4-views.ts 的 JS 注入脚本通过 window.__L / window.__anim 等直接访问
 (window as unknown as Record<string, unknown>).__L = L; // escape-ok: debug视图脚本需要
@@ -75,6 +81,10 @@ window.addEventListener('unhandledrejection', e => {
   log('GLOBAL unhandled: ' + (e.reason?.message || String(e.reason)));
   reportClientError('unhandledrejection', e.reason?.message || String(e.reason), e.reason?.stack);
 });
+
+// 9.0 L0 内核自测：注册/注入/注销/清理全链（8.7.1 验收面）——异步不阻塞
+// v8 init，结果落 bootLog（调试桥 __kfmDebug.ctx.bootLog 可读）
+void bootCtxSelfTest();
 
 gestures.init();
 initApp();

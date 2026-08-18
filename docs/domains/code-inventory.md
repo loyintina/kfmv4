@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 25c0807c · 生成于 2026-08-18 -->
+<!-- 基准 commit 4069b693 · 生成于 2026-08-18 -->
 
 # 代码清单（机械层）
 
@@ -107,14 +107,14 @@
 | src/client/modules/hand-geometry.ts | 11 | handHitTest |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（59 文件 · 13036 行）
+## ai-chat（59 文件 · 13040 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/chat-dom.ts | 1132 | initChatDom, clearChatDom, getFollowBottom, setFollowBottom, setHistoryLoader, suspendScroll, resumeScroll, withScrollAnchor, scrollToBottom, mountUserMessage, patchEvent, mountAiMessage, settleToolCardsDom, mountFallbackAiMessage |
 | src/client/data/waiting-hints.ts | 1108 | WAITING_HINTS |
 | src/server/ai/tools/omp/browser/tab-worker.ts | 921 | WorkerCore |
-| src/client/modules/orb-chat-run.ts | 670 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
+| src/client/modules/orb-chat-run.ts | 674 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
 | src/server/ai/chat.ts | 587 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
 | src/client/modules/session-client.ts | 545 | SessionMessage, Session, extractMessageText, countTextMessages, parseSessionItem, sessionStore |
@@ -724,4 +724,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 342 文件 · 57285 行 · 跨域边 284 条
+合计 342 文件 · 57289 行 · 跨域边 284 条
