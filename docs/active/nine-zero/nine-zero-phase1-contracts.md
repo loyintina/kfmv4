@@ -1283,6 +1283,78 @@ stopPropagation 细控），原样收编。补丁两条：
 - 连续拖拽 30 秒内存增量 < 5MB（泄漏是复发头牌）；
 - pointercancel 风暴下事件完整性 100%（不丢 end 事件）。
 
+> 修订注（2026-08-18，步 0-4 执行时补）：内存增量以 **GC 后净增量**为准——
+> 毛增量含可回收垃圾，会误伤（步 0-2 churn 实测：2000 轮注册/注销毛增量
+> 一度 +12.8MB，GC 后平台化归零）。测量手法：守视 eval 采样
+> performance.memory，操作前后各一次 GC 间隔采样。
+
+> 修订注（2026-08-18，8.7.2 落地输入·容器生灭点位普查）：v8 全域
+> `document.body.appendChild` 直挂共 **24 处 / 20 文件**，分四类：
+>
+> - **覆盖层类（10 处）**：confirm-dialog:183 · custom-select:208 ·
+>   card-toast:38 · sibling-switcher:132 · file-action-bar:126/209/312 ·
+>   scripts.card:72 · role.card:510 · session.card:192 · tools.card:88
+>   ——归宿主**覆盖层容器**（统一层级/摘除）；
+> - **常驻 UI 类（5 处）**：obs-hud:52 · obs-emblem:46 · version-watch:40 ·
+>   hand:74 · orb:148 ——归宿主**常驻层容器**（顶栏槽位/手/光球的盒子）；
+> - **卡内容类（8 处）**：tree-render:389 · tree-swipe:163 · card-stack:206 ·
+>   mode-system:184/197 · terminal-card-04:256/261/310/352 ——归**布局摆盒**，
+>   随各卡插件化收编；
+> - **远期（1 处）**：floating-card:270 ——多端适配包，9.0 不动。
+>
+> 另：各卡内部 `body.appendChild`（handler-factory 等局部容器变量）是卡内
+> 内容填充，非容器生灭，不在宿主收口范围。8.7.2 实现时本清单即改造对照表：
+> 每收编一处删一处直挂，扫零为止（与 8.10.4 engine 引用扫描同法）。
+
+> 修订注（2026-08-18，灭侧对照普查·8.7.2 落地输入补全）：24 处行号复核
+> 零漂移；查漏零遗漏（body.append/prepend/insertBefore/insertAdjacent 全域
+> 零命中，无 shadow host，无 documentElement 挂载；head 仅 2 处 style 注入
+> 非容器）。灭侧要点：
+>
+> - **灭侧跨文件是常态模式**：floating-card 挂 body、`floating-shared.ts`
+>   负责摘；sibling-switcher 弹层被 `tree-render.ts:299` 按 class 选择器
+>   代摘 → 宿主 API 必须有「按 owner/标签连带清场」能力，不能只有谁挂谁摘；
+> - **custom-select 是最大泄漏隐患**：panel 灭侧依赖调用方手动 destroy()，
+>   8 个调用方仅 role.card 做了，卡片销毁时 panel 泄漏在 body → 宿主 API
+>   需支持「容器绑 owner 生命周期，owner 死自动摘」；
+> - **常驻分两档**：真常驻（obs-hud/orb/version-watch，DOM 不摘只隐藏）与
+>   重建式常驻（obs-emblem/hand，尺寸变摘旧建新）；card-stack 是「伪生灭」
+>   （DOM 常驻，关堆=位移出屏）→ API 须区分 attach/detach 与 show/hide；
+> - **防重挂载手段五花八门**（inited 标志/`if(el)return`/建前摘旧/class 摘旧）
+>   → 防护逻辑收编时下沉宿主，不留在各调用点；
+> - file-action-bar 重命名 input（灭侧仅 submit 路径）为现成边界用例。
+>
+> 生灭对照全表（8.7.2 实现时逐行对照改造，收编一行划一行）：
+>
+> | # | 类别 | 挂载点 | 挂的是什么 | 灭侧（触发条件） |
+> |---|------|--------|-----------|------------------|
+> | 1 | 覆盖层 | confirm-dialog.ts:183 | 确认弹窗遮罩 | 同文件 :158 close() 统一收口 |
+> | 2 | 覆盖层 | custom-select.ts:208 | 下拉面板 | :231 destroy()——8 调用方仅 role.card 调，**泄漏** |
+> | 3 | 覆盖层 | card-toast.ts:38 | toast | :50 定时器 2.3s 后摘 |
+> | 4 | 覆盖层 | sibling-switcher.ts:132 | 同级切换弹层 | destroyPopup:55 + tree-render.ts:299 跨模块代摘 |
+> | 5 | 覆盖层 | file-action-bar.ts:126 | 操作栏遮罩 | :104 dismissFileActionBar 动画后摘 |
+> | 6 | 覆盖层 | file-action-bar.ts:209 | 文件抽屉 | 同上 |
+> | 7 | 覆盖层 | file-action-bar.ts:312 | 重命名输入框 | :348 仅 submit 摘（**灭侧薄弱，边界用例**） |
+> | 8 | 覆盖层 | scripts.card.ts:72 | 脚本详情弹窗 | :64/:71 关闭/遮罩 |
+> | 9 | 覆盖层 | role.card.ts:510 | 角色文件详情弹窗 | :470/:482/:496/:505 四路收口 |
+> | 10 | 覆盖层 | session.card.ts:192 | 消息编辑弹窗 | :152/:173/:180/:191 四路收口 |
+> | 11 | 覆盖层 | tools.card.ts:88 | 工具详情弹窗 | :78/:87 关闭/遮罩 |
+> | 12 | 常驻 | obs-hud.ts:52 | 顶栏 HUD 骨架 | 常驻不摘（inited 防护） |
+> | 13 | 常驻 | obs-emblem.ts:46 | 徽标粒子画布 | 重建式常驻（:400/:414 尺寸变摘旧建新） |
+> | 14 | 常驻 | version-watch.ts:40 | 版本过期横幅 | 常驻不摘（_bannerShown 防护） |
+> | 15 | 常驻 | hand.ts:74 | 手全屏画布 | 重建式常驻（:360 视口变摘旧建新） |
+> | 16 | 常驻 | orb.ts:148 | 光球面板 | 常驻不摘只隐藏（ensurePanel 防护） |
+> | 17 | 卡内容 | tree-render.ts:389 | 侧栏触摸区 | :298 onSidebarClose 摘（:379 建前摘旧） |
+> | 18 | 卡内容 | tree-swipe.ts:163 | 文件树临时卡×N | 多路：:442/:458/:496/:533/:575/:605/:719 |
+> | 19 | 卡内容 | card-stack.ts:206 | 卡片堆卡×N | **伪生灭**：从不 remove，close=位移出屏 |
+> | 20 | 卡内容 | mode-system.ts:184 | 模式工具栏 | :221 removeBg 动画后摘 |
+> | 21 | 卡内容 | mode-system.ts:197 | 模式背景卡 | 同上 |
+> | 22 | 卡内容 | terminal-card-04.ts:256 | 选区手柄球×2 | :286-287 _dismiss |
+> | 23 | 卡内容 | terminal-card-04.ts:261 | 选区手柄茎×2 | :288-289 _dismiss |
+> | 24 | 卡内容 | terminal-card-04.ts:310 | 选区放大镜 | :342 _hideMag（:300 单例防护） |
+> | 25 | 卡内容 | terminal-card-04.ts:352 | 复制按钮 | :290/:344 摘旧建新 |
+> | 26 | 远期 | floating-card.ts:270 | 浮卡×N | floating-shared.ts:162/:168 跨文件摘 |
+
 #### 三状态归属
 
 - 登记类：容器句柄 + 手势注册 → 逆序摘（摘除容器=宿主职责）；

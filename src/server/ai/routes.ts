@@ -96,6 +96,7 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
       params && typeof params === 'object' && !Array.isArray(params) ? params as Record<string, unknown> : undefined,
       jailRoot,
       readJailRoot,
+      sessionId, // kfm-compact 用：toolCtx.sessionId
     );
     res.json({ runId: run.id, fromIndex: 0, done: run.done });
   });

@@ -13,7 +13,7 @@
  */
 
 import type { Router } from 'express';
-import { writeFileSync } from 'fs';
+import { writeFileSync, readFileSync} from 'fs';
 import { join } from 'path';
 import { KFM_DATA_DIR, verifyLocalOrigin } from '../path-utils.js';
 import { isEnvRef, envNameForProvider, upsertEnvVar } from '../env-store.js';
@@ -29,6 +29,18 @@ interface ProviderIn {
 const PROVIDERS_PATH = join(KFM_DATA_DIR, 'providers.json');
 
 export function setupProvidersRoutes(router: Router): void {
+  // 只读列表（2026-08-18，90% 自动压缩的窗口查询用）——脱敏：不吐 apiKey
+  router.get('/providers/list', (_req, res) => {
+    try {
+      const raw = JSON.parse(readFileSync(PROVIDERS_PATH, 'utf-8')) as Array<Record<string, unknown>>;
+      res.json(raw.map(p => ({
+        id: p.id, name: p.name,
+        models: p.models, contextWindow: p.contextWindow,
+      })));
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
   router.post('/providers/save', verifyLocalOrigin, (req, res) => {
     try {
       const providers: unknown = req.body?.providers;

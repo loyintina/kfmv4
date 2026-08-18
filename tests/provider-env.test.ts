@@ -94,6 +94,7 @@ function collectSaveRoute(): Handler {
   const routes = new Map<string, Handler>();
   const fakeRouter = {
     post: (path: string, ...handlers: Handler[]) => routes.set(`POST ${path}`, handlers[handlers.length - 1]),
+    get: (path: string, ...handlers: Handler[]) => routes.set(`GET ${path}`, handlers[handlers.length - 1]), // 2026-08-18：providers/list 只读端点新增，mock 补 get
   } as any;
   setupProvidersRoutes(fakeRouter);
   return routes.get('POST /providers/save')!;

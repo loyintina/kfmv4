@@ -444,14 +444,56 @@ export async function doSend(
     // 不刷新 → 拿不到 cutIndex 仍发全量（用户实测 401「k3-256k supports only 256K context」）。
     // 本次根治：实时查服务端 compacts 接口（真相源），不依赖任何客户端快照。
     let lastCutIndex: number | undefined;
-    try {
-      const cRes = await fetch(`${apiBase}session/compacts/${encodeURIComponent(_sendSessionId)}`);
-      if (cRes.ok) {
-        const compacts = await cRes.json() as Array<{ cutIndex?: number }>;
-        const last = compacts.length ? compacts[compacts.length - 1] : null;
-        if (last && typeof last.cutIndex === 'number') lastCutIndex = last.cutIndex;
-      }
-    } catch { /* 查不到则退化为不裁剪（现状） */ }
+    const _fetchCutIndex = async (): Promise<number | undefined> => {
+      try {
+        const cRes = await fetch(`${apiBase}session/compacts/${encodeURIComponent(_sendSessionId)}`);
+        if (cRes.ok) {
+          const compacts = await cRes.json() as Array<{ cutIndex?: number }>;
+          const last = compacts.length ? compacts[compacts.length - 1] : null;
+          return last && typeof last.cutIndex === 'number' ? last.cutIndex : undefined;
+        }
+      } catch { /* 查不到则退化为不裁剪（现状） */ }
+      return undefined;
+    };
+    lastCutIndex = await _fetchCutIndex();
+
+    // ── 90% 自动压缩（2026-08-18 用户定稿：触发压缩就出现工具框效果）──
+    // 预检：当前会话 tokenCount(a) ≥ 窗口 90% → 先压缩再投影。
+    // 工具框 UI：本地注入一条 tool 块（kfm-compact 形态），走现有工具卡渲染。
+    const _autoCompactIfNeeded = async (): Promise<void> => {
+      if (noCompact) return;
+      try {
+        const sRes = await fetch(`${apiBase}sessions/list`);
+        if (!sRes.ok) return;
+        const list = await sRes.json() as { sessions?: Array<{ id?: string; title?: string; tokenCount?: number }> };
+        const cur = (list.sessions || []).find(x => x && (x.id === _sendSessionId || x.title === _sendSessionId));
+        if (!cur || typeof cur.tokenCount !== 'number') return;
+        // 窗口查 providers.json contextWindow（Kimi 实测 262144；缺省保守 131072）
+        const pRes = await fetch(`${apiBase}providers/list`).catch(() => null);
+        let window = 131072;
+        if (pRes && pRes.ok) {
+          const provs = await pRes.json() as Array<{ id?: string; models?: string[]; contextWindow?: Record<string, number> }>;
+          const pv = provs?.find(x => x && x.models && x.models.includes(model as string));
+          window = pv?.contextWindow?.[model as string] ?? 131072;
+        }
+        // 密度校准（2026-08-18 Kimi 实测）：chars/3 估算 × 1.7 ≈ 真实 token
+        // （真实会话文本密度 0.558 vs 假设 0.333——合成样本尺 0.328 曾失真，见当日密度探针）
+        const calibrated = cur.tokenCount * 1.7;
+        if (calibrated < window * 0.9) return; // 未到 90%：无事
+        // 触发：注入工具框 + 调压缩 API + 刷新 cutIndex
+        _appendLocalToolCard('kfm-compact', { reason: `自动压缩（${Math.round(cur.tokenCount / 1000)}k ≥ 90% 窗口 ${Math.round(window / 1000)}k）` });
+        const cRes = await fetch(`${apiBase}session/compact`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: _sendSessionId }),
+        });
+        const cData = await cRes.json().catch(() => ({}));
+        _finishLocalToolCard('kfm-compact', cData.ok === true
+          ? `✅ 压缩完成：cutIndex=${cData.cutIndex} 摘要 ${cData.summaryLength} 字符（真相源 ${cData.total} 条不动）`
+          : `跳过：${cData.reason || cData.error || '未知'}`);
+        lastCutIndex = await _fetchCutIndex(); // 新 cutIndex 立即生效（本轮投影就用）
+      } catch { /* 预检失败不阻塞发送 */ }
+    };
+    await _autoCompactIfNeeded();
     const { apiMessages, compactSaved } = toOpenAiMessages(messages, {
       compact: !noCompact,
       ...(typeof lastCutIndex === 'number' ? { compactCutIndex: lastCutIndex } : {}),
@@ -476,12 +518,39 @@ export async function doSend(
     if (!_sendSessionId) _sendSessionId = sessionStore.activeId;
 
     // 后台启动生成任务（服务端挂机），拿 runId
-    const startRes = await fetch(apiBase + 'ai/chat/start', {
+    // 溢出恢复（2026-08-18）：上游报「超出上下文」类错误 → 自动压缩一次 → 重试
+    const _postStart = () => fetch(apiBase + 'ai/chat/start', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId: _sendSessionId, messages: apiMessages, model, provider, roleFile, userText: text }),
       signal,
     });
-    const startData = await startRes.json() as { runId?: string; fromIndex?: number; error?: string };
+    // 溢出恢复：错误含「上下文/context length/too long」→ 压缩一次 → 重建投影重试
+    let startRes = await _postStart();
+    let startData = await startRes.json() as { runId?: string; fromIndex?: number; error?: string };
+    if (!startData.runId && /上下文|context length|too long|context/i.test(startData.error || '')) {
+      _appendLocalToolCard('kfm-compact', { reason: `溢出恢复：${(startData.error || '').slice(0, 120)}` });
+      const cRes = await fetch(`${apiBase}session/compact`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: _sendSessionId }),
+      });
+      const cData = await cRes.json().catch(() => ({}));
+      const retryCut = await _fetchCutIndex();
+      const retryProj = toOpenAiMessages(messages, {
+        compact: !noCompact,
+        ...(typeof retryCut === 'number' ? { compactCutIndex: retryCut } : {}),
+      });
+      _finishLocalToolCard('kfm-compact', cData.ok === true
+        ? `✅ 溢出恢复完成：cutIndex=${cData.cutIndex}，重试请求`
+        : `恢复失败：${cData.error || cData.reason || '压缩未生效'}——仍以原载荷重试`);
+      // 用新投影重发（apiMessages 重新声明会冲突——直接改 body 不可行，重发新请求）
+      startRes = await fetch(apiBase + 'ai/chat/start', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: _sendSessionId, messages: retryProj.apiMessages, model, provider, roleFile, userText: text }),
+        signal,
+      });
+      startData = await startRes.json() as { runId?: string; fromIndex?: number; error?: string };
+    }
+    const __unusedProj = { apiMessages }; void __unusedProj;
     if (!startData.runId) { throw new Error(startData.error || '启动生成失败'); }
     _activeRunId = startData.runId;
     _persistActiveRun(_sendSessionId, startData.runId);
@@ -524,4 +593,53 @@ export async function doSend(
   // 流彻底结束（成功/错误/取消）：确保等待提示已停
   onWait?.(false);
   onRender();
+}
+
+
+// ── 本地工具框（90% 自动压缩 / 溢出恢复的 UI 形态，2026-08-18）──
+// 不经过服务端 run：直接往对话 DOM 追加一张 kfm-compact 工具卡，复用
+// chat-dom 的工具卡渲染样式（class 同 _createToolCard），压缩完成后回填结果。
+let _localToolCardSeq = 0;
+const _localToolCards = new Map<string, { el: HTMLElement; statusEl: HTMLElement; outputEl: HTMLElement }>();
+
+function _appendLocalToolCard(name: string, input: Record<string, unknown>): void {
+  try {
+    const area = document.querySelector('.chat-scroll, .orb-chat-messages, #chat-messages');
+    if (!area) return;
+    const id = `localtool_${++_localToolCardSeq}`;
+    const wrap = document.createElement('div');
+    wrap.className = 'tool-card local-tool';
+    wrap.dataset.localToolId = id;
+    wrap.innerHTML =
+      `<div class="tool-card-header"><span class="tool-name">${name}</span><span class="tool-status" data-role="status">运行中…</span></div>` +
+      `<pre class="tool-input"></pre><pre class="tool-output" data-role="output"></pre>`;
+    (wrap.querySelector('.tool-input') as HTMLElement).textContent = JSON.stringify(input, null, 2);
+    area.appendChild(wrap);
+    _localToolCards.set(id, {
+      el: wrap,
+      statusEl: wrap.querySelector('[data-role="status"]') as HTMLElement,
+      outputEl: wrap.querySelector('[data-role="output"]') as HTMLElement,
+    });
+    // 若样式缺失则最小内联兜底（不抢工具卡样式的所有权——只在 class 不存在时）
+    try {
+      const cs = getComputedStyle(wrap);
+      if (cs.border === '0px none rgb(0, 0, 0)' && !wrap.offsetWidth) {
+        wrap.style.cssText = 'border:1px solid rgba(128,128,160,.35);border-radius:8px;padding:8px;margin:6px 0;font-size:12px;';
+      }
+    } catch { /* 计算样式不可用就算了 */ }
+  } catch { /* DOM 不可用不阻塞 */ }
+}
+
+function _finishLocalToolCard(name: string, resultText: string): void {
+  try {
+    for (const [, card] of _localToolCards) {
+      if (card.el.querySelector('.tool-name')?.textContent === name) {
+        card.statusEl.textContent = '完成';
+        card.statusEl.style.color = 'rgba(0,212,115,0.8)';
+        card.outputEl.textContent = resultText;
+        _localToolCards.delete(card.el.dataset.localToolId || '');
+        return;
+      }
+    }
+  } catch { /* 同上 */ }
 }

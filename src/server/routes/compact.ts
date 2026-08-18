@@ -6,7 +6,8 @@
 //   4. appendCompact 固化（cutIndex + summary + model + createdAt）
 //   5. 返回 { cutIndex, summaryLength, keptFrom } 供客户端提示
 import { Router, type Request, type Response } from 'express';
-import { getCompacts, appendCompact } from '../ai/session-store.js';
+import { getCompacts } from '../ai/session-store.js';
+import { runCompact } from '../ai/compact-core.js';
 import { toOpenAiMessages } from '../../shared/chat-protocol/to-openai-messages.js';
 import { resolveKey } from '../env-store.js';
 
@@ -48,72 +49,17 @@ compactRouter.post('/session/compact', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'sessionId required' });
       return;
     }
-    // 会话数据从磁盘真相源读（不依赖内存态——compact 可在任意时刻调）
-    const { readFileSync } = await import('fs');
-    const { join } = await import('path');
-    const os = await import('os');
-    const filePath = join(os.homedir(), '.kfmv4', 'sessions', `${sessionId}.json`);
-    let raw: { messages?: unknown[]; compacts?: unknown[] };
-    try {
-      raw = JSON.parse(readFileSync(filePath, 'utf-8'));
-    } catch {
-      res.status(404).json({ error: `session not found: ${sessionId}` });
+    const result = await runCompact(sessionId);
+    if (!result.ok) {
+      res.status(result.error?.includes('not found') ? 404 : result.error?.includes('key') ? 500 : 502)
+        .json({ error: result.error });
       return;
     }
-    const messages = Array.isArray(raw.messages) ? raw.messages : [];
-    const cutIndex = computeCutIndex(messages);
-    if (cutIndex === 0) {
-      res.json({ ok: true, skipped: true, reason: '不足 12 轮用户消息，无需压缩' });
+    if (result.skipped) {
+      res.json({ ok: true, skipped: true, reason: result.reason });
       return;
     }
-    // 滚动蒸馏输入：旧摘要（若有）+ 被覆盖区间消息的投影
-    const prev = Array.isArray(raw.compacts) && raw.compacts.length
-      ? (raw.compacts[raw.compacts.length - 1] as { summary?: string }).summary : '';
-    const covered = messages.slice(prev ? 0 : 0, cutIndex); // 简化：全量到 cutIndex（旧摘要也在 messages 之前的覆盖范围里）
-    const { apiMessages } = toOpenAiMessages(covered as never, { compact: true });
-    const digest = apiMessages
-      .map((m: { role?: string; content?: unknown }) => `${m.role}: ${typeof m.content === 'string' ? m.content.slice(0, 2000) : JSON.stringify(m.content).slice(0, 500)}`)
-      .join('\n')
-      .slice(0, 120000); // 输入截断保护（flash 128k 窗口）
-
-    // 调 deepseek-v4-flash 生成摘要
-    const keyRes = resolveKey('${KFM_PROVIDER_DEEPSEEK}'); // deepseek 的 key 按现有约定（env-store 中文名 fallback）
-    if (!keyRes.value) {
-      res.status(500).json({ error: `摘要模型 key 解析失败: ${keyRes.missingVar || 'unknown'}` });
-      return;
-    }
-    const apiResp = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${keyRes.value}` },
-      body: JSON.stringify({
-        model: SUMMARY_MODEL,
-        messages: [
-          { role: 'system', content: SUMMARY_PROMPT },
-          { role: 'user', content: (prev ? `【旧摘要（在此基础上滚动更新）】\n${prev}\n\n【新增对话】\n` : '') + digest },
-        ],
-        max_tokens: 4096,
-        stream: false,
-      }),
-    });
-    if (!apiResp.ok) {
-      const errText = await apiResp.text().catch(() => '');
-      res.status(502).json({ error: `摘要模型调用失败 ${apiResp.status}: ${errText.slice(0, 200)}` });
-      return;
-    }
-    const data = (await apiResp.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    const summary = data.choices?.[0]?.message?.content?.trim() || '';
-    if (!summary) {
-      res.status(502).json({ error: '摘要模型返回空内容' });
-      return;
-    }
-    // 固化（真相源追加）
-    appendCompact(sessionId, {
-      cutIndex,
-      summary,
-      model: `${SUMMARY_PROVIDER}/${SUMMARY_MODEL}`,
-      createdAt: new Date().toISOString(),
-    });
-    res.json({ ok: true, cutIndex, summaryLength: summary.length, total: messages.length });
+    res.json({ ok: true, cutIndex: result.cutIndex, summaryLength: result.summaryLength, total: result.total });
   } catch (err) {
     res.status(500).json({ error: `compact failed: ${(err as Error).message}` });
   }

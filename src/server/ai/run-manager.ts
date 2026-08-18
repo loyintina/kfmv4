@@ -94,6 +94,7 @@ export type StreamFn = (
   params?: Record<string, unknown>,
   sandboxRoot?: string,
   readRoot?: string,
+  sessionId?: string,
 ) => AsyncGenerator<StreamEvent>;
 
 
@@ -111,6 +112,7 @@ export function startRun(
   params?: Record<string, unknown>,
   sandboxRoot?: string,
   readRoot?: string,
+  sessionIdExplicit?: string, // 显式透传给 streamFn 的会话 ID（kfm-compact 用；缺省回退 sessionId 首参）
 ): Run {
   // 取消该 session 的旧 run（若仍在跑），新消息取代之
   const prev = getActiveRun(sessionId);
@@ -136,7 +138,7 @@ export function startRun(
 
   // 后台驱动生成器：与请求连接解耦。streamFn 默认 streamChat，测试可注入 mock。
   (async () => {
-    const it = streamFn(messages, model, provider, wsServer, run.abort.signal, roleFile, tools, extraSystem, maxTokens, params, sandboxRoot, readRoot)[Symbol.asyncIterator]();
+    const it = streamFn(messages, model, provider, wsServer, run.abort.signal, roleFile, tools, extraSystem, maxTokens, params, sandboxRoot, readRoot, sessionIdExplicit ?? sessionId)[Symbol.asyncIterator]();
     try {
       // 停摆看门狗（BAR-BASH-HANG-01）：手动迭代 + 每次 next() 与停摆定时器
       // 竞速。for await 无法表达"next() 永不返回"的超时。

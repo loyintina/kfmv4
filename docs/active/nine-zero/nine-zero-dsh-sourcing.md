@@ -7,7 +7,9 @@
 > 别的去哪找：dsh 地图 → nine-zero-capability-review.md；任务图 →
 > nine-zero-dev-task-map.md；全景图 → nine-zero-plugin-map.html；dsh 包清单 →
 > `/opt/dsh-src/packages/`。
-> 状态：初稿（2026-08-17 卡萝；待 9.0 线会签——任务图修订的前置材料）。
+> 状态：✅ 已会签（2026-08-17 卡萝初稿 → 9.0 线会签通过，见文末；2026-08-18
+> 9.0 线口径对账修订：汇总表按逐项对照表重算，幻影项/混档/双档清理——评审
+> 文档审计遗留 ① 处理）。
 
 ## 对照表（kfmv4 任务 → dsh 资产 → 取材分类）
 
@@ -70,14 +72,20 @@
 | **命令系统** | **ui-input-trigger + ui-commands（斜杠命令输入触发）** | **参考改造**——kfmv4 的输入栏命令体系对照 dsh 的触发/补全/路由语义 |
 | **上下文压缩** | **compaction 家族（engine/basic/command）+ tool-result-pruner + spill 家族** | **直接拿来**——pruner（head/tail 修剪）+ spill（超限保存全文+预览）正是 kfmv4 压缩挂点的对标物；compaction-basic 的 llm 摘要解决"摘要机制不成熟"问题 |
 
-## 汇总
+## 汇总（2026-08-18 9.0 线按对照表重算对账）
 
 | 分类 | 件数 | 清单 |
 |---|---|---|
-| **直接拿来** | 4 | session-persistence/projection · compaction 家族+pruner+spill · todo · context 注入族（time/session-reference/tmux） |
-| **参考改造** | 12 | tool-host（dsh tools）· agent-service（dsh loop/llm）· permission（guard/scope）· file-io（dsh fs）· 终端 connection（terminal-bash）· 命令系统（ui-input-trigger）· 对话卡（ui-conversation）· 池卡（ui-settings）· 文件树（ui-directory-picker）· 顶栏（ui-layout/slots）· 皮肤（ui-theme）· pool-system（credentials/settings） |
-| **接口对齐** | 3 | 启动引导（boot）· headless（headless-agent）· 渲染宿主（ui-slots 思想） |
-| **自研** | 12 | 渲染宿主实现 · 手势 · broker · ledger · rule-engine（参考 hooks）· 眼睛包 · 手 · 文件编辑卡 · 动画包 · 多端适配 · 试点三件套 · 文档世界全部 |
+| **直接拿来** | 3 | session-persistence/projection · compaction 家族+pruner+spill · todo（另：context 注入族=任务图注记的第 4 件，本对照表无行——接口形状对齐，落地随主线评估，见任务图取材节注） |
+| **参考改造** | 9 | tool-host（dsh tools）· agent-service（loop/llm）· permission（guard/scope）· file-io（dsh fs）· 终端 connection（terminal-bash）· 命令系统（ui-input-trigger）· 对话卡（ui-conversation）· pool-system（credentials/settings）· 皮肤（ui-theme） |
+| **参考** | 12 | 渲染宿主（ui-slots 思想）· broker（inventory 枚举）· rule-engine（hooks）· dynamic-prompt-files（system-prompt）· tree-data（fs/directory-picker）· 池卡（ui-settings）· 文件树卡 · 窗口卡 · 顶栏 · 全屏布局（ui-layout）· 启动器（ui-slots 枚举面）· 多端适配（web 桌面形态，远期） |
+| **接口对齐** | 2 | 启动引导（boot）· headless（headless-agent） |
+| **自研** | 7+1 | 手势 · ledger · 试点三件套 · 文件编辑卡 · 手 · 眼睛包 · 动画包（远期）＋ 文档世界全部（另计） |
+| **已定（同源）** | 1 | Cordis 引入（采用裁决落地） |
+
+> 对账注（2026-08-18）：此前汇总档 4/12/3/12 与对照表不符——「参考/参考改造」
+> 混用已按对照表逐项归位；「渲染宿主」双档消除（归「参考」，ui-slots 思想注记保留）；
+> 「文档世界全部」移出自研计数另计。
 
 ## 边界原则（取材不失控）
 
@@ -93,7 +101,7 @@
 2. L2 加"命令系统"任务行（输入栏命令体系，参考 ui-input-trigger）——任务图当前无此行；
 3. "dsh 取材层"拆分：9.0 主线取材（本表"直接拿来+参考改造"16 件）从 9.x 远期移入主线标注；9.x 远期只留未来功能素材。
 
-——卡萝 · 2026-08-17（初稿，待 9.0 线会签）
+——卡萝 · 2026-08-17（初稿）· 9.0 线会签通过 2026-08-17 · 口径对账修订 2026-08-18
 
 ## 9.0 线会签（2026-08-17）
 

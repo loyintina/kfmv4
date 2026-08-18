@@ -61,3 +61,5 @@
 |------|------|
 | index.md | 本文件（研究线登记 + 问题清单） |
 | design/d1-inbox-habit-doc-side.md | D1 阅信纪律：文档侧拉模式过渡方案（已落地 agent-inbox README 规则区） |
+| design/d2-concurrency-discipline.md | D2 并发协作纪律：共享工作树撞车三规（写后即交/改前重读/链红先归因），契约 3 即刻手工纪律的实战扩展 |
+| design/d3-ledger-generation.md | D3 契约 3 机械件落地设计：信封机读头 schema + 台账投影生成器 + 归属行扫描器 + 代际戳（含存量回填过渡方案） |

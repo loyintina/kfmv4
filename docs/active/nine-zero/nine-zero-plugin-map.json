@@ -55,7 +55,7 @@
       "id": "services",
       "type": "backend",
       "label": "L1 服务插件",
-      "sublabel": "broker · tool-host · agent-service · session · pool · 压缩 · permission · tree · 眼睛",
+      "sublabel": "broker · tool-host · agent-service · session · pool · 压缩 · permission · tree · file-io · ledger",
       "pos": [
         100,
         500

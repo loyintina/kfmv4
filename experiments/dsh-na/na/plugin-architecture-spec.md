@@ -167,6 +167,17 @@ trait Plugin {
   **disposer 正确性 = 插件作者义务 + 测试强制**（I-1，PAGE 56）：逆元是
   「按施加点见证的左逆」，基座无法运行时验证 witness，「忘回滚 → 测试红」
   的变异抽检就是唯一执行点（见 §5）
+- **活性闸（INACTIVE_ACCESS）**（v1.4，G2，评审裁决：panic + 活性标记）：
+  fiber 卸载/失败后其 `Ctx` 一切操作（provide/get/effect/config/fork/
+  set_plugin_target + Events 六法同闸）= panic。正确实现下死后访问
+  「不可能到达」，到达即证明排空有漏洞——与观察等价判据直接绑定。
+  活性按 Owner 分形：Root 永生；Fiber 活 ⇔ 状态 ∈ {Loading, Active} 且
+  **代数为当代**（每次 activate 换代，reload 后旧句柄永死，与 epoch 实例
+  比对同构）；fork 子 ctx 看级联栈条目。判词纪律：锁内只读判活、放锁后
+  panic（持锁 panic 毒化 Mutex，考题实证）。disposer 路径不受闸（逆元
+  直连内核）。panic 前缀 `INACTIVE_ACCESS` 定死为公开契约（考题断言
+  前缀不断言全串）。**预算检查默认关**（G5 归层：机制归内核、政策归
+  harness，瞬时返回契约的预算值由 harness 显式开启）`<契约测试>`
 - **瞬时返回契约**（v1.1 新增，信箱评审裁决的上下文修正）：同步基座下
   生命周期转换跑在事件循环上，**apply/unload 必须瞬时返回**——慢活
   （连网、IO、等锁）插件自己开线程，disposer 只「发停止信号 + 丢句柄」，
@@ -310,6 +321,7 @@ NA 已有考题先行三档（A 纯逻辑考题先行+变异抽检 / B 胶水冒
 | v1.1 → v1.2 | 2026-08-16 | 输入/IME 评审回信裁决 2 附带发现 1（`agent-inbox/kfm-na-input-ime-review-response.md`；三刀实证：连接/终端=工厂，输入=直挂，ime_queue=胶水） | §4.2 补**插件形态判别准则**（修订 13）：独占可变→工厂 / Sync 共享→直挂 / 进程静态入口→胶水不进插件；分野是可变性形状 |
 | v1.2 → v1.3 | 2026-08-16 | cordis-rs 差距审计评审回信（`agent-inbox/kfm-na-cordis-rs-audit-review.md`）裁决 1-4 + 附带发现 2 条 | §4.3 补「全同步为设计选择，crate 级文档声明」；cordis-rs 路线定案：crate 名 `cordis-na`、relied 维持传递排空（与 broker 禁卸区分入档）、G2 活性闸=panic+Ctx 活性标记、验收口径=全量可实跑基线（实测 126 通过/2 ignored）+ 快照对比 + 终端插件作为第一个外部消费者 |；§6 补阶段 4(cordis-na 与蛰伏期约定：
  业务卡冻结 / 允许清单 / 重启判据——9.0 定稿通报已使判据核心满足） |
+| v1.3 → v1.4 | 2026-08-18 | cordis-na 阶段 2 设计评审回信（`agent-inbox/kfm-na-liveness-gate-review-response.md`，三问全批） | §4.3 新增**活性闸（INACTIVE_ACCESS）**条款：Owner 分形判活（Fiber 带激活代数，reload 旧句柄永死）+ Events 同闸 + 锁外 panic 判词纪律 + disposer 不受闸 + panic 前缀定死为公开契约；G5 归层入文（预算检查默认关、政策归 harness）；G3 intercept / G4 Parallel·独立 bail 立缓建桩（`#[ignore]` 考题，触发条件写明） |
 
 此后改动在此表追加一行，不静默改。
 

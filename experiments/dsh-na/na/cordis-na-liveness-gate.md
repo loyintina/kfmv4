@@ -1,6 +1,8 @@
 # cordis-na 活性闸(G2)+ 缓建桩(G3/G4)+ 政策归层(G5)设计页
 
-> 2026-08-18 · kfm-na 线 · 状态:待评审
+> 2026-08-18 · kfm-na 线 · 状态:**已批准已落地**(评审三问全批,
+> `kfm-na-liveness-gate-review-response.md`;考题 18-28 全绿,chain 六步过,
+> 实拍见落地通报)
 > 模板说明:本页是**内核机制**设计页非插件页,§8 九字段按机制语义改写
 > (无服务键/配置 schema,代以「判定规则/检查面」)。依据:差距审计 G2/G3/
 > G4/G5 + 评审裁决 2(panic + Ctx 活性标记,不许只换沉默方式)。
@@ -21,10 +23,13 @@
 | Owner | 活性判据 | 理由 |
 |---|---|---|
 | `Root` | 永远活 | 应用级 ctx 无生命周期 |
-| `Fiber(name)` | fiber 状态 ∈ {Loading, Active} | apply 运行中(Loading)必须可用;Unloading/Inactive 即死——卸载期间跑的是 disposer 不是插件代码(见四) |
+| `Fiber(name)` | fiber 状态 ∈ {Loading, Active} **且代数为当代**(落地修正一:每次 activate 递增 generation,Ctx 按 (name, generation) 判活——否则 reload 后旧句柄随 fiber 复活而还魂,考题 23 抓出) | apply 运行中(Loading)必须可用;reload 换代后旧句柄永死,与 epoch 实例比对同构 |
 | `Child(id)` | `child_stacks` 含 id | fork 级联:父栈 dispose 时子栈条目摘除=死 |
 
-`reload` 语义自然成立:activate 每次新建 `Ctx`(fiber.rs:309),重激活拿到
+**落地修正二(判词纪律)**:锁内只读判活、**放锁后 panic**——持锁 panic
+会毒化 Mutex,把「一个死后访问」传染成「全基座锁被毒化」(考题 23 实证)。
+
+`reload` 语义自然成立:activate 每次新建 `Ctx` 并换代,重激活拿到
 新活句柄,旧句柄永死——与 epoch 实例比对同构(旧逆元不许误删新绑定)。
 
 ## 三、检查面(操作入口清单)

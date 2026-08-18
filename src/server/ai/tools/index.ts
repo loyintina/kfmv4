@@ -39,6 +39,7 @@ function resultErrorText(result: ToolResult): string {
 import { kfmLogsTool } from './kfmv4/logs.js';
 import { kfmBrowserEvalTool } from './kfmv4/browser-eval.js';
 import { kfmRestartTool } from './kfmv4/restart.js';
+import { kfmCompactTool } from './kfmv4/compact.js';
 import { kfmHandMoveTool } from './kfmv4/hand.js';
 
 // omp 核心文件工具
@@ -70,6 +71,7 @@ function registerTool(tool: KfmTool): void {
 registerTool(kfmLogsTool);
 registerTool(kfmBrowserEvalTool);
 registerTool(kfmRestartTool);
+registerTool(kfmCompactTool);
 registerTool(kfmHandMoveTool);
 
 // omp 核心文件

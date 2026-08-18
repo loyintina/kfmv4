@@ -41,6 +41,8 @@ export interface ToolContext {
    *  与 sandboxRoot 正交：写监狱防破坏，读监狱防越界取证（答案在试卷语料外
    *  也须不可读）。只收不放：设置后访问面只会变窄，无安全反噬。 */
   readRoot?: string;
+  /** 会话 ID（面板对话会话才有；kfm-compact 等会话级工具用） */
+  sessionId?: string;
 }
 
 /** kfmv4 工具定义 */

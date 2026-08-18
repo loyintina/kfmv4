@@ -1,6 +1,8 @@
 > 这是什么：9.0 大重构的**会前酝酿记录**——正式设计开始前的方向讨论与已拍板结论。
 > 别的去哪找：9.0 设计地图 → nine-point-zero.md（2026-08-16 已立，台账/索引/日志）；
 > 理论基础 → `../../../experiments/dsh-na/dsh/paper/paradigm-notes.md`；项目远景 → `../vision.md`；**评审往来 → `../../ledger/agent-inbox/`（跨线评审信箱，评审意见与裁决状态列在此）**
+> 9.0 线启动自查：会话启动先读 `docs/ledger/agent-inbox/README.md` 台账，
+> 处理指向本线的待回封信件（阅信纪律 D1，2026-08-18 挂）。
 
 # 9.0 会前酝酿
 
