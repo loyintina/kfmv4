@@ -189,7 +189,7 @@ export function setupFileRoutes(router: Router): void {
       const sessionsDir = path.join(KFM_DATA_DIR, 'sessions');
       if (!fs.existsSync(sessionsDir)) { res.json({ sessions: [] }); return; }
       const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
-      const sessions: Array<{ id: string; title: string; createdAt: string; updatedAt: string; manuallyNamed?: boolean; providerId?: string; modelId?: string; messageCount: number; tokenCount: number; windowTokenCount?: number; fullTokenCount?: number }> = [];
+      const sessions: Array<{ id: string; title: string; createdAt: string; updatedAt: string; manuallyNamed?: boolean; providerId?: string; modelId?: string; messageCount: number; tokenCount: number; windowTokenCount?: number; fullTokenCount?: number; measuredPromptTokens?: number; measuredAt?: string }> = [];
       for (const file of files) {
         try {
           const raw = fs.readFileSync(path.join(sessionsDir, file), 'utf-8');
@@ -245,6 +245,12 @@ export function setupFileRoutes(router: Router): void {
             ...(pickWindowTokenCount(p) !== undefined && { windowTokenCount: pickWindowTokenCount(p) }),
             ...(pickCompactCutIndex(p) !== undefined && { compactCutIndex: pickCompactCutIndex(p) }),
             ...(typeof p['fullTokenCount'] === 'number' && { fullTokenCount: p['fullTokenCount'] }),
+            // API 实测负载（2026-08-18 精确尺）：上一轮 prompt_tokens 全量实测，
+            // 含 system+tools+messages——比 tokenCount（chars/3 估算）更接近真相
+            ...((p['lastUsage'] as Record<string, unknown> | undefined)?.['promptTokens'] != null && {
+              measuredPromptTokens: (p['lastUsage'] as Record<string, unknown>)['promptTokens'] as number,
+              measuredAt: (p['lastUsage'] as Record<string, unknown>)['ts'] as string,
+            }),
           });
         } catch { /* skip corrupt */ }
       }

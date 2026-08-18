@@ -10,6 +10,7 @@ import { KFM_DATA_DIR, PROJECT_ROOT } from '../path-utils.js';
 import { resolveKey } from '../env-store.js';
 import type { WsServer } from '../ws-server.js';
 import { getToolDefinitions, executeTool } from './tools/index.js';
+import { recordLastUsage } from './session-store.js';
 import type { KfmTool, ToolContext } from './tools/types.js';
 import { buildAlwaysApplyPrompt, checkToolCallRules } from './rule-engine.js';
 import { assembleRoleSystemPrompt, assembleDynamicPrompt } from './prompt-assembler.js';
@@ -388,7 +389,19 @@ export async function* streamChat(
           }
           const delta = chunk?.choices?.[0]?.delta || {};
           if (chunk.choices?.[0]?.finish_reason) finishReason = chunk.choices[0].finish_reason;
-          if (chunk.usage) console.log('[chat] usage:', JSON.stringify(chunk.usage));
+          if (chunk.usage) {
+            // API 实测 token 落盘（2026-08-18：唯一一把真尺——prompt_tokens 含
+            // system+tools+messages 全量，provider 自己数的。替代 chars/3 估算）
+            const u = chunk.usage as { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+            if (sessionId && typeof u.prompt_tokens === 'number') {
+              recordLastUsage(sessionId, {
+                promptTokens: u.prompt_tokens,
+                completionTokens: u.completion_tokens ?? 0,
+                totalTokens: u.total_tokens ?? 0,
+                model, ts: new Date().toISOString(),
+              });
+            }
+          }
 
           // 工具调用：流式累积 + 即时 yield content_block_start/delta
           // 设计决策：工具名一出现就 yield start（客户端立刻渲染卡片），参数片段到了就 yield delta。

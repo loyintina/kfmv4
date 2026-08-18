@@ -465,7 +465,7 @@ export async function doSend(
       try {
         const sRes = await fetch(`${apiBase}sessions/list`);
         if (!sRes.ok) return;
-        const list = await sRes.json() as { sessions?: Array<{ id?: string; title?: string; tokenCount?: number }> };
+        const list = await sRes.json() as { sessions?: Array<{ id?: string; title?: string; tokenCount?: number; measuredPromptTokens?: number }> };
         const cur = (list.sessions || []).find(x => x && (x.id === _sendSessionId || x.title === _sendSessionId));
         if (!cur || typeof cur.tokenCount !== 'number') return;
         // 窗口查 providers.json contextWindow（Kimi 实测 262144；缺省保守 131072）
@@ -476,12 +476,13 @@ export async function doSend(
           const pv = provs?.find(x => x && x.models && x.models.includes(model as string));
           window = pv?.contextWindow?.[model as string] ?? 131072;
         }
-        // 密度校准（2026-08-18 Kimi 实测）：chars/3 估算 × 1.7 ≈ 真实 token
-        // （真实会话文本密度 0.558 vs 假设 0.333——合成样本尺 0.328 曾失真，见当日密度探针）
-        const calibrated = cur.tokenCount * 1.7;
-        if (calibrated < window * 0.9) return; // 未到 90%：无事
+        // 精确尺（2026-08-18）：有 API 实测值（上一轮 prompt_tokens，provider 自己数的，
+        // 含 system+tools+messages 全量）用实测；没有才退化为估算 ×1.7（密度校准：
+        // chars/3 的 0.333 vs 真实会话文本实测 0.558）
+        const load = cur.measuredPromptTokens ?? cur.tokenCount * 1.7;
+        if (load < window * 0.9) return; // 未到 90%：无事
         // 触发：注入工具框 + 调压缩 API + 刷新 cutIndex
-        _appendLocalToolCard('kfm-compact', { reason: `自动压缩（${Math.round(cur.tokenCount / 1000)}k ≥ 90% 窗口 ${Math.round(window / 1000)}k）` });
+        _appendLocalToolCard('kfm-compact', { reason: `自动压缩（负载 ${Math.round(load / 1000)}k${cur.measuredPromptTokens ? '实测' : '估算'} ≥ 90% 窗口 ${Math.round(window / 1000)}k）` });
         const cRes = await fetch(`${apiBase}session/compact`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: _sendSessionId }),

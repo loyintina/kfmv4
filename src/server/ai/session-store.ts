@@ -310,6 +310,27 @@ export function appendCompact(sessionId: string, c: SessionCompact): void {
   _scheduleFlush(sessionId, s);
 }
 
+/** 上一轮 API 实测 usage（2026-08-18 精确尺改造：存 API 自己数的数，不再估算） */
+export interface LastUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  model: string;
+  ts: string;
+}
+
+export function recordLastUsage(sessionId: string, u: LastUsage): void {
+  const s = _get(sessionId);
+  s.meta.lastUsage = u;
+  _scheduleFlush(sessionId, s);
+}
+
+export function getLastUsage(sessionId: string): LastUsage | undefined {
+  const s = _get(sessionId);
+  const u = s.meta.lastUsage as LastUsage | undefined;
+  return u && typeof u.promptTokens === 'number' ? u : undefined;
+}
+
 export function getCompacts(sessionId: string): SessionCompact[] {
   const s = _get(sessionId);
   return Array.isArray(s.meta.compacts) ? (s.meta.compacts as SessionCompact[]) : [];

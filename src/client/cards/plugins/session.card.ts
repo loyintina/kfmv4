@@ -276,7 +276,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       const c = session.fullTokenCount ? formatTokens(session.fullTokenCount) : null;
       const tokenText = b && c
         ? `${a}/${b}/${c}` : (c ? `${a}/${c}` : a);
-      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${session.messageCount ?? countTextMessages(session.messages)} 条</span><span title="API载荷/摘要/全量 token">${tokenText}</span>`;
+      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${session.messageCount ?? countTextMessages(session.messages)} 条</span><span title=\"${session.measuredPromptTokens ? 'API 实测载荷（上一轮 prompt_tokens 全量）' : 'API载荷（chars/3 估算）'}/摘要/全量 token">${tokenText}</span>`;
 
       item.appendChild(titleRow);
       item.appendChild(metaRow);

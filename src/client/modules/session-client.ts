@@ -50,6 +50,8 @@ export interface Session {
   compactCutIndex?: number;
   /** 全量会话 token 估算（含 reasoning 与全部工具 I/O；与 tokenCount 并列显示「压缩/全量」） */
   fullTokenCount?: number;
+  /** API 实测负载（上一轮 prompt_tokens 全量，provider 自己数的；存在时优先于 tokenCount 估算显示） */
+  measuredPromptTokens?: number;
 }
 
 // ========== 纯函数：消息正文提取 / 计数（无副作用，可单测） ==========
@@ -85,6 +87,7 @@ export function parseSessionItem(s: Record<string, unknown>): Session | null {
     ...(typeof s['windowTokenCount'] === 'number' && { windowTokenCount: s['windowTokenCount'] }),
     ...(typeof s['compactCutIndex'] === 'number' && { compactCutIndex: s['compactCutIndex'] }),
     ...(typeof s['fullTokenCount'] === 'number' && { fullTokenCount: s['fullTokenCount'] }),
+    ...(typeof s['measuredPromptTokens'] === 'number' && { measuredPromptTokens: s['measuredPromptTokens'] }),
     messages: [], // 元数据加载不含消息，需要时通过 getMessages() 按需加载
   };
 }
