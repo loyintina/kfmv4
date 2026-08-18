@@ -45,6 +45,7 @@
 
 | 实验 | 主题 |
 |------|------|
+| [agent-mailbox/](agent-mailbox/) | agent 信箱机制研究（文档世界账本 → 代码世界事件面） |
 | [coldstart/](coldstart/) | 冷启动接手实验 · 数据集索引 |
 | [docprobe/](docprobe/) | docprobe · 研究线登记（文档抽测） |
 | [dsh-na/](dsh-na/) | NA 插件架构研究（一切皆插件 → kfm-na） |

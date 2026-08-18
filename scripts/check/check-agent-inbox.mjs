@@ -72,6 +72,9 @@ const LEGACY_NAMING = new Set([
   'kfmv4-9.0-version-plan-v2-notice.md',  // 类型词 notice
   'kfmv4-9.0-review-response-moli.md',    // 类型词后人名后缀 -moli
   'kfmv4-inbox-response-moli.md',         // 同上
+  'kfmv4-9.0-step0-progress.md',          // 类型词 progress（2026-08-18 晚 9.0 线新信，
+                                          // 当日首跑即拦截；评审已在回执中请 9.0 线更名
+                                          // 为 -report，更名后从此集合移除）
 ]);
 const TYPE_WORDS = new Set(['submission', 'review', 'response', 'report', 'verdict', 'notice', 'landing', 'landing-report']);
 for (const f of letters) {

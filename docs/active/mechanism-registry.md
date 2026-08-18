@@ -33,7 +33,7 @@
 | 报错引导（撞墙含金量） | 核心 | 部分（29/54 带引导） | 报错无引导 → AI 反复不会改（墙倒） | 审计 2026-08-09 | active/error-codes.md（审计记录） | 巡逻 |
 | 工作流系统 workflows | 核心 | 约定 + check-workflow-integrity + check-consistency | 工作流引用失效 → MECH-FLOW-05 | ✓（consistency） | guides/doc-maintenance.md | 巡逻 |
 | 机械主人注入（semantic-audit prompt） | 外围 | 活源头现扫（机械）+ prompt 抑制（概率区，契约 0 修订注两区首例） | 注入失效 → 「机械主人」误报家族回潮进巡逻信箱（SEM001-1/SEM002-1 类发现再现） | ✓（BAR-SEMCHAIN-05 2 钉） | ledger/bugs.md（BAR-SEMCHAIN-05）+ 契约 0 修订注 | 巡逻 |
-| 跨线评审信箱（docs/ledger/agent-inbox/，2026-08-15 自 dsh-na/inbox 迁入） | 外围 | 约定（append-only + 状态列更新）+ 巡逻心跳 check-inbox-heartbeat（2026-08-03 上线，机械化列滞后订正）+ 台账一致性 check-agent-inbox（2026-08-18 上线：双向对应/命名/计数/索引覆盖四查）；契约 3 定稿：信封四字段/归属行扫描器/代际戳待落地 | 信件状态列停滞（待回信不推进）→ 用户抽查/会话启动时发现；巡逻信箱沉默 → 心跳检查报红 | —（接受滞后+抽查） | ledger/agent-inbox/README.md + nine-zero-phase2-contracts.md 契约 3 | 巡逻 |
+| 跨线评审信箱（docs/ledger/agent-inbox/，2026-08-15 自 dsh-na/inbox 迁入） | 外围 | 约定（append-only + 状态列更新）+ 巡逻心跳 check-inbox-heartbeat（2026-08-03 上线，机械化列滞后订正）+ 台账一致性 check-agent-inbox（2026-08-18 上线：双向对应/命名/计数/索引覆盖四查）；契约 3 定稿：信封四字段/归属行扫描器/代际戳待落地 | 信件状态列停滞（待回信不推进）→ 用户抽查/会话启动时发现；巡逻信箱沉默 → 心跳检查报红 | —（接受滞后+抽查） | ledger/agent-inbox/README.md + nine-zero-phase2-contracts.md 契约 3 + experiments/agent-mailbox/（代码世界事件面研究线，2026-08-18 立） | 巡逻 |
 | 开源守门 check-secrets | 核心 | 全 | 工作树明文 key 泄露 → 硬失败（2026-08-01 三 key 事故催生；分级处置节早已提及，表漏行 2026-08-17 补） | ✗ 无探针（git 历史型豁免候选） | scripts/check/check-secrets.mjs 头注（规则与背景） | 巡逻 |
 
 
@@ -92,3 +92,6 @@
   check-agent-inbox 收编进信箱行（均按契约 5 机制群归行，不新增行数）；守卫四件升
   五件——补 ⑤ 链步数咬合（MECH-GUARD-05，注册表「N 步」声称对账 chain.mjs STEPS
   源码计数，堵审计抓到的 59→60 漂移类）。
+- 2026-08-18 信箱行规约出处增补：experiments/agent-mailbox/ 研究线立项
+  （用户拍板；评审会话主理；议题 6 送审五问迁入解挂 + Q6 事件面/Q7 传输探针），
+  信箱机制「账本 → 事件面」演进有了正式承接位。

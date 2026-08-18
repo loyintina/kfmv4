@@ -1,6 +1,6 @@
-# 9.0 决策索引（跨线评审信箱 36 封信 → 决策一张表）
+# 9.0 决策索引（跨线评审信箱 40 封信 → 决策一张表）
 
-> 这是什么：`docs/ledger/agent-inbox/` 36 封信的**决策级索引**——信箱是
+> 这是什么：`docs/ledger/agent-inbox/` 40 封信的**决策级索引**——信箱是
 > ledger（只追加不删改），裁决史散在信里；本表把**已拍板决策**提取成一张表，
 > 「为什么这么定」从这里查、细节回信里读。信仍在，本表只索引不替代。
 > 别的去哪找：契约全文 → `nine-zero-phase1-contracts.md` / `nine-zero-phase2-contracts.md`；
@@ -30,14 +30,14 @@
 | cordis-na 阶段 1 | workspace 化 + G1 切除 + 消费侧零改动 + chain workspace 化 | `kfm-na-cordis-rs-stage1-landing.md` | ✅ 已核 | crates/cordis-na |
 | NA 设计冻结响应 | NA 线对 9.0 冻结的响应（休眠期约定） | `kfm-na-design-freeze-response.md` | ✅ 通报 | NA 规格书 §6 阶段 4 |
 | 版本策略 v2 | 池卡提前 8.8 成首个可见版；终端居中 8.9；服务换心转隐形并行轨；M3 期限提前 8.8 | `kfmv4-9.0-version-plan-v2-notice.md` | ✅ 通报（用户授权主笔直改） | dev-task-map 版本策略节 |
-| NA 协同与 Rust 共享内核 | 「终端库只能自研」证伪入裁决史；NA=下游收编位关系式；终端芯 alacritty_terminal 定案；互证基准解析/渲染分开计时方法学 | `kfmv4-9.0-na-rust-synergy.md` / `kfm-na-rust-synergy-response.md` | ✅ NA 已表态（评审待表态） | dev-task-map NA 协同节 |
+| NA 协同与 Rust 共享内核 | 「终端库只能自研」证伪入裁决史；NA=下游收编位关系式；终端芯 alacritty_terminal 定案；互证基准解析/渲染分开计时方法学 | `kfmv4-9.0-na-rust-synergy.md` / `kfm-na-rust-synergy-response.md` / `kfmv4-9.0-na-rust-synergy-review-response.md` | ✅ 全线表态完毕（NA + 评审全采纳） | dev-task-map NA 协同节 |
+| cordis-na 阶段 2 | G2 活性闸（入口先查活性；Events 同闸；panic 前缀 INACTIVE_ACCESS 定公开契约）；G3/G4 缓建桩；G5 政策归层保留 50ms | `kfm-na-liveness-gate-design-submission.md` / `kfm-na-liveness-gate-review-response.md` | ✅ 批准（待落地通报） | crates/cordis-na（落地后） |
 
 ## 待决/进行中
 
 | 决策 | 现状 | 下一步 |
 |------|------|--------|
 | 通用多 agent 信箱（送审 1-5） | 收进 9.0 待讨论议题 6 | 主开发线裁决（已挂起待定） |
-| cordis-na 阶段 2 | G2 活性闸设计页已送审（`kfm-na-liveness-gate-design-submission.md`，⏳ 待评审表态） | 评审表态 |
 | 9.0 步 0 四项验证 | 用户终审 2026-08-17 已通过，🔶 验证中 | 9.0 线执行 |
 
 ---

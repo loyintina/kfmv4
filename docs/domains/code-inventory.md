@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 81dd7225 · 生成于 2026-08-18 -->
+<!-- 基准 commit 3c35fc1e · 生成于 2026-08-18 -->
 
 # 代码清单（机械层）
 
@@ -184,7 +184,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（182 文件 · 20067 行）
+## infra（182 文件 · 20070 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -236,9 +236,9 @@
 | tests/viewport-visibility.test.ts | 137 | — |
 | experiments/coldstart/tools/judge-batch.mjs | 135 | — |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
+| scripts/check/check-agent-inbox.mjs | 132 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
-| scripts/check/check-agent-inbox.mjs | 129 | — |
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
 | scripts/check/gen-permission-map.mjs | 126 | — |
 | scripts/check/gen-capability-map.mjs | 125 | — |
@@ -711,4 +711,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 335 文件 · 56472 行 · 跨域边 278 条
+合计 335 文件 · 56475 行 · 跨域边 278 条
