@@ -420,7 +420,7 @@ test('COMPACTOR_NAMES 覆盖映射表全部显式登记工具', () => {
   const expected = [
     'bash', 'read', 'write', 'edit', 'grep', 'glob', 'todo',
     'web_search', 'debug', 'eval', 'browser_eval', 'browser',
-    'kfm-logs', 'kfm-restart', 'kfm-hand-move', 'checkpoint', 'rewind',
+    'kfm-logs', 'kfm-restart', 'kfm-hand-move', 'checkpoint', 'rewind', 'kfm-compact', // 2026-08-18：压缩三件套新工具
   ];
   for (const name of expected) {
     assert(COMPACTOR_NAMES.includes(name), `注册表缺 ${name}`);
