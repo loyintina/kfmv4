@@ -1,6 +1,6 @@
-# 9.0 决策索引（跨线评审信箱 33 封信 → 决策一张表）
+# 9.0 决策索引（跨线评审信箱 36 封信 → 决策一张表）
 
-> 这是什么：`docs/ledger/agent-inbox/` 33 封信的**决策级索引**——信箱是
+> 这是什么：`docs/ledger/agent-inbox/` 36 封信的**决策级索引**——信箱是
 > ledger（只追加不删改），裁决史散在信里；本表把**已拍板决策**提取成一张表，
 > 「为什么这么定」从这里查、细节回信里读。信仍在，本表只索引不替代。
 > 别的去哪找：契约全文 → `nine-zero-phase1-contracts.md` / `nine-zero-phase2-contracts.md`；
@@ -15,29 +15,30 @@
 | 茉莉本体评审 | termview-wasm 降级远期探索；unload 两栏不许缺栏；验收哲学「不用的干净消失」 | `kfmv4-9.0-review-response-moli.md` | ✅ 采纳 | preface 验收哲学 + №1 修订注 |
 | 信箱机制建立 | 跨线评审信箱（agent-inbox）建立；ASCII 命名；状态列按线分工 | `kfmv4-inbox-response-moli.md` / `kfmv4-inbox-mechanism-response.md` | ✅ 落地 | inbox README |
 | 通用多 agent 信箱送审 | 六块观察 + 送审问题 1-5（通用化/停滞检查/契约头/回执/结晶） | `kfmv4-inbox-mechanism-response.md` | 📥 收进议题 6 | preface 待讨论议题 6 |
-| 进度评审 r2 | №4 手 press 语义查实定案；抽文件测试两形态；№5 正文+NA 对齐 | `kfmv4-9.0-progress-review.md` / `-response.md` | ✅ 落地 | preface №4 修订注 |
-| broker 契约评审 | 兄弟序 name 兜底；实例户口 serialize 交班；NA 独占对齐注记 | `kfmv4-9.0-broker-contract-review.md` / `-response.md` | ✅ 落地 | phase1 №6 修订注 |
-| 进度评审 r3 | №5-№11 + 五原则拍板；契约模板升格四条；性能硬指标推广 | `kfmv4-9.0-r3-review.md` / `-response.md` | ✅ 落地 | phase1 + phase2 契约模板 |
+| 进度评审 r2 | №4 手 press 语义查实定案；抽文件测试两形态；№5 正文+NA 对齐 | `kfmv4-9.0-progress-review.md` / `kfmv4-9.0-progress-review-response.md` | ✅ 落地 | preface №4 修订注 |
+| broker 契约评审 | 兄弟序 name 兜底；实例户口 serialize 交班；NA 独占对齐注记 | `kfmv4-9.0-broker-contract-review.md` / `kfmv4-9.0-broker-contract-review-response.md` | ✅ 落地 | phase1 №6 修订注 |
+| 进度评审 r3 | №5-№11 + 五原则拍板；契约模板升格四条；性能硬指标推广 | `kfmv4-9.0-r3-review.md` / `kfmv4-9.0-r3-review-response.md` | ✅ 落地 | phase1 + phase2 契约模板 |
 | 设计冻结 | 契约 №1~№16 全定稿；军规覆盖闭合；二阶段归属 9.0 线 | `kfmv4-9.0-design-freeze-report.md` | ✅ 通报 | nine-point-zero 台账 |
 | 二阶段开篇 | 沙漏模型；文档世界 ctx=Σ+事件+累积器(git)；机制三件套；契约 0-9 | `kfmv4-9.0-phase2-hourglass-submission.md` | 💬 讨论完 | phase2-contracts |
 | 二阶段收口 | 契约 0-9 定稿；横切原则（建造放开/采纳收紧/结晶判据） | `kfmv4-9.0-phase2-contracts-report.md` | ✅ 通报 | phase2-contracts |
-| Cordis 采用 | 9.0 web 端内核采用 Cordis 本体；(c) 上游+按需移植；步 0 四项验证闸门 | `kfmv4-9.0-cordis-adoption-submission.md` / `-verdict.md` | ✅ 用户终审 | preface 双终审落档 |
-| NA 基座设计 | 六条裁决（同步化/瞬时返回/serial+bail 合并/考题 17/五态/体量） | `kfm-na-base-design-submission.md` / `-response.md` / `-landing-report.md` | ✅ 落地 | NA 规格书 v1.1 + src/base |
-| 连接 provider | 五条裁决（事件零总线/unload 不断连/假 transport/边界） | `kfm-na-conn-provider-*.md`（3 封） | ✅ 落地 | NA 规格书 + src/plugins |
-| 终端模拟器 | 工厂形态必然性/方法面边界/零配置/范围；考题 5 道 | `kfm-na-term-emu-*.md`（3 封） | ✅ 落地 | NA 规格书 + src/plugins |
-| 输入/IME | 方案 A 批准（状态进服务）；共享实例直挂=第三种形态；规格书 v1.2 判别准则 | `kfm-na-input-ime-*.md`（3 封） | ✅ 落地 | NA 规格书 v1.2 |
+| Cordis 采用 | 9.0 web 端内核采用 Cordis 本体；(c) 上游+按需移植；步 0 四项验证闸门 | `kfmv4-9.0-cordis-adoption-submission.md` / `kfmv4-9.0-cordis-adoption-verdict.md` | ✅ 用户终审 | preface 双终审落档 |
+| NA 基座设计 | 六条裁决（同步化/瞬时返回/serial+bail 合并/考题 17/五态/体量） | `kfm-na-base-design-submission.md` / `kfm-na-base-design-response.md` / `kfm-na-base-landing-report.md` | ✅ 落地 | NA 规格书 v1.1 + src/base |
+| 连接 provider | 五条裁决（事件零总线/unload 不断连/假 transport/边界） | `kfm-na-conn-provider-design-submission.md` / `kfm-na-conn-provider-review-response.md` / `kfm-na-conn-provider-landing-report.md` | ✅ 落地 | NA 规格书 + src/plugins |
+| 终端模拟器 | 工厂形态必然性/方法面边界/零配置/范围；考题 5 道 | `kfm-na-term-emu-design-submission.md` / `kfm-na-term-emu-review-response.md` / `kfm-na-term-emu-landing-report.md` | ✅ 落地 | NA 规格书 + src/plugins |
+| 输入/IME | 方案 A 批准（状态进服务）；共享实例直挂=第三种形态；规格书 v1.2 判别准则 | `kfm-na-input-ime-design-submission.md` / `kfm-na-input-ime-review-response.md` / `kfm-na-input-ime-landing-report.md` | ✅ 落地 | NA 规格书 v1.2 |
 | cordis-rs 审计 | 复刻通用 Rust 版 Cordis；维持传递排空；G2=panic；crate 名 cordis-na；验收换实测基线 | `kfm-na-cordis-rs-audit-submission.md` / `-review.md` | ✅ 裁决 | NA 规格书 v1.3 |
 | cordis-na 阶段 1 | workspace 化 + G1 切除 + 消费侧零改动 + chain workspace 化 | `kfm-na-cordis-rs-stage1-landing.md` | ✅ 已核 | crates/cordis-na |
 | NA 设计冻结响应 | NA 线对 9.0 冻结的响应（休眠期约定） | `kfm-na-design-freeze-response.md` | ✅ 通报 | NA 规格书 §6 阶段 4 |
+| 版本策略 v2 | 池卡提前 8.8 成首个可见版；终端居中 8.9；服务换心转隐形并行轨；M3 期限提前 8.8 | `kfmv4-9.0-version-plan-v2-notice.md` | ✅ 通报（用户授权主笔直改） | dev-task-map 版本策略节 |
+| NA 协同与 Rust 共享内核 | 「终端库只能自研」证伪入裁决史；NA=下游收编位关系式；终端芯 alacritty_terminal 定案；互证基准解析/渲染分开计时方法学 | `kfmv4-9.0-na-rust-synergy.md` / `kfm-na-rust-synergy-response.md` | ✅ NA 已表态（评审待表态） | dev-task-map NA 协同节 |
 
 ## 待决/进行中
 
 | 决策 | 现状 | 下一步 |
 |------|------|--------|
 | 通用多 agent 信箱（送审 1-5） | 收进 9.0 待讨论议题 6 | 主开发线裁决（已挂起待定） |
-| 三方语义映射表 | Cordis 侧 + cordis-na 侧初稿已就 | 拼接成一张表（见 `nine-zero-semantic-map.md`） |
-| cordis-na 阶段 2 | G2 活性闸设计页待送审 | 走送审流程 |
-| 9.0 步 0 四项验证 | 待用户终审后启动 | 9.0 线执行 |
+| cordis-na 阶段 2 | G2 活性闸设计页已送审（`kfm-na-liveness-gate-design-submission.md`，⏳ 待评审表态） | 评审表态 |
+| 9.0 步 0 四项验证 | 用户终审 2026-08-17 已通过，🔶 验证中 | 9.0 线执行 |
 
 ---
 

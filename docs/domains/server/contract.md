@@ -31,7 +31,7 @@ Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
 ## 数据目录
 
 `$HOME/.kfmv4/`（`KFM_DATA_DIR`）——**2026-08-09 重构定稿后的结构**（详见
-`../guides/kfmv4-data.md`，机械门 check-kfmv4-data 执法）：
+`../../guides/kfmv4-data.md`，机械门 check-kfmv4-data 执法）：
 - 根：`providers.json` / `active.json` / `.env`（apiKey 代字真实来源，chmod 600）
 - `agents/`：roles（角色卡）/ configs / prompts / paradigms（人设与配置四合一）
 - `sessions/`（面板会话 + script/ 脚本分流）、`ledger/`（8 个观测账本：

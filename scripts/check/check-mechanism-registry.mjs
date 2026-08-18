@@ -13,6 +13,11 @@
  *      尾巴（全角括号注释）与「#锚点」）；
  *   ④ 死后访问 MECH-GUARD-04：状态列含「退役」的机制名仍被 docs 或
  *      scripts 下的 .mjs/.yaml/.ts 引用 = 红（僵尸引用）。
+ *   ⑤ 链步数咬合 MECH-GUARD-05（2026-08-18 九零审计追加）：注册表正文中
+ *      凡对检查链声称「N 步」（行内含 检查链/chain.mjs/STEPS 且带 N 步），
+ *      N 必须等于 chain.mjs STEPS 数组实际条目数——读 chain.mjs 源码正则
+ *      计数，不 import（import 有执行副作用风险）。审计当日 registry 曾写
+ *      「59 步」而实测 60——活表数字必配机械主人。
  *
  * 豁免区：注册表文件末尾「## 豁免区」表格（| 脚本名 | 理由 |）。
  * 递归终止：broker 自身停滞不设守卫——降生发现 + 用户抽查（契约 2 拍板）。
@@ -109,9 +114,28 @@ if (retiredRows.length) {
   }
 }
 
+// ---------- ⑤ 链步数咬合：注册表「N 步」声称 = chain.mjs STEPS 实际条目数 ----------
+// 读 chain.mjs 源码正则计数（不 import——检查器不该触发被检对象的执行面）
+const chainSrc = readFileSync(join(ROOT, 'scripts', 'check', 'chain.mjs'), 'utf-8');
+const stepsBlock = /export const STEPS = \[([\s\S]*?)\];/.exec(chainSrc);
+if (!stepsBlock) {
+  error('⑤ 链步数咬合：chain.mjs 找不到 export const STEPS 数组——唯一出处结构变了，本守卫需跟进');
+} else {
+  const stepsCount = (stepsBlock[1].match(/^\s*'/gm) || []).length;
+  reg.split('\n').forEach((line, i) => {
+    if (!/检查链|chain\.mjs|STEPS/.test(line)) return;
+    for (const m of line.matchAll(/(\d+)\s*步/g)) {
+      if (parseInt(m[1], 10) !== stepsCount) {
+        error(`⑤ 链步数咬合：注册表第 ${i + 1} 行声称「${m[1]} 步」，chain.mjs STEPS 实际 ${stepsCount} 步`);
+        console.error('    ⛔ MECH-GUARD-05：活表数字必须追平唯一出处——改注册表，或先确认链是否真的变了');
+      }
+    }
+  });
+}
+
 // ---------- 收口 ----------
 if (errors) {
-  console.error(`\n[check-mechanism-registry] 检查失败，构建中断（守卫四件 ${errors} 处红）。`);
+  console.error(`\n[check-mechanism-registry] 检查失败，构建中断（守卫 ${errors} 处红）。`);
   process.exit(1);
 }
-console.log(`[check-mechanism-registry] ✅ 守卫四件通过：${scripts.length} 脚本全收编（黑户 0）/ 机制 ${names.length} 行无同名 / 规约出处无死链 / 退役引用 ${retiredRows.length ? '已清' : '（无退役条目）'}`);
+console.log(`[check-mechanism-registry] ✅ 守卫五件通过：${scripts.length} 脚本全收编（黑户 0）/ 机制 ${names.length} 行无同名 / 规约出处无死链 / 退役引用 ${retiredRows.length ? '已清' : '（无退役条目）'} / 链步数声称咬合`);

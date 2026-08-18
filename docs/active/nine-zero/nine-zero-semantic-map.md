@@ -2,7 +2,7 @@
 
 > 这是什么：双终审任务的收尾产物——把卡萝的 Cordis 侧初稿
 > （`nine-zero-semantic-map-cordis-side.md`）与 kfm-na 线的 cordis-na 侧初稿
-> （`nine-zero-semantic-map-cordis-na-side.md`）拼成一张表：16 行 × 三侧。
+> （`nine-zero-semantic-map-cordis-na-side.md`）拼成一张表：17 行 × 三侧。
 > 每侧都有源码验证（Cordis 侧 `/opt/dsh-src/vendor/cordis/src/`；cordis-na 侧
 > `/root/kfm-na/crates/cordis-na/src/`），拼接时不改任何一侧的原始判定。
 > 别的去哪找：两侧初稿保留（本表是拼接视图）；降生协议（phase2 契约 1）附表
@@ -30,6 +30,7 @@
 | 14 | 契约优先原则 | ✅ 采用裁决 4 | ✅ 差异表+不采用清单 | 冲突时 Cordis 补契约，或契约修订注记录差异 |
 | 15 | 降生协议（八步降生链） | 🟡 system-prompt 组装 + preset 声明式（配置驱动） | 🟡 `Base::new` 启动配置表 + 注册期环检测（fiber.rs:117,148） | 配置驱动降生同构；NA 拓扑序由 refresh 不动点保证 |
 | 16 | 静态/动态注入分层 | 🟡 前缀缓存约束（request-cache e2e） | 🟡 静态=编译期插件集 / 动态=config 惰性解析（fiber.rs:61-65） | 静态吃缓存/动态低频刷新；NA 分层动机=未激活不解析 |
+| 17 | 部署/重启（部署运维族；kfm-restart 路径） | ⬜ Cordis 侧待补 | ⚪ 编译期固定插件集=更新即重编+重装+重连；无运行时移除/DISPOSED；瘦客户端真状态在服务器 tmux，APK 重启=断开重连 | 2026-08-17 用户拍板补行（NA 侧已填，2026-08-18 并入本视图）；与 kfmv4 kfm-restart（WASM 产物+服务端重启+客户端 reload）**同名不同机制**，对账勿混 |
 
 ## 超出 Cordis 语义域的项（拼接标注）
 
@@ -52,7 +53,8 @@
 
 ## 拼接说明
 
-1. 本表 16 行 × 三列，每行三侧判定互不覆盖（各侧保留原始判定）；
+1. 本表 17 行 × 三列，每行三侧判定互不覆盖（各侧保留原始判定）；
+   行 17（部署/重启）系 2026-08-17 用户拍板追加，NA 侧已填、Cordis 侧待补；
 2. 唯一已知缺口 = #8（G2 活性闸），cordis-na 阶段 2 落地后本行转绿；
 3. 差异（Parallel 缓建 / 无 DISPOSED / 无 intercept）全部已入不采用清单或缓建桩；
 4. 原始初稿保留（本表是拼接视图，不是替代）。

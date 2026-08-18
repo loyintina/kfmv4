@@ -27,6 +27,7 @@
 | DOC-FLOW-10 | 新 agent 脚本无发现路径（check-agent-script-docs：scripts/agent/*.mjs 未登记，exp-* 豁免） | guides/agent-runner.md 负载登记节 | 第 4 步 |
 | DOC-FLOW-11 | 实验产物无发现路径（check-experiment-registry：tools/specs/results/design 等未入实验登记面，数据区豁免） | experiments/paradigm/index.md 产物登记面节 | 第 4 步 |
 | DOC-FLOW-12 | 规则/机制类文档无工作流消费（check-doc-orphans 第三层门：active/guides/constraints 须被 workflow reads/check 脚本/CLAUDE-README 任一引用，仅 docs 互引不算） | doc-architecture §结构原则 #5（执法缝隙注记） | 第 4 步 |
+| DOC-FLOW-13 | 文档内路径引用断链（check-doc-links：markdown 链接/反引号路径目标不存在） | doc-maintenance（目录迁移后同步引用） | 第 4 步 |
 
 ## TEST-FLOW（测试/账本纪律：bug-fix 流程）
 
@@ -51,6 +52,9 @@
 | MECH-FLOW-09 | STACK schema/编号/bug 入口违例（check-stack-status） | active/stack.yaml 头注规范 | state-sync.yaml |
 | MECH-FLOW-10 | 巡逻心跳停摆（check-inbox-heartbeat） | /var/log/semantic-chain.log + crontab -l | 排查后手动补跑 semantic-chain.mjs；runner bug 走 bug-fix.yaml |
 | MECH-FLOW-11 | 功能未过落成门探头/记录缺失陈旧（check-probe-state） | experiments/docprobe/index.md §落成门 | 跑 probe-capability.mjs 补探测；修路后重跑 |
+| MECH-FLOW-12 | 信箱台账双向对账/命名违例（check-agent-inbox a/b：账外信、死链、命名出格） | ledger/agent-inbox/README.md 规则节 | 补登台账行或按命名规则改名 |
+| MECH-FLOW-13 | 信件计数声称滞后（check-agent-inbox c：「N 封信」≠ 目录实际数） | 00-index.md / nine-zero-decision-index.md | 改数字追平目录 |
+| MECH-FLOW-14 | 已落定决策未入索引（check-agent-inbox d：已裁决/终审/已落地/已验证信件未被 decision-index 提及） | nine-zero-decision-index.md 维护注 | 索引表补一行（出处信必填） |
 
 ## 新错误码规程
 

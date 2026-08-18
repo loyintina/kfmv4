@@ -774,6 +774,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "工作栈与 active/ 目录健康检查（v8.2 新增）"
   },
   {
+    "name": "check-agent-inbox.mjs",
+    "file": "scripts/check/check-agent-inbox.mjs",
+    "category": "检查器",
+    "description": "跨线评审信箱台账一致性（2026-08-18 立，信箱审计催生）",
+    "permission": "构建链内只读检查（无网络、无写盘副作用）",
+    "prompt": "无（机械检查）",
+    "effect": "跨线评审信箱台账一致性（2026-08-18 立，信箱审计催生）"
+  },
+  {
     "name": "check-agent-script-docs.mjs",
     "file": "scripts/check/check-agent-script-docs.mjs",
     "category": "检查器",
@@ -934,6 +943,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "permission": "构建链内只读检查（无网络、无写盘副作用）",
     "prompt": "无（机械检查）",
     "effect": "文档行号引用有效性检查（v8.3 语义审计机械化 M1）"
+  },
+  {
+    "name": "check-doc-links.mjs",
+    "file": "scripts/check/check-doc-links.mjs",
+    "category": "检查器",
+    "description": "文档内相对/绝对路径存活检查（2026-08-18 立，九零审计催生）",
+    "permission": "构建链内只读检查（无网络、无写盘副作用）",
+    "prompt": "无（机械检查）",
+    "effect": "文档内相对/绝对路径存活检查（2026-08-18 立，九零审计催生）"
   },
   {
     "name": "check-doc-orphans.mjs",

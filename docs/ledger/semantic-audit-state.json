@@ -15,24 +15,16 @@
       "attempts": 1
     },
     "guides-testing-vs-infra": {
-      "hash": "9dafd3667a181fcfdf6184d8c1d4fd925ed434f0",
-      "lastRun": "2026-08-16",
+      "hash": "db8acc1383f19e0891e0121b18ae8ccd1f15dbbc",
+      "lastRun": "2026-08-17",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 1,
+      "reported": 0,
       "kept": 0,
-      "dropped": 1,
+      "dropped": 0,
       "keptFindings": [],
-      "droppedFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/guides/testing.md:9",
-          "against": "docs/guides/testing.md:10",
-          "quote": "单元/集成/冒烟/不变量",
-          "note": "豁免跳过 EX-EX-008（npm test注释含冒烟，但冒烟为独立npm run smoke，内部矛盾"
-        }
-      ],
+      "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
@@ -65,8 +57,8 @@
       "attempts": 1
     },
     "inter-readme-codemap": {
-      "hash": "6289cd73464cbe14cbafb31aa0567de6032688b9",
-      "lastRun": "2026-08-16",
+      "hash": "7ce20cfd379347e53c175908438f6d2532a9c1ff",
+      "lastRun": "2026-08-17",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -79,22 +71,37 @@
       "attempts": 1
     },
     "inter-agentrunner-infra": {
-      "hash": "ab71a0dbb990a9e1b861f3dae76e2bb333e2bafa",
-      "lastRun": "2026-08-16",
+      "hash": "c75be56464826375e099b1da8366ea59431dbae7",
+      "lastRun": "2026-08-17",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 0,
-      "kept": 0,
+      "reported": 2,
+      "kept": 2,
       "dropped": 0,
-      "keptFindings": [],
+      "keptFindings": [
+        {
+          "type": "SEM002",
+          "claim": "docs/guides/agent-runner.md:61",
+          "against": "docs/guides/agent-runner.md:52",
+          "quote": "落下一个 provider",
+          "note": "中转池体质节断言空响重试后落下一个 provider，与同节 08-05 收敛单臂「不再顺位兜底」直接矛盾—旧描述未更新。"
+        },
+        {
+          "type": "SEM002",
+          "claim": "docs/guides/agent-runner.md:53",
+          "against": "docs/guides/agent-runner.md:52",
+          "quote": "调用失败自动落下一个",
+          "note": "key 读取节仍写调用失败自动落下一个顺位 provider，与同节「不再顺位兜底」矛盾；单臂链无下一个可落。"
+        }
+      ],
       "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
     "vision-vs-maps": {
-      "hash": "e482bed507547ab2d6a14fd91528af32cc86e299",
-      "lastRun": "2026-08-16",
+      "hash": "85aad7bab8a9fd91518fd0d585c7ad987cabe467",
+      "lastRun": "2026-08-17",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -121,8 +128,8 @@
       "attempts": 1
     },
     "readme-vs-maps": {
-      "hash": "4532bb5d3ea38dcc9fa8f6a447378c6c2ddaf35b",
-      "lastRun": "2026-08-16",
+      "hash": "d2fd49609651a490a8d8a37c778f99571bd945ea",
+      "lastRun": "2026-08-17",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -135,8 +142,8 @@
       "attempts": 1
     },
     "claude-vs-docs": {
-      "hash": "e22bc6d80fdff43ddd48c97559b9042883938cf1",
-      "lastRun": "2026-08-16",
+      "hash": "c588fe8e07e8a88679c1460b4f9d0b0465070499",
+      "lastRun": "2026-08-17",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -149,8 +156,8 @@
       "attempts": 1
     },
     "workflows-vs-guides": {
-      "hash": "a1e87b0e8b2b27710103843f1aa1d69a9b3e15e9",
-      "lastRun": "2026-08-16",
+      "hash": "b0b997aef6593624b039798559b2f0c69d649e84",
+      "lastRun": "2026-08-17",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -163,16 +170,24 @@
       "attempts": 1
     },
     "guides-release-vs-history": {
-      "hash": "5c5b83b9fa7626dbd9e4dc6ab184d22fada5ce9d",
-      "lastRun": "2026-08-12",
+      "hash": "d04f823ee7a15ba3d76542ce800a8e0c45a32eaa",
+      "lastRun": "2026-08-17",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 0,
+      "reported": 1,
       "kept": 0,
-      "dropped": 0,
+      "dropped": 1,
       "keptFindings": [],
-      "droppedFindings": [],
+      "droppedFindings": [
+        {
+          "type": "SEM001",
+          "claim": "docs/guides/release.md:26",
+          "against": "docs/ledger/history.md:41",
+          "quote": "v8.3.1 同批曾含语义编译",
+          "note": "豁免跳过 EX-EX-006（release.md称v8.3.1为混装，history.md称v8.1.0为历史唯一双主题混装窗口，二者矛盾。"
+        }
+      ],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
@@ -241,58 +256,15 @@
       "attempts": 1
     },
     "contract-vs-map-floating-card": {
-      "hash": "f2668afcdb22689b7d8d66f14132abc192f6dbc0",
-      "lastRun": "2026-08-15",
+      "hash": "09019944c34c71c4f3e71f7b7778acd03538b5f7",
+      "lastRun": "2026-08-17",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 6,
-      "kept": 6,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/floating-card/code-map.md:78",
-          "against": "docs/domains/floating-card/contract.md:13",
-          "quote": "契约出口清单错位",
-          "note": "契约将 launchFocusedCard 列为 floating-card 出口，实然位于 card-stack.ts:80"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/floating-card/code-map.md:79",
-          "against": "docs/domains/floating-card/contract.md:12",
-          "quote": "契约尺寸数字全错",
-          "note": "契约写 compact120×36/active155×68，代码实际 155×68/240×288"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/floating-card/code-map.md:81",
-          "against": "docs/domains/floating-card/contract.md:23",
-          "quote": "硬规则 4 双色对应反了",
-          "note": "契约 color1 左光球+图标背景，代码 color1 含 topMid 且图标数字用 color1"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/floating-card/code-map.md:83",
-          "against": "docs/domains/floating-card/contract.md:9",
-          "quote": "导入数为 0 是特性",
-          "note": "契约称 terminal-card-04/tmux 零导入为特性，现被插件卡静态 import"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/floating-card/code-map.md:84",
-          "against": "docs/domains/floating-card/contract.md:32",
-          "quote": "#陷阱 2 自家仍在犯",
-          "note": "契约禁止对全后代设 inline touchAction，enterFullscreen 仍犯且退出不恢复"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/floating-card/code-map.md:87",
-          "against": "docs/domains/floating-card/contract.md:19",
-          "quote": "硬规则 2（禁止直接",
-          "note": "契约禁止直接 addEventListener，多处文件直接调用，违反规则"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
@@ -320,8 +292,8 @@
       "attempts": 1
     },
     "contract-vs-map-infra": {
-      "hash": "852d94c7abc76c18010a8bbbdd45195966466bd9",
-      "lastRun": "2026-08-16",
+      "hash": "5ca82734504aaffd7fb0f69d0e1e566429a611e6",
+      "lastRun": "2026-08-17",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -334,8 +306,8 @@
       "attempts": 1
     },
     "crossdomain-vs-inventory": {
-      "hash": "2b378663055655ab532381a339d2d5d958cbda16",
-      "lastRun": "2026-08-16",
+      "hash": "968ef6c5e059ded5089e5d40a9edf91d85ce83ea",
+      "lastRun": "2026-08-17",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -348,8 +320,8 @@
       "attempts": 1
     },
     "inter-workflows-infra": {
-      "hash": "b9579841fe4fd24e5436e8241fed4df73325540c",
-      "lastRun": "2026-08-16",
+      "hash": "40a640283c6e99ea5c1bfddf45ff2f6ef31ca155",
+      "lastRun": "2026-08-17",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -1185,6 +1157,13 @@
       "skipped": 30,
       "kept": 0,
       "dropped": 0
+    },
+    {
+      "date": "2026-08-17",
+      "ran": 12,
+      "skipped": 18,
+      "kept": 2,
+      "dropped": 1
     }
   ]
 }

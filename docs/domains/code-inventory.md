@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 7609d47a · 生成于 2026-08-17 -->
+<!-- 基准 commit 81dd7225 · 生成于 2026-08-18 -->
 
 # 代码清单（机械层）
 
@@ -36,11 +36,11 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（32 文件 · 8426 行）
+## floating-card（32 文件 · 8453 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/generated/scripts-catalog.ts | 1364 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
+| src/client/generated/scripts-catalog.ts | 1391 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 807 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 793 | — |
@@ -184,7 +184,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（178 文件 · 19681 行）
+## infra（182 文件 · 20067 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -229,14 +229,16 @@
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/check/check-bar-ledger.mjs | 143 | — |
+| scripts/check/check-mechanism-registry.mjs | 142 | — |
 | scripts/check/check-doc-scripts.mjs | 139 | — |
+| scripts/check/chain.mjs | 137 | STEPS |
 | scripts/check/check-doc-linerefs.mjs | 137 | — |
 | tests/viewport-visibility.test.ts | 137 | — |
 | experiments/coldstart/tools/judge-batch.mjs | 135 | — |
-| scripts/check/chain.mjs | 134 | STEPS |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
+| scripts/check/check-agent-inbox.mjs | 129 | — |
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
 | scripts/check/gen-permission-map.mjs | 126 | — |
 | scripts/check/gen-capability-map.mjs | 125 | — |
@@ -248,6 +250,7 @@
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
 | scripts/check/gen-page-state-schema.mjs | 113 | — |
 | scripts/check/check-doc-coverage.mjs | 111 | — |
+| scripts/check/check-doc-links.mjs | 110 | — |
 | scripts/check/check-zindex.mjs | 110 | — |
 | experiments/coldstart/tools/gen-hallucination-inputs.mjs | 110 | — |
 | scripts/agent/exp-vision-internal.mjs | 109 | — |
@@ -353,6 +356,7 @@
 | tests/probes/checks/build.mjs | 3 | — |
 | tests/probes/doc-scripts/scripts/check/check-real.mjs | 3 | STEPS |
 | tests/probes/bar-ledger/tests/probe.ts | 2 | — |
+| tests/probes/check-mechanism-registry/scripts/check/check-ghost-thing.mjs | 2 | — |
 | tests/probes/check-migration-baseline/scripts/check/chain.mjs | 2 | STEPS |
 | tests/probes/check-migration-baseline/scripts/check-a.mjs | 2 | — |
 | tests/probes/check-migration-baseline/src/client/cards/plugins/only.card.ts | 2 | — |
@@ -707,4 +711,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 331 文件 · 56059 行 · 跨域边 278 条
+合计 335 文件 · 56472 行 · 跨域边 278 条

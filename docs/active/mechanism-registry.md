@@ -33,11 +33,11 @@
 | 报错引导（撞墙含金量） | 核心 | 部分（29/54 带引导） | 报错无引导 → AI 反复不会改（墙倒） | 审计 2026-08-09 | active/error-codes.md（审计记录） | 巡逻 |
 | 工作流系统 workflows | 核心 | 约定 + check-workflow-integrity + check-consistency | 工作流引用失效 → MECH-FLOW-05 | ✓（consistency） | guides/doc-maintenance.md | 巡逻 |
 | 机械主人注入（semantic-audit prompt） | 外围 | 活源头现扫（机械）+ prompt 抑制（概率区，契约 0 修订注两区首例） | 注入失效 → 「机械主人」误报家族回潮进巡逻信箱（SEM001-1/SEM002-1 类发现再现） | ✓（BAR-SEMCHAIN-05 2 钉） | ledger/bugs.md（BAR-SEMCHAIN-05）+ 契约 0 修订注 | 巡逻 |
-| 跨线评审信箱（docs/ledger/agent-inbox/，2026-08-15 自 dsh-na/inbox 迁入） | 外围 | 约定（append-only + 状态列更新）+ 巡逻心跳 check-inbox-heartbeat（2026-08-03 上线，机械化列滞后订正）；契约 3 定稿：信封四字段/归属行扫描器/代际戳待落地 | 信件状态列停滞（待回信不推进）→ 用户抽查/会话启动时发现；巡逻信箱沉默 → 心跳检查报红 | —（接受滞后+抽查） | ledger/agent-inbox/README.md + nine-zero-phase2-contracts.md 契约 3 | 巡逻 |
+| 跨线评审信箱（docs/ledger/agent-inbox/，2026-08-15 自 dsh-na/inbox 迁入） | 外围 | 约定（append-only + 状态列更新）+ 巡逻心跳 check-inbox-heartbeat（2026-08-03 上线，机械化列滞后订正）+ 台账一致性 check-agent-inbox（2026-08-18 上线：双向对应/命名/计数/索引覆盖四查）；契约 3 定稿：信封四字段/归属行扫描器/代际戳待落地 | 信件状态列停滞（待回信不推进）→ 用户抽查/会话启动时发现；巡逻信箱沉默 → 心跳检查报红 | —（接受滞后+抽查） | ledger/agent-inbox/README.md + nine-zero-phase2-contracts.md 契约 3 | 巡逻 |
 | 开源守门 check-secrets | 核心 | 全 | 工作树明文 key 泄露 → 硬失败（2026-08-01 三 key 事故催生；分级处置节早已提及，表漏行 2026-08-17 补） | ✗ 无探针（git 历史型豁免候选） | scripts/check/check-secrets.mjs 头注（规则与背景） | 巡逻 |
 
 
-| 文档质量门族（check-docs + check-doc-schema） | 核心 | 全 | 文档质量/结构违例 → 中断 | ✓（docs 夹具） | guides/doc-architecture.md | 巡逻 |
+| 文档质量门族（check-docs + check-doc-schema + check-doc-links） | 核心 | 全 | 文档质量/结构违例/路径断链 → 中断 | ✓（docs 夹具） | guides/doc-architecture.md | 巡逻 |
 | 语义审计机械化族（check-doc-symbols / check-doc-linerefs / check-doc-scripts / check-ledger-commits / check-code-doc-refs / check-mutation-anchors） | 核心 | 全 | 符号/行号/脚本引用失效 → 中断（v8.3 语义审计 M1/M3 + SEM001 收割） | ✓（多数） | ledger/history.md（v8.3 机械化记录） | 巡逻 |
 | 工作栈族（check-active-stack + check-stack-status + check-state-freshness） | 核心 | 全 | 栈条目漂移/状态停滞 → 中断 | ✓ | active/stack.yaml（schema 即规约）+ guides/onboarding.md | 巡逻 |
 | 卡片完整性族（check-cards + check-card-meta + check-registry + check-css-wiring + check-zindex） | 核心 | 全 | 卡注册/类型逃逸/CSS 接线/z 层级违例 → 中断 | 部分 | domains/floating-card/contract.md + domains/client-shell/contract.md | 巡逻 |
@@ -49,7 +49,7 @@
 | 迁移验证线（check-migration-baseline，M1 基线矩阵） | 核心 | 全（--record 发布录 / verify 挂链） | 8.x 换心缩水 → 基线门报红 MIG-BASE-01 | ✓（check-migration-baseline 夹具） | nine-zero-dev-task-map.md 迁移验证线节 + guides/release.yaml | 巡逻 |
 | agent 脚本发现性门（check-agent-script-docs） | 核心 | 全 | agent 脚本文档缺失 → 中断 | — | guides/agent-runner.md | 巡逻 |
 | git 提交卫生族（check-hooks + check-uncommitted） | 核心 | 全 | 钩子缺失/未提交改动 → 中断 | 豁免（git 历史型，uncommitted） | CLAUDE.md（构建与运行） | 巡逻 |
-| 注册表守卫 broker（check-mechanism-registry，守卫四件本体） | 核心 | 全（完备性/同名/出处存在/死后访问） | 黑户脚本/同名机制/死链规约/僵尸引用 → 中断 MECH-GUARD-01~04 | ✓（check-mechanism-registry 夹具） | nine-zero-phase2-contracts.md 契约 2 | 巡逻 |
+| 注册表守卫 broker（check-mechanism-registry，守卫五件本体） | 核心 | 全（完备性/同名/出处存在/死后访问/链步数咬合） | 黑户脚本/同名机制/死链规约/僵尸引用/链步数漂移 → 中断 MECH-GUARD-01~05 | ✓（check-mechanism-registry 夹具） | nine-zero-phase2-contracts.md 契约 2 | 巡逻 |
 
 ## 豁免区
 
@@ -88,3 +88,7 @@
   数据卫生/实验登记/迁移验证线/agent 发现性/git 卫生/broker 守卫自身）；3 行机械清单
   扩展（检查链+自指门 / BAR 钉+计数模式 / 工作流+consistency）；豁免区立档（零豁免）。
   check-mechanism-registry.mjs 守卫四件挂链——注册表从「低频手工维护」转机械对账时代。
+- 2026-08-18 九零审计机械化收尾（同日晚）：check-doc-links 收编进文档质量门族行、
+  check-agent-inbox 收编进信箱行（均按契约 5 机制群归行，不新增行数）；守卫四件升
+  五件——补 ⑤ 链步数咬合（MECH-GUARD-05，注册表「N 步」声称对账 chain.mjs STEPS
+  源码计数，堵审计抓到的 59→60 漂移类）。
