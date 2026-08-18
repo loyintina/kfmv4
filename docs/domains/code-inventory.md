@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit fbc927a7 · 生成于 2026-08-18 -->
+<!-- 基准 commit 087f065a · 生成于 2026-08-18 -->
 
 # 代码清单（机械层）
 
@@ -186,7 +186,7 @@
 | src/server/routes/providers.ts | 78 | setupProvidersRoutes |
 | src/server/routes/compact.ts | 73 | compactRouter, computeCutIndex |
 
-## infra（185 文件 · 20322 行）
+## infra（185 文件 · 20343 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -215,10 +215,10 @@
 | tests/renderer.test.ts | 215 | — |
 | tests/to-openai-messages.test.ts | 208 | — |
 | tests/smoke/smoke.mjs | 199 | — |
+| scripts/check/check-agent-inbox.mjs | 195 | — |
 | scripts/check/check-migration-baseline.mjs | 187 | — |
 | scripts/agent/semantic-chain.mjs | 185 | — |
 | scripts/check/gen-code-inventory.mjs | 184 | — |
-| scripts/check/check-agent-inbox.mjs | 174 | — |
 | tests/chat-protocol.test.ts | 169 | — |
 | tests/provider-env.test.ts | 168 | — |
 | experiments/coldstart/tools/hallucinate-batch.mjs | 164 | — |
@@ -721,4 +721,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 340 文件 · 57074 行 · 跨域边 283 条
+合计 340 文件 · 57095 行 · 跨域边 283 条

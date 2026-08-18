@@ -30,6 +30,7 @@
 | cordis-na 阶段 1 | workspace 化 + G1 切除 + 消费侧零改动 + chain workspace 化 | `kfm-na-cordis-rs-stage1-landing.md` | ✅ 已核 | crates/cordis-na |
 | NA 设计冻结响应 | NA 线对 9.0 冻结的响应（休眠期约定） | `kfm-na-design-freeze-response.md` | ✅ 通报 | NA 规格书 §6 阶段 4 |
 | 版本策略 v2 | 池卡提前 8.8 成首个可见版；终端居中 8.9；服务换心转隐形并行轨；M3 期限提前 8.8 | `kfmv4-9.0-version-plan-v2-notice.md` | ✅ 通报（用户授权主笔直改） | dev-task-map 版本策略节 |
+| 步 0-4 拆分 | 循环依赖死锁（8.7.1↔0-4↔NA↔8.7.2）解锁：0-4a 基准设定=闸门认项 ✅；0-4b NA 互证移出步 0 归 8.7.2 验收项 | `kfmv4-9.0-step0-4-split-report.md` | ✅ 用户拍板（评审已收编案例 001） | dev-task-map 第 0 层 0-4 行 + agent-mailbox cases/ |
 | NA 协同与 Rust 共享内核 | 「终端库只能自研」证伪入裁决史；NA=下游收编位关系式；终端芯 alacritty_terminal 定案；互证基准解析/渲染分开计时方法学 | `kfmv4-9.0-na-rust-synergy.md` / `kfm-na-rust-synergy-response.md` / `kfmv4-9.0-na-rust-synergy-review-response.md` | ✅ 全线表态完毕（NA + 评审全采纳） | dev-task-map NA 协同节 |
 | cordis-na 阶段 2 | G2 活性闸（入口先查活性；Events 同闸；panic 前缀 INACTIVE_ACCESS 定公开契约）；G3/G4 缓建桩；G5 政策归层保留 50ms | `kfm-na-liveness-gate-design-submission.md` / `kfm-na-liveness-gate-review-response.md` | ✅ 批准（待落地通报） | crates/cordis-na（落地后） |
 

@@ -23,6 +23,9 @@
  *   d. 决策索引覆盖：机读头「状态」含 已裁决/终审/已落地/已验证 的信件，
  *      其文件名必须在 nine-zero-decision-index.md 中出现至少一次（信号源 =
  *      目录信件机读头，不再读手写状态列）。
+ *   e. 停滞检测（2026-08-18 立，README 活性条款机械化）：「待*」状态 +
+ *      发信日期超 7 天 = 报红（⛳ MECH-FLOW-16）。阈值为执行层参数，
+ *      调整走本文件，不走契约修订。
  *
  * 机读头解析规则与 gen-agent-inbox.mjs 内联同一份逻辑——改动需两处同步。
  * 枚举型检查（每次全量重扫信箱），KFM_PROBE_ROOT 可注入（宪法探针条款）。
@@ -110,6 +113,24 @@ for (const f of letters) {
   }
 }
 
+// ---------- e. 停滞检测（2026-08-18 立，README 活性条款机械化） ----------
+// 「待*」状态 + 日期超阈值 = 停滞报红——活性条款从「用户抽查」升级为巡逻发现。
+// 阈值 7 天 = 送审问题 2 草案值；契约 3「不定死天数」指不在契约文本定死，
+// 机检阈值是执行层参数（调整走本文件，不走契约修订）。
+// v1 时钟 = 机读头「日期」（发信日）；状态最后翻转时刻属代际戳（待落地），
+// 落地后改用 last-touch 更准。
+const STALE_DAYS = 7;
+const now = Date.now();
+for (const [f, h] of headers) {
+  if (!h || !h.状态 || !/^\d{4}-\d{2}-\d{2}$/.test(h.日期 || '')) continue;
+  const bare = h.状态.replace(/^[^\p{Script=Han}A-Za-z]+/u, '');
+  if (!bare.startsWith('待')) continue;
+  const ageDays = (now - Date.parse(h.日期)) / 86400000;
+  if (ageDays > STALE_DAYS) {
+    error(`e. 停滞：${f} 「${bare.slice(0, 16)}…」已挂 ${Math.floor(ageDays)} 天（阈值 ${STALE_DAYS}）——归属线 ${h.致} 应按阅信纪律处理或说明（⛳ MECH-FLOW-16）`);
+  }
+}
+
 // ---------- b. 命名规范 ----------
 // LEGACY 祖父豁免：2026-08-18 审计遗留 7 封命名违规（信件只追加不删改，不更名）；
 // 豁免仅限这 7 个文件名本体，新违规照红。
@@ -170,4 +191,4 @@ if (errors > 0) {
   console.error(`\n[check-agent-inbox] 信箱一致性检查失败（${errors} 处红），构建中断。`);
   process.exit(1);
 }
-console.log(`[check-agent-inbox] OK — ${letters.length} 封信机读头 schema 合规 / 命名合规（LEGACY 豁免 ${LEGACY_NAMING.size}）/ 计数咬合 / 决策索引覆盖（台账双向对应由 gen-agent-inbox --check-only 保证）`);
+console.log(`[check-agent-inbox] OK — ${letters.length} 封信机读头 schema 合规 / 命名合规（LEGACY 豁免 ${LEGACY_NAMING.size}）/ 计数咬合 / 决策索引覆盖 / 停滞检测（待* 超 ${STALE_DAYS} 天报红）（台账双向对应由 gen-agent-inbox --check-only 保证）`);

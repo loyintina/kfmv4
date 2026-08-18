@@ -33,7 +33,7 @@
 | 报错引导（撞墙含金量） | 核心 | 部分（29/54 带引导） | 报错无引导 → AI 反复不会改（墙倒） | 审计 2026-08-09 | active/error-codes.md（审计记录） | 巡逻 |
 | 工作流系统 workflows | 核心 | 约定 + check-workflow-integrity + check-consistency | 工作流引用失效 → MECH-FLOW-05 | ✓（consistency） | guides/doc-maintenance.md | 巡逻 |
 | 机械主人注入（semantic-audit prompt） | 外围 | 活源头现扫（机械）+ prompt 抑制（概率区，契约 0 修订注两区首例） | 注入失效 → 「机械主人」误报家族回潮进巡逻信箱（SEM001-1/SEM002-1 类发现再现） | ✓（BAR-SEMCHAIN-05 2 钉） | ledger/bugs.md（BAR-SEMCHAIN-05）+ 契约 0 修订注 | 巡逻 |
-| 跨线评审信箱（docs/ledger/agent-inbox/，2026-08-15 自 dsh-na/inbox 迁入） | 外围 | 约定（append-only + 信头 `> 状态:` 字段更新）+ 巡逻心跳 check-inbox-heartbeat（2026-08-03 上线，机械化列滞后订正）+ 台账一致性 check-agent-inbox（2026-08-18 上线；同日晚 D3 转型：机读头 schema/命名/计数/索引覆盖四查，双向对应移交生成器）+ gen-agent-inbox（2026-08-18 D3 落地：台账投影生成器 + 归属行扫描器 `--for=<线名>` 一体，check-only 挂链）；契约 3 定稿机械件：信封四字段（机读头七字段含之）/归属行扫描器已落地，**代际戳待落地** | 信件状态列停滞（待回信不推进）→ 用户抽查/会话启动时发现；巡逻信箱沉默 → 心跳检查报红 | —（接受滞后+抽查） | ledger/agent-inbox/README.md + nine-zero-phase2-contracts.md 契约 3 + experiments/agent-mailbox/（代码世界事件面研究线，2026-08-18 立） | 巡逻 |
+| 跨线评审信箱（docs/ledger/agent-inbox/，2026-08-15 自 dsh-na/inbox 迁入） | 外围 | 约定（append-only + 信头 `> 状态:` 字段更新）+ 巡逻心跳 check-inbox-heartbeat（2026-08-03 上线，机械化列滞后订正）+ 台账一致性 check-agent-inbox（2026-08-18 上线；同日晚 D3 转型：机读头 schema/命名/计数/索引覆盖四查，双向对应移交生成器）+ gen-agent-inbox（2026-08-18 D3 落地：台账投影生成器 + 归属行扫描器 `--for=<线名>` 一体，check-only 挂链）；停滞检测 check-agent-inbox e 查（2026-08-18 上线：「待*」状态 + 发信超 7 天报红，⛳ MECH-FLOW-16）；契约 3 定稿机械件：信封四字段（机读头七字段含之）/归属行扫描器已落地，**代际戳待落地** | 信件状态列停滞（待回信不推进）→ check-agent-inbox e 机械化报红（MECH-FLOW-16），用户抽查兜底；巡逻信箱沉默 → 心跳检查报红 | —（接受滞后+抽查） | ledger/agent-inbox/README.md + nine-zero-phase2-contracts.md 契约 3 + experiments/agent-mailbox/（代码世界事件面研究线，2026-08-18 立） | 巡逻 |
 | 开源守门 check-secrets | 核心 | 全 | 工作树明文 key 泄露 → 硬失败（2026-08-01 三 key 事故催生；分级处置节早已提及，表漏行 2026-08-17 补） | ✗ 无探针（git 历史型豁免候选） | scripts/check/check-secrets.mjs 头注（规则与背景） | 巡逻 |
 
 
@@ -102,3 +102,8 @@
   转型——双向对应检查删除（生成器保证），新增机读头 schema 校验（状态词表从
   README 规则区解析，唯一出处），命名/计数/索引覆盖三查保留（覆盖信号源换机读头）。
   契约 3 点名机械件三件落地其二，代际戳留「待落地」。
+- 2026-08-18 信箱停滞检测机械化（评审会话，用户拍板 A+B 计划之 B）：check-agent-inbox
+  新增 e 查——「待*」状态 + 机读头发信日期超 7 天报红（⛳ MECH-FLOW-16），README
+  活性条款「用户抽查发现」升级为巡逻发现（抽查兜底保留）；阈值为执行层参数
+  （STALE_DAYS，调整走脚本不走契约修订）。同日状态词表增收「已收编」（案例归档
+  封账态，配 experiments/agent-mailbox/cases/ 案例 001 启用）。
