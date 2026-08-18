@@ -33,6 +33,7 @@ export const TOOL_RISK: Record<string, RiskClass> = {
   checkpoint: 'write_local',
   rewind: 'write_local',
   'kfm-hand-move': 'write_local',   // 移动 AI 的手（UI 状态，无文件副作用）
+  'kfm-compact': 'write_local',      // 写会话文件 compacts 数组（真相源追加 append-only）
   // 执行类：门控（做事通道）
   bash: 'exec',
   eval: 'exec',

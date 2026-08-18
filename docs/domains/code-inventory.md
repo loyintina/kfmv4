@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 29bf6285 · 生成于 2026-08-18 -->
+<!-- 基准 commit 45137bae · 生成于 2026-08-18 -->
 
 # 代码清单（机械层）
 
@@ -106,7 +106,7 @@
 | src/client/modules/hand-geometry.ts | 11 | handHitTest |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（59 文件 · 12974 行）
+## ai-chat（59 文件 · 12975 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -133,7 +133,7 @@
 | src/server/ai/tools/index.ts | 173 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
 | src/server/ai/routes.ts | 162 | StartRunFn, setupAiRoutes |
 | src/server/ai/page-state.ts | 156 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
-| src/server/ai/permissions.ts | 135 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
+| src/server/ai/permissions.ts | 136 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/ai/prompt-assembler.ts | 124 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
 | src/server/ai/tools/kfmv4/logs.ts | 119 | kfmLogsTool |
@@ -170,7 +170,7 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（11 文件 · 2651 行）
+## server（11 文件 · 2652 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -179,7 +179,7 @@
 | src/server/ws-server.ts | 324 | WsServer |
 | src/server/index.ts | 188 | — |
 | src/server/path-utils.ts | 172 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
-| src/server/ai/permissions.ts | 135 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
+| src/server/ai/permissions.ts | 136 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/env-store.ts | 103 | ENV_PATH, parseEnv, loadEnvFile, isEnvRef, ResolvedKey, resolveKey, envNameForProvider, upsertEnvVar |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
@@ -718,4 +718,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 338 文件 · 56809 行 · 跨域边 282 条
+合计 338 文件 · 56811 行 · 跨域边 282 条
