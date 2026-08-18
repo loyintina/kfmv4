@@ -43,6 +43,7 @@ export const COMPACTOR_REGISTRY: Record<string, CompactorEntry> = {
   'kfm-hand-move': { exempt: 'G2：输出通常 ≤300 字符' },
   checkpoint: { exempt: 'G2：输出通常 ≤300 字符' },
   rewind: { exempt: 'G2：输出通常 ≤300 字符' },
+  'kfm-compact': { exempt: 'G2：压缩交接报告输出 ≤500 字符（cutIndex/长度/载荷变化）' },
 };
 
 /** 全部登记工具名（供 check-tool-compaction.mjs 与注册工具双向核对） */

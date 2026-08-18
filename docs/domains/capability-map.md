@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-capability-map.mjs —— 请勿手改 -->
-<!-- 登记源：scripts/capability-map.manifest.json · 生成于 2026-08-08 -->
+<!-- 登记源：scripts/capability-map.manifest.json · 生成于 2026-08-18 -->
 
 # 功能总目录（capability map）
 

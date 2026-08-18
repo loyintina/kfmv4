@@ -604,7 +604,7 @@ const _localToolCards = new Map<string, { el: HTMLElement; statusEl: HTMLElement
 
 function _appendLocalToolCard(name: string, input: Record<string, unknown>): void {
   try {
-    const area = document.querySelector('.chat-scroll, .orb-chat-messages, #chat-messages');
+    const area = document.querySelector('.orb-panel-content');
     if (!area) return;
     const id = `localtool_${++_localToolCardSeq}`;
     const wrap = document.createElement('div');

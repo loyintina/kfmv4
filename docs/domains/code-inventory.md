@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 3c35fc1e · 生成于 2026-08-18 -->
+<!-- 基准 commit 29bf6285 · 生成于 2026-08-18 -->
 
 # 代码清单（机械层）
 
@@ -106,20 +106,20 @@
 | src/client/modules/hand-geometry.ts | 11 | handHitTest |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（57 文件 · 12640 行）
+## ai-chat（59 文件 · 12974 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/chat-dom.ts | 1132 | initChatDom, clearChatDom, getFollowBottom, setFollowBottom, setHistoryLoader, suspendScroll, resumeScroll, withScrollAnchor, scrollToBottom, mountUserMessage, patchEvent, mountAiMessage, settleToolCardsDom, mountFallbackAiMessage |
 | src/client/data/waiting-hints.ts | 1108 | WAITING_HINTS |
 | src/server/ai/tools/omp/browser/tab-worker.ts | 921 | WorkerCore |
+| src/client/modules/orb-chat-run.ts | 646 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
-| src/server/ai/chat.ts | 572 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
+| src/server/ai/chat.ts | 574 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
 | src/client/modules/session-client.ts | 542 | SessionMessage, Session, extractMessageText, countTextMessages, parseSessionItem, sessionStore |
-| src/client/modules/orb-chat-run.ts | 528 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/client/modules/ws-channel.ts | 432 | wsChannel, initWsChannel |
 | src/server/ai/eyes.ts | 432 | EYES_PATH, genEyes |
-| src/shared/tool-compaction/index.ts | 370 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
+| src/shared/tool-compaction/index.ts | 371 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
 | src/server/ai/tools/omp/debug.ts | 362 | ompDebugTool |
 | src/server/ai/tools/omp/debug/debug-operations.ts | 356 | Breakpoint, StackFrame, Variable, SourceInfo, setBreakpoint, setFunctionBreakpoint, removeBreakpoint, doContinue, doPause, stepIn, stepOver, stepOut, waitForPause, getStack, getVariables, evaluate, loadedSources, injectProbe, capturePausedFrames, clearPausedFrames |
 | src/server/ai/tools/omp/browser/tab-supervisor.ts | 342 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs, resolveTabWorkerEntry |
@@ -127,11 +127,11 @@
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
 | src/server/ai/session-store.ts | 317 | markSessionScript, _computeStats, appendEvent, flush, flushSync, invalidateSession, appendUserMessage, SessionCompact, appendCompact, getCompacts |
 | src/shared/chat-protocol/to-openai-messages.ts | 309 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
+| src/server/ai/run-manager.ts | 242 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
-| src/server/ai/run-manager.ts | 240 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
-| src/server/ai/tools/index.ts | 171 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
-| src/server/ai/routes.ts | 161 | StartRunFn, setupAiRoutes |
+| src/server/ai/tools/index.ts | 173 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
+| src/server/ai/routes.ts | 162 | StartRunFn, setupAiRoutes |
 | src/server/ai/page-state.ts | 156 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | src/server/ai/permissions.ts | 135 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/ai/prompt-assembler.ts | 124 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
@@ -140,12 +140,14 @@
 | src/server/ai/tools/omp/read.ts | 117 | ompReadTool |
 | src/server/ai/tools/omp/browser/aria/aria-snapshot.ts | 116 | AriaSnapshotOptions, captureAriaSnapshot, resolveAriaRefHandle, parseAriaRefSelector, buildAriaSnapshotScript |
 | src/server/ai/tools/omp/browser/tab-protocol.ts | 115 | Transferable, ObservationEntry, Observation, ScreenshotResult, SessionSnapshot, WorkerInitPayload, ToolReply, WorkerInbound, ReadyInfo, RunResultOk, RunErrorPayload, WorkerOutbound, Transport |
+| src/server/ai/tools/types.ts | 112 | ContentBlock, ToolResult, ToolUpdate, ToolContext, KfmTool, ToolError, ToolAbortError, throwIfAborted, renderError |
 | src/client/modules/viewport-visibility.ts | 111 | RegionRect, RegionInput, Cover, RegionVisibility, rankOf, computeVisibility, assembleRegions |
 | src/server/ai/tools/omp/browser/readable.ts | 111 | ReadableFormat, ReadableResult, extractReadableFromHtml |
-| src/server/ai/tools/types.ts | 110 | ContentBlock, ToolResult, ToolUpdate, ToolContext, KfmTool, ToolError, ToolAbortError, throwIfAborted, renderError |
+| src/server/ai/compact-core.ts | 110 | SUMMARY_PROVIDER, SUMMARY_MODEL, SUMMARY_PROMPT, CompactResult, computeCutIndex, runCompact |
 | src/server/ai/rule-engine.ts | 109 | AiRule, loadRules, buildAlwaysApplyPrompt, checkToolCallRules, reloadRules |
 | src/server/ai/tools/omp/web-search.ts | 109 | ompWebSearchTool |
 | src/server/ai/tools/omp/browser.ts | 100 | browserTool |
+| src/server/ai/tools/kfmv4/compact.ts | 96 | kfmCompactTool |
 | src/server/ai/tools/kfmv4/hand.ts | 86 | kfmHandMoveTool |
 | src/server/ai/tools/omp/browser/run-cancellation.ts | 86 | markHandled, waitForBrowserRun, bindBrowserRunFacade |
 | src/server/ai/tools/omp/bash.ts | 80 | ompBashTool |
@@ -168,7 +170,7 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（11 文件 · 2693 行）
+## server（11 文件 · 2651 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -178,18 +180,18 @@
 | src/server/index.ts | 188 | — |
 | src/server/path-utils.ts | 172 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/ai/permissions.ts | 135 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
-| src/server/routes/compact.ts | 127 | compactRouter, computeCutIndex |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/env-store.ts | 103 | ENV_PATH, parseEnv, loadEnvFile, isEnvRef, ResolvedKey, resolveKey, envNameForProvider, upsertEnvVar |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
-| src/server/routes/providers.ts | 66 | setupProvidersRoutes |
+| src/server/routes/providers.ts | 78 | setupProvidersRoutes |
+| src/server/routes/compact.ts | 73 | compactRouter, computeCutIndex |
 
-## infra（182 文件 · 20070 行）
+## infra（183 文件 · 20112 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 968 | — |
-| tests/regression.test.ts | 667 | — |
+| tests/regression.test.ts | 668 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -217,7 +219,7 @@
 | scripts/agent/semantic-chain.mjs | 185 | — |
 | scripts/check/gen-code-inventory.mjs | 184 | — |
 | tests/chat-protocol.test.ts | 169 | — |
-| tests/provider-env.test.ts | 167 | — |
+| tests/provider-env.test.ts | 168 | — |
 | experiments/coldstart/tools/hallucinate-batch.mjs | 164 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
 | experiments/coldstart/tools/routine-entry-validation.mjs | 158 | — |
@@ -321,6 +323,7 @@
 | scripts/check/check-release-radar.mjs | 42 | — |
 | tests/obs-track-time.test.ts | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
+| tests/compact-auto.test.ts | 40 | — |
 | tests/compact-cutindex.test.ts | 39 | — |
 | tests/obs-audit-pending.test.ts | 38 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
@@ -403,11 +406,12 @@
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-css.ts
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-extensions.ts
 
-### ai-chat → server（19 边）
+### ai-chat → server（21 边）
 
 - src/server/ai/chat.ts → src/server/env-store.ts
 - src/server/ai/chat.ts → src/server/path-utils.ts
 - src/server/ai/chat.ts → src/server/ws-server.ts
+- src/server/ai/compact-core.ts → src/server/env-store.ts
 - src/server/ai/eyes.ts → src/server/path-utils.ts
 - src/server/ai/eyes.ts → src/server/routes/obs.ts
 - src/server/ai/eyes.ts → src/server/ws-server.ts
@@ -420,6 +424,7 @@
 - src/server/ai/run-manager.ts → src/server/ws-server.ts
 - src/server/ai/session-store.ts → src/server/path-utils.ts
 - src/server/ai/tools/index.ts → src/server/ai/permissions.ts
+- src/server/ai/tools/kfmv4/compact.ts → src/server/path-utils.ts
 - src/server/ai/tools/kfmv4/hand.ts → src/server/ws-server.ts
 - src/server/ai/tools/kfmv4/logs.ts → src/server/ws-server.ts
 - src/server/ai/tools/kfmv4/restart.ts → src/server/path-utils.ts
@@ -596,13 +601,14 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（33 边）
+### infra → ai-chat（34 边）
 
 - tests/browser-tool.test.ts → src/server/ai/tools/omp/browser/tab-supervisor.ts
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
 - tests/chat-protocol.test.ts → src/server/ai/chat.ts
 - tests/client-logic.test.ts → src/client/modules/session-client.ts
 - tests/client-logic.test.ts → src/shared/message-normalize.ts
+- tests/compact-auto.test.ts → src/server/ai/compact-core.ts
 - tests/compact-cutindex.test.ts → src/client/modules/session-client.ts
 - tests/compact-l4.test.ts → src/shared/chat-protocol/to-openai-messages.ts
 - tests/invariants.test.ts → src/server/ai/chat.ts
@@ -700,10 +706,11 @@
 - tests/session-security.test.ts → src/server/path-utils.ts
 - tests/session-security.test.ts → src/server/ws-server.ts
 
-### server → ai-chat（7 边）
+### server → ai-chat（8 边）
 
 - src/server/ai/permissions.ts → src/server/ai/tools/types.ts
 - src/server/index.ts → src/server/ai/routes.ts
+- src/server/routes/compact.ts → src/server/ai/compact-core.ts
 - src/server/routes/compact.ts → src/server/ai/session-store.ts
 - src/server/routes/compact.ts → src/shared/chat-protocol/to-openai-messages.ts
 - src/server/routes/files.ts → src/server/ai/session-store.ts
@@ -711,4 +718,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 335 文件 · 56475 行 · 跨域边 278 条
+合计 338 文件 · 56809 行 · 跨域边 282 条
