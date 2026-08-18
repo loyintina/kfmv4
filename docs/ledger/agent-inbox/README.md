@@ -101,6 +101,7 @@
 | 2026-08-18 | [`kfmv4-9.0-step0-progress.md`](kfmv4-9.0-step0-progress.md) | —（首信；步 0 进展通报：0-1 守视实拍 PASS ✅ / 0-3 存量普查 ✅ / 0-4 数字已在 №14+GC 净增量修订注 / **0-2 三数字实测齐请茉莉会签达标线**；附守视口径勘误一条；NA 抄送互证事项） | ✅ 茉莉已会签（2026-08-18 三数字达标 + 达标线建议：内核 ≤32KB gz 红线 / 启动并轨 M3 / 无泄漏断言入 №14 卸载考题）；0-2 过 → 步 0 四项全过待总拍板。**同日追加版本变更通报**：锁定版本 rc.7→rc.8（用户拍板），rc.8 全量复测等价（28.2KB min/10.0KB gz、热启动 33.6–36.4ms、churn 177–212µs/次 堆平台化），会签结论按复测值平移，待茉莉无异议确认 |
 | 2026-08-18 | [`kfmv4-agent-mailbox-d2-d3-report.md`](kfmv4-agent-mailbox-d2-d3-report.md) | —（通报；并发纪律 D2 成文即刻生效 + 台账生成化 D3 设计稿待用户拍板） | 📢 通报完毕（D3 落地待用户拍板） |
 | 2026-08-18 | [`kfmv4-agent-mailbox-d3-landing-report.md`](kfmv4-agent-mailbox-d3-landing-report.md) | —（通报；D3 落地：机读头回填 43 封 + 生成器/扫描器入链 + check 转型） | 📢 通报完毕（无需回信） |
+| 2026-08-18 | [`kfmv4-agent-mailbox-d4-design-submission.md`](kfmv4-agent-mailbox-d4-design-submission.md) | kfmv4-agent-mailbox-d3-landing-report.md（其「代际戳待落地，设计细化后另行送审」即本信） | 待评审表态 |
 | 2026-08-18 | [`kfmv4-agent-mailbox-habit-report.md`](kfmv4-agent-mailbox-habit-report.md) | —（通报；阅信纪律 D1 成文——README 新增四条规则 + 各线入口文档挂启动自查一行动作项） | 📢 通报完毕（无需回信） |
 | 2026-08-18 | [`kfmv4-agent-mailbox-research-report.md`](kfmv4-agent-mailbox-research-report.md) | —（通报；agent 信箱机制研究线立项 experiments/agent-mailbox/：账本 vs 事件面定位 + 痛点清单五条带证据 + 议题 6 五问迁入解挂扩 Q6/Q7） | 📢 通报完毕（无需回信） |
 <!-- gen:agent-inbox:end -->

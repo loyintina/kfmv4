@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit b8da210a · 生成于 2026-08-18 -->
+<!-- 基准 commit 25c0807c · 生成于 2026-08-18 -->
 
 # 代码清单（机械层）
 
@@ -73,7 +73,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（28 文件 · 4549 行）
+## client-shell（29 文件 · 4666 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -89,10 +89,11 @@
 | src/client/modules/obs-hud.ts | 186 | initObsHud |
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
+| src/client/main.ts | 142 | — |
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
-| src/client/main.ts | 132 | — |
 | src/client/modules/app.ts | 131 | initApp |
 | src/client/modules/z-index-layers.ts | 108 | Z, ZLayer |
+| src/client/ctx.ts | 107 | bootLog, rootCtx, helloFiber, isHelloCleaned, bootCtxSelfTest, ChurnResult, ctxChurn |
 | src/client/modules/animation-registry.ts | 76 | AnimTimeline, AnimTween, anim |
 | src/client/modules/ui.ts | 71 | openSidebar, closeSidebar, initUI |
 | src/client/modules/version-watch.ts | 60 | initVersionWatch |
@@ -106,14 +107,14 @@
 | src/client/modules/hand-geometry.ts | 11 | handHitTest |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（59 文件 · 13009 行）
+## ai-chat（59 文件 · 13036 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/chat-dom.ts | 1132 | initChatDom, clearChatDom, getFollowBottom, setFollowBottom, setHistoryLoader, suspendScroll, resumeScroll, withScrollAnchor, scrollToBottom, mountUserMessage, patchEvent, mountAiMessage, settleToolCardsDom, mountFallbackAiMessage |
 | src/client/data/waiting-hints.ts | 1108 | WAITING_HINTS |
 | src/server/ai/tools/omp/browser/tab-worker.ts | 921 | WorkerCore |
-| src/client/modules/orb-chat-run.ts | 643 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
+| src/client/modules/orb-chat-run.ts | 670 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
 | src/server/ai/chat.ts | 587 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
 | src/client/modules/session-client.ts | 545 | SessionMessage, Session, extractMessageText, countTextMessages, parseSessionItem, sessionStore |
@@ -186,12 +187,12 @@
 | src/server/routes/providers.ts | 78 | setupProvidersRoutes |
 | src/server/routes/compact.ts | 73 | compactRouter, computeCutIndex |
 
-## infra（185 文件 · 20343 行）
+## infra（186 文件 · 20393 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 968 | — |
-| tests/regression.test.ts | 669 | — |
+| tests/regression.test.ts | 670 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -314,8 +315,9 @@
 | tests/doc-scripts.test.ts | 51 | — |
 | tests/permissions.test.ts | 50 | — |
 | tests/reasoning-l2.test.ts | 50 | — |
+| package.json | 50 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
-| package.json | 49 | — |
+| tests/ctx-kernel.test.ts | 48 | — |
 | tests/semantic-audit.test.ts | 48 | — |
 | tests/session-flush.test.ts | 48 | — |
 | scripts/kfm-restart.sh | 46 | — |
@@ -662,10 +664,11 @@
 - tests/renderer.test.ts → src/client/engine/v2/flex.ts
 - tests/renderer.test.ts → src/client/engine/v2/renderer.ts
 
-### infra → client-shell（15 边）
+### infra → client-shell（16 边）
 
 - tests/cards.test.ts → src/client/modules/gesture-registry.ts
 - tests/client-logic.test.ts → src/client/modules/state.ts
+- tests/ctx-kernel.test.ts → src/client/ctx.ts
 - tests/gesture-registry.test.ts → src/client/modules/gesture-registry.ts
 - tests/hand-drag.test.ts → src/client/modules/hand-geometry.ts
 - tests/invariants.test.ts → src/client/modules/z-index-layers.ts
@@ -721,4 +724,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 340 文件 · 57091 行 · 跨域边 283 条
+合计 342 文件 · 57285 行 · 跨域边 284 条

@@ -19,7 +19,8 @@
 
 | 入口 | 位置 | 调用方 |
 |------|------|--------|
-| main.ts（无导出，启动编排） | main.ts:80-89 同步链 + :100-104 异步尾链 | 进程入口 |
+| main.ts（无导出，启动编排） | main.ts:89-99 同步链 + :110-114 异步尾链 | 进程入口 |
+| `rootCtx` / `bootCtxSelfTest()` / `ctxChurn()` | ctx.ts（9.0 L0 内核：Cordis 根总线，2026-08-18 入壳——main.ts 首 import=总线出生点） | main.ts:10/:87；调试桥 `__kfmDebug.ctx`（守视实测口） |
 | `KFMState` 单例 | state.ts:73 | 订阅者仅 tree-render.ts:85、ws-channel.ts:343 |
 | `L` 单例（渲染生命周期/动画锁） | renderer-lifecycle.ts:171 | 7 个 canvas-tree/floating 文件读写 |
 | `gestures` 单例 | gesture-registry.ts:346 | 9 个文件注册 handler |
@@ -43,10 +44,12 @@ KFM_BUILD_TIME 与服务端 build-info.json 比对报旧包（构建链保证两
 
 ## 核心流程
 
-**启动序列（实然）**：gestures.init（绑 document 4 监听 + body touchAction=none）→
+**启动序列（实然）**：ctx.ts 模块副作用（rootCtx 创建 + hello 见证插件注册，
+main.ts 首 import，2026-08-18 起）→ void bootCtxSelfTest()（main.ts:87，异步
+不阻塞）→ gestures.init（绑 document 4 监听 + body touchAction=none）→
 initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初始化、
 持久 run 恢复、tryAutoResume）→ initTreeRenderer → initCardStack → initFloatingCards
-→ initWsChannel（main.ts:100）→ establishRoot → loadFileTree → initLazyLoader。
+→ initWsChannel（main.ts:110）→ establishRoot → loadFileTree → initLazyLoader。
 
 **手势一帧**：pointerdown → _handleStart（gesture-registry.ts:189）→ preMatch hooks →
 按 priority 降序匹配（命中即 break :242）→ drag-handler onStart（长按计时 600ms）→
@@ -64,7 +67,7 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
 
 背景信息层（非卡片部件，与 orb/卡片堆/文件树同级的启动直挂部件）：
 
-- 启动：`initObsHud()`（main.ts:104，异步尾链）；DOM 直挂 body 的 `.obs-hud`
+- 启动：`initObsHud()`（main.ts:114，异步尾链）；DOM 直挂 body 的 `.obs-hud`
   （fixed 全屏、`pointer-events:none`，仅信箱滚动区/头部局部 `auto`）
 - z 层：`Z.CENTER_CONTENT`（z-index-layers.ts），低于召唤按钮层（SUMMON_BTN 200）
 - 结构：主卡 `.obs-card`（deepseek 余额 + 秒级时钟，5s 轮询刷新）+ 双信息框行

@@ -463,12 +463,7 @@ export async function doSend(
     const _autoCompactIfNeeded = async (): Promise<void> => {
       if (noCompact) return;
       try {
-        const sRes = await fetch(`${apiBase}sessions/list`);
-        if (!sRes.ok) return;
-        const list = await sRes.json() as { sessions?: Array<{ id?: string; title?: string; tokenCount?: number; measuredPromptTokens?: number }> };
-        const cur = (list.sessions || []).find(x => x && (x.id === _sendSessionId || x.title === _sendSessionId));
-        if (!cur || typeof cur.tokenCount !== 'number') return;
-        // 窗口查 providers.json contextWindow（Kimi 实测 262144；缺省保守 131072）
+        // 窗口查 providers.json contextWindow（k3=1M / k3-256k=262144；缺省保守 131072）
         const pRes = await fetch(`${apiBase}providers/list`).catch(() => null);
         let window = 131072;
         if (pRes && pRes.ok) {
@@ -476,13 +471,12 @@ export async function doSend(
           const pv = provs?.find(x => x && x.models && x.models.includes(model as string));
           window = pv?.contextWindow?.[model as string] ?? 131072;
         }
-        // 精确尺（2026-08-18）：有 API 实测值（上一轮 prompt_tokens，provider 自己数的，
-        // 含 system+tools+messages 全量）用实测；没有才退化为估算 ×1.7（密度校准：
-        // chars/3 的 0.333 vs 真实会话文本实测 0.558）
-        const load = cur.measuredPromptTokens ?? cur.tokenCount * 1.7;
+        // 当轮负载 = 投影字符 × 实测密度 0.558（Kimi 探针）+ 12k 固定开销
+        // （system 10k + tools 2k——实测值，见当日 usage 拆解）
+        const load = Math.round(JSON.stringify(apiMessages).length * 0.558 + 12000);
         if (load < window * 0.9) return; // 未到 90%：无事
-        // 触发：注入工具框 + 调压缩 API + 刷新 cutIndex
-        _appendLocalToolCard('kfm-compact', { reason: `自动压缩（负载 ${Math.round(load / 1000)}k${cur.measuredPromptTokens ? '实测' : '估算'} ≥ 90% 窗口 ${Math.round(window / 1000)}k）` });
+        // 触发：工具框 + 压缩 + 刷新 cutIndex + 重投影（本轮立即用小投影发送）
+        _appendLocalToolCard('kfm-compact', { reason: `自动压缩（当轮投影 ~${Math.round(load / 1000)}k ≥ 90% 窗口 ${Math.round(window / 1000)}k）` });
         const cRes = await fetch(`${apiBase}session/compact`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: _sendSessionId }),
@@ -491,17 +485,23 @@ export async function doSend(
         _finishLocalToolCard('kfm-compact', cData.ok === true
           ? `✅ 压缩完成：cutIndex=${cData.cutIndex} 摘要 ${cData.summaryLength} 字符（真相源 ${cData.total} 条不动）`
           : `跳过：${cData.reason || cData.error || '未知'}`);
-        lastCutIndex = await _fetchCutIndex(); // 新 cutIndex 立即生效（本轮投影就用）
+        lastCutIndex = await _fetchCutIndex();
+        ({ apiMessages, compactSaved } = _buildProjection()); // 重投影：本轮就用小的
       } catch { /* 预检失败不阻塞发送 */ }
     };
-    await _autoCompactIfNeeded();
-    const { apiMessages, compactSaved } = toOpenAiMessages(messages, {
+    // 预检改造（2026-08-18 死循环修复）：判断依据从 lastUsage 旧快照 → 当轮投影实测。
+    // 旧结构：压缩后 lastUsage 没人刷新，下一条消息仍读到压缩前的 584k → 256k 窗口下
+    // 每条消息都触发压缩（死循环）。新结构：先投影 → 量当轮真实大小 → 超阈值才压缩
+    // → 重新投影。压缩后下一条的投影自然小，循环结构性消失。
+    const _buildProjection = () => toOpenAiMessages(messages, {
       compact: !noCompact,
       ...(typeof lastCutIndex === 'number' ? { compactCutIndex: lastCutIndex } : {}),
       isTodoDismissed: (todos) => {
         try { return (localStorage.getItem(TODO_DISMISS_KEY) || '') === todosFingerprint(todos); } catch { return false; }
       },
     });
+    let { apiMessages, compactSaved } = _buildProjection();
+    await _autoCompactIfNeeded(); // 内部若压缩会更新 lastCutIndex 并重投影（见函数尾）
     if (!noCompact) {
       // 观测：压缩前后大小（JSON.stringify 长度估算；压缩前 = 压缩后 + 省下的字符）
       const afterSize = JSON.stringify(apiMessages).length;
@@ -608,22 +608,49 @@ function _appendLocalToolCard(name: string, input: Record<string, unknown>): voi
     const area = document.querySelector('.orb-panel-content');
     if (!area) return;
     const id = `localtool_${++_localToolCardSeq}`;
-    const wrap = document.createElement('div');
-    // 复用真实工具卡类名 orb-tool-card（SCSS 已定义；之前用 tool-card 不命中 → 白字大卡片事故）
-    wrap.className = 'orb-tool-card local-tool';
-    wrap.dataset.localToolId = id;
-    wrap.style.cssText = 'max-width:100%;padding:5px 10px;border-radius:8px;font-size:var(--card-font-size,10px);margin:4px 0;border-left:3px solid rgba(167,139,250,0.7);background:rgba(139,124,246,0.08);color:rgba(255,255,255,0.85)';
-    wrap.innerHTML =
-      `<div style="display:flex;gap:6px;align-items:center"><span style="opacity:0.7">⚙</span><span class="tool-name" style="font-weight:600">${name}</span><span class="tool-status" data-role="status" style="opacity:0.6">运行中…</span></div>` +
-      `<pre class="tool-input" style="margin:4px 0 0;font-size:inherit;white-space:pre-wrap;word-break:break-all;opacity:0.75"></pre>` +
-      `<pre class="tool-output" data-role="output" style="margin:4px 0 0;font-size:inherit;white-space:pre-wrap;word-break:break-all"></pre>`;
-    (wrap.querySelector('.tool-input') as HTMLElement).textContent = JSON.stringify(input, null, 2);
-    area.appendChild(wrap);
-    _localToolCards.set(id, {
-      el: wrap,
-      statusEl: wrap.querySelector('[data-role="status"]') as HTMLElement,
-      outputEl: wrap.querySelector('[data-role="output"]') as HTMLElement,
+    // 结构照搬 chat-dom._createToolCard（2026-08-18：洛实测"没有折叠和内框"——
+    // 第一版只借了类名没借结构。类名全部复用已接线类：orb-tool-card / orb-tc-arrow /
+    // orb-fold-content / orb-tool-input-pre，不新增类避免 css-wiring 失配）
+    const c1 = '167,139,250', c2 = '124,108,240'; // 固定紫色对（_toolColors 是 chat-dom 私有，本地卡用定值）
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:flex-start;margin-bottom:6px';
+    row.dataset.localToolId = id;
+    const card = document.createElement('div');
+    card.className = 'orb-tool-card';
+    card.style.cssText = `flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,linear-gradient(135deg,rgba(${c2},0.55) 30%,rgba(${c1},0.55) 70%) border-box;border:1px solid transparent;border-left-width:3px;border-left-color:rgba(${c1},0.7);font-size:var(--card-font-size,10px)`;
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;margin-bottom:2px';
+    const arrow = document.createElement('span');
+    arrow.className = 'orb-tc-arrow';
+    arrow.style.cssText = 'font-size:7px;color:rgba(255,255,255,0.5)';
+    arrow.textContent = '▼';
+    const nameEl = document.createElement('span');
+    nameEl.style.cssText = `color:rgba(${c1},0.9);font-weight:600`;
+    nameEl.textContent = name;
+    const statusEl = document.createElement('span');
+    statusEl.style.cssText = 'color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);font-weight:600';
+    statusEl.textContent = '忙碌中';
+    header.appendChild(arrow); header.appendChild(nameEl); header.appendChild(statusEl);
+    const content = document.createElement('div');
+    content.className = 'orb-fold-content';
+    content.style.cssText = 'margin-top:4px;';
+    const inputPre = document.createElement('pre');
+    inputPre.className = 'orb-tool-input-pre';
+    inputPre.style.cssText = 'font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px;color:rgba(255,255,255,0.45);max-height:80px;overflow-y:auto';
+    inputPre.textContent = JSON.stringify(input, null, 2);
+    const divider = document.createElement('div');
+    divider.style.cssText = `height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,rgba(${c1},0.7),rgba(${c2},0.7))`;
+    const outputArea = document.createElement('div');
+    outputArea.style.cssText = 'color:rgba(255,255,255,0.75);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0';
+    content.appendChild(inputPre); content.appendChild(divider); content.appendChild(outputArea);
+    header.addEventListener('click', () => {
+      const collapsed = content.classList.toggle('collapsed');
+      arrow.textContent = collapsed ? '▶' : '▼';
     });
+    card.appendChild(header); card.appendChild(content);
+    row.appendChild(card);
+    area.appendChild(row);
+    _localToolCards.set(id, { el: row, statusEl, outputEl: outputArea });
   } catch { /* DOM 不可用不阻塞 */ }
 }
 
