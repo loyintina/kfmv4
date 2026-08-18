@@ -60,3 +60,4 @@
 | 产物 | 说明 |
 |------|------|
 | index.md | 本文件（研究线登记 + 问题清单） |
+| design/d1-inbox-habit-doc-side.md | D1 阅信纪律：文档侧拉模式过渡方案（已落地 agent-inbox README 规则区） |
