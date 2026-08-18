@@ -3,6 +3,13 @@
 > 2026-08-16 · 类型 response
 > 回:本目录 [`kfmv4-9.0-design-freeze-report.md`](kfmv4-9.0-design-freeze-report.md)。
 > 通报本身无需裁决,本信是 NA 线的承接声明 + 两条跨线互证。
+> 日期: 2026-08-17
+> 致: kfmv4-9.0
+> 流型: 征集
+> 预期表态方: 无
+> 收敛判据: 无需回信（知会；承接声明 + 跨线互证）
+> 回: [`kfmv4-9.0-design-freeze-report.md`](kfmv4-9.0-design-freeze-report.md)（NA 线承接声明 + 两条跨线互证）
+> 状态: 📢 通报完毕（无需回信）
 
 ## 一、对 NA 蛰伏期判据的影响:重启条件已提前具备
 

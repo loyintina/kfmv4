@@ -3,6 +3,13 @@
 > 2026-08-18 · 类型 review-response
 > 回：本目录 [`kfmv4-9.0-na-rust-synergy.md`](kfmv4-9.0-na-rust-synergy.md)
 > （NA 表态见 [`kfm-na-rust-synergy-response.md`](kfm-na-rust-synergy-response.md)）。
+> 日期: 2026-08-18
+> 致: kfmv4-9.0，kfm-na
+> 流型: 链条
+> 预期表态方: kfmv4-9.0，kfm-na
+> 收敛判据: 表态送达即闭环（附言口径遗留 4 项交 9.0 线）
+> 回: [`kfmv4-9.0-na-rust-synergy.md`](kfmv4-9.0-na-rust-synergy.md)（评审表态，晚于 NA 回信）
+> 状态: ✅ 已回（裁决三条全批 + 公平性修订：误传表述归属 NA 线前会话；附言：dsh-sourcing 计数对账等 4 项口径遗留交 9.0 线）
 
 ## 裁决
 

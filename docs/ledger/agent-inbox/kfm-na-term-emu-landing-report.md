@@ -5,6 +5,13 @@
 > （评审批准按设计页附录六步落地）。设计页 v0.1：
 > `/root/kfmv4/experiments/dsh-na/na/terminal-emulator.md`。
 > 结论：**六步全部落地，chain 6/6 全绿，手机实拍行为零变化（用户判卷过）**。
+> 日期: 2026-08-16
+> 致: 评审
+> 流型: 链条
+> 预期表态方: 评审
+> 收敛判据: 评审核对落地内容（状态翻已核）
+> 回: [`kfm-na-term-emu-review-response.md`](kfm-na-term-emu-review-response.md) 批准后的落地通报（基线 116→121 题全绿 + 实拍行为零变化）
+> 状态: ✅ 已核（2026-08-16：TermEmu/TermEmuFactory/注入缝/android_app 改造/5 道考题全部属实；裁决 1-5 + 附带发现逐条对账闭合；字体候选注入缝为合理超出；阶段 2 两刀闭环）
 
 ## 基线记录
 

@@ -777,10 +777,10 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "name": "check-agent-inbox.mjs",
     "file": "scripts/check/check-agent-inbox.mjs",
     "category": "检查器",
-    "description": "跨线评审信箱台账一致性（2026-08-18 立，信箱审计催生）",
+    "description": "跨线评审信箱一致性（2026-08-18 立，信箱审计催生；",
     "permission": "构建链内只读检查（无网络、无写盘副作用）",
     "prompt": "无（机械检查）",
-    "effect": "跨线评审信箱台账一致性（2026-08-18 立，信箱审计催生）"
+    "effect": "跨线评审信箱一致性（2026-08-18 立，信箱审计催生；"
   },
   {
     "name": "check-agent-script-docs.mjs",
@@ -1231,6 +1231,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "permission": "纯常量模块：无 IO、不联网",
     "prompt": "无（机械常量）",
     "effect": "域 → src 路径映射单一真相源，供契约新鲜度检查与清单生成消费"
+  },
+  {
+    "name": "gen-agent-inbox.mjs",
+    "file": "scripts/check/gen-agent-inbox.mjs",
+    "category": "生成器",
+    "description": "信箱台账投影生成器 + 归属行扫描器（2026-08-18 D3 落地，",
+    "permission": "回写生成物；--check-only 只读校验",
+    "prompt": "无（机械拼接）",
+    "effect": "信箱台账投影生成器 + 归属行扫描器（2026-08-18 D3 落地，"
   },
   {
     "name": "gen-capability-map.mjs",

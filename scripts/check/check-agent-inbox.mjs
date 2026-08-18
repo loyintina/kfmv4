@@ -1,30 +1,31 @@
 /**
- * check-agent-inbox.mjs — 跨线评审信箱台账一致性（2026-08-18 立，信箱审计催生）
+ * check-agent-inbox.mjs — 跨线评审信箱一致性（2026-08-18 立，信箱审计催生；
+ * 同日 D3 台账生成化落地后转型）。
  *
- * 问题：2026-08-18 agent-inbox 审计抓到「维护最后一英里」系统性漂移——
- *   回信存在却漏登台账（kfm-na-rust-synergy-response.md，台账状态列已引用它）、
- *   三条批准行状态倒挂停滞、「33 封信」计数三处滞后于现实、6 个文件名偏离
- *   命名规则。信箱是外围机制（接受滞后+抽查），但台账自相矛盾属于可机检的硬事实。
+ * 转型前四查里的「a. 双向对应」已删除——台账表格改由 gen-agent-inbox.mjs 从
+ * 信件机读头生成（--check-only 挂链），账外信/死链由生成器天然保证，不再手查。
  *
- * 检查（台账 = docs/ledger/agent-inbox/README.md 的 Markdown 表格）：
- *   a. 双向对应：目录内每个 .md（除 README.md）必须在台账中有链接行；
- *      台账中每个 .md 链接必须存在于目录。
+ * 现存检查：
+ *   a. 机读头 schema：每封信文首引用块内 7 字段齐全（日期/致/流型/预期表态方/
+ *      收敛判据/回/状态）；日期合法 YYYY-MM-DD；流型 ∈ {链条,征集,汇总,线程}
+ *      （契约 3 四流型原样）；致 分词 ∈ {kfmv4, kfmv4-9.0, kfm-na, 茉莉, 评审, all}
+ *      （多线「，」分隔）；状态词前缀 ∈ 合法词表——词表从 README 规则区
+ *      「合法状态词表（…）：…」行解析（唯一出处，不另硬编码；允许 emoji 与
+ *      ≤4 字署名前缀，如「✅ 茉莉已会签」）。
  *   b. 命名规范：文件名全 ASCII；以 kfm-na 或 kfmv4 开头；结尾类型词 ∈
  *      {submission, review, response, report, verdict, notice, landing,
  *      landing-report}（复合如 review-response 以末词计）。
- *      LEGACY 祖父豁免（2026-08-18 审计遗留 6 封，信件只追加不删改故不更名；
- *      新违规照红）：kfm-na-cordis-rs-stage1-landing.md、
- *      kfmv4-9.0-cordis-adoption-verdict.md、kfmv4-9.0-na-rust-synergy.md、
- *      kfmv4-9.0-version-plan-v2-notice.md、kfmv4-9.0-review-response-moli.md、
- *      kfmv4-inbox-response-moli.md。
+ *      LEGACY 祖父豁免（2026-08-18 审计遗留 7 封，信件只追加不删改故不更名；
+ *      新违规照红）：见下 LEGACY_NAMING。
  *   c. 计数咬合：docs/active/nine-zero/00-index.md 与
- *      nine-zero-decision-index.md 中所有「N 封信」声称必须等于目录实际信件数。
- *   d. 决策索引覆盖：台账「状态」列含 已裁决/终审/已落地/已验证 的信件，
- *      其文件名必须在 nine-zero-decision-index.md 中出现至少一次。
- *      （2026-08-18 首跑存量缺口 8 封 ≤10，按裁决补行修平，无日期祖父豁免；
- *      若未来缺口失控再议 2026-08-15 前信件按日期豁免。）
+ *      nine-zero-decision-index.md 中所有「N 封信」声称必须等于目录实际信件数
+ *      （信号源 = 目录实际文件，不变）。
+ *   d. 决策索引覆盖：机读头「状态」含 已裁决/终审/已落地/已验证 的信件，
+ *      其文件名必须在 nine-zero-decision-index.md 中出现至少一次（信号源 =
+ *      目录信件机读头，不再读手写状态列）。
  *
- * 枚举型检查（每次全量重扫信箱 + 台账），KFM_PROBE_ROOT 可注入（宪法探针条款）。
+ * 机读头解析规则与 gen-agent-inbox.mjs 内联同一份逻辑——改动需两处同步。
+ * 枚举型检查（每次全量重扫信箱），KFM_PROBE_ROOT 可注入（宪法探针条款）。
  */
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
@@ -50,21 +51,68 @@ if (!existsSync(README)) {
 const letters = readdirSync(INBOX).filter(f => f.endsWith('.md') && f !== 'README.md').sort();
 const readme = readFileSync(README, 'utf-8');
 
-// ---------- a. 双向对应 ----------
-for (const f of letters) {
-  if (!readme.includes(`](${f})`)) {
-    error(`a. 账外信：${f} 在目录存在但台账无链接行——补登 README（⛳ MECH-FLOW-12）`);
+// ---------- a. 机读头 schema ----------
+// 与 gen-agent-inbox.mjs 同规则：只扫文首第一个引用块；同名字段取最后一次出现
+//（存量信旧头注的全角「回：」「状态：」行由块尾新机读头覆盖）。
+const FIELDS = ['日期', '致', '流型', '预期表态方', '收敛判据', '回', '状态'];
+const FIELD_RE = /^>\s*(日期|致|流型|预期表态方|收敛判据|回|状态)\s*[:：]\s*(.+?)\s*$/;
+function parseHeader(text) {
+  const lines = text.split('\n');
+  const start = lines.findIndex(l => l.startsWith('>'));
+  if (start === -1) return null;
+  let end = start;
+  while (end + 1 < lines.length && lines[end + 1].startsWith('>')) end++;
+  const header = {};
+  for (let i = start; i <= end; i++) {
+    const m = FIELD_RE.exec(lines[i]);
+    if (m) header[m[1]] = m[2];
   }
+  return header;
 }
-for (const m of readme.matchAll(/\]\(([^)]+\.md)\)/g)) {
-  if (!existsSync(join(INBOX, m[1]))) {
-    error(`a. 死链：台账链接 ${m[1]} 在目录不存在（⛳ MECH-FLOW-12）`);
+
+const FLOW_TYPES = new Set(['链条', '征集', '汇总', '线程']); // 契约 3 四流型原样
+const LINES = new Set(['kfmv4', 'kfmv4-9.0', 'kfm-na', '茉莉', '评审', 'all']);
+
+// 合法状态词表：从 README 规则区解析（唯一出处），不硬编码第二份
+const wm = /合法状态词表（[^）]*）：([^。]+)。/.exec(readme);
+const STATUS_WORDS = wm
+  ? wm[1].split('/').map(s => s.replace(/（[^）]*）/g, '').trim()).filter(Boolean)
+  : [];
+if (!STATUS_WORDS.length) {
+  error('a. README 规则区「合法状态词表」解析失败——词表唯一出处结构变了，本检查需跟进');
+}
+// 状态前缀匹配：剥 emoji/符号前缀后，允许 ≤4 字署名（如「茉莉」）+ 词表词（长词优先）
+const STATUS_RE = STATUS_WORDS.length
+  ? new RegExp(`^[^\\p{L}\\p{Script=Han}]*(?:\\p{Script=Han}{1,4})?(?:${[...STATUS_WORDS].sort((a, b) => b.length - a.length).join('|')})`, 'u')
+  : null;
+
+const headers = new Map();
+for (const f of letters) {
+  const h = parseHeader(readFileSync(join(INBOX, f), 'utf-8'));
+  headers.set(f, h);
+  const miss = !h ? FIELDS : FIELDS.filter(k => !(k in h));
+  if (miss.length) {
+    error(`a. 机读头缺字段：${f} 缺 ${miss.join('、')}——新信必填七字段（⛳ MECH-FLOW-15）`);
+    continue;
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(h.日期) || isNaN(Date.parse(h.日期))) {
+    error(`a. 机读头日期非法：${f} 「${h.日期}」（须 YYYY-MM-DD）（⛳ MECH-FLOW-15）`);
+  }
+  if (!FLOW_TYPES.has(h.流型)) {
+    error(`a. 机读头流型非法：${f} 「${h.流型}」∉ 链条/征集/汇总/线程（⛳ MECH-FLOW-15）`);
+  }
+  const toks = h.致.split(/[，,、\s]+/).filter(Boolean);
+  if (!toks.length || toks.some(t => !LINES.has(t)) || (toks.includes('all') && toks.length > 1)) {
+    error(`a. 机读头「致」非法：${f} 「${h.致}」（线名 ∈ ${[...LINES].join('/')}，多线「，」分隔）（⛳ MECH-FLOW-15）`);
+  }
+  if (STATUS_RE && !STATUS_RE.test(h.状态)) {
+    error(`a. 机读头状态词出表：${f} 「${h.状态.slice(0, 24)}…」前缀不在合法词表（⛳ MECH-FLOW-15）`);
   }
 }
 
 // ---------- b. 命名规范 ----------
-// LEGACY 祖父豁免：2026-08-18 审计遗留 6 封命名违规（信件只追加不删改，不更名）；
-// 豁免仅限这 6 个文件名本体，新违规照红。
+// LEGACY 祖父豁免：2026-08-18 审计遗留 7 封命名违规（信件只追加不删改，不更名）；
+// 豁免仅限这 7 个文件名本体，新违规照红。
 const LEGACY_NAMING = new Set([
   'kfm-na-cordis-rs-stage1-landing.md',   // 类型词 landing（同类均 -landing-report）
   'kfmv4-9.0-cordis-adoption-verdict.md', // 类型词 verdict
@@ -72,9 +120,7 @@ const LEGACY_NAMING = new Set([
   'kfmv4-9.0-version-plan-v2-notice.md',  // 类型词 notice
   'kfmv4-9.0-review-response-moli.md',    // 类型词后人名后缀 -moli
   'kfmv4-inbox-response-moli.md',         // 同上
-  'kfmv4-9.0-step0-progress.md',          // 类型词 progress（2026-08-18 晚 9.0 线新信，
-                                          // 当日首跑即拦截；评审已在回执中请 9.0 线更名
-                                          // 为 -report，更名后从此集合移除）
+  'kfmv4-9.0-step0-progress.md',          // 类型词 progress
 ]);
 const TYPE_WORDS = new Set(['submission', 'review', 'response', 'report', 'verdict', 'notice', 'landing', 'landing-report']);
 for (const f of letters) {
@@ -105,27 +151,23 @@ for (const idx of ['00-index.md', 'nine-zero-decision-index.md']) {
   }
 }
 
-// ---------- d. 决策索引覆盖 ----------
+// ---------- d. 决策索引覆盖（信号源 = 信件机读头「状态」字段） ----------
 const DECISION_INDEX = join(NINE_ZERO, 'nine-zero-decision-index.md');
 if (existsSync(DECISION_INDEX)) {
   const decisionIndex = readFileSync(DECISION_INDEX, 'utf-8');
   const DECIDED_RE = /已裁决|终审|已落地|已验证/;
-  for (const line of readme.split('\n')) {
-    if (!line.startsWith('|') || /^\|\s*(日期|---)/.test(line)) continue;
-    const cells = line.split('|').map(c => c.trim());
-    const letterCell = cells[2] ?? '';
-    const statusCell = cells[cells.length - 2] ?? '';
-    const m = /\]\(([^)]+\.md)\)/.exec(letterCell);
-    if (!m) continue;
-    if (DECIDED_RE.test(statusCell) && !decisionIndex.includes(m[1])) {
-      error(`d. 索引漏登：${m[1]} 状态「${statusCell.slice(0, 18)}…」已落定，但 nine-zero-decision-index.md 未提及（⛳ MECH-FLOW-14：新决策落定时加一行）`);
+  for (const f of letters) {
+    const h = headers.get(f);
+    if (!h || !h.状态) continue;
+    if (DECIDED_RE.test(h.状态) && !decisionIndex.includes(f)) {
+      error(`d. 索引漏登：${f} 状态「${h.状态.slice(0, 18)}…」已落定，但 nine-zero-decision-index.md 未提及（⛳ MECH-FLOW-14：新决策落定时加一行）`);
     }
   }
 }
 
 // ---------- 收口 ----------
 if (errors > 0) {
-  console.error(`\n[check-agent-inbox] 台账一致性检查失败（${errors} 处红），构建中断。`);
+  console.error(`\n[check-agent-inbox] 信箱一致性检查失败（${errors} 处红），构建中断。`);
   process.exit(1);
 }
-console.log(`[check-agent-inbox] OK — ${letters.length} 封信双向对应 / 命名合规（LEGACY 豁免 ${LEGACY_NAMING.size}）/ 计数咬合 / 决策索引覆盖`);
+console.log(`[check-agent-inbox] OK — ${letters.length} 封信机读头 schema 合规 / 命名合规（LEGACY 豁免 ${LEGACY_NAMING.size}）/ 计数咬合 / 决策索引覆盖（台账双向对应由 gen-agent-inbox --check-only 保证）`);

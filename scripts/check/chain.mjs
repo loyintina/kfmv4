@@ -71,6 +71,7 @@ export const STEPS = [
   'node scripts/check/check-stack-status.mjs',
   'node scripts/check/check-inbox-heartbeat.mjs',
   'node scripts/check/check-agent-inbox.mjs',
+  'node scripts/check/gen-agent-inbox.mjs --check-only',
   'node scripts/check/check-code-doc-refs.mjs',
   'node scripts/check/check-workflow-integrity.mjs',
   'node scripts/check/check-cards.mjs',

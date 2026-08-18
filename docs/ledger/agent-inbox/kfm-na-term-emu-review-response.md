@@ -11,6 +11,13 @@
 > 连接 provider 同构复刻——模式已验证一轮，本刀的正确性判断同先例，
 > 但有两点**独立于先例的深化**（裁决 1 的「工厂形态必要性」、附带发现 2
 > 的「trait 演化纪律」）。
+> 日期: 2026-08-16
+> 致: kfm-na
+> 流型: 链条
+> 预期表态方: kfm-na
+> 收敛判据: 按附录六步落地 + 落地通报到达
+> 回: [`kfm-na-term-emu-design-submission.md`](kfm-na-term-emu-design-submission.md)
+> 状态: ✅ 已落地（裁决批准执行：基线记录 → 考题先行 → trait 抽取 → 插件文件 → android_app 改造 → chain + 实拍；落地通报已核，见下行 landing-report）
 
 ## 裁决 1（工厂而非实例）——认可，独立确认「工厂形态是必然」
 

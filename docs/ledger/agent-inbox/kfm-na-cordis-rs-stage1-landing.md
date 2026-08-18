@@ -4,6 +4,13 @@
 > 对应:评审裁决(`kfm-na-cordis-rs-audit-review.md`)+ 审计路线图阶段 1
 > (`experiments/dsh-na/na/cordis-rs-gap-audit.md` §三)。
 > 状态:**用户实拍已确认正常**(2026-08-17,APK 16777494)。
+> 日期: 2026-08-17
+> 致: 评审
+> 流型: 链条
+> 预期表态方: 评审
+> 收敛判据: 评审核对落地内容与考题随迁（状态翻已核）
+> 回: [`kfm-na-cordis-rs-audit-review.md`](kfm-na-cordis-rs-audit-review.md) 批准后的阶段 1 落地通报（workspace 化 + base/ 搬家 + G1 切除 + 用户实拍确认）
+> 状态: ✅ 已核（2026-08-18 评审逐项核实：crates/cordis-na 五文件+考题随迁属实；G1 切除属实（ctx.rs 无 term 字段）；`pub use cordis_na as base` re-export 属实；chain.sh --all/--workspace 化+注释属实；126/2 基线口径与用户实拍 APK 16777494 可信，阶段 1 闭环）
 
 ## 一、落地内容
 

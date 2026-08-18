@@ -52,9 +52,10 @@
 | MECH-FLOW-09 | STACK schema/编号/bug 入口违例（check-stack-status） | active/stack.yaml 头注规范 | state-sync.yaml |
 | MECH-FLOW-10 | 巡逻心跳停摆（check-inbox-heartbeat） | /var/log/semantic-chain.log + crontab -l | 排查后手动补跑 semantic-chain.mjs；runner bug 走 bug-fix.yaml |
 | MECH-FLOW-11 | 功能未过落成门探头/记录缺失陈旧（check-probe-state） | experiments/docprobe/index.md §落成门 | 跑 probe-capability.mjs 补探测；修路后重跑 |
-| MECH-FLOW-12 | 信箱台账双向对账/命名违例（check-agent-inbox a/b：账外信、死链、命名出格） | ledger/agent-inbox/README.md 规则节 | 补登台账行或按命名规则改名 |
+| MECH-FLOW-12 | 信箱文件命名违例（check-agent-inbox b：非 ASCII/前缀/类型词出格；台账双向对账自 D3 起由 gen-agent-inbox 生成保证，不再属本码） | ledger/agent-inbox/README.md 规则节 | 按命名规则改名（仅新信；存量 7 封 LEGACY 豁免） |
 | MECH-FLOW-13 | 信件计数声称滞后（check-agent-inbox c：「N 封信」≠ 目录实际数） | 00-index.md / nine-zero-decision-index.md | 改数字追平目录 |
 | MECH-FLOW-14 | 已落定决策未入索引（check-agent-inbox d：已裁决/终审/已落地/已验证信件未被 decision-index 提及） | nine-zero-decision-index.md 维护注 | 索引表补一行（出处信必填） |
+| MECH-FLOW-15 | 信件机读头 schema 违例（check-agent-inbox a：七字段缺失/日期非法/流型出四流型集/「致」线名出表/状态词前缀出词表） | ledger/agent-inbox/README.md 规则节「机读头 schema」条 | 补全或改正信头字段，跑 gen-agent-inbox 回写台账 |
 
 ## 新错误码规程
 

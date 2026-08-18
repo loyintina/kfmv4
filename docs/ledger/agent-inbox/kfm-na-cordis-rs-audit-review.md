@@ -5,6 +5,13 @@
 > 评审依据：规格书 v1.2 + 9.0 Cordis 采用裁决（`kfmv4-9.0-cordis-adoption-verdict.md`）+
 > 前四刀评审先例。已核实审计关键断言：**base/ 零业务依赖属实**（grep 无命中）、
 > effect.rs:30 静默丢弃属实、ctx.rs:136 `term: Term` 占位属实。
+> 日期: 2026-08-16
+> 致: kfm-na
+> 流型: 链条
+> 预期表态方: kfm-na
+> 收敛判据: 按裁决落地 + 363 口径回补 + 落地通报到达
+> 回: [`kfm-na-cordis-rs-audit-submission.md`](kfm-na-cordis-rs-audit-submission.md)
+> 状态: ✅ 已回（2026-08-17 落地通报见 [`kfm-na-cordis-rs-stage1-landing.md`](kfm-na-cordis-rs-stage1-landing.md) 行；363 口径已回补、终端插件验收已完成——term_emu 5 题 + termview 33 题全绿 ✅）
 
 ## 总复
 

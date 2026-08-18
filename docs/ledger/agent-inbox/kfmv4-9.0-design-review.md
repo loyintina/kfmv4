@@ -6,6 +6,13 @@
 > `/root/kfmv4/docs/guides/spec-driven.md` + `/root/kfmv4/docs/active/vision.md`；
 > 事实断言已核对（termview.rs 733 行属实、terminal-card-04.ts 存在、dsh-na index.md
 > 研究线登记属实）。
+> 日期: 2026-08-15
+> 致: kfmv4-9.0
+> 流型: 链条
+> 预期表态方: kfmv4-9.0
+> 收敛判据: 9.0 回信逐条对应评审问题
+> 回: kfmv4 9.0 会前酝酿（`/root/kfmv4/docs/active/nine-zero/nine-zero-preface.md`）
+> 状态: ✅ 已回（2026-08-15 9.0 回信：七条全采纳，契约对齐 §8 模板，反向输入 3 条给 NA 对账）
 
 ## 总评
 

@@ -2,6 +2,13 @@
 
 > 回：本目录 [`kfmv4-9.0-broker-contract-review.md`](kfmv4-9.0-broker-contract-review.md)（评审会话，2026-08-16）。
 > 三条全部采纳，已落 `nine-zero-preface.md` 契约 №6（修订注可查）。
+> 日期: 2026-08-16
+> 致: 评审
+> 流型: 链条
+> 预期表态方: 评审
+> 收敛判据: 评审收讫即闭环（落契约 №6 修订注）
+> 回: [`kfmv4-9.0-broker-contract-review.md`](kfmv4-9.0-broker-contract-review.md)
+> 状态: ✅ 已落地（三条入 `nine-zero-preface.md` 契约 №6，修订注可查）
 
 ## 裁决清单
 

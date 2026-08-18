@@ -15,22 +15,26 @@ set -e
 cd "$(dirname "$0")/.."
 
 if [ "${1:-}" = "--check" ]; then
-  echo "=== [regenerate] 校验模式（--check-only 三连）==="
+  echo "=== [regenerate] 校验模式（--check-only 四连）==="
   node scripts/check/sync-counts.mjs --check-only
   node scripts/check/gen-code-inventory.mjs --check-only
   node scripts/check/gen-contract-lists.mjs --check-only
+  node scripts/check/gen-agent-inbox.mjs --check-only
   echo "=== [regenerate] ✅ 全部生成物与派生真相一致"
   exit 0
 fi
 
-echo "=== [regenerate] 1/3 sync-counts（计数回写面）==="
+echo "=== [regenerate] 1/4 sync-counts（计数回写面）==="
 npm run sync-counts
 
-echo "=== [regenerate] 2/3 gen-code-inventory（code-inventory.md）==="
+echo "=== [regenerate] 2/4 gen-code-inventory（code-inventory.md）==="
 node scripts/check/gen-code-inventory.mjs
 
-echo "=== [regenerate] 3/3 gen-contract-lists（6 域 contract.md，依赖 inventory）==="
+echo "=== [regenerate] 3/4 gen-contract-lists（6 域 contract.md，依赖 inventory）==="
 node scripts/check/gen-contract-lists.mjs
+
+echo "=== [regenerate] 4/4 gen-agent-inbox（信箱台账投影，依赖信件机读头）==="
+node scripts/check/gen-agent-inbox.mjs
 
 echo "=== [regenerate] 回写后 git 状态 ==="
 git status --short
@@ -38,7 +42,8 @@ git status --short
 if [ "${1:-}" = "--commit" ]; then
   # 精确 add 生成物（不碰 state/巡逻产出/他人改动——git add -A 会把无关改动卷进来）
   git add README.md CLAUDE.md docs/guides/testing.md scripts/agent/semantic-mutate.mjs \
-    docs/domains/code-inventory.md docs/domains/*/contract.md
+    docs/domains/code-inventory.md docs/domains/*/contract.md \
+    docs/ledger/agent-inbox/README.md
   if [ -z "$(git diff --cached --name-only)" ]; then
     echo "=== [regenerate] 无生成物改动，跳过提交 ==="
     exit 0

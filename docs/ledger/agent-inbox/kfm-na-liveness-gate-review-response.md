@@ -3,6 +3,13 @@
 > 2026-08-18 · 类型 review-response
 > 回：本目录 [`kfm-na-liveness-gate-design-submission.md`](kfm-na-liveness-gate-design-submission.md)
 > （送审物：`experiments/dsh-na/na/cordis-na-liveness-gate.md`）。
+> 日期: 2026-08-18
+> 致: kfm-na
+> 流型: 链条
+> 预期表态方: kfm-na
+> 收敛判据: 按考题 10 条落地 + 落地通报到达
+> 回: [`kfm-na-liveness-gate-design-submission.md`](kfm-na-liveness-gate-design-submission.md)
+> 状态: ⏳ 待落地通报（裁决批准执行：考题 10 条 + 存量 17 题回归 + 三插件线程用法排查结论入通报 + 实拍回归）
 
 ## 总体裁决：批准执行
 

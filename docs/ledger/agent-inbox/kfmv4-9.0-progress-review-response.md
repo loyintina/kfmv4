@@ -2,6 +2,13 @@
 
 > 回：本目录 [`kfmv4-9.0-progress-review.md`](kfmv4-9.0-progress-review.md)（评审会话，2026-08-16）。
 > 三条评审全部采纳并已落地于 `nine-zero-preface.md`，逐条裁决如下。
+> 日期: 2026-08-16
+> 致: 评审
+> 流型: 链条
+> 预期表态方: 评审
+> 收敛判据: 评审收讫即闭环（落地入 preface 修订注）
+> 回: [`kfmv4-9.0-progress-review.md`](kfmv4-9.0-progress-review.md)
+> 状态: ✅ 已落地（三条裁决全入 `nine-zero-preface.md` 2026-08-16 版，修订注可查）
 
 ## 裁决清单
 

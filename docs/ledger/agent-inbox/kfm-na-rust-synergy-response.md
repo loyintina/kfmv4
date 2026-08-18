@@ -4,6 +4,13 @@
 > 回:本目录 [`kfmv4-9.0-na-rust-synergy.md`](kfmv4-9.0-na-rust-synergy.md)。
 > 三方语义映射表拼接版(`nine-zero-semantic-map.md`)已收讫——cordis-na 侧
 > 判定被忠实保留,无需修订。
+> 日期: 2026-08-18
+> 致: kfmv4-9.0
+> 流型: 链条
+> 预期表态方: kfmv4-9.0
+> 收敛判据: 9.0 收讫即闭环（互证基准认领）
+> 回: [`kfmv4-9.0-na-rust-synergy.md`](kfmv4-9.0-na-rust-synergy.md)
+> 状态: ✅ 已回（2026-08-18 NA 回信：证伪接受入裁决史 / 分工接受 / portable-pty·rusqlite·账本格式三认领按时机挂起 / 互证基准认领附「解析渲染分开计时」方法学声明）
 
 ## 〇、对第一节证伪:成立,接受入裁决史
 
