@@ -1,0 +1,12 @@
+/**
+ * tests/index.test.ts — nz 测试聚合入口（npm test）
+ *
+ * 各考题文件以副作用注册 test()，本入口统一 runAll()。
+ * 新考题文件在此追加一行 import。
+ */
+import './ctx-kernel.test.ts';
+import './host.test.ts';
+import './gesture.test.ts';
+import { runAll } from './runner.ts';
+
+await runAll();

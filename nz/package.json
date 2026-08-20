@@ -1,0 +1,20 @@
+{
+  "name": "kfm-nz",
+  "version": "9.0.0-dev",
+  "description": "KFM 9.0 - 代码世界从零实现（规格书见 kfmv4 docs/active/nine-zero/，任务文档见 TASK.md）",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "smoke": "tsx smoke.mjs",
+    "test": "tsx tests/index.test.ts"
+  },
+  "dependencies": {
+    "cordis": "4.0.0-rc.8"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
+  }
+}
