@@ -109,10 +109,28 @@ export class PermissionEngine {
     return this._roots;
   }
 
+  /**
+   * 路径归一化：相对路径以 roots[0]（缺省 '/'）为基准展开成绝对路径，
+   * 逐段消解 '.'/'..'（越界上溢截断在根）。判定一律在归一化后的绝对
+   * 路径上做，杜绝 `../../etc/passwd` 以相对路径形式绕过 roots 前缀。
+   */
+  private _resolve(p: string): string {
+    const base = p.startsWith('/') ? '' : (this._roots[0] ?? '/');
+    const segs = (base ? base + '/' + p : p).split('/');
+    const out: string[] = [];
+    for (const s of segs) {
+      if (!s || s === '.') continue;
+      if (s === '..') { out.pop(); continue; }
+      out.push(s);
+    }
+    return '/' + out.join('/');
+  }
+
   private _inRoot(p: string): boolean {
     if (!p) return false;
-    if (!p.startsWith('/')) return true; // 相对路径：相对项目根，天然界内
-    return this._roots.some((r) => p === r || p.startsWith(r.endsWith('/') ? r : r + '/'));
+    if (this._roots.length === 0) return false; // 无 roots：fail-closed 落 ask
+    const abs = this._resolve(p);
+    return this._roots.some((r) => abs === r || abs.startsWith(r.endsWith('/') ? r : r + '/'));
   }
 
   // ========== evaluate：判定 + 审计（影子期不拦截） ==========
@@ -137,9 +155,11 @@ export class PermissionEngine {
       }
       case 'exec': {
         const cmd = typeof params.command === 'string' ? params.command : '';
-        decision = cmd && SHELL_META.test(cmd)
-          ? { action: 'ask', rule: 'exec:shell-meta', prompt: `命令含 shell 元字符：${cmd.slice(0, 30)}` }
-          : { action: 'allow', rule: 'exec:no-meta' };
+        decision = !cmd
+          ? { action: 'ask', rule: 'exec:empty-command', prompt: '空命令（无 command 参数）' }
+          : SHELL_META.test(cmd)
+            ? { action: 'ask', rule: 'exec:shell-meta', prompt: `命令含 shell 元字符：${cmd.slice(0, 30)}` }
+            : { action: 'allow', rule: 'exec:no-meta' };
         break;
       }
       case 'external':

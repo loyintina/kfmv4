@@ -122,7 +122,7 @@
 | 2026-08-20 | [`kfmv4-9.0-nz-874-landing-report.md`](kfmv4-9.0-nz-874-landing-report.md) | kfmv4-9.0-nz-landing-review.md（前轮 5 条裁决）；kfmv4-nz-merger-notice.md（入仓通报） | ✅ 已回（2026-08-20 评审：处置口径三条批准 + 追加两条——链红入仓教训（BAR 复核日已补，链复绿）+ git 卫生 v0 检查立项（评审认领）；30 钉复跑核实） |
 | 2026-08-20 | [`kfmv4-9.0-nz-874-review.md`](kfmv4-9.0-nz-874-review.md) | kfmv4-9.0-nz-874-landing-report.md（8.7.4 通报 + 混入事故说明） | 📢 通报完毕（2026-08-20 评审：复核结论，无需回信） |
 | 2026-08-20 | [`kfmv4-9.0-nz-875-landing-report.md`](kfmv4-9.0-nz-875-landing-report.md) | —（通报；nz 8.7.5 契约 №15 影子期落地，DoD 全过） | ✅ 已回（2026-08-20 评审：落地核实属实 + 门禁口径裁定 + 代码发现两条——见 kfmv4-9.0-nz-875-review.md） |
-| 2026-08-20 | [`kfmv4-9.0-nz-875-review.md`](kfmv4-9.0-nz-875-review.md) | kfmv4-9.0-nz-875-landing-report.md（8.7.5 落地通报） | 待回信（2026-08-20 评审：待 9.0 线收讫 + 两条代码发现入档） |
+| 2026-08-20 | [`kfmv4-9.0-nz-875-review.md`](kfmv4-9.0-nz-875-review.md) | kfmv4-9.0-nz-875-landing-report.md（8.7.5 落地通报） | ✅ 已回（2026-08-21 9.0 线：两条发现已修复+补钉非仅入档；审计缓冲上限入 8.12.7 承接范围——见讨论区） |
 | 2026-08-20 | [`kfmv4-9.0-nz-877-landing-report.md`](kfmv4-9.0-nz-877-landing-report.md) | —（通报；nz 8.7.7 TASK §2.4 最小版落地，DoD 全过） | ✅ 已回（2026-08-20 评审：核实属实 + 观察两条知会——见 kfmv4-9.0-nz-877-review.md） |
 | 2026-08-20 | [`kfmv4-9.0-nz-877-review.md`](kfmv4-9.0-nz-877-review.md) | kfmv4-9.0-nz-877-landing-report.md（8.7.7 落地通报） | 📢 通报完毕（2026-08-20 评审：核实属实，观察两条知会） |
 | 2026-08-20 | [`kfmv4-9.0-nz-landing-review-response.md`](kfmv4-9.0-nz-landing-review-response.md) | kfmv4-9.0-nz-landing-review.md（nz 8.7.2/8.7.3 落地评审 5 条） | ✅ 已回（2026-08-20 9.0 线：5 条逐条裁决落地） |
@@ -131,5 +131,5 @@
 | 2026-08-20 | [`kfmv4-9.0-nz-taskmap-revision-notice.md`](kfmv4-9.0-nz-taskmap-revision-notice.md) | kfmv4-9.0-nz-877-review.md（877 评审收讫后的用户新拍板） | ✅ 已回（2026-08-21 评审：修订批准生效 + 链红复发处置 + deploy-freshness 一问——见 kfmv4-9.0-nz-taskmap-revision-review.md） |
 | 2026-08-20 | [`kfmv4-9.0-nz-taskmap-v2-report.md`](kfmv4-9.0-nz-taskmap-v2-report.md) | —（通报；TASK.md 修订：9.x 工坊线阶段入图（用户拍板：工坊线非搁置系顺序调整）+ 全面性补漏 7 项） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
 | 2026-08-20 | [`kfmv4-nz-merger-notice.md`](kfmv4-nz-merger-notice.md) | kfmv4-9.0-nz-landing-review.md（评审问题 1 的结构性落地） | 📢 通报完毕（2026-08-20 评审：无需回信） |
-| 2026-08-21 | [`kfmv4-9.0-nz-taskmap-revision-review.md`](kfmv4-9.0-nz-taskmap-revision-review.md) | kfmv4-9.0-nz-taskmap-revision-notice.md（任务图修订通报）+ kfmv4-9.0-nz-ledger-coverage-report.md（总账机制通报） | 待回信（2026-08-21 评审：待 9.0 线收讫 + deploy-freshness 处置选项表态） |
+| 2026-08-21 | [`kfmv4-9.0-nz-taskmap-revision-review.md`](kfmv4-9.0-nz-taskmap-revision-review.md) | kfmv4-9.0-nz-taskmap-revision-notice.md（任务图修订通报）+ kfmv4-9.0-nz-ledger-coverage-report.md（总账机制通报） | ✅ 已回（2026-08-21 9.0 线：收讫 + 875 发现已点名进 8.12.7 + deploy-freshness 表态①+延迟②待用户拍板——见讨论区） |
 <!-- gen:agent-inbox:end -->

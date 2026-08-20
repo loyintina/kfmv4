@@ -152,7 +152,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.12.3 | 顶栏完整版 + 完整布局 | dsh ui-layout/ui-sidebar | 无 | A+B+C：全档考题 | ⬜ |
 | 8.12.4 | 皮肤包 + todo 卡 | dsh ui-theme / dsh todo | 无 | B+C：换肤热切换、工具附属卡 | ⬜ |
 | 8.12.6 | 眼睛全量段（数据源触发制：viewport/file-tree/orb-panel/card-stack 各段随对应卡落地补齐；失败写占位/卸载遗言全段对齐） | 无 | 无 | A：全段投影内容快照钉 | ⬜ |
-| 8.12.7 | 安全包转正（deny/ask 真生效 + ask 批准卡内联窗口卡 + 会话级 allowlist 三档；启动 cedar-policy 评估） | dsh guard/scope/permission-presets | cedar-policy 评估本步启动 | A+B：№15 考题全档（含卸载安全包宿主基线仍拒） | ⬜ |
+| 8.12.7 | 安全包转正（deny/ask 真生效 + ask 批准卡内联窗口卡 + 会话级 allowlist 三档；启动 cedar-policy 评估）。承接 875 评审发现：../ 逃逸洞（已修+钉 8-21）/ exec 空 command 口径（已修+钉 8-21）/ 审计缓冲上限（转正接 ledger-service 时截断/背压） | dsh guard/scope/permission-presets | cedar-policy 评估本步启动 | A+B：№15 考题全档（含卸载安全包宿主基线仍拒）；C 档判定分布对账 | ⬜ |
 | 8.12.8 | 手全量（多实例 + 角色定制样式 + orbitAnchor 接布局锚区） | 无 | 无 | A+B+C：№4 全档；多实例实拍 | ⬜ |
 | 8.12.5 | 启动引导收口 + 闭环（执行序最后：含 8.12.6–8.12.8） | dsh boot 参考 | 无 | A+B：拓扑激活、调试桥确认删 | ⬜ |
 | 9.0 | 整体迁入 kfmv4，过检查链，发 v9.0.0；插件热重载而会话不断（kfm-restart 自然退役判据） | 全部 | 全部 | 全套 kfmv4 检查链 + 测试基线 | ⬜ |
@@ -233,7 +233,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.12.3 | 顶栏完整版（五槽位 + 观测台）+ 完整布局 | dsh ui-layout/ui-sidebar | 无 | A+B+C：全档考题 | ⬜ |
 | 8.12.4 | 皮肤包（深蓝意志；皮肤=覆盖层，组件自带基础样式——基础包随功能，覆盖包做拓展）+ todo 卡 | dsh ui-theme / dsh todo | 无 | B+C：换肤热切换；工具附属卡模式 | ⬜ |
 | 8.12.6 | 眼睛全量段（数据源触发制：数据源卡落地一个补一段） | 无 | 无 | A：全段投影快照钉；失败写占位不抛逐段核验 | ⬜ |
-| 8.12.7 | 安全包转正（№15 收口：真拦截 + 批准卡 + allowlist 三档 + cedar 评估） | dsh guard/scope/permission-presets | cedar-policy 评估本步启动 | A+B：№15 考题全档；C 档判定分布对账（转正不改判定只改执行） | ⬜ |
+| 8.12.7 | 安全包转正（№15 收口：真拦截 + 批准卡 + allowlist 三档 + cedar 评估；承接 875 发现：../ 逃逸/空 command 已修+钉，审计缓冲上限转正期处置） | dsh guard/scope/permission-presets | cedar-policy 评估本步启动 | A+B：№15 考题全档；C 档判定分布对账（转正不改判定只改执行） | ⬜ |
 | 8.12.8 | 手全量（多实例/角色定制样式/锚区接布局） | 无 | 无 | A+B+C：№4 全档 | ⬜ |
 | 8.12.5 | 启动引导收口（拓扑激活 + ws-server 一拆三收尾）+ 闭环——**执行序最后（含 8.12.6–8.12.8）** | dsh boot 参考 | 无 | A+B：启动链拓扑与实现一致；调试桥确认已删 | ⬜ |
 
@@ -417,3 +417,14 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 - 2026-08-21：用户拍板——**v8 部署新鲜度红不处置**：不为将死版本做
   仪式性部署（混入事故 commit 碰 src/ 触发，8-18 包 vs 8-20 源码）；
   9.0 收口 nz 迁入时自然消解。此前全链绿到此闸门为止。
+- 2026-08-21：**875 评审两条代码发现修复 + 补钉**（影子期判定基线不
+  能脏——转正期 8.12.7 的 C 档对账锚就是它）：①`_inRoot` 相对路径
+  无条件界内 → 加 `_resolve` 归一化（相对路径以 roots[0] 为基准展开、
+  逐段消解 `..`，roots 为空 fail-closed 落 ask），`../../etc/passwd`
+  逃逸洞封死；②exec 空 command 短路放行 → 新 rule `exec:empty-command`
+  落 ask，与 write_local 空 path 同 fail-closed 口径。各补对称钉，
+  55 钉全绿。审计缓冲无上限的观察记入 8.12.7 承接范围（转正接
+  ledger-service 时截断/背压）。
+- 2026-08-21：**链红复发处置收讫**（评审升级 git 卫生 v0 = 白名单 +
+  commit 时秒级快链子集进钩）。本线整改 = commit 后第一动作跑全链
+  写为铁律，不依赖记性。

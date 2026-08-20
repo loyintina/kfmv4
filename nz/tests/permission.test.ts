@@ -49,6 +49,20 @@ test('write_local：空 path → ask（fail-closed 方向，不放行）', () =>
   assert(d.action === 'ask' && d.rule === 'write_local:out-of-root', '空 path 不应放行');
 });
 
+test('write_local：../ 逃逸归一化后越界 → ask（875 评审发现①）', () => {
+  const eng = new PermissionEngine();
+  eng.declareRisk('write', 'write_local');
+  eng.setRoots(['/root/kfmv4']);
+  const d1 = eng.evaluate({ tool: 'write', params: { path: '../../etc/passwd' } });
+  assert(d1.action === 'ask' && d1.rule === 'write_local:out-of-root', `../ 逃逸应 ask，实际 ${d1.rule}`);
+  const d2 = eng.evaluate({ tool: 'write', params: { path: 'nz/../nz/src/x.ts' } });
+  assert(d2.action === 'allow', '归一化后仍在 roots 内应 allow');
+  const eng0 = new PermissionEngine();
+  eng0.declareRisk('write', 'write_local');
+  const d4 = eng0.evaluate({ tool: 'write', params: { path: 'x.ts' } });
+  assert(d4.action === 'ask', 'roots 为空应 fail-closed 落 ask');
+});
+
 test('exec：含 shell 元字符 → ask；干净命令 → allow', () => {
   const eng = new PermissionEngine();
   eng.declareRisk('bash', 'exec');
@@ -56,6 +70,15 @@ test('exec：含 shell 元字符 → ask；干净命令 → allow', () => {
   assert(d1.action === 'ask' && d1.rule === 'exec:shell-meta', '元字符应门控');
   const d2 = eng.evaluate({ tool: 'bash', params: { command: 'ls' } });
   assert(d2.action === 'allow' && d2.rule === 'exec:no-meta', '干净命令应放行');
+});
+
+test('exec：空 command → ask（fail-closed 口径，875 评审发现②）', () => {
+  const eng = new PermissionEngine();
+  eng.declareRisk('bash', 'exec');
+  const d1 = eng.evaluate({ tool: 'bash', params: { command: '' } });
+  assert(d1.action === 'ask' && d1.rule === 'exec:empty-command', `空命令应 ask，实际 ${d1.rule}`);
+  const d2 = eng.evaluate({ tool: 'bash', params: {} });
+  assert(d2.action === 'ask' && d2.rule === 'exec:empty-command', '缺 command 参数应 ask');
 });
 
 test('external → ask（审批级）', () => {
