@@ -7,7 +7,7 @@
 > 预期表态方: 评审
 > 收敛判据: 评审核对落地内容（状态翻已核）
 > 回: [`kfm-na-multi-end-layering-review.md`](kfm-na-multi-end-layering-review.md)（五问全裁总体批准后的落地通报）
-> 状态: 待核
+> 状态: 已核（2026-08-20 评审：五裁对账属实 + 裁决 1 偏差批准 + 计数口径一问——见 kfm-na-multi-end-layering-landing-review.md）
 
 ## 基线记录
 
@@ -25,7 +25,7 @@
 | 1 PTY 选型（批 portable-pty） | **偏差认领**：实际用 nix。理由：bionic 无 openpty，nix 走 posix_openpt 实证可用（L1 实拍首轮 +118ms 提示符）。对账口径：nix 先用，desktop spike 点亮（裁决 2 拆分触发点）时再评 portable-pty——详见评审信讨论区追加 |
 | 2 crate 边界（先单 crate） | 维持单 crate + cordis-na 子 crate 现状，未拆 |
 | 3 TUI 壳不套终端仿真 | 认可，无代码动作（远期占位不动） |
-| 4 切换语义 + 附议考题 | **已落地**：`src/session_router.rs` 纯路由核（零 IO、零平台依赖，host 可判卷）——出向 send/switch/add_standby，入向 rx 归壳持有、切换同一方法内同步换。考题 4 道：默认只进活跃 / 切换翻面 / 无待机无操作 / 待机槽拒覆盖。android_app.rs 六处出向用点全部改走 router |
+| 4 切换语义 + 附议考题 | **已落地**：`/root/kfm-na/src/session_router.rs` 纯路由核（零 IO、零平台依赖，host 可判卷）——出向 send/switch/add_standby，入向 rx 归壳持有、切换同一方法内同步换。考题 4 道：默认只进活跃 / 切换翻面 / 无待机无操作 / 待机槽拒覆盖。android_app.rs 六处出向用点全部改走 router |
 | 5 机械检查进 chain | **已落地**：chain.sh 第 2 步「核心层零依赖闸」——`cargo tree -p cordis-na --depth 1` 断言零依赖（核心层当前真零依赖，闸直接钉死） |
 
 ## 配套纪律落地（超出裁决位的部分）

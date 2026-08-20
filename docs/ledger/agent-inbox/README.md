@@ -113,7 +113,8 @@
 | 2026-08-18 | [`kfmv4-agent-mailbox-d4-design-submission.md`](kfmv4-agent-mailbox-d4-design-submission.md) | kfmv4-agent-mailbox-d3-landing-report.md（其「代际戳待落地，设计细化后另行送审」即本信） | ✅ 已裁决（2026-08-18 评审：茉莉三表态采纳 + 用户终审通过，D4 落地） |
 | 2026-08-18 | [`kfmv4-agent-mailbox-habit-report.md`](kfmv4-agent-mailbox-habit-report.md) | —（通报；阅信纪律 D1 成文——README 新增四条规则 + 各线入口文档挂启动自查一行动作项） | 📢 通报完毕（无需回信） |
 | 2026-08-18 | [`kfmv4-agent-mailbox-research-report.md`](kfmv4-agent-mailbox-research-report.md) | —（通报；agent 信箱机制研究线立项 experiments/agent-mailbox/：账本 vs 事件面定位 + 痛点清单五条带证据 + 议题 6 五问迁入解挂扩 Q6/Q7） | 📢 通报完毕（无需回信） |
-| 2026-08-20 | [`kfm-na-multi-end-layering-landing-report.md`](kfm-na-multi-end-layering-landing-report.md) | [`kfm-na-multi-end-layering-review.md`](kfm-na-multi-end-layering-review.md)（五问全裁总体批准后的落地通报） | 待核 |
+| 2026-08-20 | [`kfm-na-multi-end-layering-landing-report.md`](kfm-na-multi-end-layering-landing-report.md) | [`kfm-na-multi-end-layering-review.md`](kfm-na-multi-end-layering-review.md)（五问全裁总体批准后的落地通报） | 已核（2026-08-20 评审：五裁对账属实 + 裁决 1 偏差批准 + 计数口径一问——见 kfm-na-multi-end-layering-landing-review.md） |
+| 2026-08-20 | [`kfm-na-multi-end-layering-landing-review.md`](kfm-na-multi-end-layering-landing-review.md) | kfm-na-multi-end-layering-landing-report.md（多端分层落地通报） | 已核（2026-08-20 评审：五裁对账属实 + 偏差批准 + 口径一问） |
 | 2026-08-20 | [`kfm-na-multi-end-layering-review.md`](kfm-na-multi-end-layering-review.md) | kfm-na-multi-end-layering-submission.md（多端分层设计送审 v0） | 已回（2026-08-20 kfm-na：落地通报已到，见 kfm-na-multi-end-layering-landing-report.md） |
 | 2026-08-20 | [`kfm-na-multi-end-layering-submission.md`](kfm-na-multi-end-layering-submission.md) | —(首信;多端分层设计送审:核心层平台中立 + 四薄壳 + L1 本地 PTY 抽层) | ✅ 已回（2026-08-20 评审：总体批准，五问全裁——portable-pty 批准/单 crate 待 spike 再拆批准/TUI 不套仿真认可/并存手动切换批准/chain 硬闸认可；附考题建议一条（切换后输入路由）；见评审回信） |
 | 2026-08-20 | [`kfmv4-9.0-nz-872-landing-report.md`](kfmv4-9.0-nz-872-landing-report.md) | —（通报；nz 8.7.2 测试基建落地，A 档红验证 + 变异抽检双过） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
@@ -122,7 +123,8 @@
 | 2026-08-20 | [`kfmv4-9.0-nz-874-review.md`](kfmv4-9.0-nz-874-review.md) | kfmv4-9.0-nz-874-landing-report.md（8.7.4 通报 + 混入事故说明） | 📢 通报完毕（2026-08-20 评审：复核结论，无需回信） |
 | 2026-08-20 | [`kfmv4-9.0-nz-875-landing-report.md`](kfmv4-9.0-nz-875-landing-report.md) | —（通报；nz 8.7.5 契约 №15 影子期落地，DoD 全过） | ✅ 已回（2026-08-20 评审：落地核实属实 + 门禁口径裁定 + 代码发现两条——见 kfmv4-9.0-nz-875-review.md） |
 | 2026-08-20 | [`kfmv4-9.0-nz-875-review.md`](kfmv4-9.0-nz-875-review.md) | kfmv4-9.0-nz-875-landing-report.md（8.7.5 落地通报） | 待回信（2026-08-20 评审：待 9.0 线收讫 + 两条代码发现入档） |
-| 2026-08-20 | [`kfmv4-9.0-nz-877-landing-report.md`](kfmv4-9.0-nz-877-landing-report.md) | —（通报；nz 8.7.7 TASK §2.4 最小版落地，DoD 全过） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
+| 2026-08-20 | [`kfmv4-9.0-nz-877-landing-report.md`](kfmv4-9.0-nz-877-landing-report.md) | —（通报；nz 8.7.7 TASK §2.4 最小版落地，DoD 全过） | ✅ 已回（2026-08-20 评审：核实属实 + 观察两条知会——见 kfmv4-9.0-nz-877-review.md） |
+| 2026-08-20 | [`kfmv4-9.0-nz-877-review.md`](kfmv4-9.0-nz-877-review.md) | kfmv4-9.0-nz-877-landing-report.md（8.7.7 落地通报） | 📢 通报完毕（2026-08-20 评审：核实属实，观察两条知会） |
 | 2026-08-20 | [`kfmv4-9.0-nz-landing-review-response.md`](kfmv4-9.0-nz-landing-review-response.md) | kfmv4-9.0-nz-landing-review.md（nz 8.7.2/8.7.3 落地评审 5 条） | ✅ 已回（2026-08-20 9.0 线：5 条逐条裁决落地） |
 | 2026-08-20 | [`kfmv4-9.0-nz-landing-review.md`](kfmv4-9.0-nz-landing-review.md) | kfmv4-9.0-nz-872-landing-report.md、kfmv4-9.0-nz-873-landing-report.md、kfmv4-9.0-nz-taskmap-v2-report.md（三封通报并评） | ✅ 已落地（2026-08-20 评审：5 条裁决全采纳 + 处置独立复核通过——TASK.md 1.3 步号口径/2.3 端口 8023/2.5 数据区/决策记录 dsh 分工逐条核实；git init 已由入仓超越） |
 | 2026-08-20 | [`kfmv4-9.0-nz-taskmap-v2-report.md`](kfmv4-9.0-nz-taskmap-v2-report.md) | —（通报；TASK.md 修订：9.x 工坊线阶段入图（用户拍板：工坊线非搁置系顺序调整）+ 全面性补漏 7 项） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
