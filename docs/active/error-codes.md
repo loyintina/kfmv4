@@ -56,7 +56,8 @@
 | MECH-FLOW-13 | 信件计数声称滞后（check-agent-inbox c：「N 封信」≠ 目录实际数） | 00-index.md / nine-zero-decision-index.md | 改数字追平目录 |
 | MECH-FLOW-14 | 已落定决策未入索引（check-agent-inbox d：已裁决/终审/已落地/已验证信件未被 decision-index 提及） | nine-zero-decision-index.md 维护注 | 索引表补一行（出处信必填） |
 | MECH-FLOW-15 | 信件机读头 schema 违例（check-agent-inbox a：七字段缺失/日期非法/流型出四流型集/「致」线名出表/状态词前缀出词表） | ledger/agent-inbox/README.md 规则节「机读头 schema」条 | 补全或改正信头字段，跑 gen-agent-inbox 回写台账 |
-| MECH-FLOW-16 | 信件停滞（check-agent-inbox e：「待*」状态 + 发信超 7 天） | ledger/agent-inbox/README.md 规则节「阅信纪律」条 | 归属线按阅信纪律处理或回信说明；阈值为执行层参数（改 check-agent-inbox.mjs STALE_DAYS） |
+| MECH-FLOW-16 | 信件停滞（check-agent-inbox e：「待*」状态 + 最后推进超 7 天，时钟 = 代际戳/签名行/发信日） | ledger/agent-inbox/README.md 规则节「阅信纪律」条 | 归属线按阅信纪律处理或回信说明；阈值为执行层参数（改 check-agent-inbox.mjs STALE_DAYS） |
+| MECH-FLOW-17 | 状态戳违例（check-agent-inbox f：f1 非豁免状态缺「（YYYY-MM-DD 更新者」全角括号注 / f2 戳早于发信日 / f3 信体签名行晚于状态戳 = 旧头覆盖新态） | ledger/agent-inbox/README.md 规则节「阅信纪律·读后即翻」条 | 翻转状态时补/改正状态注（全角括号+日期+更新者）；LEGACY 14 封软告警豁免，增量执法 |
 
 ## 新错误码规程
 
