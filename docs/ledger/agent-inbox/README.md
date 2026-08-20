@@ -113,7 +113,8 @@
 | 2026-08-18 | [`kfmv4-agent-mailbox-d4-design-submission.md`](kfmv4-agent-mailbox-d4-design-submission.md) | kfmv4-agent-mailbox-d3-landing-report.md（其「代际戳待落地，设计细化后另行送审」即本信） | ✅ 已裁决（2026-08-18 评审：茉莉三表态采纳 + 用户终审通过，D4 落地） |
 | 2026-08-18 | [`kfmv4-agent-mailbox-habit-report.md`](kfmv4-agent-mailbox-habit-report.md) | —（通报；阅信纪律 D1 成文——README 新增四条规则 + 各线入口文档挂启动自查一行动作项） | 📢 通报完毕（无需回信） |
 | 2026-08-18 | [`kfmv4-agent-mailbox-research-report.md`](kfmv4-agent-mailbox-research-report.md) | —（通报；agent 信箱机制研究线立项 experiments/agent-mailbox/：账本 vs 事件面定位 + 痛点清单五条带证据 + 议题 6 五问迁入解挂扩 Q6/Q7） | 📢 通报完毕（无需回信） |
-| 2026-08-20 | [`kfm-na-multi-end-layering-submission.md`](kfm-na-multi-end-layering-submission.md) | —(首信;多端分层设计送审:核心层平台中立 + 四薄壳 + L1 本地 PTY 抽层) | 待回信 |
+| 2026-08-20 | [`kfm-na-multi-end-layering-review.md`](kfm-na-multi-end-layering-review.md) | kfm-na-multi-end-layering-submission.md（多端分层设计送审 v0） | 待落地通报 |
+| 2026-08-20 | [`kfm-na-multi-end-layering-submission.md`](kfm-na-multi-end-layering-submission.md) | —(首信;多端分层设计送审:核心层平台中立 + 四薄壳 + L1 本地 PTY 抽层) | ✅ 已回（2026-08-20 评审：总体批准，五问全裁——portable-pty 批准/单 crate 待 spike 再拆批准/TUI 不套仿真认可/并存手动切换批准/chain 硬闸认可；附考题建议一条（切换后输入路由）；见评审回信） |
 | 2026-08-20 | [`kfmv4-9.0-nz-872-landing-report.md`](kfmv4-9.0-nz-872-landing-report.md) | —（通报；nz 8.7.2 测试基建落地，A 档红验证 + 变异抽检双过） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
 | 2026-08-20 | [`kfmv4-9.0-nz-873-landing-report.md`](kfmv4-9.0-nz-873-landing-report.md) | —（通报；nz 8.7.3 内核自研件落地，№14 四设计要件 + 两补丁全绿） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
 | 2026-08-20 | [`kfmv4-9.0-nz-landing-review-response.md`](kfmv4-9.0-nz-landing-review-response.md) | kfmv4-9.0-nz-landing-review.md（nz 8.7.2/8.7.3 落地评审 5 条） | ✅ 已回（2026-08-20 9.0 线：5 条逐条裁决落地） |
