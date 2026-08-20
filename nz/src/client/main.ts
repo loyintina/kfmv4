@@ -11,6 +11,7 @@ import { rootCtx, bootLog, bootCtxSelfTest, isHelloCleaned } from './ctx.js';
 import { RenderHost } from './host.js';
 import { GestureRegistry } from './gesture.js';
 import { CardTypeBroker } from './card-types.js';
+import { PermissionEngine } from './permission.js';
 
 // ========== 内核件接线：宿主给盒子，手势管输入，broker 管卡类型户口 ==========
 const host = new RenderHost();
@@ -24,6 +25,12 @@ rootCtx.provide('gestures', gestures);
 const cardTypes = new CardTypeBroker();
 rootCtx.provide('cardTypes', cardTypes);
 
+// 8.7.5 安全包影子（№15）：判定+审计不拦截。
+// roots 暂空（fail-closed 方向：绝对路径写一律 ask 落日志）——
+// 真实 roots 由 tool-host/配置落地时注入，骨架期不硬编码机器路径。
+const permissions = new PermissionEngine();
+rootCtx.provide('permissions', permissions);
+
 function render() {
   const el = document.getElementById('boot-log');
   if (!el) return;
@@ -36,4 +43,4 @@ void bootCtxSelfTest().then(() => render());
 setInterval(render, 250);
 
 // 供守视 eval 直读
-(window as unknown as Record<string, unknown>).__kfmNz = { rootCtx, bootLog, isHelloCleaned, host, gestures, cardTypes };
+(window as unknown as Record<string, unknown>).__kfmNz = { rootCtx, bootLog, isHelloCleaned, host, gestures, cardTypes, permissions };

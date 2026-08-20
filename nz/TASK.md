@@ -15,13 +15,15 @@
 > 每次进度更新只改本节。
 
 - **当前阶段**：内核地基期（8.7 主题推进中）
-- **刚完成**：8.7.4 card-types broker（2026-08-20）——card-types.ts（№6：
-  注册=效果回滚白送 / relied 守卫 / 拓扑+name 序枚举 / singleton 聚焦 /
-  实例户口 serialize 交班 / disposeAll 拓扑销户）；30 钉全绿（+broker 10 钉）、
-  typecheck 零错、smoke 照过；契约指定双变异靶子实测抓获（注册不进 fiber →
-  dispose 销户钉红；守卫拆除 → relied 钉红）。
-- **下一步**：8.7.5 安全包影子（只记录不拦截，dsh guard/scope 参考）；
-  8.7.7 kfm-plugtest 最小版在 broker 后优先做（broker 已就位）。
+- **刚完成**：8.7.5 安全包影子（2026-08-20）——permission.ts（№15 影子期：
+  RiskClass 四级判定 + fail-closed 缺省 / roots 硬边界 / 判定全量落内存
+  append-only 审计 + 可注入 sink / scope 档位口子只记录不裁决 /
+  declareToolRisk 走 ctx.effect 销户白送）；43 钉全绿（+影子 13 钉）、
+  typecheck 零错、smoke 照过；双变异靶子实测抓获（缺省不 fail-closed →
+  未知工具钉红；摘审计调用 → 落日志钉红）。roots 骨架期置空（fail-closed
+  方向），真实 roots 待 tool-host 落地注入。
+- **下一步**：8.7.7 kfm-plugtest 最小版（broker 已就位，优先做）；
+  8.7.6 试点三件套（眼睛最小段 + 手单实例）。
 - **阻塞**：无
 
 ---
@@ -122,7 +124,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.2 | 测试 runner 移植（kfmv4 runner.ts + harness.ts） | 无 | 无 | A 档：先写考题验证红 + 变异抽检可跑 | ✅ |
 | 8.7.3 | 渲染宿主 + 手势分发 | 无 | 无 | A+B：容器生灭唯一入口、手势层带、验收三数字、0-4b NA 互证 | ✅ |
 | 8.7.4 | card-types broker | dsh host/plugin-inventory 参考 | 无 | A 档：headless 枚举/注册/摘除 | ✅ |
-| 8.7.5 | 安全包影子 | dsh guard/scope 参考 | cedar-policy 远期评估 | A+B：只记录不拦截，决策全量落日志 | ⬜ |
+| 8.7.5 | 安全包影子 | dsh guard/scope 参考 | cedar-policy 远期评估 | A+B：只记录不拦截，决策全量落日志 ✅ |
 | 8.7.6 | 试点三件套（眼睛最小段 + 手单实例） | 无 | 无 | A 档：抽文件测试两式 | ⬜ |
 | 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A 档：list/test/残留检查 | ⬜ |
 | 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty（仅 NA）；kfmv4 侧 Node 不 Rust | A 档：open/input/resize/close/重连 | ⬜ |
@@ -166,7 +168,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.2 | 测试 runner 移植（kfmv4 runner.ts + harness.ts） | 无 | 无 | A：先写考题验证红；变异抽检可跑 | ✅ |
 | 8.7.3 | 渲染宿主（容器生灭唯一入口）+ 手势分发（gesture-registry + 层带公约） | 无 | 无 | A+B：容器生灭、手势层带、验收三数字、0-4b NA 互证 | ✅ |
 | 8.7.4 | card-types broker（注册表 + singleton） | dsh plugin-inventory 参考 | 无 | A：headless 枚举/注册/摘除可脚本验证 | ✅ |
-| 8.7.5 | 安全包影子（只记录不拦截；强制 riskClass 声明） | dsh guard/scope | cedar-policy 留转正期评估 | B：决策全量落日志，零行为变化 | ⬜ |
+| 8.7.5 | 安全包影子（只记录不拦截；强制 riskClass 声明） | dsh guard/scope | cedar-policy 留转正期评估 | B：决策全量落日志，零行为变化 ✅ |
 | 8.7.6 | 试点三件套（眼睛最小段 + 手单实例，Cordis 全流程） | 无 | 无 | A：抽文件测试两式，禁用后系统无损 | ⬜ |
 | 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A：list/test/残留检查；错误码可机检 | ⬜ |
 
@@ -368,3 +370,9 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   复核日 2026-08-27，链复绿）；若再发生混入，入仓后第一动作=跑全链
   验红。②git 卫生 v0 检查立项（评审认领）：commit 时暂存区路径 vs
   线归属白名单比对，v0 只警告不拦截。详见 `kfmv4-9.0-nz-874-review.md`。
+- 2026-08-20：8.7.5 安全包影子完成——permission.ts（№15 影子期：只记录
+  不拦截）；v8 8.5.0 三处 nz 适配（内存审计+sink 口子 / declareRisk 动态
+  登记替代静态表 / roots 显式注入）；dsh 参考：scope 父链（注册视图向下
+  继承、事件许可向上延伸）与 permission-presets（preset=sandbox+approval
+  两旋钮打包）确认留转正期；scope 口子 v1 只落日志。43 钉全绿，双变异
+  靶子抓获；roots 骨架期置空（fail-closed）。
