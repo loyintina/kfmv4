@@ -62,6 +62,16 @@ fork commit:`be9d770`,改动两处:
    分钟),镜像 ~250KB/s。安全性由既有 sha256 校验兜底(内容不符
    当场报错),镜像只改传输路径不改内容。git clone 类源不经此函数,
    走第 3 条的逐包 SRCURL 换镜像。
+6. ncurses 的第二源(rxvt-unicode,取 terminfo 用)宿主
+   `dist.schmorp.de` DNS 被污染解析不了。**处置:宿主机从 tuna
+   debian 源池下同版本 orig.tar.bz2(sha256 与原校验逐位吻合),
+   `docker cp` 进容器 `~/.termux-build/ncurses/cache/`(文件名 =
+   URL basename,校验匹配即跳过下载)。此后凡 DNS 被污染的孤儿源,
+   同法预置缓存**。
+7. **容器缓存纪律**:`~/.termux-build` 默认不挂载进容器(`-m` 才挂),
+   源码缓存/构建目录都在容器 fs 里——`docker rm` = 缓存全丢重编。
+   重跑构建只 `run-docker.sh` 复用同名容器,别 rm(2026-08-20 实踩:
+   rm 一次,libgmp 等白重编一轮)。
 
 ## 4. 构建(复现步骤)
 
