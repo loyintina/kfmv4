@@ -56,6 +56,12 @@ fork commit:`be9d770`,改动两处:
 4. 仓库目录已 `chown -R 1001:1001`(容器内 builder uid;root 持有会
    `mkdir output: Permission denied`)。root 侧 git 操作需
    `git config --global --add safe.directory <路径>`(已配)。
+5. `scripts/build/termux_download.sh`:github.com 下载 URL 自动改写走
+   `https://ghfast.top/` 镜像(`KFM_GH_PROXY` 环境变量可关/可换)——
+   服务器直连 github 发布资产 CDN 实测 ~10KB/s(openssl 一包挂 20+
+   分钟),镜像 ~250KB/s。安全性由既有 sha256 校验兜底(内容不符
+   当场报错),镜像只改传输路径不改内容。git clone 类源不经此函数,
+   走第 3 条的逐包 SRCURL 换镜像。
 
 ## 4. 构建(复现步骤)
 
