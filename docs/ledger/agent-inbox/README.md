@@ -122,6 +122,7 @@
 | 2026-08-20 | [`kfmv4-9.0-nz-874-review.md`](kfmv4-9.0-nz-874-review.md) | kfmv4-9.0-nz-874-landing-report.md（8.7.4 通报 + 混入事故说明） | 📢 通报完毕（2026-08-20 评审：复核结论，无需回信） |
 | 2026-08-20 | [`kfmv4-9.0-nz-875-landing-report.md`](kfmv4-9.0-nz-875-landing-report.md) | —（通报；nz 8.7.5 契约 №15 影子期落地，DoD 全过） | ✅ 已回（2026-08-20 评审：落地核实属实 + 门禁口径裁定 + 代码发现两条——见 kfmv4-9.0-nz-875-review.md） |
 | 2026-08-20 | [`kfmv4-9.0-nz-875-review.md`](kfmv4-9.0-nz-875-review.md) | kfmv4-9.0-nz-875-landing-report.md（8.7.5 落地通报） | 待回信（2026-08-20 评审：待 9.0 线收讫 + 两条代码发现入档） |
+| 2026-08-20 | [`kfmv4-9.0-nz-877-landing-report.md`](kfmv4-9.0-nz-877-landing-report.md) | —（通报；nz 8.7.7 TASK §2.4 最小版落地，DoD 全过） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
 | 2026-08-20 | [`kfmv4-9.0-nz-landing-review-response.md`](kfmv4-9.0-nz-landing-review-response.md) | kfmv4-9.0-nz-landing-review.md（nz 8.7.2/8.7.3 落地评审 5 条） | ✅ 已回（2026-08-20 9.0 线：5 条逐条裁决落地） |
 | 2026-08-20 | [`kfmv4-9.0-nz-landing-review.md`](kfmv4-9.0-nz-landing-review.md) | kfmv4-9.0-nz-872-landing-report.md、kfmv4-9.0-nz-873-landing-report.md、kfmv4-9.0-nz-taskmap-v2-report.md（三封通报并评） | ✅ 已落地（2026-08-20 评审：5 条裁决全采纳 + 处置独立复核通过——TASK.md 1.3 步号口径/2.3 端口 8023/2.5 数据区/决策记录 dsh 分工逐条核实；git init 已由入仓超越） |
 | 2026-08-20 | [`kfmv4-9.0-nz-taskmap-v2-report.md`](kfmv4-9.0-nz-taskmap-v2-report.md) | —（通报；TASK.md 修订：9.x 工坊线阶段入图（用户拍板：工坊线非搁置系顺序调整）+ 全面性补漏 7 项） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
