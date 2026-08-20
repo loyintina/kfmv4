@@ -36,7 +36,7 @@ export const MUTATIONS = [
   // ---- L1 回归层：历史真案例复刻 ----
   {
     id: 'M01', level: 'L1', sem: 'SEM001', file: 'README.md', expect: 'report',
-    find: '**49 个 check-* 脚本 + 587 个回归测试**',
+    find: '**50 个 check-* 脚本 + 587 个回归测试**',
     replace: '**36 个 check-* 脚本 + 499 个回归测试**',
     tasks: ['readme-vs-maps', 'inter-readme-codemap'],
     note: 'check 计数应为 36（锚点 2026-08-03 随 493→498 迁移）',
@@ -86,7 +86,7 @@ export const MUTATIONS = [
   },
   {
     id: 'M08', level: 'L2', sem: 'SEM002', file: 'docs/domains/infra/contract.md', expect: 'report',
-    find: '## 检查管线（npm run check，49 脚本，顺序固定）',
+    find: '## 检查管线（npm run check，50 脚本，顺序固定）',
     replace: '## 检查管线（npm run check，29 脚本，顺序固定）',
     tasks: ['contract-vs-map-infra'],
     note: '契约计数 29 vs code-map「30 个 check（含 check-checks 自身）」冲突（锚点随 31 迁移）',
@@ -94,7 +94,7 @@ export const MUTATIONS = [
   // ---- L3 对抗层：near-miss 负例（报了即误报） ----
   {
     id: 'M09', level: 'L3', sem: 'NC', file: 'README.md', expect: 'silent',
-    find: '| 自动化检查管线 | 49 个 check-* 脚本',
+    find: '| 自动化检查管线 | 50 个 check-* 脚本',
     replace: '| 自动化检查管线 | 37（三十七）个 check-* 脚本',
     tasks: ['readme-vs-maps', 'inter-readme-codemap'],
     note: '正确计数的表述变体——不应报告（三轮假发现改造）',
@@ -116,7 +116,7 @@ export const MUTATIONS = [
   },
   {
     id: 'M12', level: 'L2', sem: 'SEM002', file: 'CLAUDE.md', expect: 'report',
-    find: 'npm run check    # 49 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
+    find: 'npm run check    # 50 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
     replace: 'npm run check    # 36 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
     tasks: ['claude-vs-docs'],
     note: '入口文档计数 30 vs infra 契约「31 脚本」冲突（锚点随 31 迁移）',

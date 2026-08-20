@@ -1062,6 +1062,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "账本 commit 引用对账（v8.3 语义审计机械化 M3）"
   },
   {
+    "name": "check-ledger-coverage.mjs",
+    "file": "scripts/check/check-ledger-coverage.mjs",
+    "category": "检查器",
+    "description": "v8→v9 迁移总账咬合检查（2026-08-20 立）",
+    "permission": "构建链内只读检查（无网络、无写盘副作用）",
+    "prompt": "无（机械检查）",
+    "effect": "v8→v9 迁移总账咬合检查（2026-08-20 立）"
+  },
+  {
     "name": "check-mechanism-registry.mjs",
     "file": "scripts/check/check-mechanism-registry.mjs",
     "category": "检查器",

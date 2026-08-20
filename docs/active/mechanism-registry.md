@@ -18,6 +18,7 @@
 | 探针自检 check-probes | 核心 | 全 | 检查器对负例不报错 → 探针报"已失效" | 运行器本身（24 夹具，2026-08-09 补 2 后回填订正） | guides/testing.md + nine-zero-phase2-contracts.md 契约 5 | 巡逻 |
 | 工作流消费门（check-doc-orphans + check-doc-coverage + check-doc-scripts 三） | 核心 | 全（DOC-FLOW-12） | 规则文档无人消费 → 门报红 | ✓（doc-orphans 夹具） | guides/doc-maintenance.md | 巡逻 |
 | 契约新鲜度（check-contract-freshness） | 核心 | 全 | 域代码比契约新 → 构建中断 | ✗ 无探针（候选） | domains/code-inventory.md | 巡逻 |
+| 迁移总账咬合（check-ledger-coverage） | 核心 | 全（hard fail；三类红：无归宿行/死锚/死账） | 清单层 × 归宿层脱咬合 → 构建中断 | ✗ 无探针（KFM_PROBE_ROOT 可注入，候选） | active/nine-zero/nine-point-zero.md（组件台账 covers 锚点）+ nz/TASK.md 决策记录 | 巡逻 |
 | 文档预算（check-doc-budget） | 核心 | 全 | 加载类文档超行数 → 中断 | ✓ | guides/doc-architecture.md | 巡逻 |
 | 耦合门（check-commit-docs） | 核心 | 全（hard fail + docs:na） | src/scripts 改动无 docs → 提交被拦 | 豁免（git 历史型） | guides/doc-architecture.md | 巡逻 |
 | 落成门（check-probe-state） | 核心 | 全 | 新功能无探头记录/陈旧 → 中断 | ✓ | experiments/docprobe/index.md（落成门节） | 巡逻 |
