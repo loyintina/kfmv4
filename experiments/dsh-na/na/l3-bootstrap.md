@@ -68,6 +68,10 @@ fork commit:`be9d770`,改动两处:
    `docker cp` 进容器 `~/.termux-build/ncurses/cache/`(文件名 =
    URL basename,校验匹配即跳过下载)。此后凡 DNS 被污染的孤儿源,
    同法预置缓存**。
+   已预置清单:rxvt-unicode(tuna debian 源池)、python 双源
+   (huaweicloud + salsa 直连)、libxml2(nju gnome——注意 tuna/ustc/
+   bfsu 的 gnome 路径对本包全是 404 HTML,南大才有;**验证镜像文件
+   先 `file` 看是不是 HTML 错误页再信 hash**)。
 7. **容器缓存纪律**:`~/.termux-build` 默认不挂载进容器(`-m` 才挂),
    源码缓存/构建目录都在容器 fs 里——`docker rm` = 缓存全丢重编。
    重跑构建只 `run-docker.sh` 复用同名容器,别 rm(2026-08-20 实踩:
