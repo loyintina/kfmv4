@@ -53,17 +53,17 @@
 | 件 | 来源 | 状态 |
 |----|------|------|
 | ctx 基座（事件总线 / inject 引擎 / 生命周期） | **采用 Cordis 本体**（cordis@4.0.0-rc.7 锁版本进 lockfile，升级契约化归 9.0 线；契约优先：Cordis 是承载，9.0 纪律是宪法）；自研收窄为渲染宿主+手势分发（№14） | ✅ 采用拍板（2026-08-17 用户终审）· 步 0 四项验证中 |
-| 渲染宿主（DOM 容器 / 摘容器 API） | 新建（v8 无此物；容器生灭唯一入口，宿主给盒子/布局摆盒子/卡填盒子） | №14 | ✅ 定稿 |
-| 手势分发 | v8 gesture-registry Ⓟ346 收编 + 两补丁（ctx 效果注册 / 优先级层带公约） | №14 | ✅ 定稿 |
-| 启动引导 | main.ts 131 + app.ts 130 + app-lifecycle 20 + logger 57 + version-watch 59 Ⓟ397——拓扑激活；调试桥删；错误直报+version-watch 留 boot | №16 | ✅ 定稿 |
-| ws 服务端对 | ws-server Ⓟ323 一拆三：传输通道=壳基建+推送通道服务 / PtyManager→№1 / page-state→№5 | №16 | ✅ 定稿 |
-| canvas UI 引擎 engine/v2 | Ⓟ2703（v8 文件树/浮卡的 canvas 底座） | ❌ 已拍板退役清理（№7 DOM 化+浮卡降级后无消费者，9.0 落地即删；2026-08-16 小件轮） |
+| 渲染宿主（DOM 容器 / 摘容器 API） | 新建（v8 无此物；容器生灭唯一入口，宿主给盒子/布局摆盒子/卡填盒子） | №14 | ✅ 定稿 <!-- covers: z-index-layers.ts --> |
+| 手势分发 | v8 gesture-registry Ⓟ346 收编 + 两补丁（ctx 效果注册 / 优先级层带公约） | №14 | ✅ 定稿 <!-- covers: gestures.ts --> |
+| 启动引导 | main.ts 131 + app.ts 130 + app-lifecycle 20 + logger 57 + version-watch 59 Ⓟ397——拓扑激活；调试桥删；错误直报+version-watch 留 boot | №16 | ✅ 定稿 <!-- covers: dom-refs.ts --> |
+| ws 服务端对 | ws-server Ⓟ323 一拆三：传输通道=壳基建+推送通道服务 / PtyManager→№1 / page-state→№5 | №16 | ✅ 定稿 <!-- covers: ws-channel.ts --> |
+| canvas UI 引擎 engine/v2 | Ⓟ2703（v8 文件树/浮卡的 canvas 底座） | ❌ 已拍板退役清理（№7 DOM 化+浮卡降级后无消费者，9.0 落地即删；2026-08-16 小件轮） <!-- covers: renderer-lifecycle.ts --> |
 
 ### 服务插件（数据管理器阶层）
 
 | 服务 | 收编 v8 内容 | 契约 | 状态 |
 |------|--------------|------|------|
-| card-types broker | 卡片注册表（155 行）+ singleton 声明（修订注） | №6 | ✅ 定稿 |
+| card-types broker | 卡片注册表（155 行）+ singleton 声明（修订注） | №6 | ✅ 定稿 <!-- covers: card-registry.ts --> |
 | tool-host 工具宿主 | tools/index.ts 170 + types.ts 109 框架；各工具插件：omp/browser Ⓟ2422 / omp/debug Ⓟ1274 / 小工具群 Ⓟ677 / 自指工具 Ⓟ323（含 kfm-hand-press、restart） | №10 | ✅ 定稿 |
 | ledger-service 账本 | tool-exec.jsonl 机制提为通用 append-only 服务（执行账/裁决审计/操作审计） | №10 附属 | ✅ 定稿 |
 | session-store | 会话存储与压缩（sessions/）+ routes/compact.ts Ⓟ126；落盘纪律自管（承重墙） | №12 | ✅ 定稿 |
@@ -82,11 +82,11 @@
 
 | 卡 | 收编 v8 内容 | 契约 | 状态 |
 |----|--------------|------|------|
-| 对话卡（渲染壳）→ 窗口卡（完全体） | 光球面板 + 会话聊天面板 + 全局输入栏收编 | №2 + №9 | ✅ 定稿 |
-| 终端卡 / tmux 卡 | terminal-card-04 + tmux-card + server terminal-pty.ts（PTY 会话管理，归 №1 连接家族） | №1 | ✅ 定稿 |
-| 池卡（七 tab） | API/角色/配置/会话/工具/脚本卡 | №3 | ✅ 定稿 |
-| 文件树卡 | Canvas 文件树重写（DOM 化，UI 不变）+ mode-system Ⓟ446（copy/move/delete 模式工具栏，读码消解归此） | №7 | ✅ 定稿 |
-| 手 | hand.ts（通用多实例） | №4 | ✅ 定稿 |
+| 对话卡（渲染壳）→ 窗口卡（完全体） | 光球面板 + 会话聊天面板 + 全局输入栏收编 | №2 + №9 | ✅ 定稿 <!-- covers: orb.ts, orb-panel.ts, orb-state.ts, orb-chat.ts, orb-chat-run.ts, orb-chat-host.ts, orb-chat-hints.ts, chat-dom.ts, session-client.ts --> |
+| 终端卡 / tmux 卡 | terminal-card-04 + tmux-card + server terminal-pty.ts（PTY 会话管理，归 №1 连接家族） | №1 | ✅ 定稿 <!-- covers: terminal.card.ts, tmux.card.ts --> |
+| 池卡（七 tab） | API/角色/配置/会话/工具/脚本卡 | №3 | ✅ 定稿 <!-- covers: role.card.ts, session.card.ts, api.card.ts, tools.card.ts, scripts.card.ts, config.card.ts, drag-handler.ts --> |
+| 文件树卡 | Canvas 文件树重写（DOM 化，UI 不变）+ mode-system Ⓟ446（copy/move/delete 模式工具栏，读码消解归此） | №7 | ✅ 定稿 <!-- covers: tree-render.ts, tree-model.ts, tree-swipe.ts, file-action-bar.ts, sibling-switcher.ts --> |
+| 手 | hand.ts（通用多实例） | №4 | ✅ 定稿 <!-- covers: hand-geometry.ts --> |
 | todo 卡 | todo 工具的面板呈现 | — | ✅ 已拍板：工具附属 UI 卡（工具经 №6 注册卡类型，todo 为首例） |
 | apk 卡 | apk.card Ⓟ71 + download/apk 端点同退 | — | ❌ 已拍板移除（8022 直连手机 + NA 侧直接编译，2026-08-16） |
 | 文件编辑卡 | file.card Ⓟ18 壳 + handler-factory Ⓟ296 + lib 渲染器集群；预览+编辑双态、自动保存、checkbox 写回；扼点事件化跟随同步 | №13 | ✅ 定稿 |
@@ -97,11 +97,11 @@
 
 | 包 | 内容 | 契约 | 状态 |
 |----|------|------|------|
-| 眼睛包 | 总插件 + 六段 | №5 | ✅ 定稿 |
+| 眼睛包 | 总插件 + 六段 | №5 | ✅ 定稿 <!-- covers: viewport-visibility.ts, ui-registry.ts --> |
 | 池卡 | 容器 + 七 pool-page | №3 | ✅ 定稿 |
 | UI 皮肤包 | **覆盖层（换脸）**：主题/配色/质感；theme.ts 不收编、v1 重写；功能自带基础 UI（2026-08-16 澄清） | — | 待设计（已拍板皮肤可插拔 2026-08-16） |
 | 安全包 | 权限裁决+读写监狱+ask 批准卡+审计（一文件夹一包第二实例） | №15 | ✅ 定稿 |
-| 动画插件 | v8 交互动画收编：GSAP / 双树 overlay / 字符雨 / 徽标引擎 Ⓟ493 / 光标液体粒子 liquid-geometry Ⓟ108 / canvas-cursor Ⓟ392 / animation-registry Ⓟ75 | — | 远期（v1 组件零动画） |
+| 动画插件 | v8 交互动画收编：GSAP / 双树 overlay / 字符雨 / 徽标引擎 Ⓟ493 / 光标液体粒子 liquid-geometry Ⓟ108 / canvas-cursor Ⓟ392 / animation-registry Ⓟ75 | — | 远期（v1 组件零动画） <!-- covers: tree-overlay.ts, tree-animation.ts, char-rain.ts --> |
 | 多端适配包 | 浮卡工作台（桌面端布局插件，未来新写，v8 代码留仓参考） | — | 远期（2026-08-16 拍板降级） |
 
 ### 布局与壳
@@ -110,10 +110,10 @@
 |----|------|------|
 | 全屏层叠布局（默认，手机优先） | 启动器点卡直接全屏；保留全屏关闭 UI；取消浮卡切换 UI | №11 ✅ 定稿 |
 | headless 布局 | 同接口不渲染（A 档测试 / AI 无头自测） | №11 ✅ 定稿 |
-| 卡片堆 → 启动器插件 | 手势唤出抽屉（UI 保留）→ broker 枚举 → 开卡；摆放归布局 | №11 ✅ 定稿 |
+| 卡片堆 → 启动器插件 | 手势唤出抽屉（UI 保留）→ broker 枚举 → 开卡；摆放归布局 | №11 ✅ 定稿 <!-- covers: card-stack.ts --> |
 | tmux 全屏卡 | 全屏层叠语境下的全屏卡（议题 1 下钻语义不变） | №11 语境 ✅ |
-| 浮卡工作台 | v8 floating-card Ⓟ810 + fullscreen Ⓟ213 + shared Ⓟ172 不迁移留仓 | → 多端适配远期包（用户拍板 2026-08-16） |
-| 顶栏（槽位 broker + tmux 管理） | 徽标/余额/系统三格/光球/tmux 五槽位；tmux 逻辑归 server 服务；routes/obs.ts 观测台服务端归此 | №8 ✅ 定稿（含 slot-sys 修订注） |
+| 浮卡工作台 | v8 floating-card Ⓟ810 + fullscreen Ⓟ213 + shared Ⓟ172 不迁移留仓 | → 多端适配远期包（用户拍板 2026-08-16） <!-- covers: floating-fullscreen.ts, floating-shared.ts --> |
+| 顶栏（槽位 broker + tmux 管理） | 徽标/余额/系统三格/光球/tmux 五槽位；tmux 逻辑归 server 服务；routes/obs.ts 观测台服务端归此 | №8 ✅ 定稿（含 slot-sys 修订注） <!-- covers: obs-emblem.ts, obs-hud.ts --> |
 | OBS HUD / 徽标 | ✅ 消解：HUD=顶栏本体（归 №8）；徽标动画引擎归动画插件；坐标注册归 №5 | — |
 
 ### 共享基础件（lib 层，非插件——"效果非代码"原则 2026-08-16）
@@ -121,9 +121,9 @@
 | 件 | 行数 | 说明 |
 |----|------|------|
 | md 渲染器集群 | Ⓟ740 | renderers/：handler-factory / math-diagram / code-highlight / md-* / 预览回退 |
-| 通用 UI 件 | Ⓟ549 | custom-select 245 / confirm-dialog 191（=各契约引用的 showConfirm）/ card-toast 52 / color-utils 45 / debug-assert 16 |
+| 通用 UI 件 | Ⓟ549 | custom-select 245 / confirm-dialog 191（=各契约引用的 showConfirm）/ card-toast 52 / color-utils 45 / debug-assert 16 <!-- covers: card-ui.ts --> |
 | canvas 交互件 | Ⓟ476 | canvas-scroll 358 / canvas-utils 60 / click-queue 38 / interaction-constants 20 |
-| shared 协议层 | Ⓟ571 | chat-protocol 542（to-openai-messages / reducer）+ message-normalize 29 |
+| shared 协议层 | Ⓟ571 | chat-protocol 542（to-openai-messages / reducer）+ message-normalize 29 <!-- covers: chat-protocol/events.ts, chat-protocol/block-idx.ts --> |
 | 工具 I/O 压缩（tool-compaction） | Ⓟ369 | 纯函数+静态表；挂点=agent-service 投影链（№12 修订注）；双向核对检查脚本留运维域 |
 | 数据语料 | Ⓟ1107 | waiting-hints.ts（等待提示语料，归窗口卡包内数据，不是逻辑） |
 | 生成物 | Ⓟ1354 | scripts-catalog.ts（构建期生成，归池卡包数据源） |

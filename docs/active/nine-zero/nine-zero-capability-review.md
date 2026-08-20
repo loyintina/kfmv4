@@ -5,7 +5,7 @@
 > （cordis 本体 + 分层插件），验证「cordis 内核 + 分类插件」是否成立。
 > 别的去哪找：9.0 台账 → nine-point-zero.md；dsh 包清单 → `/opt/dsh-src/packages/`；
 > 采用决策 → `../../ledger/agent-inbox/kfmv4-9.0-cordis-adoption-verdict.md`。
-> 状态：初稿（待 9.0 线确认台账补行；待用户过目后决定投递）。
+> 状态：✅ 已收编（2026-08-20 用户拍板，9.0 线执行：5 处缺口核对全部已闭环——rules/ 归 rule-engine 行、prompts/global 归 agent-service 行、routes/obs 归 №8 顶栏行、terminal-pty 归 №1 终端卡行、范式卡 ❌ 移除行在册；防再漂机制 = check-ledger-coverage.mjs（清单层机械生成 × 归宿层锚点咬合）已挂检查链常驻）。
 
 ---
 
