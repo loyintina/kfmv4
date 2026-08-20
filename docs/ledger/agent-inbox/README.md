@@ -127,7 +127,7 @@
 | 2026-08-20 | [`kfmv4-9.0-nz-877-review.md`](kfmv4-9.0-nz-877-review.md) | kfmv4-9.0-nz-877-landing-report.md（8.7.7 落地通报） | 📢 通报完毕（2026-08-20 评审：核实属实，观察两条知会） |
 | 2026-08-20 | [`kfmv4-9.0-nz-landing-review-response.md`](kfmv4-9.0-nz-landing-review-response.md) | kfmv4-9.0-nz-landing-review.md（nz 8.7.2/8.7.3 落地评审 5 条） | ✅ 已回（2026-08-20 9.0 线：5 条逐条裁决落地） |
 | 2026-08-20 | [`kfmv4-9.0-nz-landing-review.md`](kfmv4-9.0-nz-landing-review.md) | kfmv4-9.0-nz-872-landing-report.md、kfmv4-9.0-nz-873-landing-report.md、kfmv4-9.0-nz-taskmap-v2-report.md（三封通报并评） | ✅ 已落地（2026-08-20 评审：5 条裁决全采纳 + 处置独立复核通过——TASK.md 1.3 步号口径/2.3 端口 8023/2.5 数据区/决策记录 dsh 分工逐条核实；git init 已由入仓超越） |
-| 2026-08-20 | [`kfmv4-9.0-nz-taskmap-revision-876.md`](kfmv4-9.0-nz-taskmap-revision-876.md) | kfmv4-9.0-nz-877-review.md（877 评审收讫后的用户新拍板） | ⏳ 待复核（2026-08-20 9.0 线：双侧任务图已改，待评审复核） |
+| 2026-08-20 | [`kfmv4-9.0-nz-taskmap-revision-notice.md`](kfmv4-9.0-nz-taskmap-revision-notice.md) | kfmv4-9.0-nz-877-review.md（877 评审收讫后的用户新拍板） | ⏳ 待评审表态（2026-08-20 9.0 线：双侧任务图已改，待评审复核） |
 | 2026-08-20 | [`kfmv4-9.0-nz-taskmap-v2-report.md`](kfmv4-9.0-nz-taskmap-v2-report.md) | —（通报；TASK.md 修订：9.x 工坊线阶段入图（用户拍板：工坊线非搁置系顺序调整）+ 全面性补漏 7 项） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
 | 2026-08-20 | [`kfmv4-nz-merger-notice.md`](kfmv4-nz-merger-notice.md) | kfmv4-9.0-nz-landing-review.md（评审问题 1 的结构性落地） | 📢 通报完毕（2026-08-20 评审：无需回信） |
 <!-- gen:agent-inbox:end -->
