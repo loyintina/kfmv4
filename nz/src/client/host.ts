@@ -133,6 +133,11 @@ export class RenderHost {
     return list.length;
   }
 
+  /** 活容器数（plugtest 快照探针：DOM 残留 = 本计数 diff） */
+  get containerCount(): number {
+    return this._bySlot.size;
+  }
+
   /** 登记清除（detach 的内部回调） */
   private _remove(c: Container): void {
     const key = `${c.owner}:${c.slot}`;

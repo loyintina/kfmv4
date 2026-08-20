@@ -15,15 +15,14 @@
 > 每次进度更新只改本节。
 
 - **当前阶段**：内核地基期（8.7 主题推进中）
-- **刚完成**：8.7.5 安全包影子（2026-08-20）——permission.ts（№15 影子期：
-  RiskClass 四级判定 + fail-closed 缺省 / roots 硬边界 / 判定全量落内存
-  append-only 审计 + 可注入 sink / scope 档位口子只记录不裁决 /
-  declareToolRisk 走 ctx.effect 销户白送）；43 钉全绿（+影子 13 钉）、
-  typecheck 零错、smoke 照过；双变异靶子实测抓获（缺省不 fail-closed →
-  未知工具钉红；摘审计调用 → 落日志钉红）。roots 骨架期置空（fail-closed
-  方向），真实 roots 待 tool-host 落地注入。
-- **下一步**：8.7.7 kfm-plugtest 最小版（broker 已就位，优先做）；
-  8.7.6 试点三件套（眼睛最小段 + 手单实例）。
+- **刚完成**：8.7.7 kfm-plugtest 最小版（2026-08-20）——plugtest.ts
+  （§2.4：插件验房师。装→卸→快照 diff 量残留 + 重载 + 裸 context 降级
+  探针，串行纪律，八错误码机判；残留检查 = 四 broker 账目 diff + 事件
+  探针，broker 架构的回报）；53 钉全绿（+验房师 10 钉，八错误码逐码
+  钉死）、typecheck 零错、smoke 照过；双变异靶子实测抓获（摘快照 diff →
+  LEAK_DOM/SERVICE 钉红；摘探针发射 → LEAK_EVENT 钉红）。探针实证两条
+  cordis 行为入档：dispose 吞 cleanup 异常 / 缺服务访问抛 without inject。
+- **下一步**：8.7.6 试点三件套（眼睛最小段 + 手单实例）。
 - **阻塞**：无
 
 ---
@@ -126,7 +125,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.4 | card-types broker | dsh host/plugin-inventory 参考 | 无 | A 档：headless 枚举/注册/摘除 | ✅ |
 | 8.7.5 | 安全包影子 | dsh guard/scope 参考 | cedar-policy 远期评估 | A+B：只记录不拦截，决策全量落日志 ✅ |
 | 8.7.6 | 试点三件套（眼睛最小段 + 手单实例） | 无 | 无 | A 档：抽文件测试两式 | ⬜ |
-| 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A 档：list/test/残留检查 | ⬜ |
+| 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A 档：list/test/残留检查 ✅ |
 | 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty（仅 NA）；kfmv4 侧 Node 不 Rust | A 档：open/input/resize/close/重连 | ⬜ |
 | 8.8.2 | 终端渲染卡 | 无 | alacritty_terminal→WASM（评估） | A+B+C：终端功能对照 + M3 基线 | ⬜ |
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C 档：刷新即终端 | ⬜ |
@@ -170,7 +169,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.4 | card-types broker（注册表 + singleton） | dsh plugin-inventory 参考 | 无 | A：headless 枚举/注册/摘除可脚本验证 | ✅ |
 | 8.7.5 | 安全包影子（只记录不拦截；强制 riskClass 声明） | dsh guard/scope | cedar-policy 留转正期评估 | B：决策全量落日志，零行为变化 ✅ |
 | 8.7.6 | 试点三件套（眼睛最小段 + 手单实例，Cordis 全流程） | 无 | 无 | A：抽文件测试两式，禁用后系统无损 | ⬜ |
-| 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A：list/test/残留检查；错误码可机检 | ⬜ |
+| 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A：list/test/残留检查；错误码可机检 ✅ |
 
 ### 4.2 8.8 终端/tmux 优先
 
@@ -376,3 +375,9 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   继承、事件许可向上延伸）与 permission-presets（preset=sandbox+approval
   两旋钮打包）确认留转正期；scope 口子 v1 只落日志。43 钉全绿，双变异
   靶子抓获；roots 骨架期置空（fail-closed）。
+- 2026-08-20：8.7.7 kfm-plugtest 最小版完成——plugtest.ts（§2.4 八错误码
+  全实现；残留检查=四 broker 快照 diff + 事件探针；串行纪律内部排队；
+  降级探针语义定稿：公约错误/cordis without inject=有意降级合格，裸
+  TypeError=DEGRADE_CRASH）；宿主/手势/安全各加一个计数探针口子
+  （containerCount/handlerCount/declaredCount）。53 钉全绿，双变异靶
+  抓获。DoD「新插件必过 plugtest」自此可执行。

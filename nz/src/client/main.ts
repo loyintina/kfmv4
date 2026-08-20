@@ -12,6 +12,7 @@ import { RenderHost } from './host.js';
 import { GestureRegistry } from './gesture.js';
 import { CardTypeBroker } from './card-types.js';
 import { PermissionEngine } from './permission.js';
+import { PlugtestRunner } from './plugtest.js';
 
 // ========== 内核件接线：宿主给盒子，手势管输入，broker 管卡类型户口 ==========
 const host = new RenderHost();
@@ -31,6 +32,11 @@ rootCtx.provide('cardTypes', cardTypes);
 const permissions = new PermissionEngine();
 rootCtx.provide('permissions', permissions);
 
+// 8.7.7 kfm-plugtest 最小版（TASK §2.4）：插件验房师——装/卸/量残留 +
+// 重载 + 缺失降级，串行纪律，八错误码机判
+const plugtest = new PlugtestRunner({ host, gestures, cardTypes, permissions }, rootCtx);
+rootCtx.provide('plugtest', plugtest);
+
 function render() {
   const el = document.getElementById('boot-log');
   if (!el) return;
@@ -43,4 +49,4 @@ void bootCtxSelfTest().then(() => render());
 setInterval(render, 250);
 
 // 供守视 eval 直读
-(window as unknown as Record<string, unknown>).__kfmNz = { rootCtx, bootLog, isHelloCleaned, host, gestures, cardTypes, permissions };
+(window as unknown as Record<string, unknown>).__kfmNz = { rootCtx, bootLog, isHelloCleaned, host, gestures, cardTypes, permissions, plugtest };

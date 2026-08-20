@@ -9,6 +9,7 @@ import './host.test.ts';
 import './gesture.test.ts';
 import './card-types.test.ts';
 import './permission.test.ts';
+import './plugtest.test.ts';
 import { runAll } from './runner.ts';
 
 await runAll();

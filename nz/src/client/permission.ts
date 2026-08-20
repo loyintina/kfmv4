@@ -94,6 +94,11 @@ export class PermissionEngine {
     return this._risk.has(tool);
   }
 
+  /** 在册 RiskClass 登记数（plugtest 快照探针：登记残留 = 本计数 diff） */
+  get declaredCount(): number {
+    return this._risk.size;
+  }
+
   // ========== roots 硬边界（write_local 判定依据） ==========
 
   setRoots(roots: string[]): void {

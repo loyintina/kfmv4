@@ -136,6 +136,11 @@ export class GestureRegistry {
     }
   }
 
+  /** 在册处理器数（plugtest 快照探针：手势残留 = 本计数 diff） */
+  get handlerCount(): number {
+    return this._handlers.length;
+  }
+
   /** 注册 preMatch 钩子：每次 pointerdown 在 handler 匹配前执行（无优先级，无返回值） */
   addPreMatchHook(fn: (e: PointerEvent) => void): void {
     this._preMatchHooks.push(fn);
