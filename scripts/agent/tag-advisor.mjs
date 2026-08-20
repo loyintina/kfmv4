@@ -85,6 +85,10 @@ ${commits.map(s => '- ' + s).join('\n')}
 const result = await runAgent({
   system,
   prompt,
+  // 2026-08-18 确诊：deepseek-v4-flash 默认开思考 → 输出全在 reasoning_content、
+  // content 空 → agent-runner 抛「空响应」（换 key 后排障定位，非 key 问题）。
+  // 抽取型负载按注释既定用法关思考（真开关，10 倍提速）
+  params: { thinking: { type: 'disabled' } },
   validate: text => {
     const j = extractJson(text);
     if (!j || !LEVELS.includes(j.level)) return null;

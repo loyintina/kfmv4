@@ -15,16 +15,13 @@
 > 每次进度更新只改本节。
 
 - **当前阶段**：内核地基期（8.7 主题推进中）
-- **刚完成**：8.7.3 渲染宿主 + 手势分发（2026-08-20）——host.ts（容器生灭
-  唯一入口，四设计要件全落）/ gesture.ts（gesture-registry 收编 + 两补丁：
-  ctx.effect 注册 / 层带公约强制校验）；20 钉全绿（ctx-kernel 5 + host 9 +
-  gesture 6）、typecheck 零错、smoke 照过；变异抽检过（摘 ctx.effect →
-  「owner 死自动摘」钉精确抓获）；守视实拍 PASS（层根×3 / touchAction /
-  服务挂载 / in-situ 生灭真 DOM 链路）；churn 基线：2000 次生灭 173ms、
-  堆净增量 +1.1MB、层根零残留。0-4b NA 互证待 NA 线交付回填（不阻塞，
-  NA 不催承诺原样成立）。
-- **下一步**：8.7.4 card-types broker（注册表 + singleton，dsh
-  plugin-inventory 参考）；8.7.7 kfm-plugtest 最小版建议在 broker 后优先做。
+- **刚完成**：8.7.4 card-types broker（2026-08-20）——card-types.ts（№6：
+  注册=效果回滚白送 / relied 守卫 / 拓扑+name 序枚举 / singleton 聚焦 /
+  实例户口 serialize 交班 / disposeAll 拓扑销户）；30 钉全绿（+broker 10 钉）、
+  typecheck 零错、smoke 照过；契约指定双变异靶子实测抓获（注册不进 fiber →
+  dispose 销户钉红；守卫拆除 → relied 钉红）。
+- **下一步**：8.7.5 安全包影子（只记录不拦截，dsh guard/scope 参考）；
+  8.7.7 kfm-plugtest 最小版在 broker 后优先做（broker 已就位）。
 - **阻塞**：无
 
 ---
@@ -124,7 +121,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.1 | Cordis 根总线（rc.8 锁版 + hello 见证 + 自测） | 无 | 无 | A 档：注册/注入/注销/清理全链，churn 20 轮 | ✅ |
 | 8.7.2 | 测试 runner 移植（kfmv4 runner.ts + harness.ts） | 无 | 无 | A 档：先写考题验证红 + 变异抽检可跑 | ✅ |
 | 8.7.3 | 渲染宿主 + 手势分发 | 无 | 无 | A+B：容器生灭唯一入口、手势层带、验收三数字、0-4b NA 互证 | ✅ |
-| 8.7.4 | card-types broker | dsh host/plugin-inventory 参考 | 无 | A 档：headless 枚举/注册/摘除 | ⬜ |
+| 8.7.4 | card-types broker | dsh host/plugin-inventory 参考 | 无 | A 档：headless 枚举/注册/摘除 | ✅ |
 | 8.7.5 | 安全包影子 | dsh guard/scope 参考 | cedar-policy 远期评估 | A+B：只记录不拦截，决策全量落日志 | ⬜ |
 | 8.7.6 | 试点三件套（眼睛最小段 + 手单实例） | 无 | 无 | A 档：抽文件测试两式 | ⬜ |
 | 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A 档：list/test/残留检查 | ⬜ |
@@ -168,7 +165,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.1 | cordis@4.0.0-rc.8 进 lockfile；rootCtx 最早创建；hello 见证插件；bootCtxSelfTest | 无 | 无 | A：注册/注入/注销/清理全链；churn 20 轮 | ✅ |
 | 8.7.2 | 测试 runner 移植（kfmv4 runner.ts + harness.ts） | 无 | 无 | A：先写考题验证红；变异抽检可跑 | ✅ |
 | 8.7.3 | 渲染宿主（容器生灭唯一入口）+ 手势分发（gesture-registry + 层带公约） | 无 | 无 | A+B：容器生灭、手势层带、验收三数字、0-4b NA 互证 | ✅ |
-| 8.7.4 | card-types broker（注册表 + singleton） | dsh plugin-inventory 参考 | 无 | A：headless 枚举/注册/摘除可脚本验证 | ⬜ |
+| 8.7.4 | card-types broker（注册表 + singleton） | dsh plugin-inventory 参考 | 无 | A：headless 枚举/注册/摘除可脚本验证 | ✅ |
 | 8.7.5 | 安全包影子（只记录不拦截；强制 riskClass 声明） | dsh guard/scope | cedar-policy 留转正期评估 | B：决策全量落日志，零行为变化 | ⬜ |
 | 8.7.6 | 试点三件套（眼睛最小段 + 手单实例，Cordis 全流程） | 无 | 无 | A：抽文件测试两式，禁用后系统无损 | ⬜ |
 | 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A：list/test/残留检查；错误码可机检 | ⬜ |
@@ -358,3 +355,6 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   出处）；③dsh 分工入本记录；④package version 对齐拍板口径
   `9.0.0-dev`；⑤nz-taskmap-review 8 条处置闭环确认（数据区 2.5 /
   端口 8023 在 2.3 / 单写者在 1.2，8-18 已落实）。
+- 2026-08-20：8.7.4 card-types broker 完成——№6 全语义落地（注册=效果
+  回滚白送 / relied 守卫 / 拓扑+name 序枚举 / singleton 聚焦 / 实例户口
+  serialize 交班）；契约双变异靶子实测抓获；考题总数 30 钉。

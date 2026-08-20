@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 4069b693 · 生成于 2026-08-18 -->
+<!-- 基准 commit b3506969 · 生成于 2026-08-20 -->
 
 # 代码清单（机械层）
 
@@ -73,7 +73,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（29 文件 · 4666 行）
+## client-shell（29 文件 · 4668 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -92,8 +92,8 @@
 | src/client/main.ts | 142 | — |
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
 | src/client/modules/app.ts | 131 | initApp |
+| src/client/ctx.ts | 109 | bootLog, rootCtx, helloFiber, isHelloCleaned, bootCtxSelfTest, ChurnResult, ctxChurn |
 | src/client/modules/z-index-layers.ts | 108 | Z, ZLayer |
-| src/client/ctx.ts | 107 | bootLog, rootCtx, helloFiber, isHelloCleaned, bootCtxSelfTest, ChurnResult, ctxChurn |
 | src/client/modules/animation-registry.ts | 76 | AnimTimeline, AnimTween, anim |
 | src/client/modules/ui.ts | 71 | openSidebar, closeSidebar, initUI |
 | src/client/modules/version-watch.ts | 60 | initVersionWatch |
@@ -187,7 +187,7 @@
 | src/server/routes/providers.ts | 78 | setupProvidersRoutes |
 | src/server/routes/compact.ts | 73 | compactRouter, computeCutIndex |
 
-## infra（186 文件 · 20393 行）
+## infra（186 文件 · 20576 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -197,15 +197,16 @@
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/server-routes.test.ts | 472 | — |
+| scripts/agent/browser-relay.mjs | 425 | — |
 | tests/preload.mjs | 423 | — |
 | tests/cards.test.ts | 410 | — |
 | tests/visual-baseline.test.ts | 367 | — |
-| scripts/agent/browser-relay.mjs | 335 | — |
-| scripts/agent/agent-runner.mjs | 326 | renderTemplate, extractJson, runAgent, parseToolStream, runAgentTooled |
+| scripts/agent/agent-runner.mjs | 333 | renderTemplate, extractJson, runAgent, parseToolStream, runAgentTooled |
 | tests/box.test.ts | 309 | — |
 | tests/mocks/gsap.ts | 305 | gsap |
 | tests/run-manager.test.ts | 301 | — |
 | scripts/check/check-registry.mjs | 292 | — |
+| scripts/check/check-agent-inbox.mjs | 276 | — |
 | tests/gesture-registry.test.ts | 263 | — |
 | scripts/agent/semantic-mutate.mjs | 261 | MUTATIONS |
 | tests/invariants.test.ts | 245 | — |
@@ -216,7 +217,6 @@
 | tests/renderer.test.ts | 215 | — |
 | tests/to-openai-messages.test.ts | 208 | — |
 | tests/smoke/smoke.mjs | 199 | — |
-| scripts/check/check-agent-inbox.mjs | 195 | — |
 | scripts/check/check-migration-baseline.mjs | 187 | — |
 | scripts/agent/semantic-chain.mjs | 185 | — |
 | scripts/check/gen-code-inventory.mjs | 184 | — |
@@ -243,11 +243,11 @@
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
 | scripts/check/gen-agent-inbox.mjs | 128 | — |
+| scripts/agent/tag-advisor.mjs | 128 | REF_RE, isValidRef |
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
 | scripts/check/gen-permission-map.mjs | 126 | — |
 | scripts/check/gen-capability-map.mjs | 125 | — |
 | tests/session-security.test.ts | 125 | — |
-| scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
 | scripts/check/gen-tool-docs.mjs | 121 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
 | scripts/agent/exp-probe-decompose.mjs | 117 | — |
@@ -313,9 +313,9 @@
 | scripts/check/check-consistency.mjs | 51 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | tests/doc-scripts.test.ts | 51 | — |
+| package.json | 51 | — |
 | tests/permissions.test.ts | 50 | — |
 | tests/reasoning-l2.test.ts | 50 | — |
-| package.json | 50 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
 | tests/ctx-kernel.test.ts | 48 | — |
 | tests/semantic-audit.test.ts | 48 | — |
@@ -724,4 +724,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 342 文件 · 57289 行 · 跨域边 284 条
+合计 342 文件 · 57474 行 · 跨域边 284 条

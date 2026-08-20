@@ -7,6 +7,7 @@
 import './ctx-kernel.test.ts';
 import './host.test.ts';
 import './gesture.test.ts';
+import './card-types.test.ts';
 import { runAll } from './runner.ts';
 
 await runAll();

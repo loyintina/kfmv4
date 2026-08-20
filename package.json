@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "preinstall": "node scripts/clean-npm-temp.cjs",
+    "postinstall": "node scripts/patch-cordis-dts.mjs",
     "bundle": "node build.mjs",
     "watch": "node build.mjs && (sass --no-source-map --watch public/css/:public/css/ & npx esbuild src/client/main.ts --bundle --platform=browser --format=iife --outfile=public/bundle.js --target=es2019 --external:katex --external:mermaid --minify --watch)",
     "dev": "node build.mjs && npm run start",

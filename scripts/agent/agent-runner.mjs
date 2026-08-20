@@ -95,7 +95,14 @@ async function chat(baseUrl, apiKey, model, system, user, maxTokens, params = {}
   if (!res.ok) throw new Error(`HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
   const json = await res.json();
   const text = json.choices?.[0]?.message?.content;
-  if (!text) throw new Error('空响应');
+  if (!text) {
+    // 2026-08-18 事故（ledger/bugs.md）：deepseek-v4-flash 默认开思考 → 输出全在
+    // reasoning_content、content 空。错误信息带病因，让下一次故障自带诊断：
+    // 抽取型负载应显式传 thinking:{type:'disabled'}，推理型负载应读 reasoning_content
+    const reasoning = json.choices?.[0]?.message?.reasoning_content;
+    const hint = reasoning ? `（内容在思考区 reasoning_content(len=${String(reasoning).length})——v4-flash 默认开思考，抽取型负载应传 thinking:{type:'disabled'}）` : '';
+    throw new Error(`空响应${hint}`);
+  }
   return text;
 }
 

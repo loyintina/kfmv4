@@ -10,8 +10,9 @@
 import { rootCtx, bootLog, bootCtxSelfTest, isHelloCleaned } from './ctx.js';
 import { RenderHost } from './host.js';
 import { GestureRegistry } from './gesture.js';
+import { CardTypeBroker } from './card-types.js';
 
-// ========== 内核件接线：宿主给盒子，手势管输入 ==========
+// ========== 内核件接线：宿主给盒子，手势管输入，broker 管卡类型户口 ==========
 const host = new RenderHost();
 host.init(document);
 rootCtx.provide('host', host);
@@ -19,6 +20,9 @@ rootCtx.provide('host', host);
 const gestures = new GestureRegistry();
 gestures.attach(document);
 rootCtx.provide('gestures', gestures);
+
+const cardTypes = new CardTypeBroker();
+rootCtx.provide('cardTypes', cardTypes);
 
 function render() {
   const el = document.getElementById('boot-log');
@@ -32,4 +36,4 @@ void bootCtxSelfTest().then(() => render());
 setInterval(render, 250);
 
 // 供守视 eval 直读
-(window as unknown as Record<string, unknown>).__kfmNz = { rootCtx, bootLog, isHelloCleaned, host, gestures };
+(window as unknown as Record<string, unknown>).__kfmNz = { rootCtx, bootLog, isHelloCleaned, host, gestures, cardTypes };

@@ -69,7 +69,9 @@ export async function bootCtxSelfTest(): Promise<boolean> {
       return false;
     }
     await probe.dispose();
-    if (probe.state !== FiberState.DISPOSED || !probeCleaned) {
+    // 控制流窄化把 probe.state 钉死在 ACTIVE（const enum 窄化假象），
+    // dispose 的副作用 TS 不可见——按 FiberState 显式断言后比较
+    if ((probe.state as FiberState) !== FiberState.DISPOSED || !probeCleaned) {
       blog('自测 FAIL：探针未 DISPOSED 或 effect 清理未执行');
       return false;
     }

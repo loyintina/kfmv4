@@ -1,8 +1,8 @@
 {
   "tasks": {
     "diagnostics-vs-maps": {
-      "hash": "3289d3323e3d621315d94cac10d9a6ac7b255e09",
-      "lastRun": "2026-08-15",
+      "hash": "34b5c540f599514dc2e4067a69c512518df65682",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -15,8 +15,8 @@
       "attempts": 1
     },
     "guides-testing-vs-infra": {
-      "hash": "db8acc1383f19e0891e0121b18ae8ccd1f15dbbc",
-      "lastRun": "2026-08-17",
+      "hash": "29e1d102e7e8e4c69f280467a492f8a2d2e19ec0",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -29,8 +29,8 @@
       "attempts": 1
     },
     "stack-vs-ledger": {
-      "hash": "a2d6e1ec13153335f6452493562d2c11960df80d",
-      "lastRun": "2026-08-16",
+      "hash": "2023fd32fa2136f8de95e134bdebbec54729591b",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -57,8 +57,8 @@
       "attempts": 1
     },
     "inter-readme-codemap": {
-      "hash": "7ce20cfd379347e53c175908438f6d2532a9c1ff",
-      "lastRun": "2026-08-17",
+      "hash": "d6adba2ae44e78b278552c33c4e3955b6b3184c4",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -71,37 +71,22 @@
       "attempts": 1
     },
     "inter-agentrunner-infra": {
-      "hash": "c75be56464826375e099b1da8366ea59431dbae7",
-      "lastRun": "2026-08-17",
+      "hash": "84d065e89be02b7207bb7abab9aee9a5371e213a",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 2,
-      "kept": 2,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM002",
-          "claim": "docs/guides/agent-runner.md:61",
-          "against": "docs/guides/agent-runner.md:52",
-          "quote": "落下一个 provider",
-          "note": "中转池体质节断言空响重试后落下一个 provider，与同节 08-05 收敛单臂「不再顺位兜底」直接矛盾—旧描述未更新。"
-        },
-        {
-          "type": "SEM002",
-          "claim": "docs/guides/agent-runner.md:53",
-          "against": "docs/guides/agent-runner.md:52",
-          "quote": "调用失败自动落下一个",
-          "note": "key 读取节仍写调用失败自动落下一个顺位 provider，与同节「不再顺位兜底」矛盾；单臂链无下一个可落。"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
     "vision-vs-maps": {
-      "hash": "85aad7bab8a9fd91518fd0d585c7ad987cabe467",
-      "lastRun": "2026-08-17",
+      "hash": "654ea1dcce13e7bea6310a317b270b471f667118",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -114,8 +99,8 @@
       "attempts": 1
     },
     "invariants-vs-maps": {
-      "hash": "a07fd970735c674aebe6985c34f1f14a7f910af3",
-      "lastRun": "2026-08-15",
+      "hash": "391eab16ee24fc40dc7d3df65eeed59d3169813e",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -128,8 +113,8 @@
       "attempts": 1
     },
     "readme-vs-maps": {
-      "hash": "d2fd49609651a490a8d8a37c778f99571bd945ea",
-      "lastRun": "2026-08-17",
+      "hash": "15764b937748a171caa957661283cf3ddc10f4ee",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -142,8 +127,8 @@
       "attempts": 1
     },
     "claude-vs-docs": {
-      "hash": "c588fe8e07e8a88679c1460b4f9d0b0465070499",
-      "lastRun": "2026-08-17",
+      "hash": "0d4bfea861db89df29bd1072cea6892784901d3e",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -156,8 +141,8 @@
       "attempts": 1
     },
     "workflows-vs-guides": {
-      "hash": "b0b997aef6593624b039798559b2f0c69d649e84",
-      "lastRun": "2026-08-17",
+      "hash": "43247ec95b8d8044bc077979fb05793510072d91",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -206,8 +191,8 @@
       "attempts": 1
     },
     "contract-vs-map-ai-chat": {
-      "hash": "98fd02a2c032db7d1f4e1167e0d40893709def9e",
-      "lastRun": "2026-08-16",
+      "hash": "adc60235397d06ebd63ae59f2c927b4dda68be63",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -242,8 +227,8 @@
       "attempts": 1
     },
     "contract-vs-map-client-shell": {
-      "hash": "79f5a5bddfb22f4a0340562da66bfedd945e81ae",
-      "lastRun": "2026-08-16",
+      "hash": "9cf6f89a66020190bc522fa071b695ec0be277da",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -270,8 +255,8 @@
       "attempts": 1
     },
     "contract-vs-map-server": {
-      "hash": "9f2b9e90b19703e920d998e86869c7a5b7c05397",
-      "lastRun": "2026-08-16",
+      "hash": "8498821e6165bf3c0502d26c7ef4c2f577c231e1",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -281,10 +266,10 @@
       "keptFindings": [
         {
           "type": "SEM001",
-          "claim": "docs/domains/server/code-map.md:9",
-          "against": "docs/domains/server/contract.md",
+          "claim": "docs/domains/server/code-map.md:7",
+          "against": "docs/domains/server/contract.md:74",
           "quote": "域规模 10 文件",
-          "note": "code-map 称契约清单 10 文件，但 contract 文件清单含 compact.ts 共 11 个，清单不一致"
+          "note": "契约文件清单含routes/compact.ts，code-map域规模口径未计入，断言冲突"
         }
       ],
       "droppedFindings": [],
@@ -292,8 +277,8 @@
       "attempts": 1
     },
     "contract-vs-map-infra": {
-      "hash": "5ca82734504aaffd7fb0f69d0e1e566429a611e6",
-      "lastRun": "2026-08-17",
+      "hash": "ef1583176bb7672d84144e3eefe4bf3e4197b64a",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -306,8 +291,8 @@
       "attempts": 1
     },
     "crossdomain-vs-inventory": {
-      "hash": "968ef6c5e059ded5089e5d40a9edf91d85ce83ea",
-      "lastRun": "2026-08-17",
+      "hash": "4e59b7778dbac242c9ecb0b2560a3eb052300e0e",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -320,8 +305,8 @@
       "attempts": 1
     },
     "inter-workflows-infra": {
-      "hash": "40a640283c6e99ea5c1bfddf45ff2f6ef31ca155",
-      "lastRun": "2026-08-17",
+      "hash": "e601dcfc1a4d341fe9a56aa9ed8ab53816faf937",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -334,8 +319,8 @@
       "attempts": 1
     },
     "inter-provenance-bugs": {
-      "hash": "33f9ec379947f408a8b8fcfb3baa9757b753d1ab",
-      "lastRun": "2026-08-16",
+      "hash": "ab70c4f0e0ecbcdcf094678b7d686a86ac6f58ff",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -348,8 +333,8 @@
       "attempts": 1
     },
     "inter-detail-contract-aichat": {
-      "hash": "03195bb435e7786e2f7a754e4786aaff065e09ca",
-      "lastRun": "2026-08-16",
+      "hash": "1cad8241691d3a620fe9654a7b4f612850a9d636",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -492,8 +477,8 @@
       "attempts": 1
     },
     "code-map-vs-src-client-shell": {
-      "hash": "661b0cb42b0da5018fd1ef33fcfe28fb4c2bc9b7",
-      "lastRun": "2026-08-15",
+      "hash": "7c995af0733f52c7c0d91b4b3e3112273d8e6b57",
+      "lastRun": "2026-08-18",
       "status": "ok",
       "tooled": true,
       "fallback": false,
@@ -1164,6 +1149,20 @@
       "skipped": 18,
       "kept": 2,
       "dropped": 1
+    },
+    {
+      "date": "2026-08-18",
+      "ran": 19,
+      "skipped": 11,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-19",
+      "ran": 0,
+      "skipped": 30,
+      "kept": 0,
+      "dropped": 0
     }
   ]
 }

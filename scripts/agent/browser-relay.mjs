@@ -19,6 +19,13 @@
  *   eval  --tab N --js <e>    页面内求值 → {result}（须 JSON 可序列化）
  *   wait  --tab N [--sel s | --ms n]
  *   state [--tab N]           URL/标题/视口/标签清单
+ *   snapshot --tab N [--text]
+ *                             DOM 语义快照（无视觉模型通道，2026-08-18）：
+ *                             元素树（标签+几何+可见文本，限深 8/400 节点）→ {title,body,nodes}
+ *                             --text 只出可见文本流（innerText，快速读内容）
+ *   ascii  [--tab N] [--w 80] [--plain] [--path <png>]
+ *                             截图 → 字符画（chafa；2026-08-18 无视觉模型通道）：
+ *                             默认 ANSI 真彩色半块（终端人读）；--plain 纯 ASCII 灰度（模型读）
  *   close --tab N
  *   viewport                  当前生效视口（校准值或默认）
  *   stop                      关停 daemon
@@ -41,7 +48,7 @@
  */
 
 import http from 'node:http';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, unlinkSync, rmSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -58,6 +65,62 @@ const MAX_UPTIME_MS = 6 * 3600_000;  // 强制退休兜底
 const MAX_TABS = 8;
 const MAX_SHOTS = 50;
 const DEFAULT_VIEWPORT = { width: 400, height: 812, deviceScaleFactor: 2 };
+
+// ========== snapshot：DOM 语义快照注入脚本（无视觉模型通道，2026-08-18） ==========
+// 输出元素树：标签(带 id/class) + 几何 + 直接可见文本；跳过不可见/装饰元素。
+// 限深 8 / 400 节点 / 文本截断 60 字符——手机端大 DOM 也压得住。
+const SNAPSHOT_JS = `(() => {
+  const MAX_DEPTH = 8, MAX_NODES = 400, TEXT_CAP = 60;
+  const SKIP = new Set(['SCRIPT','STYLE','LINK','META','TITLE','NOSCRIPT','TEMPLATE','HEAD']);
+  const out = [];
+  let count = 0;
+  const visible = el => {
+    const st = getComputedStyle(el);
+    if (st.display === 'none' || st.visibility === 'hidden' || Number(st.opacity) === 0) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  };
+  const txt = el => {
+    let s = '';
+    for (const n of el.childNodes) {
+      if (n.nodeType === 3 && n.textContent.trim()) s += n.textContent.trim() + ' ';
+    }
+    s = s.trim().replace(/\\s+/g, ' ');
+    if (!s && el.childElementCount === 0) s = (el.textContent || '').trim().replace(/\\s+/g, ' ');
+    return s;
+  };
+  const tag = el => {
+    let t = el.tagName.toLowerCase();
+    if (el.id) t += '#' + el.id;
+    if (typeof el.className === 'string') {
+      const cs = el.className.split(/\\s+/).filter(Boolean).slice(0, 3);
+      if (cs.length) t += '.' + cs.join('.');
+    }
+    return t;
+  };
+  function walk(el, depth) {
+    if (count >= MAX_NODES || depth > MAX_DEPTH || SKIP.has(el.tagName)) return;
+    if (!visible(el)) return;
+    const r = el.getBoundingClientRect();
+    const t = txt(el);
+    out.push(\`\${'  '.repeat(depth)}<\${tag(el)}> \${Math.round(r.width)}x\${Math.round(r.height)}@\${Math.round(r.x)},\${Math.round(r.y)}\${t ? ' | ' + t.slice(0, TEXT_CAP) : ''}\`);
+    count++;
+    for (const c of el.children) walk(c, depth + 1);
+  }
+  walk(document.body, 0);
+  return JSON.stringify({
+    title: document.title, url: location.href, vw: innerWidth, vh: innerHeight,
+    body: out.join('\\n'), nodes: count, truncated: count >= MAX_NODES,
+  });
+})()`;
+
+// --text 档：只出可见文本流（innerText 语义，快速读内容用）
+const SNAPSHOT_TEXT_JS = `(() => {
+  const el = document.body;
+  if (!el) return JSON.stringify({ title: document.title, text: '' });
+  let t = (el.innerText || '').replace(/\\n{3,}/g, '\\n\\n');
+  return JSON.stringify({ title: document.title, url: location.href, text: t.slice(0, 12000) });
+})()`;
 
 mkdirSync(SHOTS_DIR, { recursive: true });
 
@@ -311,7 +374,7 @@ async function main() {
   const out = obj => { console.log(JSON.stringify(obj)); process.exit(obj.ok === false ? 2 : 0); };
 
   if (cmd === 'serve') return serve();
-  if (!cmd) out({ ok: false, error: '用法：browser-relay.mjs <open|shot|click|type|eval|wait|goto|state|tabs|close|viewport|stop|serve> [--k v]' });
+  if (!cmd) out({ ok: false, error: '用法：browser-relay.mjs <open|shot|click|type|eval|wait|goto|state|snapshot|ascii|tabs|close|viewport|stop|serve> [--k v]' });
   if (cmd === 'viewport') out({ ok: true, viewport: loadViewport(), calibrated: existsSync(VIEWPORT_PATH) });
 
   await ensureDaemon();
@@ -325,6 +388,33 @@ async function main() {
     case 'goto':  return out(await api('/goto', { tabId: f.tab, url: f.url }));
     case 'state': return out(await api('/state', { tabId: f.tab }));
     case 'tabs':  return out(await api('/tabs', {}));
+    case 'snapshot': {
+      const js = f.text ? SNAPSHOT_TEXT_JS : SNAPSHOT_JS;
+      const r = await api('/eval', { tabId: f.tab, js });
+      if (!r.ok) return out(r);
+      try { return out({ ok: true, snapshot: JSON.parse(r.result) }); }
+      catch { return out({ ok: false, error: '快照求值结果不可解析', raw: r.result }); }
+    }
+    case 'ascii': {
+      let p = f.path;
+      if (!p) {
+        const s = await api('/shot', { tabId: f.tab, full: !!f.full });
+        if (!s.ok) return out(s);
+        p = s.path;
+      }
+      const w = Math.max(20, Math.min(200, Number(f.w) || 80));
+      const h = Math.max(8, Math.round(w * 0.55));
+      const plain = !!f.plain;
+      const args = plain
+        ? ['--format', 'symbols', '--colors', 'none', '--symbols', 'ascii', '--size', `${w}x${h}`, p]
+        : ['--format', 'symbols', '--size', `${w}x${h}`, p];
+      try {
+        const art = execFileSync('chafa', args, { maxBuffer: 1 << 24 }).toString('utf8');
+        return out({ ok: true, path: p, plain, cols: w, art });
+      } catch (e) {
+        return out({ ok: false, error: 'chafa 失败（装了吗？）：' + String(e && e.message || e) });
+      }
+    }
     case 'close': return out(await api('/close', { tabId: f.tab }));
     case 'stop':  return out(await api('/stop', {}));
     default: out({ ok: false, error: `未知命令：${cmd}` });
