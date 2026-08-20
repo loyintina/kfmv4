@@ -46,6 +46,17 @@ fork commit:`be9d770`,改动两处:
    `$package_arch` 未定义(second-stage 脚本 TERMUX_PACKAGE_ARCH 会
    为空),改传 `$TERMUX_ARCH`。
 
+后续 fork commit(2026-08-20 构建中追加):
+
+3. `packages/libandroid-selinux/build.sh`:SRCURL 换清华 AOSP 镜像
+   (`mirrors.tuna.tsinghua.edu.cn/git/AOSP/...`)——服务器连不上
+   android.googlesource.com(134s 超时实锤)。**规则:此后凡构建卡
+   googlesource 的包,同法换镜像,逐包提交**。coreutils/findutils/
+   libandroid-complex-math 里的 googlesource 只在注释,不用动。
+4. 仓库目录已 `chown -R 1001:1001`(容器内 builder uid;root 持有会
+   `mkdir output: Permission denied`)。root 侧 git 操作需
+   `git config --global --add safe.directory <路径>`(已配)。
+
 ## 4. 构建(复现步骤)
 
 宿主机:Ubuntu 24.04,4 核/7G 内存/磁盘需 ≥40G 空闲。docker.io
@@ -68,11 +79,22 @@ docker pull ghcr.io/termux/package-builder:latest   # 数 GB,一次性
 - 改包名后重编必须先 `./scripts/run-docker.sh ./clean.sh` 或 `-f`,
   否则旧前缀产物被当已构建跳过。
 
-## 5. APK 集成方案(待实施)
+## 5. APK 集成方案(已落地,4280703)
 
 我们是我们自己的 app,不 fork termux-app,所以**不用**
 libtermux-bootstrap.so 内嵌机制(那是 Play 商店按 ABI 裁剪的需要)。
-方案:bootstrap zip 放 APK assets,首启时自解压。
+方案:bootstrap zip 放 APK assets,首启时自解压。已实现件:
+
+- `src/bootstrap.rs`(核心层,host 考题 5 道):`ensure_prefix()` =
+  staging 解包 → SYMLINKS.txt 补链 → chmod 规则 → 原子 rename →
+  幂等跳过;`second_stage_command()` = postinst 遍历的命令组装
+- 壳侧 `first_boot_install()`:JNI getFilesDir 取私有目录、ndk
+  AssetManager 读 `assets/bootstrap-aarch64.zip`、装完同步跑
+  second-stage;zip 缺席优雅回落(系统 sh 照跑)
+- `local_pty.rs::shell_plan()`:prefix/bin/bash 在则本地会话换 bash,
+  env 带 PATH/LD_LIBRARY_PATH/PREFIX(考题 2 道)
+- `scripts/package-apk.sh`:zip 找到即入 assets(STORED 不重压缩),
+  搜索路径 = $KFM_BOOTSTRAP_ZIP → toolchain 仓根 → ~/kfm-na-toolchain
 
 解压纪律(对照 TermuxInstaller 语义,我们 Rust 侧重写):
 
