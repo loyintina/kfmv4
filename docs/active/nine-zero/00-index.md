@@ -3,9 +3,13 @@
 > 这是什么：9.0 设计文档的**唯一入口**——「找什么 → 去哪」。9.0 的信息
 > 从这里出发，各文档的职责不重叠、引用不循环。对应降生协议（phase2 契约 1）
 > 的「发现=路由表」设计：本目录的文档地图 = 文档世界给 agent 的发现面。
-> 别的去哪找：跨线裁决史 → `../../ledger/agent-inbox/`（45 封信）；NA 线规格书
+> 别的去哪找：跨线裁决史 → `../../ledger/agent-inbox/`（53 封信）；NA 线规格书
 > → `../../../experiments/dsh-na/na/plugin-architecture-spec.md`；项目远景 →
 > `../vision.md`。
+>
+> **⚠️ 本目录是规格书参考层（只读）。9.0 代码实现的唯一任务文档
+> （状态/进度/接手指引）在 `/root/kfm-nz/TASK.md`**（2026-08-18 起单线）。
+> 本目录文档与 kfm-nz 的关系：设计/契约/预排原文在此，执行状态在彼。
 
 ## 找什么 → 去哪
 
@@ -23,7 +27,7 @@
 | 隐式全局普查（window.__kfm* 清单） | `nine-zero-implicit-globals-audit.md` |
 | 9.0 开发任务图（插件全景任务版 / 派活依据） | `nine-zero-dev-task-map.md` |
 | dsh 取材总清单（任务×资产逐项对照 / 取材分类） | `nine-zero-dsh-sourcing.md` |
-| 跨线评审往来（45 封信原始裁决） | `../../ledger/agent-inbox/` |
+| 跨线评审往来（53 封信原始裁决） | `../../ledger/agent-inbox/` |
 | NA 插件架构规格书（v1.3） | `../../../experiments/dsh-na/na/plugin-architecture-spec.md` |
 
 ## 文档地图（本目录 15 份 md；另含 nine-zero-plugin-map.html/json 两份全景图产物）
@@ -34,7 +38,7 @@ nine-zero/
 ├── nine-zero-preface.md              ← 拍板史 + 契约索引 + 待讨论（瘦身版 292 行）
 ├── nine-zero-phase1-contracts.md     ← 一阶段契约 №1~№16（1508 行）
 ├── nine-zero-phase2-contracts.md     ← 二阶段契约 0-9（22KB）
-├── nine-zero-decision-index.md       ← 决策索引（45 封信 → 一张表）
+├── nine-zero-decision-index.md       ← 决策索引（53 封信 → 一张表）
 ├── nine-zero-dev-task-map.md         ← 开发任务图（插件全景任务版，含小步预排）
 ├── nine-zero-dsh-sourcing.md        ← dsh 取材总清单（任务×资产对照）
 ├── nine-point-zero.md                ← 台账（组件归宿/军规）
@@ -61,3 +65,5 @@ nine-zero/
 - 契约迁出分文件的惯例：单个文档超 2000 行 + 内容已定稿 → 迁出并留索引节
   （第一阶段、第二阶段均照此办理）
 - 决策索引随 agent-inbox 新信追加（只追加不删改）
+- **单线纪律（2026-08-18）**：9.0 执行状态唯一写点 = `/root/kfm-nz/TASK.md`；
+  本目录只维护规格书内容，不记执行进度

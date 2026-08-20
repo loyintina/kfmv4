@@ -1,6 +1,6 @@
-# 9.0 决策索引（跨线评审信箱 45 封信 → 决策一张表）
+# 9.0 决策索引（跨线评审信箱 53 封信 → 决策一张表）
 
-> 这是什么：`docs/ledger/agent-inbox/` 45 封信的**决策级索引**——信箱是
+> 这是什么：`docs/ledger/agent-inbox/` 53 封信的**决策级索引**——信箱是
 > ledger（只追加不删改），裁决史散在信里；本表把**已拍板决策**提取成一张表，
 > 「为什么这么定」从这里查、细节回信里读。信仍在，本表只索引不替代。
 > 别的去哪找：契约全文 → `nine-zero-phase1-contracts.md` / `nine-zero-phase2-contracts.md`；
@@ -33,6 +33,12 @@
 | 步 0-4 拆分 | 循环依赖死锁（8.7.1↔0-4↔NA↔8.7.2）解锁：0-4a 基准设定=闸门认项 ✅；0-4b NA 互证移出步 0 归 8.7.2 验收项 | `kfmv4-9.0-step0-4-split-report.md` | ✅ 用户拍板（评审已收编案例 001） | dev-task-map 第 0 层 0-4 行 + agent-mailbox cases/ |
 | NA 协同与 Rust 共享内核 | 「终端库只能自研」证伪入裁决史；NA=下游收编位关系式；终端芯 alacritty_terminal 定案；互证基准解析/渲染分开计时方法学 | `kfmv4-9.0-na-rust-synergy.md` / `kfm-na-rust-synergy-response.md` / `kfmv4-9.0-na-rust-synergy-review-response.md` | ✅ 全线表态完毕（NA + 评审全采纳） | dev-task-map NA 协同节 |
 | cordis-na 阶段 2 | G2 活性闸（入口先查活性；Events 同闸；panic 前缀 INACTIVE_ACCESS 定公开契约）；G3/G4 缓建桩；G5 政策归层保留 50ms | `kfm-na-liveness-gate-design-submission.md` / `kfm-na-liveness-gate-review-response.md` | ✅ 批准（待落地通报） | crates/cordis-na（落地后） |
+| 发版冻结 v4（2026-08-18） | 9.0 完成前 8.x.y 只作进度标记，不发版不 tag，全部完成一次性 v9.0.0；tag-advisor 系挂起；check-versions 零改动兼容 | 会话拍板（用户） | ✅ 用户拍板 | dev-task-map 版本策略节 |
+| kfm-nz 另起炉灶（2026-08-18） | 9.0 代码实现另立外置纯代码项目 kfm-nz（kfmv4 不动照住；不建新文档系统，nine-zero 文档即规格书；独立端口；Cordis 起步逐插件做/移植；成功整体迁入 kfmv4 正名发 v9.0.0） | 会话拍板（用户） | ✅ 用户拍板 | dev-task-map 版本策略节 + 审计记录 |
+| 工坊线整体推迟（2026-08-18） | 六族契约 0–9 实施冻结推迟到代码完成后重评重建（设计稿保留定稿）；kfmv4 文档世界维持现状 | 会话拍板（用户） | ✅ 用户拍板 | dev-task-map 工坊线节 |
+| 工坊线顺序调整（2026-08-20 修订上行） | 工坊线非搁置系顺序调整：接着主线（9.0 收口）后面走；nz TASK.md 新增 9.x 阶段（4.7：重评会 → D1–D6 按需实施 + 五条重评输入材料） | 会话拍板（用户） | ✅ 用户拍板 | kfm-nz/TASK.md 4.7 |
+| nz TASK.md 重构评审闭环（2026-08-18/20） | 9.0 线评 dsh 重构 8 条（4 必修+4 补强）全落实；发起方核验处置位置：数据区 2.5 / 端口 8023 在 2.3 / 单写者 1.2 | `kfmv4-9.0-nz-taskmap-review.md` | ✅ 已验证 | kfm-nz/TASK.md |
+| nz 落地评审 5 条处置（2026-08-20） | nz 补 git 仓库（首个 commit a0e37ce）+ DoD 追加「小步关账必 commit」；步号口径入 1.3；dsh=9.0 线双向讨论通道（非独立线）明文固定；package version 对齐 9.0.0-dev | `kfmv4-9.0-nz-landing-review.md` / `kfmv4-9.0-nz-landing-review-response.md` | ✅ 已回 | kfm-nz/TASK.md 决策记录 + nz 仓库 |
 
 ## 待决/进行中
 
@@ -41,6 +47,7 @@
 | 通用多 agent 信箱（送审 1-5） | 收进 9.0 待讨论议题 6 | 主开发线裁决（已挂起待定） |
 | 9.0 步 0 四项验证 | 用户终审 2026-08-17 已通过，🔶 验证中 | 9.0 线执行 |
 | provider contextWindow 精确化（2026-08-18 洛拍板交 9.0） | v8 遗留：providers.json contextWindow 曾整表批量 131072 占位（只有 k3/k3-256k/deepseek-v4-flash 验证过），预检误压缩深坑（119k 触发 1M 模型）；v8 已修「未登记窗口跳过预检」兜底（宁漏勿错），但精确窗口登记仍是硬编码猜测 | 9.0 从源头解决：窗口值从 provider 元数据/API 错误信息动态获取，不再手填猜测；遗留信源：2026-08-18 会话（茉莉·洛） |
+| agent 信箱 D4 代际戳落地（2026-08-18 补登，MECH-FLOW-14 机检抓漏） | 代际戳防过期回执覆盖新状态：载体骑状态字段 + f3 签名行扫描可行 + 软告警建议 + LEGACY 豁免接受；v2 序位对账（暂存区对账+序位倒退拦截）支持立项但不并 D4；收敛判据达成待用户终审 | `kfmv4-agent-mailbox-d4-design-submission.md` | ✅ 茉莉已回（待用户终审） | experiments/agent-mailbox/design/d4-epoch-stamp.md（研究线 index 已登记） |
 
 ---
 

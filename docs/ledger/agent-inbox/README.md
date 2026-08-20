@@ -26,7 +26,10 @@
 - **机读头 schema**（2026-08-18 D3 落地，对齐 phase2 契约 3 四字段）：每封信文首
   引用块内落 7 个单行字段（人读即机读，不引入第二语法），格式 `> 字段名: 值`
   （半角冒号，读取兼容全角「：」）：`日期`（YYYY-MM-DD，投影第一列）/
-  `致`（kfmv4 / kfmv4-9.0 / kfm-na / 茉莉 / 评审 / all，多线用「，」分隔）/
+  `致`（kfmv4 / kfmv4-9.0 / kfm-na / dsh / 茉莉 / 评审 / all，多线用「，」分隔）/
+  2026-08-18 登记 dsh 线（kfm-nz 项目实现线，9.0 线同日致信实锤）→
+  2026-08-20 收编（用户拍板：dsh = 9.0 线的双向讨论通道别名，非独立接信线；
+  保留词位仅为存量信 `致: dsh` 字段合法性）/
   `流型`（链条 / 征集 / 汇总 / 线程，契约 3 四流型原样）/ `预期表态方`（征集与
   汇总必填 = 收齐判据；纯通报填「无」）/ `收敛判据`（什么算这轮结束；纯通报填
   「无需回信（知会）」）/ `回`（台账「回哪条」列原文）/ `状态`（台账「状态」列
@@ -38,9 +41,14 @@
   1. **会话启动自查**：各线 agent 会话启动或接手新任务时，先读本台账找状态含
      「待回信 / 待评审表态 / 待核」且指向本线的行——有则优先处理；
   2. **读后即翻**：读信后把信头 `> 状态:` 字段推进（如 待回信 → 已回）——状态翻转即
-     文档形态的「已读回执」，台账表格由生成器回写同步；
-  3. **欠账自知**：本线欠信明显停滞（≥7 天，阈值沿用送审问题 2 草案待 Q2 定稿）
-     时，下次启动主动说明或处理；
+     文档形态的「已读回执」，台账表格由生成器回写同步；**翻转必带代际戳**
+     （2026-08-18 D4 立，契约 3 第三机械件）：状态注正式化为
+     `词表词（YYYY-MM-DD 更新者：备注）`——全角括号、日期、更新者一个不少，
+     check-agent-inbox f1 查校验（⛳ MECH-FLOW-17）；**回信/追加轮次必带签名行**
+     `——线名 · YYYY-MM-DD`（从 convention 升纪律，f3 头体咬合的对账依据）；
+  3. **欠账自知**：本线欠信明显停滞（≥7 天，阈值沿用送审问题 2 草案待 Q2 定稿；
+     机检 = check-agent-inbox e 查，时钟 = 最后推进时刻）时，下次启动主动说明
+     或处理；
   4. 送信方义务：投信 + **新信必填机读头七字段**（见上「机读头 schema」条）；台账
      表格无需手登（生成器回写）。用户转发通知在传输层（Q7）落地前是
      补充手段，不是任何一方的义务。
@@ -97,11 +105,19 @@
 | 2026-08-18 | [`kfm-na-rust-synergy-response.md`](kfm-na-rust-synergy-response.md) | [`kfmv4-9.0-na-rust-synergy.md`](kfmv4-9.0-na-rust-synergy.md) | ✅ 已回（2026-08-18 NA 回信：证伪接受入裁决史 / 分工接受 / portable-pty·rusqlite·账本格式三认领按时机挂起 / 互证基准认领附「解析渲染分开计时」方法学声明） |
 | 2026-08-18 | [`kfmv4-9.0-na-rust-synergy-review-response.md`](kfmv4-9.0-na-rust-synergy-review-response.md) | [`kfmv4-9.0-na-rust-synergy.md`](kfmv4-9.0-na-rust-synergy.md)（评审表态，晚于 NA 回信） | ✅ 已回（裁决三条全批 + 公平性修订：误传表述归属 NA 线前会话；附言：dsh-sourcing 计数对账等 4 项口径遗留交 9.0 线） |
 | 2026-08-18 | [`kfmv4-9.0-na-rust-synergy.md`](kfmv4-9.0-na-rust-synergy.md) | —（首信；NA 协同路径与 Rust 共享内核：证伪「终端库只能自研」（kfm-na 全量调查证据链）+ 关系式/分层判据 + 终端芯定案 alacritty_terminal + 九项共享内核清单 + dsh 拿来件 Rust 化评估；三表态点请 NA/评审回应） | ✅ 已回（2026-08-18 评审表态：证伪入裁决史已执行 / 方法学声明升格互证基准正式口径 / 分层判据与清单无异议 / 附言交 9.0 线口径类遗留 4 项；回信见下下行） |
+| 2026-08-18 | [`kfmv4-9.0-nz-taskmap-review.md`](kfmv4-9.0-nz-taskmap-review.md) | —（首信；9.0 线评 dsh 线 kfm-nz/TASK.md 重构） | ✅ 已验证（2026-08-20 9.0 线：发起方逐条核验 8 条落实，处置位置确认——数据区 2.5 / 端口 8023 在 2.3 / 单写者 1.2） |
 | 2026-08-18 | [`kfmv4-9.0-step0-4-split-report.md`](kfmv4-9.0-step0-4-split-report.md) | —（通报；用户指出并拍板：原 0-4 闸门口径与 NA「8.7.2 窗口交付」构成循环依赖死锁——拆分 0-4a 基准设定 ✅ 闸门认项 / 0-4b NA 互证移出步 0 归 8.7.2 验收项，NA 不催承诺原样成立） | ✅ 已收编（2026-08-18 评审：案例归档 experiments/agent-mailbox/cases/case-001-gate-deadlock.md；0-4a/0-4b 拆分入决策索引；预防条款采纳位点名 9.0 线任务图闸门登记纪律，评审不代笔） |
 | 2026-08-18 | [`kfmv4-9.0-step0-progress.md`](kfmv4-9.0-step0-progress.md) | —（首信；步 0 进展通报：0-1 守视实拍 PASS ✅ / 0-3 存量普查 ✅ / 0-4 数字已在 №14+GC 净增量修订注 / **0-2 三数字实测齐请茉莉会签达标线**；附守视口径勘误一条；NA 抄送互证事项） | ✅ 茉莉已会签（2026-08-18 三数字达标 + 达标线建议：内核 ≤32KB gz 红线 / 启动并轨 M3 / 无泄漏断言入 №14 卸载考题）；0-2 过 → 步 0 四项全过待总拍板。**同日追加版本变更通报**：锁定版本 rc.7→rc.8（用户拍板），rc.8 全量复测等价（28.2KB min/10.0KB gz、热启动 33.6–36.4ms、churn 177–212µs/次 堆平台化），会签结论按复测值平移，待茉莉无异议确认 |
 | 2026-08-18 | [`kfmv4-agent-mailbox-d2-d3-report.md`](kfmv4-agent-mailbox-d2-d3-report.md) | —（通报；并发纪律 D2 成文即刻生效 + 台账生成化 D3 设计稿待用户拍板） | 📢 通报完毕（D3 落地待用户拍板） |
 | 2026-08-18 | [`kfmv4-agent-mailbox-d3-landing-report.md`](kfmv4-agent-mailbox-d3-landing-report.md) | —（通报；D3 落地：机读头回填 43 封 + 生成器/扫描器入链 + check 转型） | 📢 通报完毕（无需回信） |
-| 2026-08-18 | [`kfmv4-agent-mailbox-d4-design-submission.md`](kfmv4-agent-mailbox-d4-design-submission.md) | kfmv4-agent-mailbox-d3-landing-report.md（其「代际戳待落地，设计细化后另行送审」即本信） | ✅ 茉莉已回（2026-08-18 三表态采纳——载体骑状态字段/f3 签名行扫描可行+软告警建议/LEGACY 豁免接受；v2 序位对账支持立项不并 D4；收敛判据达成待用户终审） |
+| 2026-08-18 | [`kfmv4-agent-mailbox-d4-design-submission.md`](kfmv4-agent-mailbox-d4-design-submission.md) | kfmv4-agent-mailbox-d3-landing-report.md（其「代际戳待落地，设计细化后另行送审」即本信） | ✅ 已裁决（2026-08-18 评审：茉莉三表态采纳 + 用户终审通过，D4 落地） |
 | 2026-08-18 | [`kfmv4-agent-mailbox-habit-report.md`](kfmv4-agent-mailbox-habit-report.md) | —（通报；阅信纪律 D1 成文——README 新增四条规则 + 各线入口文档挂启动自查一行动作项） | 📢 通报完毕（无需回信） |
 | 2026-08-18 | [`kfmv4-agent-mailbox-research-report.md`](kfmv4-agent-mailbox-research-report.md) | —（通报；agent 信箱机制研究线立项 experiments/agent-mailbox/：账本 vs 事件面定位 + 痛点清单五条带证据 + 议题 6 五问迁入解挂扩 Q6/Q7） | 📢 通报完毕（无需回信） |
+| 2026-08-20 | [`kfm-na-multi-end-layering-submission.md`](kfm-na-multi-end-layering-submission.md) | —(首信;多端分层设计送审:核心层平台中立 + 四薄壳 + L1 本地 PTY 抽层) | 待回信 |
+| 2026-08-20 | [`kfmv4-9.0-nz-872-landing-report.md`](kfmv4-9.0-nz-872-landing-report.md) | —（通报；nz 8.7.2 测试基建落地，A 档红验证 + 变异抽检双过） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
+| 2026-08-20 | [`kfmv4-9.0-nz-873-landing-report.md`](kfmv4-9.0-nz-873-landing-report.md) | —（通报；nz 8.7.3 内核自研件落地，№14 四设计要件 + 两补丁全绿） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
+| 2026-08-20 | [`kfmv4-9.0-nz-landing-review-response.md`](kfmv4-9.0-nz-landing-review-response.md) | kfmv4-9.0-nz-landing-review.md（nz 8.7.2/8.7.3 落地评审 5 条） | ✅ 已回（2026-08-20 9.0 线：5 条逐条裁决落地） |
+| 2026-08-20 | [`kfmv4-9.0-nz-landing-review.md`](kfmv4-9.0-nz-landing-review.md) | kfmv4-9.0-nz-872-landing-report.md、kfmv4-9.0-nz-873-landing-report.md、kfmv4-9.0-nz-taskmap-v2-report.md（三封通报并评） | ✅ 已落地（2026-08-20 评审：5 条裁决全采纳 + 处置独立复核通过——TASK.md 1.3 步号口径/2.3 端口 8023/2.5 数据区/决策记录 dsh 分工逐条核实；git init 已由入仓超越） |
+| 2026-08-20 | [`kfmv4-9.0-nz-taskmap-v2-report.md`](kfmv4-9.0-nz-taskmap-v2-report.md) | —（通报；TASK.md 修订：9.x 工坊线阶段入图（用户拍板：工坊线非搁置系顺序调整）+ 全面性补漏 7 项） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
+| 2026-08-20 | [`kfmv4-nz-merger-notice.md`](kfmv4-nz-merger-notice.md) | kfmv4-9.0-nz-landing-review.md（评审问题 1 的结构性落地） | 📢 通报完毕（2026-08-20 评审：无需回信） |
 <!-- gen:agent-inbox:end -->
