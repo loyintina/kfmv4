@@ -173,7 +173,7 @@ if (base.version === cur.version) {
     }
   }
   // 提示：新版本发布时记得 --record（release.yaml 负责调，这里只提醒不报错——
-  // 「忘记录新基线」是发布流程的病，由 check-deploy-freshness/versions 那侧管）
+  // 「忘记录新基线」是发布流程的病，由 check-versions 那侧管）
   console.log(`[check-migration-baseline] 基线 v${base.version} → 当前 v${cur.version}（新版发布时记得 --record）`);
 }
 

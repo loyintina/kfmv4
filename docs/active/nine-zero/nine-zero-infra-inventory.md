@@ -33,8 +33,8 @@
     workflow-integrity；
   - 状态/纪律门：uncommitted / commit-docs / fix-tests / bar-ledger /
     ledger-commits / active-stack / stack-status / state-freshness /
-    mutation-anchors / versions / hooks / secrets / deploy-freshness /
-    release-radar；
+    mutation-anchors / versions / hooks / secrets / release-radar
+    （deploy-freshness 已于 2026-08-21 随 v8 冻结部署拍板退役）；
   - 机制/实验门：probes / probe-state / experiment-index /
     experiment-registry / inbox-heartbeat / kfmv4-data /
     agent-script-docs / test-patterns。

@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 4f06f9f2 · 生成于 2026-08-20 -->
+<!-- 基准 commit 8187fe04 · 生成于 2026-08-20 -->
 
 # 代码清单（机械层）
 
@@ -73,7 +73,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（29 文件 · 4668 行）
+## client-shell（29 文件 · 4669 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -96,7 +96,7 @@
 | src/client/modules/z-index-layers.ts | 108 | Z, ZLayer |
 | src/client/modules/animation-registry.ts | 76 | AnimTimeline, AnimTween, anim |
 | src/client/modules/ui.ts | 71 | openSidebar, closeSidebar, initUI |
-| src/client/modules/version-watch.ts | 60 | initVersionWatch |
+| src/client/modules/version-watch.ts | 61 | initVersionWatch |
 | src/client/modules/logger.ts | 58 | log, getLogs, clearLogs, copyLogs, onLog |
 | src/client/modules/card-toast.ts | 53 | showCardToast |
 | src/client/modules/click-queue.ts | 39 | ClickEvent, enqueue, dequeue, clear, isEmpty, peek |
@@ -187,12 +187,12 @@
 | src/server/routes/providers.ts | 78 | setupProvidersRoutes |
 | src/server/routes/compact.ts | 73 | compactRouter, computeCutIndex |
 
-## infra（187 文件 · 20710 行）
+## infra（185 文件 · 20600 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| tests/client-logic.test.ts | 968 | — |
-| tests/regression.test.ts | 670 | — |
+| tests/client-logic.test.ts | 965 | — |
+| tests/regression.test.ts | 669 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -227,14 +227,14 @@
 | experiments/coldstart/tools/routine-entry-validation.mjs | 158 | — |
 | scripts/check/gen-scripts-catalog.mjs | 157 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | scripts/check/sync-counts.mjs | 157 | — |
-| build.mjs | 151 | — |
+| build.mjs | 150 | — |
 | scripts/check/check-doc-orphans.mjs | 149 | — |
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/check/check-bar-ledger.mjs | 143 | — |
 | scripts/check/check-mechanism-registry.mjs | 142 | — |
-| scripts/check/chain.mjs | 139 | STEPS |
+| scripts/check/chain.mjs | 140 | STEPS |
 | scripts/check/check-doc-scripts.mjs | 139 | — |
 | scripts/check/check-doc-linerefs.mjs | 137 | — |
 | tests/viewport-visibility.test.ts | 137 | — |
@@ -269,7 +269,6 @@
 | scripts/check/check-anim.mjs | 99 | — |
 | scripts/check/check-stack-status.mjs | 99 | — |
 | scripts/check/check-versions.mjs | 91 | — |
-| scripts/check/check-deploy-freshness.mjs | 87 | — |
 | scripts/check/check-workflow-integrity.mjs | 87 | — |
 | scripts/check/check-kfmv4-data.mjs | 86 | — |
 | scripts/check/check-probes.mjs | 86 | — |
@@ -339,7 +338,6 @@
 | scripts/deploy.sh | 29 | — |
 | .githooks/pre-push | 28 | — |
 | tests/compact-list.test.ts | 23 | — |
-| tests/check-deploy-freshness.test.ts | 19 | — |
 | tests/env-test-isolation.mjs | 19 | — |
 | tests/probes/gen-permission-map/src/server/ai/tools/index.ts | 19 | getToolDefinitions, getAllTools |
 | tests/probes/tool-compaction/src/server/ai/tools/index.ts | 19 | getToolDefinitions, getAllTools |
@@ -725,4 +723,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 343 文件 · 57617 行 · 跨域边 284 条
+合计 341 文件 · 57508 行 · 跨域边 284 条

@@ -909,15 +909,6 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "CSS 接线完整性校验（防「接线丢失」类 bug）"
   },
   {
-    "name": "check-deploy-freshness.mjs",
-    "file": "scripts/check/check-deploy-freshness.mjs",
-    "category": "检查器",
-    "description": "部署新鲜度硬门（纪律机械化 SOP：旧包验证病灶收编）",
-    "permission": "构建链内只读检查（无网络、无写盘副作用）",
-    "prompt": "无（机械检查）",
-    "effect": "部署新鲜度硬门（纪律机械化 SOP：旧包验证病灶收编）"
-  },
-  {
     "name": "check-doc-budget.mjs",
     "file": "scripts/check/check-doc-budget.mjs",
     "category": "检查器",

@@ -131,5 +131,5 @@
 | 2026-08-20 | [`kfmv4-9.0-nz-taskmap-revision-notice.md`](kfmv4-9.0-nz-taskmap-revision-notice.md) | kfmv4-9.0-nz-877-review.md（877 评审收讫后的用户新拍板） | ✅ 已回（2026-08-21 评审：修订批准生效 + 链红复发处置 + deploy-freshness 一问——见 kfmv4-9.0-nz-taskmap-revision-review.md） |
 | 2026-08-20 | [`kfmv4-9.0-nz-taskmap-v2-report.md`](kfmv4-9.0-nz-taskmap-v2-report.md) | —（通报；TASK.md 修订：9.x 工坊线阶段入图（用户拍板：工坊线非搁置系顺序调整）+ 全面性补漏 7 项） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
 | 2026-08-20 | [`kfmv4-nz-merger-notice.md`](kfmv4-nz-merger-notice.md) | kfmv4-9.0-nz-landing-review.md（评审问题 1 的结构性落地） | 📢 通报完毕（2026-08-20 评审：无需回信） |
-| 2026-08-21 | [`kfmv4-9.0-nz-taskmap-revision-review.md`](kfmv4-9.0-nz-taskmap-revision-review.md) | kfmv4-9.0-nz-taskmap-revision-notice.md（任务图修订通报）+ kfmv4-9.0-nz-ledger-coverage-report.md（总账机制通报） | ✅ 已回（2026-08-21 9.0 线：收讫 + 875 发现已点名进 8.12.7 + deploy-freshness 表态①+延迟②待用户拍板——见讨论区） |
+| 2026-08-21 | [`kfmv4-9.0-nz-taskmap-revision-review.md`](kfmv4-9.0-nz-taskmap-revision-review.md) | kfmv4-9.0-nz-taskmap-revision-notice.md（任务图修订通报）+ kfmv4-9.0-nz-ledger-coverage-report.md（总账机制通报） | ✅ 已回（2026-08-21 9.0 线：收讫 + 875 发现已点名进 8.12.7 + deploy-freshness 用户拍板①+延迟②已执行完毕——见讨论区） |
 <!-- gen:agent-inbox:end -->

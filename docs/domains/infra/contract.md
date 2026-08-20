@@ -5,9 +5,9 @@
 
 ## 构建（build.mjs）
 
-## 检查管线（npm run check，50 脚本，顺序固定）
+## 检查管线（npm run check，49 脚本，顺序固定）
 
-（链步数多于脚本数：脚本数 = check-*.mjs 文件实数即标题数（sync-counts 派生，勿复述——手写「43」曾陈旧被打）；deploy-freshness/doc-coverage 链上省前缀；sass/gen-* 验证步、sync-counts、npm test、tsc 非 check-* 不计入。2026-08-08 修订统一计数。）
+（链步数多于脚本数：脚本数 = check-*.mjs 文件实数即标题数（sync-counts 派生，勿复述——手写「43」曾陈旧被打）；doc-coverage 链上省前缀；sass/gen-* 验证步、sync-counts、npm test、tsc 非 check-* 不计入。2026-08-08 修订统一计数。）
 
 **域映射纪律（2026-08-06 定稿）**：新增 src/ 文件必须登记 `scripts/check/domain-src.mjs`
 对应域（client-shell 模块级枚举 / server·infra 目录级）——未登记的文件 check-contract-freshness
@@ -18,12 +18,12 @@
 invariants 链或工作流消费）。⛳ DOC-FLOW-12。
 
 <!-- chain:auto 由 sync-counts 生成，禁止手改 -->
-`check-uncommitted`（>3 未提交即中断，首位） → deploy-freshness → versions → migration-baseline →
-mechanism-registry → checks → doc-coverage → code-map-coverage → ledger-coverage → agent-script-docs →
-experiment-registry → sass → css-wiring → tool-compaction → anim → as-any → card-meta → registry →
-zindex → console → secrets → state-freshness → mutation-anchors → docs → consistency → active-stack →
-stack-status → inbox-heartbeat → agent-inbox → gen-agent-inbox → code-doc-refs → workflow-integrity →
-cards → contract-freshness → test-patterns → bar-ledger → ledger-commits → doc-budget → doc-symbols →
+`check-uncommitted`（>3 未提交即中断，首位） → versions → migration-baseline → mechanism-registry → checks →
+doc-coverage → code-map-coverage → ledger-coverage → agent-script-docs → experiment-registry → sass →
+css-wiring → tool-compaction → anim → as-any → card-meta → registry → zindex → console → secrets →
+state-freshness → mutation-anchors → docs → consistency → active-stack → stack-status →
+inbox-heartbeat → agent-inbox → gen-agent-inbox → code-doc-refs → workflow-integrity → cards →
+contract-freshness → test-patterns → bar-ledger → ledger-commits → doc-budget → doc-symbols →
 doc-scripts → doc-linerefs → doc-schema → commit-docs → fix-tests → hooks → gen-page-state-schema →
 gen-tool-docs → gen-permission-map → gen-rules-map → gen-experiments-list → gen-scripts-catalog →
 doc-orphans → doc-links → probes → release-radar → experiment-index → kfmv4-data → probe-state →

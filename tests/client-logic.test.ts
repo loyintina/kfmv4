@@ -753,11 +753,8 @@ regression('BAR-BUILD-05', 'build/deploy', '版本握手：build 写 dist/build-
   assert(deploy.includes('kfm-restart.sh') && deploy.includes('system/info'), 'deploy.sh 必须 构建→重启→握手 三步闭环');
 });
 
-regression('BAR-DEPLOY-01', 'build/check', '部署新鲜度硬门：源码比包新=链红 + deploy-fast 快通道 + version-watch 横幅兜底', () => {
-  const chain = readFileSync('scripts/check/chain.mjs', 'utf-8');
-  assert(chain.includes('check-deploy-freshness'), 'chain.mjs STEPS 必须挂部署新鲜度硬门');
+regression('BAR-DEPLOY-01', 'build/check', '部署通道：deploy-fast 快通道 + version-watch 横幅兜底（硬门 check-deploy-freshness 已于 2026-08-21 随 v8 冻结部署退役）', () => {
   const build = readFileSync('build.mjs', 'utf-8');
-  assert(build.includes('--soft=check-deploy-freshness'), 'build.mjs 必须 soft 跳过本门（构建中途源码必然比包新，硬跑自锁）');
   assert(build.includes('KFM_BUILD_TIME'), 'build.mjs 必须把 BUILD_TIME define 进客户端 bundle（横幅比对源）');
   const fast = readFileSync('scripts/deploy-fast.sh', 'utf-8');
   assert(fast.includes('--fast') && fast.includes('kfm-restart.sh'), 'deploy-fast.sh 必须 快构建→重启→握手');

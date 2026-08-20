@@ -44,7 +44,7 @@
 | 卡片完整性族（check-cards + check-card-meta + check-registry + check-css-wiring + check-zindex） | 核心 | 全 | 卡注册/类型逃逸/CSS 接线/z 层级违例 → 中断 | 部分 | domains/floating-card/contract.md + domains/client-shell/contract.md | 巡逻 |
 | 代码卫生族（check-as-any + check-anim + check-console） | 核心 | 全 | as any/动画导入/console 残留 → 中断 | — | scripts/check/check-as-any.mjs 头注（脚本头注即规约，secrets 先例） | 巡逻 |
 | 覆盖门族（check-doc-coverage + check-code-map-coverage） | 核心 | 全 | 文档/部件级 code-map 裸奔 → 中断（HUD 裸奔事故机械化） | — | guides/doc-maintenance.md | 巡逻 |
-| 部署运河（check-deploy-freshness + check-versions + check-release-radar，契约 7 两行之一） | 核心 | 全 | 旧包部署/版本不一致/tag 缺失 → 中断 | 豁免（git 历史型，部分） | nine-zero-phase2-contracts.md 契约 7 + guides/release.md | 巡逻 |
+| 部署运河（check-versions + check-release-radar，契约 7 两行之一；check-deploy-freshness 于 2026-08-21 随 v8 冻结部署拍板退役——nz 部署目标存在时以新对象重生） | 核心 | 全 | 版本不一致/tag 缺失 → 中断 | 豁免（git 历史型，部分） | nine-zero-phase2-contracts.md 契约 7 + guides/release.md | 巡逻 |
 | 数据卫生（契约 7 两行之二；机械=check-kfmv4-data + sweep-sessions/session-retention 非检查脚本） | 核心 | 全 | 账本回潮/数据区违例 → 中断 | ✓（间接） | nine-zero-phase2-contracts.md 契约 7 | 巡逻 |
 | 实验登记族（check-experiment-index + check-experiment-registry，契约 9） | 核心 | 全 | 实验区黑户/索引违例 → 中断 | — | nine-zero-phase2-contracts.md 契约 9 | 巡逻 |
 | 迁移验证线（check-migration-baseline，M1 基线矩阵） | 核心 | 全（--record 发布录 / verify 挂链） | 8.x 换心缩水 → 基线门报红 MIG-BASE-01 | ✓（check-migration-baseline 夹具） | nine-zero-dev-task-map.md 迁移验证线节 + guides/release.yaml | 巡逻 |

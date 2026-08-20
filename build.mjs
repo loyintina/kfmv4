@@ -55,10 +55,9 @@ function recordBuildMetric(ms, ok) {
 }
 
 // 全量代码质量检查（唯一链出处 scripts/check/chain.mjs——禁止在此回潮手写单个 check；
-// build 中 check-uncommitted 按 --soft 降级为提醒，其余零错误通过才构建。
-// check-deploy-freshness 也必须 --soft：构建中途源码必然比包新，硬跑会自锁）
+// build 中 check-uncommitted 按 --soft 降级为提醒，其余零错误通过才构建）
 if (!FAST) {
-  execSync('node scripts/check/chain.mjs --soft=check-uncommitted --soft=check-deploy-freshness', { stdio: 'inherit' });
+  execSync('node scripts/check/chain.mjs --soft=check-uncommitted', { stdio: 'inherit' });
 }
 
 // 复制 stealth 脚本到 dist（launch.ts 在运行时读取这些文件）

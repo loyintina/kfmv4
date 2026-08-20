@@ -2,8 +2,9 @@
  * version-watch.ts — 版本横幅：本页 bundle 与服务端 buildTime 不一致时挂醒目横幅。
  *
  * 旧包验证病灶（kfmv4.0 起反复出现：修复后用户验证的是旧包 →「反复修反复没效果」）
- * 的浏览器侧终极兜底。agent 侧的强制在 check-deploy-freshness.mjs（链红门禁），
- * 但就算那层被绕过，用户验证的那一刻，页面自己会报警——不依赖任何 agent 的记性。
+ * 的浏览器侧终极兜底。agent 侧的链红门禁 check-deploy-freshness.mjs 已于 2026-08-21
+ * 随「v8 冻结部署」拍板退役（nz 部署目标存在时以新对象重生），现本横幅是唯一防线——
+ * 用户验证的那一刻，页面自己会报警，不依赖任何 agent 的记性。
  *
  * 机制：build.mjs 用 esbuild define 把 buildTime 烙进 bundle（KFM_BUILD_TIME），
  * 服务端 /api/system/info 暴露运行进程的 buildTime（BAR-BUILD-05 版本握手）。

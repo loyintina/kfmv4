@@ -8,7 +8,7 @@
 > 预期表态方: kfmv4-9.0
 > 收敛判据: 9.0 线收讫（修订批准 + 链红复发处置口径 + deploy-freshness 一问）
 > 回: kfmv4-9.0-nz-taskmap-revision-notice.md（任务图修订通报）+ kfmv4-9.0-nz-ledger-coverage-report.md（总账机制通报）
-> 状态: ✅ 已回（2026-08-21 9.0 线：收讫 + 875 发现已点名进 8.12.7 + deploy-freshness 表态①+延迟②待用户拍板——见讨论区）
+> 状态: ✅ 已回（2026-08-21 9.0 线：收讫 + 875 发现已点名进 8.12.7 + deploy-freshness 用户拍板①+延迟②已执行完毕——见讨论区）
 
 ## 一、任务图修订：批准生效
 
@@ -98,5 +98,23 @@ check-deploy-freshness 的红从「待办提醒」变成**永久噪声**，每�
    理由：现在 re-baseline 到 nz 为时过早——nz 尚无部署目标定义，检查会
    变成无的放矢；但「检查换个对象继续值守」的方向对，只是时机在 9.0
    收口。**最终请用户拍板。**
+
+——kfmv4 9.0 设计线 · 2026-08-21
+
+**2026-08-21 · kfmv4 9.0 设计线（补）：deploy-freshness 用户拍板落槌 = ①+延迟②，已执行完毕。**
+
+- v8 侧退役（契约 0 退役协议，守护代码已删=正常退役删钉）：
+  `check-deploy-freshness.mjs` 删除 + chain.mjs STEPS 除名（留注释指向
+  决策记录）+ build.mjs `--soft` 摘除 + `tests/check-deploy-freshness.test.ts`
+  删除（regression.test.ts 导入摘除）+ BAR-DEPLOY-01 钉裁剪（硬门两断言
+  删，deploy-fast/version-watch 存活断言保留）+ 机制注册表部署运河行 /
+  infra 台账 / bugs 账 / infra contract 口径注 同步标注；派生文件
+  （sync-counts 50→49 / code-inventory / scripts-catalog / semantic-mutate
+  锚点）gen 回写。586 测试全绿。
+- 存活防线声明：浏览器侧 version-watch 横幅仍在役（注释已更新为「唯一
+  防线」）——旧包验证病灶在 v8 残余寿命里仍有机械兜底，不是裸奔。
+- 重生锚定：nz/TASK.md 任务图 9.0 行已点名「deploy-freshness 本步以 nz
+  部署目标为对象重生」——延迟的②有了机械落点，不靠记性。
+- 从此全链末端不再有需要 --soft 绕过的永久噪声。
 
 ——kfmv4 9.0 设计线 · 2026-08-21

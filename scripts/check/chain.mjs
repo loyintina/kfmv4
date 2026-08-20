@@ -44,7 +44,8 @@ function recordCheckMetric(ms, ok) {
 
 export const STEPS = [
   'node scripts/check/check-uncommitted.mjs',
-  'node scripts/check/check-deploy-freshness.mjs',
+  // check-deploy-freshness 已退役（2026-08-21 用户拍板：v8 将死不部署，
+  // 新鲜度无值守对象；nz 部署目标存在时以新对象重生——见 nz/TASK.md 决策记录）
   'node scripts/check/check-versions.mjs',
   'node scripts/check/check-migration-baseline.mjs',
   'node scripts/check/check-mechanism-registry.mjs',
