@@ -106,6 +106,14 @@
   files.ts pickWindowTokenCount（>0 才透传）；
 - 钉子：tests/token-count.test.ts（L4-01c，含 c>b 差值语义断言）。
 
+## 复核记录
+
+- 2026-08-21（contract-freshness 门触发，6 提交后复核）：其中 5 次仅
+  `src/client/generated/scripts-catalog.ts` 生成回写（本域文件清单含 generated/，
+  生成 churn 必然触发本门——已知噪声源）；1 次实质改动 = fbc927a7
+  session.card.ts 精确尺（API usage 实测落盘替代估算，卡片展示层两行）。
+  复核结论：架构/硬规则/#陷阱 与现状一致，契约无需修订。
+
 ## 文件清单
 
 <!-- gen:contract-list 自动生成，禁止手改（源：code-inventory） -->

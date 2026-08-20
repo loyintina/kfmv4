@@ -105,7 +105,7 @@ check-deploy-freshness 的红从「待办提醒」变成**永久噪声**，每�
 
 - v8 侧退役（契约 0 退役协议，守护代码已删=正常退役删钉）：
   `check-deploy-freshness.mjs` 删除 + chain.mjs STEPS 除名（留注释指向
-  决策记录）+ build.mjs `--soft` 摘除 + `tests/check-deploy-freshness.test.ts`
+  决策记录）+ build.mjs `--soft` 摘除 + 专属测试 check-deploy-freshness.test.ts
   删除（regression.test.ts 导入摘除）+ BAR-DEPLOY-01 钉裁剪（硬门两断言
   删，deploy-fast/version-watch 存活断言保留）+ 机制注册表部署运河行 /
   infra 台账 / bugs 账 / infra contract 口径注 同步标注；派生文件
