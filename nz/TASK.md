@@ -358,3 +358,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 - 2026-08-20：8.7.4 card-types broker 完成——№6 全语义落地（注册=效果
   回滚白送 / relied 守卫 / 拓扑+name 序枚举 / singleton 聚焦 / 实例户口
   serialize 交班）；契约双变异靶子实测抓获；考题总数 30 钉。
+- 2026-08-20：**kfmv4 仓内提交纪律**（8.7.4 commit `6b1ba5ce` 混入事故
+  整改）——入仓后 nz 提交只 `git add nz/...` 白名单式路径，提交前
+  `git status` 全量核对；禁用 `git add -A`。事故全貌及处置见信箱
+  `kfmv4-9.0-nz-874-landing-report.md` 第四节。
