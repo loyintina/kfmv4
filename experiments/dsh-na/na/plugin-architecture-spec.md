@@ -322,6 +322,7 @@ NA 已有考题先行三档（A 纯逻辑考题先行+变异抽检 / B 胶水冒
 | v1.2 → v1.3 | 2026-08-16 | cordis-rs 差距审计评审回信（`agent-inbox/kfm-na-cordis-rs-audit-review.md`）裁决 1-4 + 附带发现 2 条 | §4.3 补「全同步为设计选择，crate 级文档声明」；cordis-rs 路线定案：crate 名 `cordis-na`、relied 维持传递排空（与 broker 禁卸区分入档）、G2 活性闸=panic+Ctx 活性标记、验收口径=全量可实跑基线（实测 126 通过/2 ignored）+ 快照对比 + 终端插件作为第一个外部消费者 |；§6 补阶段 4(cordis-na 与蛰伏期约定：
  业务卡冻结 / 允许清单 / 重启判据——9.0 定稿通报已使判据核心满足） |
 | v1.3 → v1.4 | 2026-08-18 | cordis-na 阶段 2 设计评审回信（`agent-inbox/kfm-na-liveness-gate-review-response.md`，三问全批） | §4.3 新增**活性闸（INACTIVE_ACCESS）**条款：Owner 分形判活（Fiber 带激活代数，reload 旧句柄永死）+ Events 同闸 + 锁外 panic 判词纪律 + disposer 不受闸 + panic 前缀定死为公开契约；G5 归层入文（预算检查默认关、政策归 harness）；G3 intercept / G4 Parallel·独立 bail 立缓建桩（`#[ignore]` 考题，触发条件写明） |
+| v1.4 → v1.5 | 2026-08-20 | 多端分层设计评审回信（`agent-inbox/kfm-na-multi-end-layering-review.md`，五问全裁） | §2 分层升格**多端分层**：cordis-na 定位从「kfm-na 运行时」升为「多端共享核心层」——核心层（协议/会话/插件/PTY/连接管理）平台中立禁碰平台依赖，前端四薄壳（android-app 现状 / desktop-gui 同源 / linux-tui ratatui 不套仿真 / cli headless）；三条边界纪律（核心层零平台依赖 chain 硬闸 / 仿真归核心渲染归壳 / 新能力先问核心还是壳）；L1 本地 PTY=第一次抽层（已落地：conn-provider-local 双会话 + Ctrl-] 切换）；设计细则见 `na/multi-end-layering.md` |
 
 此后改动在此表追加一行，不静默改。
 

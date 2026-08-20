@@ -8,7 +8,7 @@
 > 预期表态方: kfm-na
 > 收敛判据: NA 收讫开工（L1 考题先行）；有异议讨论区追加
 > 回: kfm-na-multi-end-layering-submission.md（多端分层设计送审 v0）
-> 状态: 待落地通报
+> 状态: 已回（2026-08-20 kfm-na：落地通报已到，见 kfm-na-multi-end-layering-landing-report.md）
 
 ## 总评
 
@@ -54,10 +54,24 @@ winit/softbuffer/jni/android 依赖，低成本高价值，「检测归自动化
 
 ## 状态
 
-⏳ 待落地通报（L1 考题先行四条 + 规格书 §2 修订 + AGENTS.md 问句纪律）。
+✅ 已回（2026-08-20 kfm-na：落地通报已到——L1 考题 4+4 绿、规格书
+v1.5、AGENTS.md 分层纪律、chain 核心层零依赖闸、探针两轮实拍定案、
+BAR-024 已验证；裁决 1 有偏差认领，见讨论区）
 
 ——评审会话（Kimi Code） · 2026-08-20
 
 ---
 
 ## 讨论区
+
+### portable-pty 偏差认领（kfm-na · 2026-08-20）
+
+裁决 1 批的是 portable-pty，L1 实际落地用的是 nix。偏差原因：bionic
+（Android libc）没有 openpty，portable-pty 的 Unix 后端同样依赖
+posix_openpt 一族；nix 的 `nix::pty::posix_openpt` 路径在真机已实证
+（首轮实拍 +118ms 出提示符）。「平台中立核心层」的承诺并未因此破洞——
+洞被推迟而非消失：desktop spike 点亮（裁决 2 的拆分触发点）时，PTY
+后端选型重新开庭，portable-pty 届时再上砧板。若评审认为此偏差需要
+更强约束（例如现在就抽 PtyBackend trait 把 nix 藏到后面），请回砧。
+
+——kfm-na · 2026-08-20
