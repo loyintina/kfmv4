@@ -117,7 +117,8 @@
 | 2026-08-20 | [`kfm-na-multi-end-layering-submission.md`](kfm-na-multi-end-layering-submission.md) | —(首信;多端分层设计送审:核心层平台中立 + 四薄壳 + L1 本地 PTY 抽层) | ✅ 已回（2026-08-20 评审：总体批准，五问全裁——portable-pty 批准/单 crate 待 spike 再拆批准/TUI 不套仿真认可/并存手动切换批准/chain 硬闸认可；附考题建议一条（切换后输入路由）；见评审回信） |
 | 2026-08-20 | [`kfmv4-9.0-nz-872-landing-report.md`](kfmv4-9.0-nz-872-landing-report.md) | —（通报；nz 8.7.2 测试基建落地，A 档红验证 + 变异抽检双过） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
 | 2026-08-20 | [`kfmv4-9.0-nz-873-landing-report.md`](kfmv4-9.0-nz-873-landing-report.md) | —（通报；nz 8.7.3 内核自研件落地，№14 四设计要件 + 两补丁全绿） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |
-| 2026-08-20 | [`kfmv4-9.0-nz-874-landing-report.md`](kfmv4-9.0-nz-874-landing-report.md) | kfmv4-9.0-nz-landing-review.md（前轮 5 条裁决）；kfmv4-nz-merger-notice.md（入仓通报） | 📢 通报完毕（2026-08-20 9.0 线：混入事故待评审复核处置口径） |
+| 2026-08-20 | [`kfmv4-9.0-nz-874-landing-report.md`](kfmv4-9.0-nz-874-landing-report.md) | kfmv4-9.0-nz-landing-review.md（前轮 5 条裁决）；kfmv4-nz-merger-notice.md（入仓通报） | ✅ 已回（2026-08-20 评审：处置口径三条批准 + 追加两条——链红入仓教训（BAR 复核日已补，链复绿）+ git 卫生 v0 检查立项（评审认领）；30 钉复跑核实） |
+| 2026-08-20 | [`kfmv4-9.0-nz-874-review.md`](kfmv4-9.0-nz-874-review.md) | kfmv4-9.0-nz-874-landing-report.md（8.7.4 通报 + 混入事故说明） | 📢 通报完毕（2026-08-20 评审：复核结论，无需回信） |
 | 2026-08-20 | [`kfmv4-9.0-nz-landing-review-response.md`](kfmv4-9.0-nz-landing-review-response.md) | kfmv4-9.0-nz-landing-review.md（nz 8.7.2/8.7.3 落地评审 5 条） | ✅ 已回（2026-08-20 9.0 线：5 条逐条裁决落地） |
 | 2026-08-20 | [`kfmv4-9.0-nz-landing-review.md`](kfmv4-9.0-nz-landing-review.md) | kfmv4-9.0-nz-872-landing-report.md、kfmv4-9.0-nz-873-landing-report.md、kfmv4-9.0-nz-taskmap-v2-report.md（三封通报并评） | ✅ 已落地（2026-08-20 评审：5 条裁决全采纳 + 处置独立复核通过——TASK.md 1.3 步号口径/2.3 端口 8023/2.5 数据区/决策记录 dsh 分工逐条核实；git init 已由入仓超越） |
 | 2026-08-20 | [`kfmv4-9.0-nz-taskmap-v2-report.md`](kfmv4-9.0-nz-taskmap-v2-report.md) | —（通报；TASK.md 修订：9.x 工坊线阶段入图（用户拍板：工坊线非搁置系顺序调整）+ 全面性补漏 7 项） | 📢 通报完毕（2026-08-20 9.0 线：无需回信） |

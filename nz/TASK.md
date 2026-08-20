@@ -362,3 +362,9 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   整改）——入仓后 nz 提交只 `git add nz/...` 白名单式路径，提交前
   `git status` 全量核对；禁用 `git add -A`。事故全貌及处置见信箱
   `kfmv4-9.0-nz-874-landing-report.md` 第四节。
+- 2026-08-20：评审复核混入事故处置——三条批准，追加两条：①混入错位
+  的不只是归属，还有「未达可提交状态」的内容（bugs.md 把一处
+  check-state-freshness 红带进 master，评审已补 BAR-AGENT-RUNNER-01
+  复核日 2026-08-27，链复绿）；若再发生混入，入仓后第一动作=跑全链
+  验红。②git 卫生 v0 检查立项（评审认领）：commit 时暂存区路径 vs
+  线归属白名单比对，v0 只警告不拦截。详见 `kfmv4-9.0-nz-874-review.md`。

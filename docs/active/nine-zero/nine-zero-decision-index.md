@@ -1,6 +1,6 @@
-# 9.0 决策索引（跨线评审信箱 55 封信 → 决策一张表）
+# 9.0 决策索引（跨线评审信箱 56 封信 → 决策一张表）
 
-> 这是什么：`docs/ledger/agent-inbox/` 55 封信的**决策级索引**——信箱是
+> 这是什么：`docs/ledger/agent-inbox/` 56 封信的**决策级索引**——信箱是
 > ledger（只追加不删改），裁决史散在信里；本表把**已拍板决策**提取成一张表，
 > 「为什么这么定」从这里查、细节回信里读。信仍在，本表只索引不替代。
 > 别的去哪找：契约全文 → `nine-zero-phase1-contracts.md` / `nine-zero-phase2-contracts.md`；
@@ -39,7 +39,7 @@
 | 工坊线顺序调整（2026-08-20 修订上行） | 工坊线非搁置系顺序调整：接着主线（9.0 收口）后面走；nz TASK.md 新增 9.x 阶段（4.7：重评会 → D1–D6 按需实施 + 五条重评输入材料） | 会话拍板（用户） | ✅ 用户拍板 | kfm-nz/TASK.md 4.7 |
 | nz TASK.md 重构评审闭环（2026-08-18/20） | 9.0 线评 dsh 重构 8 条（4 必修+4 补强）全落实；发起方核验处置位置：数据区 2.5 / 端口 8023 在 2.3 / 单写者 1.2 | `kfmv4-9.0-nz-taskmap-review.md` | ✅ 已验证 | kfm-nz/TASK.md |
 | nz 落地评审 5 条处置（2026-08-20） | nz 补 git 仓库（首个 commit a0e37ce）+ DoD 追加「小步关账必 commit」；步号口径入 1.3；dsh=9.0 线双向讨论通道（非独立线）明文固定；package version 对齐 9.0.0-dev | `kfmv4-9.0-nz-landing-review.md` / `kfmv4-9.0-nz-landing-review-response.md` | ✅ 已回 | kfm-nz/TASK.md 决策记录 + nz 仓库 |
-| kfmv4 仓内提交纪律（2026-08-20） | 8.7.4 commit 6b1ba5ce 混入事故整改：nz 提交只 `git add nz/...` 白名单式路径、提交前 `git status` 全量核对、禁用 `git add -A`；混入无数据丢失，他线 WIP 已入仓周知 | `kfmv4-9.0-nz-874-landing-report.md` 第四节 | ⏳ 待评审复核 | kfm-nz/TASK.md 决策记录 |
+| kfmv4 仓内提交纪律（2026-08-20） | 8.7.4 commit 6b1ba5ce 混入事故整改：nz 提交只 `git add nz/...` 白名单式路径、提交前 `git status` 全量核对、禁用 `git add -A`；混入无数据丢失，他线 WIP 已入仓周知 | `kfmv4-9.0-nz-874-landing-report.md` 第四节 / `kfmv4-9.0-nz-874-review.md` | ✅ 已验证（追加两条：链红入仓教训 + git 卫生 v0 评审认领） | kfm-nz/TASK.md 决策记录 |
 
 ## 待决/进行中
 
