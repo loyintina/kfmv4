@@ -22,7 +22,8 @@
   钉死）、typecheck 零错、smoke 照过；双变异靶子实测抓获（摘快照 diff →
   LEAK_DOM/SERVICE 钉红；摘探针发射 → LEAK_EVENT 钉红）。探针实证两条
   cordis 行为入档：dispose 吞 cleanup 异常 / 缺服务访问抛 without inject。
-- **下一步**：8.7.6 试点三件套（眼睛最小段 + 手单实例）。
+- **下一步**：8.7.6 眼睛最小包（bundle 骨架 + coords 契约段，数据源=骨架
+  自态；2026-08-20 修订：手移 8.8.6，眼睛全量段/安全包转正/手全量补步）。
 - **阻塞**：无
 
 ---
@@ -124,13 +125,14 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.3 | 渲染宿主 + 手势分发 | 无 | 无 | A+B：容器生灭唯一入口、手势层带、验收三数字、0-4b NA 互证 | ✅ |
 | 8.7.4 | card-types broker | dsh host/plugin-inventory 参考 | 无 | A 档：headless 枚举/注册/摘除 | ✅ |
 | 8.7.5 | 安全包影子 | dsh guard/scope 参考 | cedar-policy 远期评估 | A+B：只记录不拦截，决策全量落日志 ✅ |
-| 8.7.6 | 试点三件套（眼睛最小段 + 手单实例） | 无 | 无 | A 档：抽文件测试两式 | ⬜ |
+| 8.7.6 | 眼睛最小包（bundle 骨架：dynamic-prompt-files 基建 + eyes 总插件 + coords 契约段 + 骨架自态段） | 无 | 无 | A 档：抽文件测试两式；禁用后系统无损；过 plugtest | ⬜ |
 | 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A 档：list/test/残留检查 ✅ |
 | 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty（仅 NA）；kfmv4 侧 Node 不 Rust | A 档：open/input/resize/close/重连 | ⬜ |
 | 8.8.2 | 终端渲染卡 | 无 | alacritty_terminal→WASM（评估） | A+B+C：终端功能对照 + M3 基线 | ⬜ |
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C 档：刷新即终端 | ⬜ |
 | 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C 档：标签切换实拍 | ⬜ |
 | 8.8.5 | tmux 完整管理 + 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档 | ⬜ |
+| 8.8.6 | 手单实例（最小：press=视觉+注入一体，对真 UI 验证；坐标对齐眼睛 coords 段） | 无 | 无 | A+B：press 链路考题 + 过 plugtest | ⬜ |
 | 8.9.1 | tree-data 服务（懒加载） | dsh fs/directory-picker | ignore/globset 候选（实测驱动） | A 档：千级目录响应达标 | ⬜ |
 | 8.9.2 | 文件树卡 DOM 化（Obsidian 文件卡） | dsh ui-directory-picker | 无 | A+B+C：10–15 层不卡，截图 diff 为零 | ⬜ |
 | 8.9.3 | 文件编辑卡 + file-io | dsh fs 参考 | similar / pulldown-cmark / syntect 候选（实测驱动） | A+B+C：双态、跟随同步、点开全屏 | ⬜ |
@@ -141,7 +143,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.10.4 | 卡片堆消解 + 最小全屏布局 + 闭环 | dsh ui-layout/ui-slots | 无 | A+B+C：堆卡全部有归宿 | ⬜ |
 | 8.11.1 | session-store 换心 | dsh session-persistence/projection | 共享 JSONL schema | A 档：旧会话 hash 对账迁移 | ⬜ |
 | 8.11.2 | tool-host + ledger-service + kfm-plugtest 转正 | dsh core/tools | hash 链 sha2+serde 薄自研 | A+B：工具调用对照、账只加不改、plugtest 可调用 | ⬜ |
-| 8.11.3 | agent-service | dsh agent-loop/llm/system-prompt/token-meter | tiktoken-rs→WASM | A 档：M2 双轨语义等价 | ⬜ |
+| 8.11.3 | agent-service | dsh agent-loop/llm/system-prompt/token-meter | tiktoken-rs→WASM | A 档：M2 双轨语义等价；**眼睛投影接入装配线** | ⬜ |
 | 8.11.4 | 压缩挂点 | dsh compaction/pruner/spill | 修剪核薄自研 + tiktoken-rs | A 档：压缩语义保持抽检 | ⬜ |
 | 8.11.5 | 新对话卡 UI | dsh ui-conversation/ui-tool | 无 | B+C：M3 diff 受控 | ⬜ |
 | 8.11.6 | 命令系统 + 闭环 | dsh ui-input-trigger/ui-commands | 无 | A+B：命令对照表 | ⬜ |
@@ -149,7 +151,10 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.12.2 | 启动器 | dsh ui-slots 枚举 | 无 | A+B：抽屉与注册表同源 | ⬜ |
 | 8.12.3 | 顶栏完整版 + 完整布局 | dsh ui-layout/ui-sidebar | 无 | A+B+C：全档考题 | ⬜ |
 | 8.12.4 | 皮肤包 + todo 卡 | dsh ui-theme / dsh todo | 无 | B+C：换肤热切换、工具附属卡 | ⬜ |
-| 8.12.5 | 启动引导收口 + 闭环 | dsh boot 参考 | 无 | A+B：拓扑激活、调试桥确认删 | ⬜ |
+| 8.12.6 | 眼睛全量段（数据源触发制：viewport/file-tree/orb-panel/card-stack 各段随对应卡落地补齐；失败写占位/卸载遗言全段对齐） | 无 | 无 | A：全段投影内容快照钉 | ⬜ |
+| 8.12.7 | 安全包转正（deny/ask 真生效 + ask 批准卡内联窗口卡 + 会话级 allowlist 三档；启动 cedar-policy 评估） | dsh guard/scope/permission-presets | cedar-policy 评估本步启动 | A+B：№15 考题全档（含卸载安全包宿主基线仍拒） | ⬜ |
+| 8.12.8 | 手全量（多实例 + 角色定制样式 + orbitAnchor 接布局锚区） | 无 | 无 | A+B+C：№4 全档；多实例实拍 | ⬜ |
+| 8.12.5 | 启动引导收口 + 闭环（执行序最后：含 8.12.6–8.12.8） | dsh boot 参考 | 无 | A+B：拓扑激活、调试桥确认删 | ⬜ |
 | 9.0 | 整体迁入 kfmv4，过检查链，发 v9.0.0；插件热重载而会话不断（kfm-restart 自然退役判据） | 全部 | 全部 | 全套 kfmv4 检查链 + 测试基线 | ⬜ |
 | 9.x | 工坊线：文档世界重评与重建（重评 D1–D6 → 按需实施，见 4.7） | — | — | 重评会结论先行，分步落地 | ⬜（9.0 后启动） |
 
@@ -168,7 +173,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.3 | 渲染宿主（容器生灭唯一入口）+ 手势分发（gesture-registry + 层带公约） | 无 | 无 | A+B：容器生灭、手势层带、验收三数字、0-4b NA 互证 | ✅ |
 | 8.7.4 | card-types broker（注册表 + singleton） | dsh plugin-inventory 参考 | 无 | A：headless 枚举/注册/摘除可脚本验证 | ✅ |
 | 8.7.5 | 安全包影子（只记录不拦截；强制 riskClass 声明） | dsh guard/scope | cedar-policy 留转正期评估 | B：决策全量落日志，零行为变化 ✅ |
-| 8.7.6 | 试点三件套（眼睛最小段 + 手单实例，Cordis 全流程） | 无 | 无 | A：抽文件测试两式，禁用后系统无损 | ⬜ |
+| 8.7.6 | 眼睛最小包（Cordis 全流程首例 bundle；数据源=骨架自态：broker 账/审计账/体检记录/手势流/bootLog） | 无 | 无 | A：抽文件测试两式，禁用后系统无损，过 plugtest | ⬜ |
 | 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A：list/test/残留检查；错误码可机检 ✅ |
 
 ### 4.2 8.8 终端/tmux 优先
@@ -182,6 +187,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C：实拍刷新即终端；不得依赖 №11 完整布局 | ⬜ |
 | 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C：标签切换实拍 | ⬜ |
 | 8.8.5 | tmux 完整管理（新建/清空/挂起/状态检测）+ 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档 | ⬜ |
+| 8.8.6 | 手单实例（最小）：overlay 容器 + hand-press 事件 + press 一体链路，对终端卡真按 | 无 | 无 | A+B：press 注入经手势分发实测；过 plugtest | ⬜ |
 
 ### 4.3 8.9 Obsidian 文件卡
 
@@ -213,7 +219,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 |------|--------|-----|------|-----------|------|
 | 8.11.1 | session-store 换心 | dsh session-persistence/projection/checkpoint | 共享 JSONL schema；浏览器侧续用 dsh TS 件 | A：旧会话逐条 hash 对账迁移；过步 0-2 指标口径 | ⬜ |
 | 8.11.2 | tool-host（四家族工具包）+ ledger-service + kfm-plugtest 转正 | dsh core/tools | hash 链 sha2+serde 薄自研；修剪核薄自研 | A+B：工具调用一致对照；账只加不改；plugtest 可经 tool-host 调用 | ⬜ |
-| 8.11.3 | agent-service（对话循环/工具循环/prompt 装配线） | dsh agent-loop/llm/system-prompt/token-meter | tiktoken-rs→WASM（拿来） | A：M2 双轨同 prompt 新旧管线输出语义等价 | ⬜ |
+| 8.11.3 | agent-service（对话循环/工具循环/prompt 装配线） | dsh agent-loop/llm/system-prompt/token-meter | tiktoken-rs→WASM（拿来） | A：M2 双轨同 prompt 新旧管线输出语义等价；**眼睛投影接入装配线（消费者挂接，防白看）** | ⬜ |
 | 8.11.4 | 压缩挂点（pruner/spill/摘要） | dsh compaction/pruner/spill | 修剪核薄自研；计量复用 tiktoken-rs | A：压缩语义保持抽检；投影链挂点生效 | ⬜ |
 | 8.11.5 | 新对话卡 UI（光球面板+全局输入栏收编） | dsh ui-conversation/ui-tool | 无 | B+C：M3 对话/光球 diff 受控；全局单例优先级不变 | ⬜ |
 | 8.11.6 | 命令系统 + 闭环 | dsh ui-input-trigger/ui-commands | 无 | A+B：命令对照表；8.11 主题闭环 | ⬜ |
@@ -226,7 +232,10 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.12.2 | 启动器（手势抽屉 → broker 枚举 → 开卡） | dsh ui-slots 枚举 | 无 | A+B：抽屉与注册表严格同源 | ⬜ |
 | 8.12.3 | 顶栏完整版（五槽位 + 观测台）+ 完整布局 | dsh ui-layout/ui-sidebar | 无 | A+B+C：全档考题 | ⬜ |
 | 8.12.4 | 皮肤包（深蓝意志；皮肤=覆盖层，组件自带基础样式——基础包随功能，覆盖包做拓展）+ todo 卡 | dsh ui-theme / dsh todo | 无 | B+C：换肤热切换；工具附属卡模式 | ⬜ |
-| 8.12.5 | 启动引导收口（拓扑激活 + ws-server 一拆三收尾） | dsh boot 参考 | 无 | A+B：启动链拓扑与实现一致；调试桥确认已删 | ⬜ |
+| 8.12.6 | 眼睛全量段（数据源触发制：数据源卡落地一个补一段） | 无 | 无 | A：全段投影快照钉；失败写占位不抛逐段核验 | ⬜ |
+| 8.12.7 | 安全包转正（№15 收口：真拦截 + 批准卡 + allowlist 三档 + cedar 评估） | dsh guard/scope/permission-presets | cedar-policy 评估本步启动 | A+B：№15 考题全档；C 档判定分布对账（转正不改判定只改执行） | ⬜ |
+| 8.12.8 | 手全量（多实例/角色定制样式/锚区接布局） | 无 | 无 | A+B+C：№4 全档 | ⬜ |
+| 8.12.5 | 启动引导收口（拓扑激活 + ws-server 一拆三收尾）+ 闭环——**执行序最后（含 8.12.6–8.12.8）** | dsh boot 参考 | 无 | A+B：启动链拓扑与实现一致；调试桥确认已删 | ⬜ |
 
 ### 4.7 9.x 工坊线（文档世界重建，9.0 收口后启动）
 
@@ -278,7 +287,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | ui-input-trigger / ui-commands | 命令系统 | 8.11.6 | ⬜ |
 | ui-theme | 皮肤 | 8.12.4 | ⬜ |
 | todo | todo 工具语义 | 8.12.4 | ⬜ |
-| guard / scope | 权限裁决 | 8.7.5 | ⬜ |
+| guard / scope | 权限裁决 | 8.7.5 / 8.12.7（+permission-presets） | ⬜ |
 | boot | 启动引导参考 | 8.12.5 | ⬜ |
 
 ---
@@ -297,7 +306,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | pulldown-cmark / comrak | 8.9.3 md 渲染 | 拿来改 | 手机端大 md 实测掉帧才立项 | ⏸ |
 | syntect | 8.9.3 语法高亮 | 拿来改 | 同上 | ⏸ |
 | ignore / globset | 8.9.1 文件树过滤 | 拿来改 | 实测驱动 | ⏸ |
-| cedar-policy | 8.7.5 权限策略 | 远期评估 | 影子期先薄自研，转正期再评估 | ⏸ |
+| cedar-policy | 8.12.7 安全包转正 | 远期评估 | 影子期薄自研已落（8.7.5）；评估动作挂 8.12.7 启动 | ⬜（触发条件已锚定） |
 | sha2 + serde | 8.11.2 账本 hash 链 | 薄自研 | 8.11 落地 | ⬜ |
 | JSONL schema | 8.11.1 session 格式 | 只共享格式 | 8.11 落地 | ⬜ |
 
@@ -386,3 +395,11 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   全局发射的误报风险留转正期（开放第三方插件时加被测者标识）。
   评审建议：「`[xxx]` 前缀 = 有意抛出的公约错误」应登记为全局公约
   （现散在各模块注释）——待契约文档下次修订时收录。
+- 2026-08-20：用户拍板——**8.7.6 修订 + 任务图补扩充步**。①8.7.6 改
+  「眼睛最小包（数据源=骨架自态）」（原试点三件套的手移 8.8.6）；②新增
+  8.8.6 手单实例 / 8.12.6 眼睛全量段（数据源触发制）/ 8.12.7 安全包转正
+  （契约 №15「9.0 真生效」的承接步，此前悬空）/ 8.12.8 手全量；③8.11.3
+  验收追加「眼睛投影接入装配线」（消费者挂接防白看）；④cedar-policy
+  触发条件锚定 8.12.7。**新规矩：凡「最小版/影子/单实例」进任务图，
+  必须同时登记扩充步 + 触发条件**（防「最小即终点」第三次再犯）。
+
