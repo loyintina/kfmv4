@@ -233,11 +233,18 @@ export class PlugtestRunner {
   }
 
   private async _disposeWithTimeout(fiber: { dispose(): Promise<void> | void }): Promise<void> {
-    await Promise.race([
-      Promise.resolve(fiber.dispose()),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error(`dispose 超时（${this._unloadTimeoutMs}ms）`)), this._unloadTimeoutMs)),
-    ]);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        Promise.resolve(fiber.dispose()),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`dispose 超时（${this._unloadTimeoutMs}ms）`)), this._unloadTimeoutMs);
+        }),
+      ]);
+    } finally {
+      // 评审 877 观察①：dispose 成功时清掉超时定时器，验房师自己不留尾巴
+      if (timer !== undefined) clearTimeout(timer);
+    }
   }
 
   private _record(r: PlugtestResult): PlugtestResult {

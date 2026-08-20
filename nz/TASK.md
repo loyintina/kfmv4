@@ -381,3 +381,8 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   TypeError=DEGRADE_CRASH）；宿主/手势/安全各加一个计数探针口子
   （containerCount/handlerCount/declaredCount）。53 钉全绿，双变异靶
   抓获。DoD「新插件必过 plugtest」自此可执行。
+- 2026-08-20：877 评审收讫——核实属实，观察两条：①clearTimeout 尾巴
+  已顺手修（_disposeWithTimeout finally 清理，53 钉复绿）；②探针事件
+  全局发射的误报风险留转正期（开放第三方插件时加被测者标识）。
+  评审建议：「`[xxx]` 前缀 = 有意抛出的公约错误」应登记为全局公约
+  （现散在各模块注释）——待契约文档下次修订时收录。
