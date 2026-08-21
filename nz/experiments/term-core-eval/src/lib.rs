@@ -4,4 +4,5 @@
 //! 字节流 → 解析状态机 → 网格状态更新，不含任何绘制/像素渲染。
 
 pub mod corpus;
+pub mod dump;
 pub mod harness;

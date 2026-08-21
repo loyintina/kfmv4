@@ -127,3 +127,27 @@ cargo run --release -- gen   # 只生成语料
 - **wasm 构建首次很慢**（rio-vt 的 wasm 链会拉 web-time/js-sys/wasm-bindgen，全树重编），
   前台 600s 超时被杀过一次；落日志后台跑才拿到真实报错（polling 的 compile_error!）。
 - `src/corpus.rs` 里 `used` 变量是死代码（只累加不读取），留着两个 warning 未清，不影响数字。
+
+---
+
+## 补考（2026-08-21 晚）：功能覆盖考卷 v1 —— 45 题全等
+
+评审前置要求（kfmv4-9.0-nz-882-term-core-eval-review）：吞吐+wasm 过关 ≠
+功能覆盖过关；rio-vt 接棒前把 NA 在用序列全集对跑。考卷 = `src/bin/exam.rs`
++ `src/dump.rs`（两引擎网格 → 同一文本协议：可见区文本/光标/非默认样式格）。
+
+**题面 45 道**（三来源：本报告「未评估」清单；NA 源码核查的实际消费清单
+——网格全拿/模式只读 1000/1002/1003+?1h/事件面 VoidListener 全丢/样式只渲
+颜色+反色；xterm 常规面）：SGR 8/亮/256/真彩色、bold/italic/underline/
+strikeout/inverse/dim/hidden、游标全家（CUP/HVP/移动/CNL/CPL/CHA/DEC 存取）、
+擦除 EL0/1/2 ED0/1/2、插入删除 DCH/ICH/IL/DL、滚动区/SU/SD/回退溢出、备选屏
+1049/47、DECAWM 开关、CJK 宽字符含行末绕回、Tab、synchronized output 2026、
+kitty keyboard、OSC 52/标题/8 超链接、鼠标模式/APP_CURSOR/DECTCEM 开关、RIS。
+
+**结果：45/45 PASS。** 首跑唯一 DIFF 是 sgr_bright——亮色枚举 alacritty 叫
+BrightRed、rio 叫 LightRed，同一槽位不同名，非行为差；token 归一后重跑全等。
+行为面零差异，「复活触发」无弹药。
+
+**判读纪律**（写在 exam.rs 头注）：DIFF ≠ rio-vt 错，每道 DIFF 人工研判谁是
+xterm 标准行为再记账。v1 留白：zerowidth 组合符不进 dump；下划线细分种类不
+归一；事件面只断言「不毁网格」。考卷进 nz 发版硬门的接线留 8.8.2 收口时做。

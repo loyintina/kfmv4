@@ -50,6 +50,44 @@ pub mod alacritty {
             let point = self.term.grid().cursor.point;
             point.column.0 + point.line.0 as usize
         }
+
+        /// 考卷 dump：网格文本 + 光标 + 非默认样式格（协议见 dump.rs）。
+        pub fn dump(&self) -> String {
+            use alacritty_terminal::term::cell::Flags;
+            let grid = self.term.grid();
+            let mut out = String::new();
+            let mut cur_row: Option<i32> = None;
+            let mut styles: Vec<String> = Vec::new();
+            for indexed in grid.display_iter() {
+                let cell = indexed.cell;
+                if cell
+                    .flags
+                    .intersects(Flags::WIDE_CHAR_SPACER | Flags::LEADING_WIDE_CHAR_SPACER)
+                {
+                    continue;
+                }
+                let row = indexed.point.line.0;
+                if cur_row != Some(row) {
+                    if cur_row.is_some() {
+                        let t = out.trim_end().len();
+                        out.truncate(t);
+                        out.push('\n');
+                    }
+                    cur_row = Some(row);
+                }
+                out.push(cell.c);
+                let fg = crate::dump::color_token_ala(&cell.fg);
+                let bg = crate::dump::color_token_ala(&cell.bg);
+                let at = crate::dump::attr_token_ala(cell.flags);
+                if fg != "Foreground" || bg != "Background" || !at.is_empty() {
+                    styles.push(format!("r{row}c{}:{fg}|{bg}|{at}", indexed.point.column.0));
+                }
+            }
+            let t = out.trim_end().len();
+            out.truncate(t);
+            let p = grid.cursor.point;
+            format!("{out}\n--cursor {},{}\n--styles\n{}", p.line.0, p.column.0, styles.join("\n"))
+        }
     }
 }
 
@@ -119,6 +157,44 @@ pub mod rio {
         pub fn checksum(&self) -> usize {
             let pos = self.term.grid.cursor.pos;
             pos.col.0 + pos.row.0.max(0) as usize
+        }
+
+        /// 考卷 dump：网格文本 + 光标 + 非默认样式格（协议见 dump.rs）。
+        /// 注意 rio 的两个网格事实：空白格 c='\0'（归一成空格）；宽字符
+        /// 占位格 is_spacer（跳过，字形归前导格）。
+        pub fn dump(&self) -> String {
+            let grid = &self.term.grid;
+            let mut out = String::new();
+            let mut cur_row: Option<i32> = None;
+            let mut styles: Vec<String> = Vec::new();
+            for indexed in grid.display_iter() {
+                let sq = indexed.square;
+                if sq.is_spacer() {
+                    continue;
+                }
+                let row = indexed.pos.row.0;
+                if cur_row != Some(row) {
+                    if cur_row.is_some() {
+                        let t = out.trim_end().len();
+                        out.truncate(t);
+                        out.push('\n');
+                    }
+                    cur_row = Some(row);
+                }
+                let c = sq.c();
+                out.push(if c == '\0' { ' ' } else { c });
+                let st = grid.style_of(&sq);
+                let fg = crate::dump::color_token_rio(&st.fg);
+                let bg = crate::dump::color_token_rio(&st.bg);
+                let at = crate::dump::attr_token_rio(st.flags);
+                if fg != "Foreground" || bg != "Background" || !at.is_empty() {
+                    styles.push(format!("r{row}c{}:{fg}|{bg}|{at}", indexed.pos.col.0));
+                }
+            }
+            let t = out.trim_end().len();
+            out.truncate(t);
+            let p = grid.cursor.pos;
+            format!("{out}\n--cursor {},{}\n--styles\n{}", p.row.0, p.col.0, styles.join("\n"))
         }
     }
 }

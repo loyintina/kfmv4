@@ -514,3 +514,12 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   *.bin`（同字节）并 dump 出网格文本/状态供两线 diff；追责点 = 覆盖
   考卷对跑开工时 NA 出口未就绪即停滞。③编译 cgroup 隔离立项——
   用户委托评审线全权（视角更全），本线不另立。
+- 2026-08-21：**功能覆盖考卷 v1 落地，45/45 全等**（nz/experiments/
+  term-core-eval：src/bin/exam.rs 题面 + src/dump.rs 双侧网格同一文本
+  协议；题面三来源=REPORT 未评估清单+NA 源码核查消费清单+xterm 常规
+  面）。首跑唯一 DIFF 是亮色枚举命名差（BrightRed vs LightRed，同一
+  槽位非行为差），token 归一后全等——rio-vt 行为面零差异，复活触发
+  无弹药。判读纪律：DIFF≠rio 错，逐题人工研判谁是 xterm 标准行为。
+  考卷进发版硬门的接线留 8.8.2 收口。跨线依赖（NA harness 语料出口）
+  状态：题面已自备（exam.rs 内嵌 + corpus/*.bin 落盘），NA 出口未
+  就绪不挡 nz 侧考卷，只挡「NA 侧反向对跑」。
