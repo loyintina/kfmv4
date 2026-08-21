@@ -497,9 +497,9 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   内容）；node 冒烟 PROBE OK；typecheck/70 钉/build 全绿；8023 四个
   资产全 200。两个网格事实入档：空白格 c='\0'（非空格，dump 归一）；
   宽字符有 spacer 占位格（dump 跳过）。wasm 产物（public/term-core/）
-  与 target/ 不入仓，build:term 一键再生成。浏览器侧运行时装载未实
-  拍（本线无守视）——node initSync 路径已验证同一份 glue 可跑，
-  浏览器路径待渲染壳接入时实拍。
+  与 target/ 不入仓，build:term 一键再生成。浏览器侧运行时当日晚
+  守视实拍补上（8023 eval `__kfmNzTermProbe` = PROBE OK cursor=1,2，
+  与 node initSync 路径同结果）——两条装载路径均实证。
 - 2026-08-21：**采纳 NA 线重编译降压建议**（kfm-na-heavy-build-nice-notice）：
   build:term 的 cargo build 包 `nice -n 10 ionice -c2 -n7`——本线两次
   未降压编译曾把 NA pre-commit 链拖超时 30 分钟（4 核机 load 6+）。
