@@ -9,3 +9,4 @@ public/bundle.js
 .tsbuildinfo
 .qoder/
 tmp/
+.venv/
