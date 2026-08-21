@@ -255,7 +255,7 @@ M2 manifest 标已对照 · M3 截图 diff 受控（触及 UI 时）· 手机实
 | 小步 | 内容 | 契约 | 前置 | 验收 | 删旧 | Rust 内核 |
 |------|------|------|------|------|------|-----------|
 | 8.8.1 | 终端连接家族服务插件（PTY/tmux 管理；参考 terminal-bash） | №1+№16 附属 | 8.7.3 | 连接五动作（open/input/resize/close/重连）对照旧实现 | PtyManager 从 ws-server 摘除 | kfmv4 侧 PTY 在 Node 服务端不 Rust 化；NA 侧 portable-pty 拿来 |
-| 8.8.2 | 终端渲染卡（卡片插件形态） | №1 | 8.8.1 | 终端功能对照表全绿；M3 终端基线建立 | **旧终端卡** | **开工第一步=WASM 终端芯评估**（alacritty_terminal vs rio-vt；互证基准只取解析层计时——NA 方法学声明：解析/渲染分开计时，防渲染壳污染基准）；**解析核=alacritty_terminal→WASM**（拿来，与 NA 同 crate）；渲染壳 TS 自研 |
+| 8.8.2 | 终端渲染卡（卡片插件形态） | №1 | 8.8.1 | 终端功能对照表全绿；M3 终端基线建立 | **旧终端卡** | ~~开工第一步=WASM 终端芯评估~~ ✅ 已完成（2026-08-21，REPORT 落档 nz/experiments/term-core-eval/）；**解析核=rio-vt→WASM**（评估翻盘：alacritty 被 polling 阻断上不了 wasm32；rio-vt 解析层 plain 4.9x/color 2.1x 且开箱过 wasm32；NA 侧 alacritty 不动，两线行为一致靠同源解析行为考卷保证；复活触发=rio-vt 功能缺口/考卷长期不齐）；渲染壳 TS 自研；开工先补：僵尸会话 list 口径 + open 挂权限判定 |
 | 8.8.3 | 刷新默认全屏终端（轻量默认挂载，不得依赖 №11） | №11 最小注 | 8.8.2 | 实拍：刷新即终端 | 旧首页默认路由 | — |
 | 8.8.4 | 顶栏最小版：tmux 标签（五槽位 broker 只点亮 tmux 槽） | №8 最小版 | 8.7.3+8.8.1 | 标签切换实拍；徽标/手槽位保留旧实现不动 | — | — |
 | 8.8.5 | tmux 完整管理（新建/清空/挂起/状态检测）+ 闭环 | №8 | 8.8.4 | №8 tmux 考题 | 旧 tmux 入口 | — |
@@ -405,16 +405,19 @@ crate 覆盖的部分直接白拿，不重走 8.7→9.0。
 - **管线方向**：TS 工坊先行试错定语义 → 稳定后沉淀 Rust crate → NA 收编稳定版
   （NA 下游定位，Rust 化判断天然滞后于功能落地，不作前置）。
 
-**终端芯定案**：alacritty_terminal（NA 已生产实证：首个终端提交即用，APK 真机在跑；
-调查证伪了"终端库只能自研"的说法——NA 自研的是渲染壳，闪退根因在 GPU 驱动与
-dex/.so 打包层，与终端解析无关）。kfmv4 WASM 侧同 crate 优先，rio-vt 备选（官方
-wasm32 支持），评估动作挂在 8.8.1 前。
+**终端芯定案（2026-08-21 翻盘）**：**nz/kfmv4 WASM 侧 = rio-vt；NA 侧 = alacritty_terminal 不动**。
+原案「同 crate 优先」被评估撞翻：alacritty_terminal 根本上不了 wasm32（非 target-gated
+的 polling 依赖 compile_error!，非 feature 可关）；rio-vt 关默认 feature 开箱过 wasm32，
+且解析层吞吐 plain 4.9x / color 2.1x / fullscreen 1.25x / cjk 持平（靶场与数据见
+nz/experiments/term-core-eval/REPORT.md）。两线行为一致不再靠同 crate，改靠**同源解析
+行为考卷**（同语料喂两家解析器 diff 网格——比同 crate 更强的机制）。复活触发：rio-vt
+功能缺口或行为考卷长期不齐 → 重议。
 
 **Rust 共享内核清单**（资源均已核真）：
 
 | 共享内核 | 对应 9.0 任务（版本） | 现成 Rust 资源 | 取材方式 |
 |---------|---------------------|---------------|---------|
-| 终端解析核 | №1 终端卡（8.8） | **alacritty_terminal**（定案）；rio-vt 备选 | 直接拿来 |
+| 终端解析核 | №1 终端卡（8.8） | **rio-vt**（WASM 侧定案，2026-08-21 翻盘）；NA 侧 alacritty_terminal 不动 | 直接拿来 |
 | PTY 管理 | 终端连接家族（8.8，仅 NA 侧；kfmv4 的 PTY 在 Node 服务端不共享） | portable-pty（wezterm 抽出） | NA 拿来 |
 | token 计量 | agent-service / 压缩挂点（8.11） | tiktoken-rs（Zed 在用） | 拿来 |
 | 压缩修剪核 | 压缩挂点（8.11） | 薄自研（规则逻辑简单）+ tiktoken-rs 计量 | 自研薄核 |
@@ -548,6 +551,14 @@ WASM 化；不许预防性 Rust 化（边界税 + 调试成本是确定支出，
   rio-vt）从 8.8.1 前置挪到 8.8.2 开工第一步——评估对象是渲染芯（解析层），
   连接家族（PTY 会话管理）不消费它，挂在 8.8.1 前是无谓挡路；8.8.2 行首补
   「开工第一步=WASM 评估」承接。nz 侧 TASK 决策记录同步。
+- **v11 修订（2026-08-21，用户拍板）**：终端解析芯裁决翻盘——评估跑完后
+  alacritty_terminal 定案作废：它根本上不了 wasm32（非 target-gated 的
+  polling 依赖 compile_error!）；改定 **rio-vt→WASM**（关默认 feature 开箱过
+  wasm32，解析层吞吐 plain 4.9x / color 2.1x / fullscreen 1.25x / cjk 持平，
+  数据见 nz/experiments/term-core-eval/REPORT.md）。「同 crate 保一致」改
+  为「两线同源解析行为考卷保一致」（同语料 diff 网格）；复活触发 = rio-vt
+  功能缺口或考卷长期不齐。改动落点：8.8.2 行、终端芯定案段、Rust 共享内核
+  清单行；nz 侧 TASK 决策记录与 Rust 核表同步。
 
 > 2026-08-17 对施工图做一致性编辑；只改本图，不改上游契约/台账正文。
 

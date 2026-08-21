@@ -24,8 +24,9 @@
   实测可用）。70 钉全绿（+连接 5 钉：open+input 双通道 / resize 真
   ioctl（stty size 报 30 100）/ close+exit 透传（exit 7）/ 重连
   attach+尾迹 / 卸载全杀）。8023 常驻服务已带新件重启，slog 在案。
-- **下一步**：8.8.2 终端渲染卡（解析核=alacritty_terminal→WASM，
-  渲染壳 TS 自研；WASM 终端芯评估挪本步门口的提议待用户拍板）。
+- **下一步**：8.8.2 终端渲染卡（解析核=**rio-vt→WASM**——2026-08-21
+  评估翻盘裁决：alacritty_terminal 上不了 wasm32；渲染壳 TS 自研；
+  开工先补两件：僵尸会话 list 口径 + open 挂权限判定）。
 - **阻塞**：无
 
 ---
@@ -130,7 +131,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.6 | 眼睛最小包（bundle 骨架：dynamic-prompt-files 基建 + eyes 总插件 + coords 契约段 + 骨架自态段） | 无 | 无 | A 档：抽文件测试两式；禁用后系统无损；过 plugtest | ✅（2026-08-21） |
 | 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A 档：list/test/残留检查 ✅ |
 | 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty（仅 NA）；kfmv4 侧 Node 不 Rust | A 档：open/input/resize/close/重连 | ✅（2026-08-21，tmux 管理留 8.8.5 完整管理步） |
-| 8.8.2 | 终端渲染卡 | 无 | alacritty_terminal→WASM（评估） | A+B+C：终端功能对照 + M3 基线 | ⬜ |
+| 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（评估翻盘：alacritty 被 polling 阻断上不了 wasm32；复活触发=rio-vt 功能缺口/行为考卷长期不齐） | A+B+C：终端功能对照 + M3 基线 | ⬜ |
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C 档：刷新即终端 | ⬜ |
 | 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C 档：标签切换实拍 | ⬜ |
 | 8.8.5 | tmux 完整管理 + 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档 | ⬜ |
@@ -185,7 +186,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 小步 | 做什么 | dsh | Rust | 考题/验收 | 状态 |
 |------|--------|-----|------|-----------|------|
 | 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty；kfmv4 侧 Node 不 Rust；本步前完成 alacritty_terminal vs rio-vt WASM 评估 | A：连接五动作对照旧实现 | ✅（2026-08-21，tmux 留 8.8.5；WASM 评估挪 8.8.2 门口待拍板） |
-| 8.8.2 | 终端渲染卡 | 无 | alacritty_terminal→WASM（拿来，与 NA 同 crate） | A+B+C：终端功能对照表全绿；M3 终端基线 | ⬜ |
+| 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（2026-08-21 用户拍板；NA 侧 alacritty 不动，行为一致靠两线同源考卷保证） | A+B+C：终端功能对照表全绿；M3 终端基线；开工先补：僵尸会话 list 口径 + open 挂权限判定 | ⬜ |
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C：实拍刷新即终端；不得依赖 №11 完整布局 | ⬜ |
 | 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C：标签切换实拍 | ⬜ |
 | 8.8.5 | tmux 完整管理（新建/清空/挂起/状态检测）+ 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档 | ⬜ |
@@ -300,7 +301,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 
 | Rust 核 | 对应小步 | 来源 | 触发条件 | 状态 |
 |---------|----------|------|----------|------|
-| alacritty_terminal | 8.8.2 终端解析核 | 直接拿来（NA 已实证）；rio-vt 备选 | 8.8.1 前完成 WASM 评估 | ⬜ |
+| rio-vt | 8.8.2 终端解析核 | 拿来（2026-08-21 评估翻盘定案：alacritty 被 polling 阻断上不了 wasm32，rio-vt 解析层 plain 4.9x 且开箱过 wasm32） | 8.8.2 开工 | ⬜ |
 | portable-pty | 8.8.1 PTY 管理 | NA 拿来 | 仅 NA 侧；kfmv4 侧 Node 不 Rust | ⬜ |
 | tiktoken-rs | 8.11.3 token 计量 | 拿来（Zed 在用） | 8.11 落地 | ⬜ |
 | 压缩修剪核 | 8.11.4 压缩挂点 | 薄自研 + tiktoken-rs | 8.11 落地 | ⬜ |
@@ -479,3 +480,12 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   不消费它。8.8.2 动作序列定稿：①WASM 工具链 + alacritty/rio-vt
   解析层基准（只计解析层——NA 方法学）→ ②解析核 WASM 包 →
   ③TS 渲染壳 → ④卡壳接卡片系统。
+- 2026-08-21：用户拍板——**终端解析芯裁决翻盘：nz 用 rio-vt→WASM**
+  （评估报告 nz/experiments/term-core-eval/REPORT.md）。翻盘理由：
+  ①alacritty_terminal 根本上不了 wasm32（非 target-gated 的 polling
+  依赖 compile_error!，不是 feature 能关掉的）；②rio-vt 关默认
+  feature 开箱过 wasm32，且解析层吞吐 plain 4.9x / color 2.1x /
+  fullscreen 1.25x / cjk 持平。NA 侧 alacritty 不动；两线行为一致
+  靠「同源解析行为考卷」保证（同语料喂两家解析器 diff 网格，比同
+  crate 更强的机制——crate 可以换，考卷不过不许发版）。复活触发：
+  rio-vt 功能缺口或行为考卷长期不齐 → 重议。

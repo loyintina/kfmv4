@@ -1,0 +1,24 @@
+[package]
+name = "term-core-eval"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# 评估对象：两个终端转义序列解析核。
+# alacritty_terminal 版本与 /root/kfm-na/Cargo.toml 保持一致（0.25）。
+[dependencies]
+alacritty_terminal = "=0.25.0"
+# rio-vt 默认 feature = ["pty"]，会拉入 corcovado(mio fork)/teletypewriter 等
+# PTY/平台相关依赖，对纯解析基准与 wasm32 目标都是负担，故关掉默认 feature。
+rio-vt = { version = "=0.5.25", default-features = false }
+
+# rustix-openpty 0.1.1 以 default-features=false 依赖 rustix 0.38（无 std）；
+# 单独构建 alacritty_terminal 时 rustix 的 AsFd 落到 no_std polyfill，与
+# std::os::fd::OwnedFd 不匹配导致编译失败。alacritty 完整应用靠图里其它依赖
+# 捎带打开 rustix/std。这里显式钉上 rustix/std 走 feature 统一修复。
+# 仅对 unix 生效（wasm32 目标不需要也不应拉 rustix）。
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "0.38", default-features = false, features = ["std"] }
+
+[profile.release]
+opt-level = 3
