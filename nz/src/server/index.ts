@@ -87,9 +87,13 @@ export function createNzServer(): Server {
 const isMain = !!process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const port = Number(process.env.NZ_PORT ?? 8023);
+  // 绑 127.0.0.1：访问通道 = kalo 隧道 -L 8023（2026-08-21 评审代改——
+  // 裸绑 * 等于公网直开，slog 声称的 127.0.0.1 与实际绑定不符）。
+  // 确有公网直开需求时设 NZ_HOST=0.0.0.0 显式选择，不默认可达。
+  const host = process.env.NZ_HOST ?? '127.0.0.1';
   const server = createNzServer();
-  server.listen(port, () => {
-    slog(`HTTP 静态服务已起：http://127.0.0.1:${port}/（public/，越界 fail-closed）`);
+  server.listen(port, host, () => {
+    slog(`HTTP 静态服务已起：http://${host}:${port}/（public/，越界 fail-closed）`);
   });
   process.on('SIGTERM', () => { server.close(); process.exit(0); });
   process.on('SIGINT', () => { server.close(); process.exit(0); });
