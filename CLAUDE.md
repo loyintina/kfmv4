@@ -41,7 +41,7 @@
 | 活跃状态同步 | workflows/state-sync.yaml |
 <!-- /gen:route-table -->
 | 理解项目方向/为什么这么设计 · 范式包实验研究 | active/vision.md · active/nine-zero/nine-point-zero.md（9.0 设计地图：台账+契约索引）· ../experiments/paradigm/index.md（实验登记面） |
-| 评价/了解某功能（「kfmv4 有一个 X」类问题） | domains/capability-map.md（功能总目录：俗名→域文档映射） |
+| 评价/了解某功能（「kfmv4 有一个 X」）· 收集素材入库/查询 | domains/capability-map.md（功能总目录）· library/README.md（收集素材库：收录规则） |
 | 写/跑 agent 脚本（发版建议等）· UI 视觉自测/截图（守视 §四号负载） | guides/agent-runner.md |
 | **无匹配** | 完成后记录；同类操作重复 3 次 → workflows/_template.yaml 固化 |
 

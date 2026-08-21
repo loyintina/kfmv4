@@ -103,6 +103,7 @@ git log --all --oneline --grep="<提交标题关键词>"
 | 豁免 #N | 语义审计发现的「有意保留」登记（探针下轮不再报） |
 | SEM 错误码 | 语义编译器错误分类（SEM001 stale-claim 等，见 semantic-compiler-seed.md） |
 | 信箱 | `docs/ledger/semantic-chain-inbox.md`，语义巡逻每日一行 |
+| 收集库 | `library/`——剪藏/文章/链接/研究笔记素材库（收录规则见 `library/README.md`） |
 | 外部来源 | `docs/ledger/external-sources.md`——引入外部代码/外部知识塑造了设计决策必须登记 |
 | 光球/浮卡/文件树/卡片堆 | 面板 UI 四要素；卡片系统见 active/vision.md |
 | kfm_ 工具族 | 面板内置工具（kfm-read/kfm-logs/kfm-restart…） |
