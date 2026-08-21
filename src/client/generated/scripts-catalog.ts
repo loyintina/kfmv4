@@ -756,6 +756,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "主仓自动推送：freshness 红先部署、有未提交改动跳过、全链 check 兜底"
   },
   {
+    "name": "build-enter-cgroup.sh",
+    "file": "scripts/build-enter-cgroup.sh",
+    "category": "运维",
+    "description": "把重编译任务整体放进独立 cgroup「kfm-builds」，",
+    "permission": "写 /sys/fs/cgroup/agent.slice/kfm-builds（mkdir + memory.max + cgroup.procs 移入自身进程）；无网络、不改仓库、不连 LLM",
+    "prompt": "无（机械外壳：进 cgroup 桶 + exec）",
+    "effect": "把重编译命令整体搬入 kfm-builds 独立 cgroup（内存隔离，与三线 agent 隔开），exec 执行；CPU 降压由调用方 nice/ionice"
+  },
+  {
     "name": "chain.mjs",
     "file": "scripts/check/chain.mjs",
     "category": "检查器",

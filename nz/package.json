@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "npm run build:term && node build.mjs",
-    "build:term": "nice -n 10 ionice -c2 -n7 cargo build --release --target wasm32-unknown-unknown --manifest-path term-core/Cargo.toml && wasm-bindgen --target web --out-dir public/term-core term-core/target/wasm32-unknown-unknown/release/kfm_term_core.wasm",
+    "build:term": "bash scripts/build-term.sh",
     "typecheck": "tsc --noEmit",
     "smoke": "tsx smoke.mjs",
     "serve": "tsx src/server/index.ts",
