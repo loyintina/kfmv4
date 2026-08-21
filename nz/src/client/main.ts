@@ -13,6 +13,8 @@ import { GestureRegistry } from './gesture.js';
 import { CardTypeBroker } from './card-types.js';
 import { PermissionEngine } from './permission.js';
 import { PlugtestRunner } from './plugtest.js';
+import { mountDynamicPromptFiles } from './plugins/core/dynamic-prompt-files.js';
+import { applyEyesBundle } from './plugins/eyes/index.js';
 
 // ========== 内核件接线：宿主给盒子，手势管输入，broker 管卡类型户口 ==========
 const host = new RenderHost();
@@ -36,6 +38,12 @@ rootCtx.provide('permissions', permissions);
 // 重载 + 缺失降级，串行纪律，八错误码机判
 const plugtest = new PlugtestRunner({ host, gestures, cardTypes, permissions }, rootCtx);
 rootCtx.provide('plugtest', plugtest);
+
+// 8.7.6 眼睛最小包（№5 首个 bundle）：dynamic-prompt-files 基建先挂
+// （眼睛 inject 它），再整包 apply；户口登记进验房师（DoD：新插件必过 plugtest）
+mountDynamicPromptFiles(rootCtx);
+applyEyesBundle(rootCtx);
+plugtest.register('eyes', (ctx) => applyEyesBundle(ctx));
 
 function render() {
   const el = document.getElementById('boot-log');

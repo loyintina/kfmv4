@@ -15,15 +15,16 @@
 > 每次进度更新只改本节。
 
 - **当前阶段**：内核地基期（8.7 主题推进中）
-- **刚完成**：8.7.7 kfm-plugtest 最小版（2026-08-20）——plugtest.ts
-  （§2.4：插件验房师。装→卸→快照 diff 量残留 + 重载 + 裸 context 降级
-  探针，串行纪律，八错误码机判；残留检查 = 四 broker 账目 diff + 事件
-  探针，broker 架构的回报）；53 钉全绿（+验房师 10 钉，八错误码逐码
-  钉死）、typecheck 零错、smoke 照过；双变异靶子实测抓获（摘快照 diff →
-  LEAK_DOM/SERVICE 钉红；摘探针发射 → LEAK_EVENT 钉红）。探针实证两条
-  cordis 行为入档：dispose 吞 cleanup 异常 / 缺服务访问抛 without inject。
-- **下一步**：8.7.6 眼睛最小包（bundle 骨架 + coords 契约段，数据源=骨架
-  自态；2026-08-20 修订：手移 8.8.6，眼睛全量段/安全包转正/手全量补步）。
+- **刚完成**：8.7.6 眼睛最小包（2026-08-21）——Cordis 全流程首例
+  bundle：dynamic-prompt-files 基建（prompts/dynamic 唯一管理者，骨架期
+  内存版，fs 后端留 server 落地步）+ eyes 总插件（触发/段序/MD 外壳+
+  YAML 内核/写盘/失败写占位不抛/卸载遗言）+ coords 标定坐标系段（手眼
+  共享契约先钉死）+ 骨架自态段（broker 账/审计账尾迹/plugtest 末三轮/
+  bootLog，collect 现场直读）。62 钉全绿（+眼睛 7 钉：基建/整包含两段/
+  变异抽检/配置禁用/禁用无损+遗言/失败占位/plugtest OK），typecheck/
+  smoke/build 全过。
+- **下一步**：8.8.1 终端连接家族（PTY/tmux 管理，dsh terminal-bash
+  参考；A 档 open/input/resize/close/重连）。
 - **阻塞**：无
 
 ---
@@ -125,7 +126,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.3 | 渲染宿主 + 手势分发 | 无 | 无 | A+B：容器生灭唯一入口、手势层带、验收三数字、0-4b NA 互证 | ✅ |
 | 8.7.4 | card-types broker | dsh host/plugin-inventory 参考 | 无 | A 档：headless 枚举/注册/摘除 | ✅ |
 | 8.7.5 | 安全包影子 | dsh guard/scope 参考 | cedar-policy 远期评估 | A+B：只记录不拦截，决策全量落日志 ✅ |
-| 8.7.6 | 眼睛最小包（bundle 骨架：dynamic-prompt-files 基建 + eyes 总插件 + coords 契约段 + 骨架自态段） | 无 | 无 | A 档：抽文件测试两式；禁用后系统无损；过 plugtest | ⬜ |
+| 8.7.6 | 眼睛最小包（bundle 骨架：dynamic-prompt-files 基建 + eyes 总插件 + coords 契约段 + 骨架自态段） | 无 | 无 | A 档：抽文件测试两式；禁用后系统无损；过 plugtest | ✅（2026-08-21） |
 | 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A 档：list/test/残留检查 ✅ |
 | 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty（仅 NA）；kfmv4 侧 Node 不 Rust | A 档：open/input/resize/close/重连 | ⬜ |
 | 8.8.2 | 终端渲染卡 | 无 | alacritty_terminal→WASM（评估） | A+B+C：终端功能对照 + M3 基线 | ⬜ |
@@ -173,7 +174,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.3 | 渲染宿主（容器生灭唯一入口）+ 手势分发（gesture-registry + 层带公约） | 无 | 无 | A+B：容器生灭、手势层带、验收三数字、0-4b NA 互证 | ✅ |
 | 8.7.4 | card-types broker（注册表 + singleton） | dsh plugin-inventory 参考 | 无 | A：headless 枚举/注册/摘除可脚本验证 | ✅ |
 | 8.7.5 | 安全包影子（只记录不拦截；强制 riskClass 声明） | dsh guard/scope | cedar-policy 留转正期评估 | B：决策全量落日志，零行为变化 ✅ |
-| 8.7.6 | 眼睛最小包（Cordis 全流程首例 bundle；数据源=骨架自态：broker 账/审计账/体检记录/手势流/bootLog） | 无 | 无 | A：抽文件测试两式，禁用后系统无损，过 plugtest | ⬜ |
+| 8.7.6 | 眼睛最小包（Cordis 全流程首例 bundle；数据源=骨架自态：broker 账/审计账/体检记录/手势流/bootLog） | 无 | 无 | A：抽文件测试两式，禁用后系统无损，过 plugtest | ✅（2026-08-21） |
 | 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A：list/test/残留检查；错误码可机检 ✅ |
 
 ### 4.2 8.8 终端/tmux 优先
@@ -435,3 +436,15 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   回写；浏览器侧 version-watch 横幅仍在役（现唯一防线，注释已更新）。
   **重生条件锚定 9.0 收口步**：nz 部署目标存在时以新对象重生该检查
   （任务图 9.0 行已点名）。此前全链末端永久噪声自此消除。
+- 2026-08-21：**8.7.6 眼睛最小包落地**（Cordis 全流程首例 bundle，用户
+  发话开工）。实现要点：①dynamic-prompt-files 基建 = 骨架期内存版
+  （接口按读写删列+变更事件设计，fs 后端留 server 落地步换实现不换
+  接口；文件名纪律=裸文件名拒逃逸，公约错误）；②eyes 总插件挂
+  「eyes/refresh-requested」公开触发口 + 段注册即刷新（真触发
+  tool/finished、snapshot/updated 等生产者 8.11.x 落地后改挂——数据源
+  触发制）；③探针实证入档：ctx.inject 回调式在依赖缺失时不卡 fiber
+  （fiber 照常 ACTIVE，回调等待），裸 context 降级探针因此天然合格；
+  ④整包启停原子性 = 成员挂为调用者 fiber 子插件，父 dispose 逆序连带
+  （cordis 纤维树白送）。验收三件套齐：抽文件两式钉（变异抽检=broker
+  账变化投影反映 / 配置禁用=关段缺段）+ 禁用无损钉（遗言占位+broker
+  零变化+基建独立）+ plugtest PLUGTEST_OK。62 钉全绿。
