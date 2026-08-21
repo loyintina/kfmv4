@@ -1,0 +1,18 @@
+[package]
+name = "kfm-term-core"
+version = "0.1.0"
+edition = "2021"
+description = "nz 8.8.2 终端解析核 WASM 包装：rio-vt 解析层 → JS 绑定（feed/resize/text/cursor）"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# 与 term-core-eval 评估靶场同版本同 feature 口径：
+# rio-vt 默认 feature = ["pty"] 会拉 PTY/平台依赖，wasm32 下必须关。
+rio-vt = { version = "=0.5.25", default-features = false }
+wasm-bindgen = "0.2"
+
+[profile.release]
+opt-level = 2
+lto = true

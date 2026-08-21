@@ -4,6 +4,7 @@
  */
 import { rootCtx, helloFiber, bootCtxSelfTest, isHelloCleaned } from './src/client/ctx.ts';
 import { FiberState } from 'cordis';
+import { readFileSync } from 'fs';
 
 await helloFiber;
 if (helloFiber.state !== FiberState.ACTIVE) throw new Error('hello 未 ACTIVE');
@@ -22,5 +23,11 @@ for (let i = 0; i < 20; i++) {
   if (f.state !== FiberState.DISPOSED || !cleaned) failed++;
 }
 if (failed > 0) throw new Error(`churn ${failed} 次未走完全链`);
+
+// 8.8.2 探针：rio-vt WASM 解析核 node 冒烟（initSync 路径，与浏览器同一份 glue）
+const { probeTermCore } = await import('./src/client/term-core.ts');
+const termGlue = await import('./public/term-core/kfm_term_core.js');
+termGlue.initSync({ module: readFileSync(new URL('./public/term-core/kfm_term_core_bg.wasm', import.meta.url)) });
+console.log('SMOKE term-core: ' + probeTermCore(termGlue));
 
 console.log('SMOKE PASS: hello ACTIVE / 自测绿 / churn 20 轮全链');

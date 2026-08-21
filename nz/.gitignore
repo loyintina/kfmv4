@@ -1,1 +1,3 @@
 node_modules/
+term-core/target/
+public/term-core/

@@ -1,0 +1,9 @@
+# crates.io 直连在本机会停滞，走 rsproxy 镜像（仅对本项目生效）。
+[source.crates-io]
+replace-with = "rsproxy-sparse"
+
+[source.rsproxy-sparse]
+registry = "sparse+https://rsproxy.cn/index/"
+
+[net]
+git-fetch-with-cli = true

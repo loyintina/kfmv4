@@ -4,7 +4,8 @@
   "description": "KFM 9.0 - 代码世界从零实现（规格书见 kfmv4 docs/active/nine-zero/，任务文档见 TASK.md）",
   "type": "module",
   "scripts": {
-    "build": "node build.mjs",
+    "build": "npm run build:term && node build.mjs",
+    "build:term": "cargo build --release --target wasm32-unknown-unknown --manifest-path term-core/Cargo.toml && wasm-bindgen --target web --out-dir public/term-core term-core/target/wasm32-unknown-unknown/release/kfm_term_core.wasm",
     "typecheck": "tsc --noEmit",
     "smoke": "tsx smoke.mjs",
     "serve": "tsx src/server/index.ts",

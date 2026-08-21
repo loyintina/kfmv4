@@ -489,3 +489,14 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   靠「同源解析行为考卷」保证（同语料喂两家解析器 diff 网格，比同
   crate 更强的机制——crate 可以换，考卷不过不许发版）。复活触发：
   rio-vt 功能缺口或行为考卷长期不齐 → 重议。
+- 2026-08-21：**8.8.2 探针落地**（rio-vt WASM 包装 crate 第一小件）：
+  `nz/term-core/`（kfm-term-core：new/feed/resize/text/cursor，解析
+  入口与评估靶场 rio harness 同款，保证评估数字=线上路径）+ TS 装载
+  壳 `src/client/term-core.ts`（浏览器动态 import / node initSync 两
+  条装载路径）。验证：cargo test 3/3（含 SGR+CJK 宽字符、resize 保留
+  内容）；node 冒烟 PROBE OK；typecheck/70 钉/build 全绿；8023 四个
+  资产全 200。两个网格事实入档：空白格 c='\0'（非空格，dump 归一）；
+  宽字符有 spacer 占位格（dump 跳过）。wasm 产物（public/term-core/）
+  与 target/ 不入仓，build:term 一键再生成。浏览器侧运行时装载未实
+  拍（本线无守视）——node initSync 路径已验证同一份 glue 可跑，
+  浏览器路径待渲染壳接入时实拍。
