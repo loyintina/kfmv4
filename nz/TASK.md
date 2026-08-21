@@ -14,17 +14,17 @@
 
 > 每次进度更新只改本节。
 
-- **当前阶段**：内核地基期（8.7 主题推进中）
-- **刚完成**：8.7.6 眼睛最小包（2026-08-21）——Cordis 全流程首例
-  bundle：dynamic-prompt-files 基建（prompts/dynamic 唯一管理者，骨架期
-  内存版，fs 后端留 server 落地步）+ eyes 总插件（触发/段序/MD 外壳+
-  YAML 内核/写盘/失败写占位不抛/卸载遗言）+ coords 标定坐标系段（手眼
-  共享契约先钉死）+ 骨架自态段（broker 账/审计账尾迹/plugtest 末三轮/
-  bootLog，collect 现场直读）。62 钉全绿（+眼睛 7 钉：基建/整包含两段/
-  变异抽检/配置禁用/禁用无损+遗言/失败占位/plugtest OK），typecheck/
-  smoke/build 全过。
-- **下一步**：8.8.1 终端连接家族（PTY/tmux 管理，dsh terminal-bash
-  参考；A 档 open/input/resize/close/重连）。
+- **当前阶段**：内核地基期（8.8 主题推进中——终端连接家族）
+- **刚完成**：8.8.1 首件·nz 服务端最小出生（2026-08-21，用户拍板
+  「先让服务跑起来」）——`src/server/index.ts`：HTTP 静态服务
+  （public/，原样拒 `..` 逃逸 403 显形 fail-closed）+ 服务端 cordis
+  根总线（hello 见证同款模式）。**真端口验证过**：8023 替换 python
+  占位，`/` 200 + bundle.js 200 + 编码逃逸 403 实测。65 钉全绿
+  （+服务端 3 钉：静态取页/越界 fail-closed/总线注册清理链），
+  typecheck（+@types/node）/smoke/build 全过。
+- **下一步**：8.8.1 后半·term-connection 纯会话管理插件（№1 接口
+  五动作；切断 v8 PtyManager 的 WS 耦合——会话纯化、输出走事件、
+  重连=按 sessionId 复挂订阅）。
 - **阻塞**：无
 
 ---
@@ -448,3 +448,11 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   （cordis 纤维树白送）。验收三件套齐：抽文件两式钉（变异抽检=broker
   账变化投影反映 / 配置禁用=关段缺段）+ 禁用无损钉（遗言占位+broker
   零变化+基建独立）+ plugtest PLUGTEST_OK。62 钉全绿。
+- 2026-08-21：用户拍板——**nz 服务端先跑起来（8023）**，8.8.1 首件 =
+  服务端最小出生（HTTP 静态 + 服务端 cordis 根总线），真端口可验证
+  优先于会话管理内核。落实两条惯例迁移：静态路径原样拒 `..`（403
+  显形 fail-closed，875 教训第二次迁移）；hello 见证插件模式从客户端
+  复用到服务端（双侧总线同款出生仪式）。端口口径：8022 = v8 生产，
+  8023 = nz，并存互不打扰，9.0 收口归位。tsconfig 加 @types/node
+  （nz 不再是纯客户端工程）。WASM 终端芯评估挪 8.8.2 门口的提议
+  待用户拍板（本步未执行该评估）。

@@ -7,12 +7,14 @@
     "build": "node build.mjs",
     "typecheck": "tsc --noEmit",
     "smoke": "tsx smoke.mjs",
+    "serve": "tsx src/server/index.ts",
     "test": "tsx tests/index.test.ts"
   },
   "dependencies": {
     "cordis": "4.0.0-rc.8"
   },
   "devDependencies": {
+    "@types/node": "^26.2.0",
     "esbuild": "^0.28.0",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2"
