@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 9179b876 · 生成于 2026-08-20 -->
+<!-- 基准 commit 8055e916 · 生成于 2026-08-21 -->
 
 # 代码清单（机械层）
 
@@ -36,11 +36,11 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（32 文件 · 8462 行）
+## floating-card（32 文件 · 8471 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/generated/scripts-catalog.ts | 1400 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
+| src/client/generated/scripts-catalog.ts | 1409 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 807 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 793 | — |
@@ -187,7 +187,7 @@
 | src/server/routes/providers.ts | 78 | setupProvidersRoutes |
 | src/server/routes/compact.ts | 73 | compactRouter, computeCutIndex |
 
-## infra（185 文件 · 20600 行）
+## infra（186 文件 · 20737 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -234,7 +234,7 @@
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/check/check-bar-ledger.mjs | 143 | — |
 | scripts/check/check-mechanism-registry.mjs | 142 | — |
-| scripts/check/chain.mjs | 140 | STEPS |
+| scripts/check/chain.mjs | 141 | STEPS |
 | scripts/check/check-doc-scripts.mjs | 139 | — |
 | scripts/check/check-doc-linerefs.mjs | 137 | — |
 | tests/viewport-visibility.test.ts | 137 | — |
@@ -243,6 +243,7 @@
 | scripts/check/check-ledger-coverage.mjs | 133 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
+| scripts/check/check-git-hygiene.mjs | 128 | classifyZones |
 | scripts/check/gen-agent-inbox.mjs | 128 | — |
 | scripts/agent/tag-advisor.mjs | 128 | REF_RE, isValidRef |
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
@@ -269,6 +270,7 @@
 | scripts/check/check-anim.mjs | 99 | — |
 | scripts/check/check-stack-status.mjs | 99 | — |
 | scripts/check/check-versions.mjs | 91 | — |
+| scripts/check/check-hooks.mjs | 87 | — |
 | scripts/check/check-workflow-integrity.mjs | 87 | — |
 | scripts/check/check-kfmv4-data.mjs | 86 | — |
 | scripts/check/check-probes.mjs | 86 | — |
@@ -277,7 +279,6 @@
 | scripts/check/check-state-freshness.mjs | 84 | — |
 | scripts/check/gen-experiments-list.mjs | 84 | — |
 | scripts/check/check-experiment-index.mjs | 81 | — |
-| scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
 | scripts/check/check-probe-state.mjs | 80 | — |
 | scripts/check/check-as-any.mjs | 79 | — |
@@ -351,7 +352,7 @@
 | tests/probes/gen-permission-map/src/server/ai/tools/types.ts | 12 | KfmTool |
 | tests/probes/gen-tool-docs/src/server/ai/tools/types.ts | 12 | KfmTool |
 | tests/probes/tool-compaction/src/server/ai/tools/types.ts | 12 | KfmTool |
-| .githooks/commit-msg | 10 | — |
+| .githooks/commit-msg | 12 | — |
 | scripts/check/docs-root-const.mjs | 8 | DOCS_ROOT |
 | tests/register-hook.mjs | 8 | — |
 | tests/probes/gen-page-state-schema/src/client/modules/ui-registry.ts | 7 | ContentBlock |
@@ -723,4 +724,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 341 文件 · 57499 行 · 跨域边 284 条
+合计 342 文件 · 57645 行 · 跨域边 284 条

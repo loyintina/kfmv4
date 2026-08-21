@@ -56,7 +56,10 @@ for (const f of readdirSync(hooksDir)) {
     // ========== 4. 模式对账（2026-07-30：commit-msg 壳写死 exit 0 事故——
     // 脚本升 hard fail，壳注释还是 warning 时代语义，拦截虚掩一天多才被发现）==========
     // 规则：被接线脚本头部必须机器可读声明 MODE: hard-fail|warning；
-    // 壳注释若声称模式（含「不阻断/warning/硬失败/阻断/中断」词），必须与脚本 MODE 一致
+    // 模式锚取值序：①接线行行内 `MODE: x` 注释（2026-08-21 混合模式钩支持：
+    //   commit-msg 接 hard-fail 门 + warning 卫生检查，文件级单词不够表达）；
+    //   ②文件级模式词（壳注释若声称模式，含「不阻断/warning/硬失败/阻断/中断」词），
+    //   必须与脚本 MODE 一致。
     const scriptHead = readFileSync(join(ROOT, m[1]), 'utf-8').slice(0, 3000);
     const modeM = scriptHead.match(/MODE:\s*(hard-fail|warning)/);
     if (!modeM) {
@@ -64,8 +67,11 @@ for (const f of readdirSync(hooksDir)) {
       continue;
     }
     const scriptMode = modeM[1];
+    const line = content.split('\n').find((l) => l.includes(m[1])) || '';
+    const inlineM = line.match(/MODE:\s*(hard-fail|warning)/);
     let shellMode = null;
-    if (/不阻断|永不阻断|warning 模式|warning/i.test(content)) shellMode = 'warning';
+    if (inlineM) shellMode = inlineM[1];
+    else if (/不阻断|永不阻断|warning 模式|warning/i.test(content)) shellMode = 'warning';
     else if (/hard[- ]?fail|硬失败|阻断|中断/i.test(content)) shellMode = 'hard-fail';
     if (shellMode && shellMode !== scriptMode) {
       error(`.githooks/${f} 注释声称 ${shellMode}，但 ${m[1]} 声明 MODE: ${scriptMode}——壳语义与脚本不一致（exit 0 吞码事故同款）`);

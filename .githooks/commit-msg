@@ -1,9 +1,11 @@
 #!/bin/sh
-# KFM v4 — commit-msg hook：commit-doc 耦合门 + fix-tests 耦合门（均 hard fail，犯罪现场拦截）
+# KFM v4 — commit-msg hook：三门接线（各门模式见行内 MODE 标注，check-hooks 行级对账）
 # 薄壳：逻辑全在 scripts/check/check-*.mjs，禁止在此重新实现
 # 退出码必须透传（2026-07-30 耦合门升 hard fail 后修复：旧壳子写死
 # exit 0 吞掉脚本退出码，拦截失效）——薄壳只接线，不改语义
 # 安装：git config core.hooksPath .githooks
 cd "$(dirname "$0")/.." || exit 1
-node scripts/check/check-commit-docs.mjs --staged "$1" || exit 1
-node scripts/check/check-fix-tests.mjs --staged "$1" || exit 1
+node scripts/check/check-commit-docs.mjs --staged "$1" || exit 1  # MODE: hard-fail
+node scripts/check/check-fix-tests.mjs --staged "$1" || exit 1    # MODE: hard-fail
+# git 卫生 v0（2026-08-21 评审立项）：跨区混合 + 快链子集（脚本内恒 exit 0，|| true 双保险）
+node scripts/check/check-git-hygiene.mjs --staged || true          # MODE: warning

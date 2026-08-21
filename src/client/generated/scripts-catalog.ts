@@ -1017,6 +1017,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "fix-tests 耦合门（心法 24「修 bug 补钉纪律」机械化收编）"
   },
   {
+    "name": "check-git-hygiene.mjs",
+    "file": "scripts/check/check-git-hygiene.mjs",
+    "category": "检查器",
+    "description": "git 卫生 v0（2026-08-21 评审立项，两次链红入仓实证）",
+    "permission": "构建链内只读检查（无网络、无写盘副作用）",
+    "prompt": "无（机械检查）",
+    "effect": "git 卫生 v0（2026-08-21 评审立项，两次链红入仓实证）"
+  },
+  {
     "name": "check-hooks.mjs",
     "file": "scripts/check/check-hooks.mjs",
     "category": "检查器",
