@@ -500,3 +500,8 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   与 target/ 不入仓，build:term 一键再生成。浏览器侧运行时装载未实
   拍（本线无守视）——node initSync 路径已验证同一份 glue 可跑，
   浏览器路径待渲染壳接入时实拍。
+- 2026-08-21：**采纳 NA 线重编译降压建议**（kfm-na-heavy-build-nice-notice）：
+  build:term 的 cargo build 包 `nice -n 10 ionice -c2 -n7`——本线两次
+  未降压编译曾把 NA pre-commit 链拖超时 30 分钟（4 核机 load 6+）。
+  机器空闲时速度不变，撞车时交互进程优先。本线后续手动跑的长编译
+  同样自觉包降压。
