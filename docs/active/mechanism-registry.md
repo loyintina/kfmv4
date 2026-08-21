@@ -20,6 +20,7 @@
 | 契约新鲜度（check-contract-freshness） | 核心 | 全 | 域代码比契约新 → 构建中断 | ✗ 无探针（候选） | domains/code-inventory.md | 巡逻 |
 | 迁移总账咬合（check-ledger-coverage） | 核心 | 全（hard fail；三类红：无归宿行/死锚/死账） | 清单层 × 归宿层脱咬合 → 构建中断 | ✗ 无探针（KFM_PROBE_ROOT 可注入，候选） | active/nine-zero/nine-point-zero.md（组件台账 covers 锚点）+ nz/TASK.md 决策记录 | 巡逻 |
 | git 卫生（check-git-hygiene：跨区混合警告 + commit 时快链子集） | 核心 | 全（commit 钩 warn-only + 链 probe 自测） | 混入形态/链红入仓 → commit 时当场警告（不拦截） | ✓（--probe 分类器自测 5 例） | nz/TASK.md 决策记录（2026-08-21 评审立项：两次链红入仓实证） | 巡逻 |
+| 构建 cgroup 隔离（build-enter-cgroup.sh：重编译进 kfm-builds 独立内存桶） | 核心 | 全（每次进入重建桶：mkdir + memory.max + cgroup.procs） | 编译尖峰与三线 agent 共享内存账 → OOM 连坐 | ✗ 无独立探针（helper 幂等重建，缺 cgroup 权限回退 nice，候选） | scripts/build-enter-cgroup.sh 头注释 + nz/scripts/build-term.sh + 稍 chain.sh（2026-08-21：omp 读图被共享 3GiB 桶 OOM 砍死实拍） | 巡逻 |
 | 文档预算（check-doc-budget） | 核心 | 全 | 加载类文档超行数 → 中断 | ✓ | guides/doc-architecture.md | 巡逻 |
 | 耦合门（check-commit-docs） | 核心 | 全（hard fail + docs:na） | src/scripts 改动无 docs → 提交被拦 | 豁免（git 历史型） | guides/doc-architecture.md | 巡逻 |
 | 落成门（check-probe-state） | 核心 | 全 | 新功能无探头记录/陈旧 → 中断 | ✓ | experiments/docprobe/index.md（落成门节） | 巡逻 |
