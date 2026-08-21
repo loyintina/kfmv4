@@ -255,7 +255,7 @@ M2 manifest 标已对照 · M3 截图 diff 受控（触及 UI 时）· 手机实
 | 小步 | 内容 | 契约 | 前置 | 验收 | 删旧 | Rust 内核 |
 |------|------|------|------|------|------|-----------|
 | 8.8.1 | 终端连接家族服务插件（PTY/tmux 管理；参考 terminal-bash） | №1+№16 附属 | 8.7.3 | 连接五动作（open/input/resize/close/重连）对照旧实现 | PtyManager 从 ws-server 摘除 | kfmv4 侧 PTY 在 Node 服务端不 Rust 化；NA 侧 portable-pty 拿来 |
-| 8.8.2 | 终端渲染卡（卡片插件形态） | №1 | 8.8.1 | 终端功能对照表全绿；M3 终端基线建立 | **旧终端卡** | ~~开工第一步=WASM 终端芯评估~~ ✅ 已完成（2026-08-21，REPORT 落档 nz/experiments/term-core-eval/）；**解析核=rio-vt→WASM**（评估翻盘：alacritty 被 polling 阻断上不了 wasm32；rio-vt 解析层 plain 4.9x/color 2.1x 且开箱过 wasm32；NA 侧 alacritty 不动，两线行为一致靠同源解析行为考卷保证；复活触发=rio-vt 功能缺口/考卷长期不齐）；渲染壳 TS 自研；开工先补：僵尸会话 list 口径 + open 挂权限判定 |
+| 8.8.2 | 终端渲染卡（卡片插件形态） | №1 | 8.8.1 | 终端功能对照表全绿；M3 终端基线建立 | **旧终端卡** | ~~开工第一步=WASM 终端芯评估~~ ✅ 已完成（2026-08-21，REPORT 落档 nz/experiments/term-core-eval/）；**解析核=rio-vt→WASM**（评估翻盘：alacritty 被 polling 阻断上不了 wasm32；rio-vt 解析层 plain 4.9x/color 2.1x 且开箱过 wasm32；NA 侧 alacritty 不动，两线行为一致靠同源解析行为考卷保证；复活触发=rio-vt 功能缺口/考卷长期不齐）；渲染壳 TS 自研；开工先补：僵尸会话 list 口径 + open 挂权限判定；**收口硬门（评审 2026-08-21 前置要求，用户接受）：功能覆盖考卷全集对跑——NA 在用解析序列全集差分（非抽查），插在渲染壳前做；跨线依赖：NA harness 接语料出口（交付判据=NA 可读 corpus/*.bin 并 dump 网格供 diff）** |
 | 8.8.3 | 刷新默认全屏终端（轻量默认挂载，不得依赖 №11） | №11 最小注 | 8.8.2 | 实拍：刷新即终端 | 旧首页默认路由 | — |
 | 8.8.4 | 顶栏最小版：tmux 标签（五槽位 broker 只点亮 tmux 槽） | №8 最小版 | 8.7.3+8.8.1 | 标签切换实拍；徽标/手槽位保留旧实现不动 | — | — |
 | 8.8.5 | tmux 完整管理（新建/清空/挂起/状态检测）+ 闭环 | №8 | 8.8.4 | №8 tmux 考题 | 旧 tmux 入口 | — |
