@@ -252,7 +252,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 9.x.2 | D2 B 降生链（`_birth.yaml` 双链 / gen-birth 生成器 / check-birth-wiring） | 契约 1/6 | ⏸ 待重评 |
 | 9.x.3 | D3 C 信箱（信封四字段 + 回执表入 README / inbox-scan 归属行扫描器 / git 卫生脚本） | 契约 3 | ⏸ 待重评 |
 | 9.x.4 | D4 D 部署运维（部署运河/数据卫生登记 + kfm-restart 退役判据 + auto-push 外向条件） | 契约 7 | ⏸ 待重评 |
-| 9.x.5 | D5 E 各族缺口（exp 脚本退役 / docprobe 结晶迁移 / paradigm+harness-studies 归档 / 实验索引考古字段） | 契约 8/9 | ⏸ 待重评 |
+| 9.x.5 | D5 E 各族缺口（exp 脚本退役 / docprobe 结晶迁移 / paradigm 归档 + harness-studies 已迁 library（2026-08-21）/ 实验索引考古字段） | 契约 8/9 | ⏸ 待重评 |
 | 9.x.6 | D6 F 户籍警（扫描器 v1 影子 → v2 增量执法） | 契约 4 | ⏸ 待重评 |
 
 **重评输入材料**（第二阶段讨论结论，重评会上逐项过）：

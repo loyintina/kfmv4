@@ -103,4 +103,4 @@ batch-run 入库后删文件**，改动最小）。
   （arm-store 内部串行化 putArm）。
 - 105MB 会话 JSON 入库后 DB ~120MB——可接受；content 列不建索引。
 - 模型上下文长度登记表（occupancy 分母）还没有——并入一期，先从模型池
-  22 个条目起步（experiments/model-*.md 已有成本数据处扩列）。
+  22 个条目起步（experiments/paradigm/model-*.md 已有成本数据处扩列）。

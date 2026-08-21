@@ -89,11 +89,8 @@ kfmv4 的「一切皆卡片」与 dsh 的「一切皆插件」在 NA 统一。
 |------|------|
 | `na/plugin-architecture-spec.md` | 插件架构规格书（**v1 定稿 2026-08-15**，论文精读 12 条修订落地；此后改动走文末修订记录） |
 | `dsh/cordis-mechanics.md` | Cordis 机制解剖笔记（源码级，file:line 出处；规格书证据层） |
-| `dsh/paper/paper.pdf` | 论文原文 PDF（cordiverse/paper，2026-08-13 preprint） |
-| `dsh/paper/paper.md` | 论文原文 Markdown（anydoc 转换，2171 行） |
 | `dsh/paper/paradigm-notes.md` | 论文精读笔记（概念体系 + 数学结构 + 论文↔cordis↔dsh 三层对照） |
-| `dsh/paper/paper.txt` | 论文文本提取（pymupdf，`paper/.venv` 隔离环境；与 paper.md 并存） |
-| `dsh/paper/paper-digest.md` | 论文增量笔记（对照 cordis-mechanics 源码解剖的增量认知 19 条 + 规格书 v0 修订清单 12 条 + 不采用清单；与 paradigm-notes 互补：那份是论文内概念地图，这份是落地修订依据） |
+| `dsh/paper/paper-digest.md` | 论文增量笔记（对照 cordis-mechanics 源码解剖的增量认知 19 条 + 规格书 v0 修订清单 12 条 + 不采用清单；与 paradigm-notes 互补：那份是论文内概念地图，这份是落地修订依据）。论文原文 PDF（cordiverse/paper，2026-08-13 preprint）已移出仓库，见 kfm-na / kata 副本 |
 | `/root/kfmv4/docs/ledger/agent-inbox/` | **跨线评审信箱**（2026-08-15 自本目录迁出，升为 kfmv4 通用 agent 信箱；README 含机制/规则/状态列） |
 | `inbox/kfmv4-9.0-评审回信.md` | 9.0 会话回评审：七条全收裁决清单 + 对 NA 的反向输入（池结构/三者分离/headless 布局） |
 | `na/connection-provider.md` | 连接 provider 设计页 v0（规格书 §8 九字段；阶段 2 边界手术第一刀；2026-08-15 已投 agent-inbox 送审） |

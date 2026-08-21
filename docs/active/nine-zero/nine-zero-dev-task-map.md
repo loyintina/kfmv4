@@ -109,7 +109,7 @@
 | B 降生链 | `_birth.yaml` 双链 / gen-birth 生成器 / check-birth-wiring / route-table+capability-map 探针破例补 | 契约 1/6 | D2 | 8.8.x | ✅ 定稿待落地 |
 | C 信箱 | 信封四字段 + 回执表入 README / inbox-scan 归属行扫描器 / git 卫生 v0 脚本 + 登记 | 契约 3 | D3 | 8.8.x | ✅ 定稿待落地 |
 | D 部署运维 | 登记两行（部署运河/数据卫生）+ kfm-restart 退役判据 + auto-push 外向条件显式入登记 | 契约 7 | D4 | 8.10.x | ✅ 定稿待落地 |
-| E 各族缺口 | 5 个 exp 脚本退役 / docprobe 结晶迁移（probe-capability 迁 scripts/）/ paradigm+harness-studies 归档 / 实验索引考古字段 | 契约 8/9 | D5 | 8.10.x | ✅ 定稿待落地 |
+| E 各族缺口 | 5 个 exp 脚本退役 / docprobe 结晶迁移（probe-capability 迁 scripts/）/ paradigm 归档 + harness-studies 已迁 library（2026-08-21）/ 实验索引考古字段 | 契约 8/9 | D5 | 8.10.x | ✅ 定稿待落地 |
 | F 户籍警 | 扫描器 v1 影子（覆盖率进 docs-status 仪表盘）→ v2 增量执法 | 契约 4 | D6 | 8.9.x | ✅ 定稿待落地 |
 
 ## 版本策略（v4：8.x.y 小版本进度标记 + 9.0 一次性收口）

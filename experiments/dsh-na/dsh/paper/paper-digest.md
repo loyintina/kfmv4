@@ -4,7 +4,7 @@
 > (北大 + DeepSeek-AI,88 页)。对照 `dsh/cordis-mechanics.md`(源码解剖)与
 > `na/plugin-architecture-spec.md`(规格书 v0)。本笔记只记**论文有而源码笔记
 > 没有、或笔记说不准的**增量;每条带 PAGE 出处与 Rust 落地含义。
-> 提取:paper.pdf → paper.txt(pymupdf,.venv 隔离环境)。
+> 论文原文:https://github.com/cordiverse/paper (2026-08-13 preprint;仓库内 PDF/MD 副本已移出,可考古 git 历史)。
 
 ## 论文一句话主张与贡献清单
 

@@ -7,7 +7,7 @@
  *   occ_ratio = 范式包标称尺寸 ÷ 模型窗口
  * 两个登记表都是**手工维护**的——新包/新模型入场时必须同步登记：
  *   1. 范式包尺寸：以 tools/build-length-paradigms.py 产出（或 wc -c/3.2）为准
- *   2. 模型窗口：与 experiments/model-econ.md 的窗口列保持一致（该文档有登记入口）
+ *   2. 模型窗口：与 experiments/paradigm/model-econ.md 的窗口列保持一致（该文档有登记入口）
  * 登记缺失 → occ_ratio = NULL（宁缺毋假，分析时按缺失处理）。
  */
 

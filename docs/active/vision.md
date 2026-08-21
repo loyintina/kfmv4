@@ -338,7 +338,7 @@ AI 需要一种方式"指给用户看"——不依赖卡片聚焦或状态联动
 
 ## 研究参考：harness 权限引擎（2026-08-02 登记，未立项）
 
-OpenWorker（吴恩达团队，MIT）完整 agent 实现研究报告：`experiments/harness-studies/openworker.md`。
+OpenWorker（吴恩达团队，MIT）完整 agent 实现研究报告：`library/notes/harness-studies/openworker.md`。
 一句话：**审批门控=机制强制，非提示词纪律**——PermissionEngine fail-closed + RiskClass 四类
 分级 + roots 写路径硬边界 + shell 元字符白名单 + 无人值守 Inbox 挂起。对治 kfmv4 面板 20%
 破界（124 臂实测），是「可插拔 Agent 引擎」远景下 harness 层的基础设施候选。

@@ -363,7 +363,7 @@ entries:
     title: 压缩机制效果研究
     status: todo
     created: '2026-08-06'
-    note: 2026-08-06 记，用户动议；2026-08-09 素材归档完成（harness-studies/compression-research.md：三维度+NOOA 三档对照+tool-compaction 接口）
+    note: 2026-08-06 记，用户动议；2026-08-09 素材归档完成（harness-studies/compression-research.md：三维度+NOOA 三档对照+tool-compaction 接口；2026-08-21 迁至 library/notes/harness-studies/compression-research.md）
     detail: |-
       — 议题：上下文压缩三维度各自的效果与代价——只保留正文（用户消息逐字）/
       压缩思考（结论化 vs 删除）/ 压缩工具调用信息（剪枝+可取回兜底）
@@ -412,12 +412,12 @@ research:
     detail: |-
       harness 权限引擎（远景后备，2026-08-02 重定题）——8.5 主题改为「观测与度量（史官制度）」；本项 8.5.0 骨架已落地（影子模式长跑），审批通道待观测台数据成熟后重启。设计文档
       `docs/active/harness-permission-engine.md`（主战场）；蓝图 OpenWorker 报告
-      `experiments/harness-studies/openworker.md`。核心：工具执行层加
+      `library/notes/harness-studies/openworker.md`。核心：工具执行层加
       PermissionEngine.evaluate 拦截点（fail-closed）+ RiskClass 四类分级 +
       roots 硬边界 + shell 白名单 + 无人值守 fail-closed + 审计日志（破界率观测仪）。
       小版本：8.5.0 骨架+审计 → 8.5.1 审批通道 → 8.5.2 roots/白名单 → 8.5.3
       allowlist+回归。原研究参考：
-      `experiments/harness-studies/openworker.md`（吴恩达团队完整 agent 实现，
+      `library/notes/harness-studies/openworker.md`（吴恩达团队完整 agent 实现，
       286 行含文件:行号索引）。核心结论：把边界纪律从提示词挪进代码——
       PermissionEngine fail-closed / RiskClass 四类分级 / roots 写路径硬边界 /
       shell 元字符白名单 / 无人值守 Inbox 挂起。对治 124 臂实验 20% 破界

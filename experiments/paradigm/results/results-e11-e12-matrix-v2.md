@@ -89,7 +89,7 @@ Step B-89.8k/C-91.5k、27B D-94.9k、9B D-94.9k 等空缺为硅基档臂未补�
   那完全是 Ling-mini 整列零分拖出来的。**凡不看存活率直接平均的占用率分析，
   结论都会偏向「长上下文有害」，这是伪影污染，不是真效应。**
 - 占用率口径：arms.db 旧 occupancy 列（fullTokenCount 增量计数分带）已废弃不可用；
-  本分析用包标称尺寸 ÷ model-econ.md 登记窗口。**2026-08-06 起该口径已落库为
+  本分析用包标称尺寸 ÷ ../model-econ.md 登记窗口。**2026-08-06 起该口径已落库为
   arms.occ_ratio 列**（tools/occupancy.mjs 登记表，写入时计算+旧行回填），
   后续分析直接 SELECT occ_ratio 即可。
 

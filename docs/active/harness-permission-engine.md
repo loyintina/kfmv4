@@ -5,7 +5,7 @@
 > 待观测台数据成熟（真实工具调用分布/危险操作率基线）后作为未来版本主题重启。
 > 已落地：8.5.0 骨架（RiskClass 映射 + evaluate 影子模式 + 审计日志，影子长跑中）。
 > 未做（未来重启时）：8.5.1 审批通道 / 8.5.2 roots+白名单 / 8.5.3 allowlist+基线。
-> 姊妹蓝图：`experiments/harness-studies/openworker.md`
+> 姊妹蓝图：`library/notes/harness-studies/openworker.md`
 > （吴恩达团队 OpenWorker 权限机制逆向，286 行含文件:行号）。
 > 数据依据：`experiments/coldstart/reports/06-harness-behavior.md`（124 臂实验——
 > 20% 破界、16 臂 edit 修复者「诊断全对、纪律归零」）+ 03-boundary-discipline.md。
@@ -128,7 +128,7 @@ async function evaluate(name: string, params: Record<string, unknown>, ctx: Tool
 
 ## 9. 关联
 
-- 蓝图：`experiments/harness-studies/openworker.md`（PermissionEngine/risk.py/roots.py/白名单模板）
+- 蓝图：`library/notes/harness-studies/openworker.md`（PermissionEngine/risk.py/roots.py/白名单模板）
 - 数据：`experiments/coldstart/reports/03-boundary-discipline.md`（破界分型/谱系）、`06-harness-behavior.md`（工具暴露面与破界正相关）
 - 测量：`experiments/coldstart/tools/routine-entry-validation.mjs`（常态化验证 = 权限引擎回归场）
 - 远景：`docs/active/vision.md` §研究参考（可插拔 Agent 引擎 → harness 权限引擎为地基）

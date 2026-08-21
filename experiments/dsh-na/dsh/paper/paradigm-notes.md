@@ -1,8 +1,8 @@
 # 《A Programming Paradigm for Spatiotemporal Composability》精读笔记
 
 > 2026-08-15。论文：Yifan Shi, Wei Zhang, Tianyi Cui（北京大学 · DeepSeek-AI）。
-> Preprint（2026-08-13 草案，88 页），原文：`paper/paper.pdf` / `paper/paper.md`
-> （anydoc 转换）。上游：https://github.com/cordiverse/paper。
+> Preprint（2026-08-13 草案，88 页），上游：https://github.com/cordiverse/paper。
+> （仓库内 `paper/paper.pdf` / `paper.md` 原文副本已移出；需要时在 git 历史考古或取上游）
 > 本笔记是论文级研究的核心产物：概念体系 + 数学结构 + 三层对照
 > （论文 → cordis 源码 → dsh 工业强化），全部论断可回论文章节/定义号。
 

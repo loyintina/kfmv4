@@ -158,7 +158,7 @@
 ## 基建与事故修复（2026-08-06）
 
 - **arms.occ_ratio**：真实占用率列（包标称尺寸÷模型窗口，tools/occupancy.mjs
-  登记表），3679 臂回填；旧 occupancy 列废弃；登记纪律入 experiments/model-econ.md
+  登记表），3679 臂回填；旧 occupancy 列废弃；登记纪律入 experiments/paradigm/model-econ.md
 - **batch-run 语义查重**：断点续跑改 prefix+内容哈希+rep 三键（臂 id 含批次内
   下标，矩阵形状一变就漏查的事故修复）
 - **会话泄漏兜底**：session-runner 失败路径根目录副本搬 script/ 残卷；

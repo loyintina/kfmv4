@@ -74,7 +74,7 @@
 - 2026-08-09 立项：机制注册表（递归终止框架落地第一步）。盘点 17 个机制，
   4 个核心检查器无探针。
 - 2026-08-09 体检：17 机制失效信号全部可验证或合理豁免（report：
-  harness-studies/mechanism-audit-2026-08-09.md）；补 kfmv4-data + tool-compaction
+  harness-studies/mechanism-audit-2026-08-09.md，现 library/notes/harness-studies/mechanism-audit-2026-08-09.md）；补 kfmv4-data + tool-compaction
   探针（22→24）；contract-freshness/secrets 为 git 历史型豁免（有据）。
 - 2026-08-09 报错引导审计：54 脚本 29 带引导 / 25 无（自解释豁免/半引导可后补/待核实）；
   标准=病因+位置+修正路径；存量不批量补，撞墙倒再补（反预设）。

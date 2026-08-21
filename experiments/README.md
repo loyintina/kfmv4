@@ -37,7 +37,8 @@
 5. **模式从撞墙中演化**：本契约 v0.1 提炼自唯一一个实验（coldstart），
    刻意留白。新实验带来新形态时，先撞墙、再把撞出来的经验回写这里升版——
    不要预先设计没被撞过的需求。（2026-08-03 已有 3 实验线：coldstart /
-   harness-studies / behavior-injection，契约角色由各线自填。）
+   harness-studies / behavior-injection，契约角色由各线自填。harness-studies
+   研究笔记已迁出至 `library/notes/harness-studies/`，2026-08-21）
 
 ## 实验清单
 

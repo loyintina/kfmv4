@@ -365,7 +365,7 @@ preinstall 清理钩子。
 docprobe = 结晶（活件 probe-capability.mjs 迁 scripts/——落成门链上消费它、
 错误码 MECH-FLOW-11 指引指向它，依赖已实测发生；index §落成门迁正式
 文档层；壳归档）/ dsh-na = 现役结晶中（kfm-na 已独立，cordis-na 在长）/
-paradigm / harness-studies = 归档。
+paradigm = 归档；harness-studies = 已迁 library/notes/harness-studies/（2026-08-21）。
 
 **索引考古优化**：登记行加"数据内容与位置"字段（现有强度落地时验证）；
 check-experiment-index / check-experiment-registry 收编注册表「实验登记」

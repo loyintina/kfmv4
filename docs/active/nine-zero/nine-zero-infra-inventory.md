@@ -80,7 +80,7 @@ docs/ 七层（设计原理 `guides/doc-architecture.md`，维护规则
 
 experiments/README.md 定义**通用实验契约**（协议/环境/地面真相/评判/数据/
 索引/报告七角色）。五线：paradigm（范式包，已拍板远期）/ coldstart /
-docprobe / dsh-na（产物=独立项目 kfm-na）/ harness-studies。
+docprobe / dsh-na（产物=独立项目 kfm-na）/ harness-studies（2026-08-21 迁出至 library/notes/harness-studies/）。
 （注：session-runner 非独立目录，是 paradigm 线工具脚本。）
 
 ## 族六：部署运维族
