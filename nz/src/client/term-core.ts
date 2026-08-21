@@ -15,6 +15,8 @@ export interface TermCoreHandle {
   resize(cols: number, rows: number): void;
   text(): string;
   cursor(): number;
+  /** 渲染帧取数协议（行级 DOM 渲染壳用），格式见 wasm 侧注释。 */
+  render_frame(): string;
   free(): void;
 }
 

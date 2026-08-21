@@ -534,3 +534,14 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   全文而非依赖 DOM 选区。另：selection 插件远期候选——矩形块选、
   「一键选中本命令全部输出」（均需自研，参考 v8 terminal-card-04.ts
   手柄层 + NA termview.rs 选择状态机两份自家答案）。
+- 2026-08-21：**8.8.2② 渲染壳落地**（选型 C 行级 DOM）：wasm 侧新增
+  `render_frame()` 取数协议（逐行 `text\x1f样式边界表`，边界含回默认
+  的空 token；start 为字节下标）；TS 侧 `src/client/term/palette.ts`
+  （16 色/256 立方/灰阶/rgb，token 词汇与考卷同源）+ `term/shell.ts`
+  （行 div + 样式段 span，行缓存只重排变行，光标反色块）。守视实拍
+  PASS：蓝目录/绿粗体/品红压缩包/粗黄警告/256 色/真彩色/反色条/
+  CJK/下划线/删除线/光标块全对。两个坑入档：①Rust doc 注释含 `*/`
+  会被 wasm-bindgen 抄进 JS 块注释提前封顶（`Bright*/idx` 教训）；
+  ②空样式边界必须出全字段 `N,,,;`——少逗号时 JS split 拿到
+  undefined，字符串 'undefined' 含 u/i/d 三个字母会误中样式判定。
+  复制/选择手柄/系统放大镜=浏览器原生（行 DOM 白送，零自研）。

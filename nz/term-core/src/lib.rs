@@ -114,6 +114,103 @@ impl TermCore {
         let pos = self.term.grid.cursor.pos;
         ((pos.row.0 as u32) << 16) | (pos.col.0 as u32 & 0xffff)
     }
+
+    /// 渲染帧（渲染壳取数协议 v1）：可见区逐行，行间 '\n' 分隔；
+    /// 每行 = `{text}\x1f{runs}`。text 是该行全部格子（占位格跳过、
+    /// 空白 '\0'→空格，不裁尾——渲染要满宽）；runs 是同样式连续段的
+    /// 起点表：`start,fg,bg,attrs;` 重复，start 是 text 的字符下标
+    /// （非网格列——占位格已抽走），**样式回到默认也出边界**
+    /// （空 token `N,,,;`——渲染壳靠它知道默认段的起点）。
+    /// 颜色/属性 token 与考卷 dump 同协议（Foreground/Background/
+    /// Bright 前缀/idx{N}/rgb 六位 hex；b/i/u/s/v/d/h），两线永不鸡同鸭讲。
+    pub fn render_frame(&self) -> String {
+        let grid = &self.term.grid;
+        let mut out = String::new();
+        let mut cur_row: Option<i32> = None;
+        let mut cur_runs = String::new();
+        let mut last_style = String::new();
+        for indexed in grid.display_iter() {
+            let sq = indexed.square;
+            if sq.is_spacer() {
+                continue; // 宽字符占位格：字形归前导格，不下标
+            }
+            let row = indexed.pos.row.0;
+            if cur_row != Some(row) {
+                if cur_row.is_some() {
+                    out.push('\x1f');
+                    out.push_str(&cur_runs);
+                    out.push('\n');
+                }
+                cur_row = Some(row);
+                cur_runs.clear();
+                last_style.clear();
+            }
+            // text 下标 = 当前行已收字符数（先算后 push）
+            let st = grid.style_of(&sq);
+            let style = style_token(&st);
+            // 行起始列：该行 text 长度 = out 尾段长度。用行内计数更稳：
+            // 重新起行后 out 里最后一个 '\n' 之后即本行 text。
+            let line_start = out.rfind('\n').map(|i| i + 1).unwrap_or(0);
+            let idx = out.len() - line_start; // 字节下标≈字符下标（ASCII 区成立；
+            // 非 ASCII 字符字节数>1——runs 下标以字节计，TS 侧用 TextEncoder
+            // 对齐 slicing。BMP 字符在 JS 是 1 个 UTF-16 单元但 3 字节 UTF-8，
+            // 故协议定为**字节下标**，TS 侧按字节切。
+            if style != *last_style {
+                // 样式边界（含「回到默认」——空 token `N,,,;` 也是合法 run，
+                // 渲染壳靠它知道默认段从哪开始；四个字段一个不能少，
+                // JS split(',') 少字段会拿到 undefined 串进样式）
+                if style.is_empty() {
+                    cur_runs.push_str(&format!("{idx},,,;"));
+                } else {
+                    cur_runs.push_str(&format!("{idx},{style};"));
+                }
+                last_style = style.to_string();
+            }
+            let c = sq.c();
+            out.push(if c == '\0' { ' ' } else { c });
+        }
+        if cur_row.is_some() {
+            out.push('\x1f');
+            out.push_str(&cur_runs);
+        }
+        out
+    }
+}
+
+/// 样式 token：`fg,bg,attrs`（attrs 字母串 b/i/u/s/v/d/h，可空）。
+/// 供 render_frame 的 runs 用；与考卷 dump.rs 的词汇表同源。
+fn style_token(st: &rio_vt::crosswords::style::Style) -> String {
+    use rio_vt::config::colors::AnsiColor;
+    let color = |c: &AnsiColor| -> String {
+        match c {
+            AnsiColor::Named(n) => {
+                let name = format!("{n:?}");
+                match name.strip_prefix("Light") {
+                    Some(rest) => format!("Bright{rest}"),
+                    None => name,
+                }
+            }
+            AnsiColor::Indexed(i) => format!("idx{i}"),
+            AnsiColor::Spec(rgb) => format!("rgb{:02x}{:02x}{:02x}", rgb.r, rgb.g, rgb.b),
+        }
+    };
+    let fg = color(&st.fg);
+    let bg = color(&st.bg);
+    let mut attrs = String::new();
+    let f = st.flags;
+    use rio_vt::crosswords::style::StyleFlags as F;
+    if f.contains(F::BOLD) { attrs.push('b'); }
+    if f.contains(F::ITALIC) { attrs.push('i'); }
+    if f.intersects(F::ALL_UNDERLINES) { attrs.push('u'); }
+    if f.contains(F::STRIKEOUT) { attrs.push('s'); }
+    if f.contains(F::INVERSE) { attrs.push('v'); }
+    if f.contains(F::DIM) { attrs.push('d'); }
+    if f.contains(F::HIDDEN) { attrs.push('h'); }
+    if fg == "Foreground" && bg == "Background" && attrs.is_empty() {
+        String::new() // 默认样式：不出 run
+    } else {
+        format!("{fg},{bg},{attrs}")
+    }
 }
 
 #[cfg(test)]
@@ -145,5 +242,20 @@ mod tests {
         t.feed(b"before resize");
         t.resize(40, 10);
         assert!(t.text().contains("before resize"));
+    }
+
+    #[test]
+    fn render_frame_runs() {
+        let mut t = TermCore::new(80, 24, 1000);
+        t.feed(b"ab\x1b[31mcd\x1b[0mef");
+        let frame = t.render_frame();
+        let line0 = frame.split('\n').next().unwrap();
+        let (text, runs) = line0.split_once('\x1f').expect("行要有 text/runs 分隔符");
+        assert!(text.starts_with("abcdef"), "text={text:?}");
+        // 样式段从第 2 格（字节下标）开始：Red fg + 默认 bg + 无属性；
+        // 第 4 格回默认——空 token 边界必须出全字段 `4,,,;`
+        assert!(runs.starts_with("2,Red,Background,;4,,,;"), "runs={runs:?}");
+        // 24 行满帧（默认挂载无滚动偏移时可见区=screen_lines）
+        assert_eq!(frame.matches('\n').count(), 23, "frame={frame:?}");
     }
 }
