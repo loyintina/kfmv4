@@ -15,8 +15,8 @@
       "attempts": 1
     },
     "guides-testing-vs-infra": {
-      "hash": "29e1d102e7e8e4c69f280467a492f8a2d2e19ec0",
-      "lastRun": "2026-08-18",
+      "hash": "0c63fe94166fdcc2f679302357e4c190fd7a547f",
+      "lastRun": "2026-08-20",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -29,8 +29,8 @@
       "attempts": 1
     },
     "stack-vs-ledger": {
-      "hash": "2023fd32fa2136f8de95e134bdebbec54729591b",
-      "lastRun": "2026-08-18",
+      "hash": "9e5f13df1311fcb177266e819ef88eb48b1c2bc3",
+      "lastRun": "2026-08-20",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -57,8 +57,8 @@
       "attempts": 1
     },
     "inter-readme-codemap": {
-      "hash": "d6adba2ae44e78b278552c33c4e3955b6b3184c4",
-      "lastRun": "2026-08-18",
+      "hash": "fa4f8ccc5f1456fc0016f402dc69cad7c9d876c2",
+      "lastRun": "2026-08-20",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -71,8 +71,8 @@
       "attempts": 1
     },
     "inter-agentrunner-infra": {
-      "hash": "84d065e89be02b7207bb7abab9aee9a5371e213a",
-      "lastRun": "2026-08-18",
+      "hash": "16b58add56f5d1808398453aad63478c523e3434",
+      "lastRun": "2026-08-20",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -85,8 +85,8 @@
       "attempts": 1
     },
     "vision-vs-maps": {
-      "hash": "654ea1dcce13e7bea6310a317b270b471f667118",
-      "lastRun": "2026-08-18",
+      "hash": "bd1688c6945b497a3324862386d321d6da55c50d",
+      "lastRun": "2026-08-20",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -113,8 +113,8 @@
       "attempts": 1
     },
     "readme-vs-maps": {
-      "hash": "15764b937748a171caa957661283cf3ddc10f4ee",
-      "lastRun": "2026-08-18",
+      "hash": "15e7d848e616defdde25a4619106a84da3432066",
+      "lastRun": "2026-08-20",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -127,8 +127,8 @@
       "attempts": 1
     },
     "claude-vs-docs": {
-      "hash": "0d4bfea861db89df29bd1072cea6892784901d3e",
-      "lastRun": "2026-08-18",
+      "hash": "d51d44f38af65a95aa4597b8d4db51d631d43956",
+      "lastRun": "2026-08-20",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -141,8 +141,8 @@
       "attempts": 1
     },
     "workflows-vs-guides": {
-      "hash": "43247ec95b8d8044bc077979fb05793510072d91",
-      "lastRun": "2026-08-18",
+      "hash": "ba9d5687f566ccbc24cd39477505edc87926c01e",
+      "lastRun": "2026-08-20",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -241,8 +241,8 @@
       "attempts": 1
     },
     "contract-vs-map-floating-card": {
-      "hash": "09019944c34c71c4f3e71f7b7778acd03538b5f7",
-      "lastRun": "2026-08-17",
+      "hash": "01e7f5058a2b81f99d7eb6164514d3e3aeddcca5",
+      "lastRun": "2026-08-20",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -277,8 +277,8 @@
       "attempts": 1
     },
     "contract-vs-map-infra": {
-      "hash": "ef1583176bb7672d84144e3eefe4bf3e4197b64a",
-      "lastRun": "2026-08-18",
+      "hash": "cd0e693877ffe8a743c3ed225c76f8adf47c23a6",
+      "lastRun": "2026-08-20",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -291,8 +291,8 @@
       "attempts": 1
     },
     "crossdomain-vs-inventory": {
-      "hash": "4e59b7778dbac242c9ecb0b2560a3eb052300e0e",
-      "lastRun": "2026-08-18",
+      "hash": "d83bc85096ac556579b596119ac041e5bc007ff1",
+      "lastRun": "2026-08-20",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -305,8 +305,8 @@
       "attempts": 1
     },
     "inter-workflows-infra": {
-      "hash": "e601dcfc1a4d341fe9a56aa9ed8ab53816faf937",
-      "lastRun": "2026-08-18",
+      "hash": "739ffab77e3d26882cc0bdaa3226b75489c00923",
+      "lastRun": "2026-08-20",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -319,8 +319,8 @@
       "attempts": 1
     },
     "inter-provenance-bugs": {
-      "hash": "ab70c4f0e0ecbcdcf094678b7d686a86ac6f58ff",
-      "lastRun": "2026-08-18",
+      "hash": "a39a1d3ac9efd065120e4a5e92c491fd95197725",
+      "lastRun": "2026-08-20",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -1161,6 +1161,13 @@
       "date": "2026-08-19",
       "ran": 0,
       "skipped": 30,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-20",
+      "ran": 13,
+      "skipped": 17,
       "kept": 0,
       "dropped": 0
     }
