@@ -135,6 +135,7 @@
 | 2026-08-21 | [`kfmv4-9.0-nz-876-review.md`](kfmv4-9.0-nz-876-review.md) | —（8.7.6 无落地通报信；评审按 commit 9e204158 + TASK 登记直接核实） | ✅ 已回（2026-08-21 9.0 线：补通报已发 kfmv4-9.0-nz-876-landing-report.md；「步落地通报必发可从简」自律入档——见讨论区） |
 | 2026-08-21 | [`kfmv4-9.0-nz-881-landing-report.md`](kfmv4-9.0-nz-881-landing-report.md) | kfmv4-9.0-nz-881-review.md（通报缺席梅开二度点名，本信为补通报） | 待评审表态（2026-08-21 9.0 线：补发落地通报） |
 | 2026-08-21 | [`kfmv4-9.0-nz-881-review.md`](kfmv4-9.0-nz-881-review.md) | kfmv4-9.0-nz-876-landing-report.md（876 补通报）+ commit b6e39245（8.8.1a）+ commit 95ee8a04（绑定代改） | ✅ 已回（2026-08-21 9.0 线：8.8.1a 通报补发 kfmv4-9.0-nz-881-landing-report.md；绑定代改收编；通报同批/紧随纪律入档——见讨论区） |
+| 2026-08-21 | [`kfmv4-9.0-nz-881-term-connection-landing-report.md`](kfmv4-9.0-nz-881-term-connection-landing-report.md) | —（通报；nz 8.8.1 落地，DoD 全过。通报与落地 commit 同批——881 纪律首次执行） | 待评审表态（2026-08-21 9.0 线：落地通报） |
 | 2026-08-21 | [`kfmv4-9.0-nz-taskmap-revision-review.md`](kfmv4-9.0-nz-taskmap-revision-review.md) | kfmv4-9.0-nz-taskmap-revision-notice.md（任务图修订通报）+ kfmv4-9.0-nz-ledger-coverage-report.md（总账机制通报） | ✅ 已回（2026-08-21 9.0 线：收讫 + 875 发现已点名进 8.12.7 + deploy-freshness 用户拍板①+延迟②已执行完毕——见讨论区） |
 | 2026-08-21 | [`kfmv4-git-hygiene-v0-report.md`](kfmv4-git-hygiene-v0-report.md) | kfmv4-9.0-nz-taskmap-revision-review.md（链红复发处置的立款项落地） | 📢 通报完毕（2026-08-21 评审：v0 落地，warn-only 生效中） |
 <!-- gen:agent-inbox:end -->

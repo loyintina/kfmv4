@@ -12,6 +12,7 @@ import './permission.test.ts';
 import './plugtest.test.ts';
 import './eyes.test.ts';
 import './server.test.ts';
+import './term-connection.test.ts';
 import { runAll } from './runner.ts';
 
 await runAll();

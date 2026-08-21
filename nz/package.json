@@ -11,7 +11,8 @@
     "test": "tsx tests/index.test.ts"
   },
   "dependencies": {
-    "cordis": "4.0.0-rc.8"
+    "cordis": "4.0.0-rc.8",
+    "node-pty-prebuilt-multiarch": "0.10.1-pre.5"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

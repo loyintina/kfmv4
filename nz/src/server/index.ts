@@ -38,6 +38,12 @@ serverCtx.plugin((ctx) => {
   slog('服务端总线活了（hello 见证插件注册）');
 });
 
+// 8.8.1 终端连接家族（№1 连接层）：纯会话管理挂服务端总线——传输无关，
+// WS 桥/眼睛/审计各自订阅事件，互不染指
+import { mountTermConnection } from './term-connection.js';
+mountTermConnection(serverCtx);
+slog('term-connection 已挂服务端总线（五动作：open/input/resize/close/重连=attach）');
+
 // ========== 静态服务 ==========
 
 const MIME: Record<string, string> = {

@@ -15,16 +15,17 @@
 > 每次进度更新只改本节。
 
 - **当前阶段**：内核地基期（8.8 主题推进中——终端连接家族）
-- **刚完成**：8.8.1 首件·nz 服务端最小出生（2026-08-21，用户拍板
-  「先让服务跑起来」）——`src/server/index.ts`：HTTP 静态服务
-  （public/，原样拒 `..` 逃逸 403 显形 fail-closed）+ 服务端 cordis
-  根总线（hello 见证同款模式）。**真端口验证过**：8023 替换 python
-  占位，`/` 200 + bundle.js 200 + 编码逃逸 403 实测。65 钉全绿
-  （+服务端 3 钉：静态取页/越界 fail-closed/总线注册清理链），
-  typecheck（+@types/node）/smoke/build 全过。
-- **下一步**：8.8.1 后半·term-connection 纯会话管理插件（№1 接口
-  五动作；切断 v8 PtyManager 的 WS 耦合——会话纯化、输出走事件、
-  重连=按 sessionId 复挂订阅）。
+- **刚完成**：8.8.1 终端连接家族（2026-08-21）——`src/server/
+  term-connection.ts`：№1 连接层纯会话管理，**传输无关**（切断 v8
+  PtyManager 把 WS 焊进 spawn 的耦合）：输出走单会话订阅 + 总线
+  `term/output` 事件双通道，WS 桥/眼睛/审计将来各听各的。重连 =
+  按 sessionId attach 复挂 + replayTail 回环尾迹（64KB 封顶）补断档。
+  node-pty-prebuilt-multiarch 后端（沿用 v8 已验证依赖；本机 spawn
+  实测可用）。70 钉全绿（+连接 5 钉：open+input 双通道 / resize 真
+  ioctl（stty size 报 30 100）/ close+exit 透传（exit 7）/ 重连
+  attach+尾迹 / 卸载全杀）。8023 常驻服务已带新件重启，slog 在案。
+- **下一步**：8.8.2 终端渲染卡（解析核=alacritty_terminal→WASM，
+  渲染壳 TS 自研；WASM 终端芯评估挪本步门口的提议待用户拍板）。
 - **阻塞**：无
 
 ---
@@ -128,7 +129,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.5 | 安全包影子 | dsh guard/scope 参考 | cedar-policy 远期评估 | A+B：只记录不拦截，决策全量落日志 ✅ |
 | 8.7.6 | 眼睛最小包（bundle 骨架：dynamic-prompt-files 基建 + eyes 总插件 + coords 契约段 + 骨架自态段） | 无 | 无 | A 档：抽文件测试两式；禁用后系统无损；过 plugtest | ✅（2026-08-21） |
 | 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A 档：list/test/残留检查 ✅ |
-| 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty（仅 NA）；kfmv4 侧 Node 不 Rust | A 档：open/input/resize/close/重连 | ⬜ |
+| 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty（仅 NA）；kfmv4 侧 Node 不 Rust | A 档：open/input/resize/close/重连 | ✅（2026-08-21，tmux 管理留 8.8.5 完整管理步） |
 | 8.8.2 | 终端渲染卡 | 无 | alacritty_terminal→WASM（评估） | A+B+C：终端功能对照 + M3 基线 | ⬜ |
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C 档：刷新即终端 | ⬜ |
 | 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C 档：标签切换实拍 | ⬜ |
@@ -183,7 +184,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 
 | 小步 | 做什么 | dsh | Rust | 考题/验收 | 状态 |
 |------|--------|-----|------|-----------|------|
-| 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty；kfmv4 侧 Node 不 Rust；本步前完成 alacritty_terminal vs rio-vt WASM 评估 | A：连接五动作对照旧实现 | ⬜ |
+| 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty；kfmv4 侧 Node 不 Rust；本步前完成 alacritty_terminal vs rio-vt WASM 评估 | A：连接五动作对照旧实现 | ✅（2026-08-21，tmux 留 8.8.5；WASM 评估挪 8.8.2 门口待拍板） |
 | 8.8.2 | 终端渲染卡 | 无 | alacritty_terminal→WASM（拿来，与 NA 同 crate） | A+B+C：终端功能对照表全绿；M3 终端基线 | ⬜ |
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C：实拍刷新即终端；不得依赖 №11 完整布局 | ⬜ |
 | 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C：标签切换实拍 | ⬜ |
@@ -465,3 +466,11 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   漏通报后升级）：通报与落地 commit **同批或紧随**，间隔以小时计就会
   漏。自查口径：TASK 快照「刚完成」翻步时，信箱必须已有对应通报——
   先靠自觉，再漏一次就机械化（进检查链）。
+- 2026-08-21：**8.8.1 终端连接家族落地**（用户发话开工；设计要点经
+  用户讨论确认：先跑服务→会话管家；PTY 不 Rust 化三判据对账——非
+  计算密集/node-pty 已验证/接入复杂度净增，Rust 化发生在 8.8.2 解析
+  核而非连接层）。传输无关化后的重连语义定稿：会话不绑定消费者，
+  attach(sessionId) 复挂 + replayTail 封顶尾迹补断档——比 v8「WS 重挂」
+  干净（消费者生死与会话生死解耦）。tmux 管理服务（TmuxService 六
+  方法）不在本步——任务图 tmux 完整管理归 8.8.5，本步只交连接层
+  五动作。
