@@ -38,6 +38,13 @@ serverCtx.plugin((ctx) => {
   slog('服务端总线活了（hello 见证插件注册）');
 });
 
+// 8.8.2③ 权限引擎服务端挂载（评审前置要求②：termConn.open 挂 exec 判定——
+// permission.ts 是同构纯 TS，客户端/服务端同一颗引擎，各挂各的总线）
+import { PermissionEngine } from '../client/permission.js';
+const permissions = new PermissionEngine();
+permissions.setSink((e) => slog(`[permission:${e.mode}] ${e.tool} → ${e.decision}（${e.rule}）`));
+serverCtx.provide('permissions', permissions);
+
 // 8.8.1 终端连接家族（№1 连接层）：纯会话管理挂服务端总线——传输无关，
 // WS 桥/眼睛/审计各自订阅事件，互不染指
 import { mountTermConnection } from './term-connection.js';

@@ -105,3 +105,34 @@ test('服务卸载全杀：dispose 后会话表清空（登记类逆序摘）', 
   assert(conn.size === 0 && conn.list().length === 0, '卸载后会话表应清空');
   assert(conn.attach(s.id) === undefined, '卸载后 attach 不到');
 });
+
+test('list 口径：自然退出的会话不向 list 暴露，但仍可按 id attach 捞尾迹（评审 8.8.2 前置①）', async () => {
+  const { ctx, conn } = newEnv();
+  const exits: string[] = [];
+  ctx.on('term/exit', (id) => exits.push(id));
+  const s = await conn.open({ command: 'printf 遗言; exit 3' });
+  await until(() => exits.includes(s.id), '会话自然退出');
+  assert(!conn.list().includes(s.id), 'exited 会话不应出现在 list（客户端不见尸体）');
+  const ghost = conn.attach(s.id);
+  assert(ghost !== undefined, '死会话仍可 attach（捞 exit code/尾迹）');
+  assert(ghost!.replayTail().includes('遗言'), '死会话尾迹可捞');
+  s.close();
+  await until(() => conn.attach(s.id) === undefined, 'close 后尸体摘除');
+});
+
+test('open 挂权限判定：交互 shell=exec:no-meta allow；含元字符命令=exec:shell-meta ask（影子期不拦截但落审计）', async () => {
+  const ctx = new Context();
+  const { PermissionEngine } = await import('../src/client/permission.ts');
+  const perms = new PermissionEngine();
+  ctx.provide('permissions', perms);
+  mountTermConnection(ctx, { shell: '/bin/sh' });
+  assert(perms.declared('term.open'), 'mount 应登记 term.open=exec 户口');
+  const s1 = await ctx.termConn.open();
+  const s2 = await ctx.termConn.open({ command: 'ls; whoami' });
+  const rules = perms.audit.filter((e) => e.tool === 'term.open').map((e) => `${e.decision}:${e.rule}`);
+  assert(rules.includes('allow:exec:no-meta'), `交互 shell 应 allow:no-meta（实际 ${rules}）`);
+  assert(rules.includes('ask:exec:shell-meta'), `元字符命令应 ask:shell-meta（实际 ${rules}）`);
+  assert(perms.audit.every((e) => e.mode === 'shadow'), '影子期全部 shadow 不拦截');
+  s1.close();
+  s2.close();
+});

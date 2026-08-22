@@ -73,8 +73,19 @@ export class TermConnectionService {
     this._shell = opts.shell ?? process.env.SHELL ?? '/bin/sh';
   }
 
-  /** №1 契约：open。command 为空则起交互 shell */
+  /** №1 契约：open。command 为空则起交互 shell。
+   *  权限门（评审 8.8.2 前置要求②）：exec 级判定——交互 shell 以 shell
+   *  路径为 command 送审（no-meta → allow），`-c` 任意命令含 shell 元
+   *  字符 → ask。影子期只落审计不拦截；转正期在 WS 桥边界生效。 */
   open(opts: TermOpenOpts = {}): Promise<TermSession> {
+    const perms = this._ctx.get('permissions');
+    if (perms) {
+      perms.evaluate({
+        tool: 'term.open',
+        params: { command: opts.command ?? this._shell },
+        attended: true,
+      });
+    }
     const id = crypto.randomUUID();
     const proc = pty.spawn(this._shell, opts.command ? ['-c', opts.command] : [], {
       name: 'xterm-256color',
@@ -107,8 +118,12 @@ export class TermConnectionService {
     return inner ? this._view(inner) : undefined;
   }
 
+  /** 活会话名册（评审 8.8.2 前置要求①口径：exited 不向 list 暴露——
+   *  客户端看不到尸体。死会话仍可按 id attach 捞 exit code/尾迹，
+   *  直到 close/卸载被摘。留白：死会话 linger 无自动 reaper，单具尸体
+   *  封顶 64KB 尾迹，量产后量级可控；真成负担再加 reaper。） */
   list(): string[] {
-    return [...this._sessions.keys()];
+    return [...this._sessions.values()].filter((s) => !s.exited).map((s) => s.id);
   }
 
   /** 服务卸载清理：全杀（登记类逆序摘的对应动作） */
@@ -146,9 +161,16 @@ export class TermConnectionService {
   }
 }
 
-/** 挂载到服务端总线（main 挂 serverCtx；考题挂测试 ctx） */
+/** 挂载到服务端总线（main 挂 serverCtx；考题挂测试 ctx）。
+ *  权限引擎在册时登记 'term.open' = exec 级户口（影子期登记即审计源）；
+ *  引擎缺席（早期骨架/裸测试）则跳过登记与判定。 */
 export function mountTermConnection(ctx: Context, opts: { shell?: string } = {}): void {
   const svc = new TermConnectionService(ctx, opts);
   ctx.provide('termConn', svc);
   ctx.effect(() => () => svc.closeAll());
+  const perms = ctx.get('permissions');
+  if (perms && !perms.declared('term.open')) {
+    const dispose = perms.declareRisk('term.open', 'exec');
+    ctx.effect(() => dispose);
+  }
 }

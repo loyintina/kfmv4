@@ -545,3 +545,12 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   ②空样式边界必须出全字段 `N,,,;`——少逗号时 JS split 拿到
   undefined，字符串 'undefined' 含 u/i/d 三个字母会误中样式判定。
   复制/选择手柄/系统放大镜=浏览器原生（行 DOM 白送，零自研）。
+- 2026-08-22：**8.8.2③a 评审两条前置消化完毕**：①list 口径——exited
+  会话不向 list() 暴露（客户端不见尸体），死会话仍可 attach 捞
+  exit code/尾迹直到 close/卸载；尸体 linger 无 reaper 记留白。
+  ②open 挂权限判定——permission.ts 是同构纯 TS，服务端同引擎各挂
+  各总线；term.open 登记 exec 户口，交互 shell 以 shell 路径送审
+  （no-meta→allow），-c 命令含元字符→ask；影子期只落审计（sink 进
+  serverBootLog），转正期在 WS 桥边界生效。新钉 2 枚（72 钉全绿）。
+  cordis 纪律新知：ctx 访问未 inject 的服务抛「without inject」——
+  可选服务一律 ctx.get(name) 非严格访问。
