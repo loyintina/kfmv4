@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit a06ec0da · 生成于 2026-08-21 -->
+<!-- 基准 commit 14bb81df · 生成于 2026-08-22 -->
 
 # 代码清单（机械层）
 
@@ -187,7 +187,7 @@
 | src/server/routes/providers.ts | 78 | setupProvidersRoutes |
 | src/server/routes/compact.ts | 73 | compactRouter, computeCutIndex |
 
-## infra（186 文件 · 20737 行）
+## infra（186 文件 · 20759 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -275,6 +275,7 @@
 | scripts/check/check-kfmv4-data.mjs | 86 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
+| scripts/check/check-fix-tests.mjs | 85 | — |
 | tests/engine.test.ts | 85 | — |
 | scripts/check/check-state-freshness.mjs | 84 | — |
 | scripts/check/gen-experiments-list.mjs | 84 | — |
@@ -298,7 +299,6 @@
 | scripts/agent/session-retention.mjs | 64 | — |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
 | scripts/check/check-code-map-coverage.mjs | 63 | — |
-| scripts/check/check-fix-tests.mjs | 63 | — |
 | scripts/check/check-active-stack.mjs | 62 | — |
 | tests/browser-tool.test.ts | 61 | — |
 | tests/stack-numbering.test.ts | 61 | — |
@@ -724,4 +724,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 342 文件 · 57654 行 · 跨域边 284 条
+合计 342 文件 · 57676 行 · 跨域边 284 条
