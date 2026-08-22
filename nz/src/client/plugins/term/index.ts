@@ -181,16 +181,18 @@ export function applyTermBundle(ctx: Context): void {
       // 把焦点抢走放回 body（聚焦被覆盖），且 preventDefault 会杀死原生
       // 选中复制。click 在抬手后触发，聚焦不被抢、选中不受影响；移动端的
       // 「用户手势内 focus() 才弹键盘」规矩也认 click。
-      // IME 合成纪律（中文实测教训：中间态全发=碎片灌进 shell+光标漂移）：
-      // 合成期间 keydown 属于输入法（Enter 选字/Backspace 删拼音），不转发；
-      // input 中间态不发送不清空（清空会打断合成）；compositionend 才发
-      // 最终上屏文本。
+      // IME 合成纪律 v2（中文实测两轮教训）：
+      // ①中间态不转发不打断，上屏才发；②合成结束只认 e.data（此刻输入框
+      // 里可能是拼音残影不是汉字）；③部分浏览器 compositionend 后还补发
+      // 一条同内容 input——记下刚上屏的文本，补发来了直接吞掉防二次发送。
       let composing = false;
-      kb.addEventListener('compositionstart', () => { composing = true; });
-      kb.addEventListener('compositionend', () => {
+      let justCommitted = '';
+      kb.addEventListener('compositionstart', () => { composing = true; kb.value = ''; });
+      kb.addEventListener('compositionend', (e) => {
         composing = false;
-        const text = kb.value;
+        const text = e.data || kb.value;
         kb.value = '';
+        justCommitted = text;
         if (text && card.sessionId) {
           bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
         }
@@ -205,7 +207,14 @@ export function applyTermBundle(ctx: Context): void {
         }
       });
       kb.addEventListener('input', (e) => {
-        if (composing || (e as InputEvent).isComposing) return; // 中间态不发
+        const ie = e as InputEvent;
+        if (composing || ie.isComposing) return; // 中间态不发
+        if (justCommitted && ie.data === justCommitted) {
+          justCommitted = ''; // 上屏补发，吞掉
+          kb.value = '';
+          return;
+        }
+        justCommitted = '';
         // 手机软键盘产出的文本整段取走后清空诱饵
         const text = kb.value;
         kb.value = '';
@@ -224,21 +233,20 @@ export function applyTermBundle(ctx: Context): void {
       (window as unknown as Record<string, unknown>).__kfmNzTermDebug = dbg;
       const onViewportResize = () => {
         dbg.viewportEvents++;
-        // 键盘吞最后一行的根治：浏览器不认 resizes-content 时（部分国产
-        // 浏览器/webview）键盘直接盖在页面上——手动把容器高度压到可视高，
-        // 用 JS 模拟 resizes-content。阈值 40px 防动态工具栏抖动误判。
-        const vv = window.visualViewport;
-        if (vv) {
-          container.el.style.height =
-            vv.height < window.innerHeight - 40 ? `${vv.height}px` : '';
-        }
         followBottom();
         // 尺寸变更防抖（Termux 纪律：布局稳定才改尺寸）：IME 候选栏每敲
-        // 一字都可能伸缩可视高几十像素，立刻跟改行列会触发 核重排+全屏
-        // 重绘+PTY SIGWINCH 三重闪烁（实测：打英文从上往下闪）。容器
-        // 高度即时跟上（不吞字），行列等 150ms 尘埃落定才动。
+        // 一字都伸缩可视高（实测 vp 每字 +1）——高度跟随与行列变更都等
+        // 150ms 稳定后才动，否则容器高度每字跳一下=肉眼可见的闪烁。
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
+          // 键盘吞最后一行的根治：浏览器不认 resizes-content 时（部分国产
+          // 浏览器/webview）键盘直接盖在页面上——手动把容器高度压到可视高，
+          // 用 JS 模拟 resizes-content。阈值 40px 防动态工具栏抖动误判。
+          const vv2 = window.visualViewport;
+          if (vv2) {
+            container.el.style.height =
+              vv2.height < window.innerHeight - 40 ? `${vv2.height}px` : '';
+          }
           const s = measure();
           if (s.cols !== card.cols || s.rows !== card.rows) {
             dbg.resizesApplied++;
