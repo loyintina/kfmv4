@@ -13,10 +13,12 @@
   },
   "dependencies": {
     "cordis": "4.0.0-rc.8",
-    "node-pty-prebuilt-multiarch": "0.10.1-pre.5"
+    "node-pty-prebuilt-multiarch": "0.10.1-pre.5",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
+    "@types/ws": "^8.18.1",
     "esbuild": "^0.28.0",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2"

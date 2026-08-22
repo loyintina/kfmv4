@@ -52,6 +52,12 @@ export class TermShell {
     el.appendChild(this.cursorEl);
   }
 
+  /** 换核（重连 tail 回放前重建网格）：清行缓存强制全量重排。 */
+  setCore(core: TermCoreHandle) {
+    this.core = core;
+    this.rowCache = this.rowCache.map(() => '');
+  }
+
   /** 量一个字符格的像素尺寸（等宽字体，测一次缓存）。 */
   private measure() {
     if (this.cellW > 0) return;

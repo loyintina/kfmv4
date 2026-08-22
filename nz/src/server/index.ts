@@ -105,6 +105,11 @@ if (isMain) {
   // 确有公网直开需求时设 NZ_HOST=0.0.0.0 显式选择，不默认可达。
   const host = process.env.NZ_HOST ?? '127.0.0.1';
   const server = createNzServer();
+  // 8.8.2③b 终端 WS 桥：/ws/term（桥只做帧↔方法翻译，不懂终端语义）
+  import('./ws-bridge.js').then(({ mountWsBridge }) => {
+    mountWsBridge(serverCtx, server);
+    slog('终端 WS 桥已挂：/ws/term（open/attach/input/resize/close/list）');
+  });
   server.listen(port, host, () => {
     slog(`HTTP 静态服务已起：http://${host}:${port}/（public/，越界 fail-closed）`);
   });

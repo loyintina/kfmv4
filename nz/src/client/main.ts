@@ -16,7 +16,7 @@ import { PlugtestRunner } from './plugtest.js';
 import { mountDynamicPromptFiles } from './plugins/core/dynamic-prompt-files.js';
 import { applyEyesBundle } from './plugins/eyes/index.js';
 import { loadTermCoreBrowser, probeTermCore } from './term-core.js';
-import { TermShell } from './term/shell.js';
+import { applyTermBundle } from './plugins/term/index.js';
 
 // ========== 内核件接线：宿主给盒子，手势管输入，broker 管卡类型户口 ==========
 const host = new RenderHost();
@@ -63,27 +63,18 @@ void loadTermCoreBrowser()
   .then((glue) => { (window as unknown as Record<string, unknown>).__kfmNzTermProbe = probeTermCore(glue); })
   .catch((e) => { (window as unknown as Record<string, unknown>).__kfmNzTermProbe = `PROBE FAIL ${e}`; });
 
-// 8.8.2② 渲染壳实拍演示（选型 C 行级 DOM）：喂一段多彩语料渲染成真画面，
-// 守视截图可验。卡片插件化（№1 卡型注册）是后续小步，此处先证渲染管线。
-const TERM_DEMO =
-  '$ ls --color\r\n' +
-  '\x1b[34mdir1\x1b[0m  \x1b[32;1mrun.sh\x1b[0m  README.md  \x1b[35mdata.tar.gz\x1b[0m\r\n' +
-  '\x1b[1;33m警告：演示语料\x1b[0m  \x1b[38;5;196m256色\x1b[0m  \x1b[38;2;80;200;120m真彩色\x1b[0m\r\n' +
-  '\x1b[7m 反色状态栏 INVERSE \x1b[0m\r\n' +
-  '宽字符：红色测试CJK\x1b[4m下划线\x1b[24m\x1b[9m删除线\x1b[29m\r\n' +
-  '$ ';
-void loadTermCoreBrowser()
-  .then((glue) => {
-    const core = new glue.TermCore(80, 24, 1000);
-    core.feed(new TextEncoder().encode(TERM_DEMO));
-    const el = document.createElement('div');
-    el.id = 'nz-term-demo';
-    document.body.appendChild(el);
-    const shell = new TermShell(core, el, { cols: 80, rows: 24 });
-    shell.renderFrame();
-    (window as unknown as Record<string, unknown>).__kfmNzTermDemo = 'RENDERED rows=24';
-  })
-  .catch((e) => { (window as unknown as Record<string, unknown>).__kfmNzTermDemo = `RENDER FAIL ${e}`; });
+// 8.8.2③c 终端卡真链：WS 桥 ↔ wasm 解析核 ↔ 行级 DOM 渲染壳 ↔ 卡片户口。
+// 静态演示（②的 TERM_DEMO）已退役——现在页面上跑的是真 PTY 会话。
+applyTermBundle(rootCtx);
+plugtest.register('term', (ctx) => applyTermBundle(ctx));
+const termCards = rootCtx.get('termCards');
+if (termCards) {
+  void termCards.open().then((instId) => {
+    (window as unknown as Record<string, unknown>).__kfmNzTermCard = instId;
+  }).catch((e) => {
+    (window as unknown as Record<string, unknown>).__kfmNzTermCard = `OPEN FAIL ${e}`;
+  });
+}
 
 // 供守视 eval 直读
 (window as unknown as Record<string, unknown>).__kfmNz = { rootCtx, bootLog, isHelloCleaned, host, gestures, cardTypes, permissions, plugtest };
