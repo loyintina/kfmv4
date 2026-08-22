@@ -15,12 +15,15 @@
  *   + bootLog 同款模式，插件注册/注销/清理全链从第一天就有。
  */
 import { createServer, type Server } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, appendFile } from 'node:fs/promises';
 import { join, normalize, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Context } from 'cordis';
 
 const PUBLIC_DIR = resolve(fileURLToPath(new URL('../../public/', import.meta.url)));
+
+/** IME 事件流落盘位置（诊断取证；/tmp 易失正合适——取证完即弃，不入仓） */
+const IME_LOG = process.env.NZ_IME_LOG ?? '/tmp/nz-ime-events.log';
 
 /** 服务端启动日志（客户端同款模式；未来接 ledger-service） */
 export const serverBootLog: string[] = [];
@@ -79,6 +82,22 @@ export function resolveStatic(urlPath: string): string | null {
 
 export function createNzServer(): Server {
   return createServer((req, res) => {
+    // 诊断取证端点（IME 事件流探针，评审取证信）：?debug 客户端把
+    // compositionstart/update/end + input + viewport 事件逐条 sendBeacon
+    // 到此处，原样追加落盘——真实 IME 序列 headless 模拟不出，只能真机抓。
+    if (req.method === 'POST' && (req.url ?? '').split('?')[0] === '/debug/ime-log') {
+      const chunks: Buffer[] = [];
+      let size = 0;
+      req.on('data', (c: Buffer) => {
+        size += c.length;
+        if (size <= 65536) chunks.push(c); // 单请求 64KB 封顶（诊断规模）
+      });
+      req.on('end', () => {
+        appendFile(IME_LOG, Buffer.concat(chunks)).catch(() => { /* 诊断落盘失败不挡服务 */ });
+        res.writeHead(204).end();
+      });
+      return;
+    }
     const abs = resolveStatic(req.url ?? '/');
     if (!abs) {
       res.writeHead(403).end('forbidden');

@@ -663,3 +663,12 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   后评审出逐词漂移曲线。守视侧自验：基线 col=32，打「你好」后 col=36
   （CJK 一字两列，直发字节路径正确）。英文闪的怀疑链收窄到「软键盘
   resize→整网格重绘」，真机盯角标 rz 是否每击 +1 坐实。
+- 2026-08-23：**IME 事件流探针**（评审取证信：干净合成零漂移，真凶在
+  真机真实事件序列）：URL 带 ?debug 时，composition 四事件 + input +
+  keydown + viewport 事件逐条 sendBeacon 到服务端 POST /debug/ime-log
+  落 /tmp/nz-ime-events.log（JSON 行：t/data/composing/v=输入框残影值）。
+  纪律：诊断监听必须注册在业务监听**之前**（否则读到的 kb.value 是被
+  清空后的残影）；诊断通道失败不挡主流程；落盘 /tmp 易失不入仓。
+  角标加 col（首卡光标列号，评审次选项同步落地）。守视端到端验证：
+  ?debug 开页打 ab → 日志逐条 keydown 落盘。8023 服务重启纪律补记：
+  pgrep 按命令行模式找不到 tsx 包装进程时用 ss -tlnp 按端口找 PID。

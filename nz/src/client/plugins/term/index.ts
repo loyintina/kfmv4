@@ -92,7 +92,10 @@ export function applyTermBundle(ctx: Context): void {
       frames += inst.shell.stats.frames;
       rows += inst.shell.stats.rowsPainted;
     }
-    badge.el.textContent = `vp${dbg.viewportEvents} rz${dbg.resizesApplied} f${frames} rp${rows}`;
+    // col = 首卡光标列号（评审次选项：真机打长句直读角标看每字是否 2 列漂开）
+    const first = instances.values().next().value;
+    const col = first ? first.core.cursor() & 0xffff : -1;
+    badge.el.textContent = `vp${dbg.viewportEvents} rz${dbg.resizesApplied} f${frames} rp${rows} col${col}`;
   }, 500);
   ctx.effect(() => () => clearInterval(dbgTimer));
 
@@ -177,6 +180,32 @@ export function applyTermBundle(ctx: Context): void {
       kb.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;'
         + 'opacity:0;padding:0;border:none;outline:none;resize:none;background:transparent;color:transparent;';
       container.el.appendChild(kb);
+
+      // IME 事件流探针（评审取证信）：URL 带 ?debug 时，把 composition
+      // 四事件 + input 的 e.data/isComposing/输入框残影值逐条 sendBeacon
+      // 到服务端落 /tmp 日志。真实小鹤音形的事件序列 headless 模拟不出，
+      // 只能真机抓。本块必须注册在业务监听**之前**——否则读到的 kb.value
+      // 是业务清空后的残影，序列失真。
+      const debugIme = /[?&]debug([=&]|$)/.test(location.search);
+      const postDebug = debugIme
+        ? (rec: Record<string, unknown>) => {
+            try {
+              navigator.sendBeacon('/debug/ime-log', JSON.stringify({ t: Date.now(), ...rec }) + '\n');
+            } catch { /* 诊断通道不挡主流程 */ }
+          }
+        : null;
+      if (postDebug) {
+        for (const type of ['compositionstart', 'compositionupdate', 'compositionend', 'input'] as const) {
+          kb.addEventListener(type, (e) => {
+            const ie = e as InputEvent;
+            postDebug({ type, data: ie.data ?? null, composing: ie.isComposing ?? false, v: kb.value });
+          });
+        }
+        // keydown 同流落日志（桌面/部分 IME 的字符走这条路，取证少不了它）
+        kb.addEventListener('keydown', (e) => {
+          postDebug({ type: 'keydown', data: e.key, composing: e.isComposing, v: kb.value });
+        });
+      }
       // 必须挂在 click 而非 pointerdown/mousedown：按下事件的默认行为会
       // 把焦点抢走放回 body（聚焦被覆盖），且 preventDefault 会杀死原生
       // 选中复制。click 在抬手后触发，聚焦不被抢、选中不受影响；移动端的
@@ -233,6 +262,8 @@ export function applyTermBundle(ctx: Context): void {
       (window as unknown as Record<string, unknown>).__kfmNzTermDebug = dbg;
       const onViewportResize = () => {
         dbg.viewportEvents++;
+        // 英文闪取证：可视区事件随 IME 事件同流落日志（评审五节建议）
+        postDebug?.({ type: 'viewport', vh: window.visualViewport?.height ?? 0, wh: window.innerHeight });
         followBottom();
         // 尺寸变更防抖（Termux 纪律：布局稳定才改尺寸）：IME 候选栏每敲
         // 一字都伸缩可视高（实测 vp 每字 +1）——高度跟随与行列变更都等
