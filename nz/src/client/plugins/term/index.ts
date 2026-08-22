@@ -129,7 +129,11 @@ export function applyTermBundle(ctx: Context): void {
       kb.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;'
         + 'opacity:0;padding:0;border:none;outline:none;resize:none;background:transparent;color:transparent;';
       container.el.appendChild(kb);
-      container.el.addEventListener('pointerdown', () => kb.focus());
+      // 必须挂在 click 而非 pointerdown/mousedown：按下事件的默认行为会
+      // 把焦点抢走放回 body（聚焦被覆盖），且 preventDefault 会杀死原生
+      // 选中复制。click 在抬手后触发，聚焦不被抢、选中不受影响；移动端的
+      // 「用户手势内 focus() 才弹键盘」规矩也认 click。
+      container.el.addEventListener('click', () => kb.focus());
       kb.addEventListener('keydown', (e) => {
         const bytes = keyToBytes(e);
         if (bytes && card.sessionId) {
@@ -145,6 +149,16 @@ export function applyTermBundle(ctx: Context): void {
           bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
         }
       });
+
+      // 键盘跟随：软键盘弹起 → 可视区变矮（resizes-content）→ 滚到底让
+      // 光标行露出。iOS 不认 interactive-widget 时靠 visualViewport resize
+      // 兜底；输出帧的光标跟随由 shell.renderFrame 内 scrollIntoView 负责。
+      const followBottom = () => {
+        container.el.scrollTop = container.el.scrollHeight;
+      };
+      window.visualViewport?.addEventListener('resize', followBottom);
+      const unmountFollow = () => window.visualViewport?.removeEventListener('resize', followBottom);
+      ctx.effect(() => unmountFollow);
 
       const sessionId = await bridge.open({ command: opts.command, cols: COLS, rows: ROWS });
       card.sessionId = sessionId;

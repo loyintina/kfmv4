@@ -146,6 +146,9 @@ export class TermShell {
       this.cursorEl.style.top = `${row * this.cellH}px`;
       this.cursorEl.style.width = `${this.cellW}px`;
       this.cursorEl.style.height = `${this.cellH}px`;
+      // 光标跟随：软键盘挤矮可视区 / 新输出推屏时，滚动容器让光标行露出
+      // （nearest=能不滚就不滚）。display:none 时本调用是 no-op。
+      this.cursorEl.scrollIntoView({ block: 'nearest' });
     } else {
       this.cursorEl.style.display = 'none';
     }

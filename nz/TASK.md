@@ -593,3 +593,11 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   焦点抢回 body，且 preventDefault 会杀死原生选中复制）。宿主补钉
   1 枚（层根放行 + 容器开回），76 钉全绿。守视真实点击→focus 落
   kb→echo FOCUS-OK 全链 PASS。
+- 2026-08-22：**键盘跟随**（用户手机实测②）：软键盘弹起后光标行被盖
+  住。两手：①index.html viewport 加 `interactive-widget=resizes-content`
+  （Chrome 108+ 键盘弹起时收缩布局视口，fixed 层跟着矮）；②光标跟随
+  ——shell.renderFrame 摆完光标后 `scrollIntoView({block:'nearest'})`
+  （能不滚就不滚），插件侧 visualViewport resize 兜底滚到底（iOS 不认
+  ①时用）。v1 留白：终端核尺寸仍固定 80×24，行列实测量 + resize 帧
+  下行留后续小步。守视回归 PASS（FOLLOW-OK 回显），真机键盘挤压
+  效果待用户实测。
