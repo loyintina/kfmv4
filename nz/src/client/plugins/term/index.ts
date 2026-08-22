@@ -112,7 +112,12 @@ export function applyTermBundle(ctx: Context): void {
       });
       container.el.style.cssText = 'position:absolute;inset:0;overflow:auto;';
       const core = new g.TermCore(COLS, ROWS, 1000);
-      const shell = new TermShell(core, container.el, { cols: COLS, rows: ROWS });
+      // 壳必须画在内层元素上——TermShell 构造函数会重写根元素的 cssText，
+      // 直接传 container.el 会把容器的 inset:0 全屏定位冲掉（半屏+无法
+      // 滚动的实测教训）。容器=全屏滚动视口，termEl=壳画布。
+      const termEl = document.createElement('div');
+      container.el.appendChild(termEl);
+      const shell = new TermShell(core, termEl, { cols: COLS, rows: ROWS });
       const card: TermCardInstance = { cardId, sessionId: null, core, shell };
       instances.set(cardId, card);
 
