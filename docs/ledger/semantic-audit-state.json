@@ -15,8 +15,8 @@
       "attempts": 1
     },
     "guides-testing-vs-infra": {
-      "hash": "92d8a8aea97f50f9a77d4ab535e3c5d510c7c838",
-      "lastRun": "2026-08-21",
+      "hash": "58bc10dd1745f87d1cbf2063574389317f33da6e",
+      "lastRun": "2026-08-22",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -57,8 +57,8 @@
       "attempts": 1
     },
     "inter-readme-codemap": {
-      "hash": "01d5791d0639c38e2c36cddf4eaa47b8c00e226b",
-      "lastRun": "2026-08-21",
+      "hash": "027fc5f24b6863c5425cc63ac2eb83e2064b9966",
+      "lastRun": "2026-08-22",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -71,30 +71,22 @@
       "attempts": 1
     },
     "inter-agentrunner-infra": {
-      "hash": "6010992f9b195d0e6877923c7ceb667b65fb908a",
-      "lastRun": "2026-08-21",
+      "hash": "335862bceddfb446f9fae0e1061a2adde9ff444d",
+      "lastRun": "2026-08-22",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 1,
+      "reported": 0,
       "kept": 0,
-      "dropped": 1,
+      "dropped": 0,
       "keptFindings": [],
-      "droppedFindings": [
-        {
-          "type": "SEM002",
-          "claim": "docs/guides/agent-runner.md:85",
-          "against": "docs/guides/agent-runner.md:80",
-          "quote": "调用失败自动落下一个",
-          "note": "provider兜底链内自相矛盾：前文称不再顺位兜底，后文却称调用失败自动落下一个provider。"
-        }
-      ],
+      "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
     "vision-vs-maps": {
-      "hash": "8cd7f2ae8ab30ac6ed7c93015800cab8a4964872",
-      "lastRun": "2026-08-21",
+      "hash": "2fe6e0015142b844cc6bd012cc4f21bba32ceacb",
+      "lastRun": "2026-08-22",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -135,8 +127,8 @@
       "attempts": 1
     },
     "claude-vs-docs": {
-      "hash": "f515f465e822598f589363285ce534517c16041f",
-      "lastRun": "2026-08-21",
+      "hash": "4b53a6d6138f39eb74eb36db0db7441349de83ae",
+      "lastRun": "2026-08-22",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -149,8 +141,8 @@
       "attempts": 1
     },
     "workflows-vs-guides": {
-      "hash": "8a60f3e795a9dc41d52d75f826b430f690fbdecc",
-      "lastRun": "2026-08-21",
+      "hash": "7855cfed3b55de2076dcd0ec372c2fa5a7d7cfbe",
+      "lastRun": "2026-08-22",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -285,8 +277,8 @@
       "attempts": 1
     },
     "contract-vs-map-infra": {
-      "hash": "7ee8a7173d495d93ad1666421b924d8495769aa0",
-      "lastRun": "2026-08-21",
+      "hash": "ce3eeeb17c1ebb6982020418c0534dfd1215207e",
+      "lastRun": "2026-08-22",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -299,8 +291,8 @@
       "attempts": 1
     },
     "crossdomain-vs-inventory": {
-      "hash": "63eca9fdf8fadc160a242aa250e2936deeb8f640",
-      "lastRun": "2026-08-21",
+      "hash": "75171a496806b0137efcbb8bb348e1f924eab6cd",
+      "lastRun": "2026-08-22",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -313,8 +305,8 @@
       "attempts": 1
     },
     "inter-workflows-infra": {
-      "hash": "308ab5cee3c829c3bbabf8fa3bc0741bd1e52908",
-      "lastRun": "2026-08-21",
+      "hash": "28ee6b89b9566ec6fa31c141e62795fca2838743",
+      "lastRun": "2026-08-22",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -1177,6 +1169,13 @@
       "skipped": 17,
       "kept": 0,
       "dropped": 1
+    },
+    {
+      "date": "2026-08-22",
+      "ran": 9,
+      "skipped": 21,
+      "kept": 0,
+      "dropped": 0
     }
   ]
 }

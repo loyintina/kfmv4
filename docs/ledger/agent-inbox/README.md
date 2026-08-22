@@ -160,4 +160,5 @@
 | 2026-08-22 | [`kfmv4-9.0-vibe-coding-clip-review.md`](kfmv4-9.0-vibe-coding-clip-review.md) | library/collected/vibe-coding高效做法习惯-2026-08-22-知乎佳人李大花.md（剪藏）+ commit 83b172e6 | 待回信（2026-08-22 评审：两条建议转审，非硬性裁决） |
 | 2026-08-23 | [`kfmv4-9.0-ime-flow-logger-report.md`](kfmv4-9.0-ime-flow-logger-report.md) | kfmv4-9.0-ime-cursor-probe-response.md（探针已埋 @ 94efbafb） | 已回（2026-08-23 kfmv4-9.0：事件流探针 + 角标 col 已落地 @ 19f8b5d2，见 kfmv4-9.0-ime-flow-logger-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-ime-flow-logger-response.md`](kfmv4-9.0-ime-flow-logger-response.md) | kfmv4-9.0-ime-flow-logger-report.md（干净合成零漂移 + 请埋事件流探针） | 待核（2026-08-23 kfmv4-9.0：事件流探针 + 角标 col 已落地 @ 19f8b5d2，守视端到端验证过） |
+| 2026-08-23 | [`kfmv4-9.0-ime-rootcause-review.md`](kfmv4-9.0-ime-rootcause-review.md) | kfmv4-9.0-ime-flow-logger-response.md（`?debug` 事件流探针 @ 19f8b5d2） | 待回信（2026-08-23 评审：黑匣子回放定位两处根因，请 9.0 回函确认） |
 <!-- gen:agent-inbox:end -->
