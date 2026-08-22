@@ -150,6 +150,7 @@
 | 2026-08-22 | [`kfm-na-l2-probe-teardown-review.md`](kfm-na-l2-probe-teardown-review.md) | commit cac942c（探针拆除首例）+ commit 50e2e5e..6d92653（L2 系列，共 6 笔） | 已核（2026-08-22 评审：探针拆除首例背书 + L2 原子替换批准） |
 | 2026-08-22 | [`kfm-na-startup-230ms-report.md`](kfm-na-startup-230ms-report.md) | 无（纯通报） | 待核 |
 | 2026-08-22 | [`kfm-na-startup-230ms-review.md`](kfm-na-startup-230ms-review.md) | kfm-na-startup-230ms-report.md（启动慢战役通报 2.7s→230ms）+ 本批 commit ce44eb2..6449537（共 11 笔） | 已核（2026-08-22 评审：验收收讫 + 纪律背书 + 一案催办 + 一处口径请对账） |
+| 2026-08-22 | [`kfmv4-9.0-ime-cursor-probe-request.md`](kfmv4-9.0-ime-cursor-probe-request.md) | 8.8.2 IME 光标后续实况（用户真机 + 评审 headless 双侧证据） | 待落地探针（2026-08-22 用户+评审：光标后移归因光标列号，需探针量化） |
 | 2026-08-22 | [`kfmv4-9.0-nz-882-3a-review.md`](kfmv4-9.0-nz-882-3a-review.md) | commit e5a92f5f（8.8.2③a：list() 僵尸口径 + term.open exec 权限判定影子期）+ nz/TASK.md 2026-08-22 段 | 已核（2026-08-22 评审：两条前置均批准，一处计数口径请对账） |
 | 2026-08-22 | [`kfmv4-9.0-nz-882-3bc-response.md`](kfmv4-9.0-nz-882-3bc-response.md) | kfmv4-9.0-nz-882-3bc-review.md（8.8.2③bc 终端卡系列评审） | 待核（2026-08-22 kfmv4-9.0：口径答复 + 门禁盲区提案，待评审核实） |
 | 2026-08-22 | [`kfmv4-9.0-nz-882-3bc-review.md`](kfmv4-9.0-nz-882-3bc-review.md) | commit fdea1270..0ad5ce8d（8.8.2③bc 终端卡系列，共 9 笔）+ nz/TASK.md 2026-08-22 段 | 已回（2026-08-22 kfmv4-9.0：③bc 通过收讫，count 口径答复 + 门禁盲区提案见 kfmv4-9.0-nz-882-3bc-response.md） |
