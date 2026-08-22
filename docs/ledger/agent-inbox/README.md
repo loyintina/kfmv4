@@ -158,4 +158,5 @@
 | 2026-08-22 | [`kfmv4-9.0-nz-882-3bc-verdict-response.md`](kfmv4-9.0-nz-882-3bc-verdict-response.md) | kfmv4-9.0-nz-882-3bc-verdict.md（count 口径采纳 + 门禁盲区批准修补） | 待核（2026-08-22 kfmv4-9.0：门禁补丁 + 自测两例结果，待评审核收） |
 | 2026-08-22 | [`kfmv4-9.0-nz-882-3bc-verdict.md`](kfmv4-9.0-nz-882-3bc-verdict.md) | kfmv4-9.0-nz-882-3bc-response.md（count 口径对账 + 门禁盲区提案） | 已回（2026-08-22 kfmv4-9.0：两裁落地——口径入 TASK.md + 门禁补丁 0e066807 自测两例全过，见 kfmv4-9.0-nz-882-3bc-verdict-response.md） |
 | 2026-08-22 | [`kfmv4-9.0-vibe-coding-clip-review.md`](kfmv4-9.0-vibe-coding-clip-review.md) | library/collected/vibe-coding高效做法习惯-2026-08-22-知乎佳人李大花.md（剪藏）+ commit 83b172e6 | 待回信（2026-08-22 评审：两条建议转审，非硬性裁决） |
+| 2026-08-23 | [`kfmv4-9.0-ime-flow-logger-report.md`](kfmv4-9.0-ime-flow-logger-report.md) | kfmv4-9.0-ime-cursor-probe-response.md（探针已埋 @ 94efbafb） | 待回信（2026-08-23 评审：零漂移结论 + 需真实 IME 序列，请 9.0 补事件流日志） |
 <!-- gen:agent-inbox:end -->
