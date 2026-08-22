@@ -197,18 +197,30 @@ export function applyTermBundle(ctx: Context): void {
           container.el.style.height =
             vv.height < window.innerHeight - 40 ? `${vv.height}px` : '';
         }
-        const s = measure();
-        if (s.cols !== card.cols || s.rows !== card.rows) {
-          card.cols = s.cols;
-          card.rows = s.rows;
-          card.core.resize(s.cols, s.rows);
-          card.shell.resize(s.rows);
-          if (card.sessionId) bridge.resize(card.sessionId, s.cols, s.rows);
-        }
         followBottom();
+        // 尺寸变更防抖（Termux 纪律：布局稳定才改尺寸）：IME 候选栏每敲
+        // 一字都可能伸缩可视高几十像素，立刻跟改行列会触发 核重排+全屏
+        // 重绘+PTY SIGWINCH 三重闪烁（实测：打英文从上往下闪）。容器
+        // 高度即时跟上（不吞字），行列等 150ms 尘埃落定才动。
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          const s = measure();
+          if (s.cols !== card.cols || s.rows !== card.rows) {
+            card.cols = s.cols;
+            card.rows = s.rows;
+            card.core.resize(s.cols, s.rows);
+            card.shell.resize(s.rows);
+            if (card.sessionId) bridge.resize(card.sessionId, s.cols, s.rows);
+          }
+          followBottom();
+        }, 150);
       };
+      let resizeTimer: ReturnType<typeof setTimeout> | undefined;
       window.visualViewport?.addEventListener('resize', onViewportResize);
-      const unmountFollow = () => window.visualViewport?.removeEventListener('resize', onViewportResize);
+      const unmountFollow = () => {
+        clearTimeout(resizeTimer);
+        window.visualViewport?.removeEventListener('resize', onViewportResize);
+      };
       ctx.effect(() => unmountFollow);
 
       const sessionId = await bridge.open({ command: opts.command, cols: card.cols, rows: card.rows });
