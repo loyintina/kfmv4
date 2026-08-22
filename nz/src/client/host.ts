@@ -94,6 +94,11 @@ export class RenderHost {
       s.position = 'fixed';
       s.inset = '0';
       s.zIndex = String(LAYER_Z[kind]);
+      // 上层根透明放行点击：persistent/overlay 是空层时不得吃掉下层
+      // （layout）的点击——终端卡软键盘实测教训：空 overlay 全屏罩住
+      // layout 层，点终端焦点永远落不下去。容器落到上层时单独开回
+      // pointerEvents（见 create）。
+      if (kind !== 'layout') s.pointerEvents = 'none';
       doc.body.appendChild(layer);
       this._layers[kind] = layer;
     }
@@ -112,6 +117,8 @@ export class RenderHost {
     el.className = `kfm-container kfm-${opts.kind}`;
     el.dataset.kfmOwner = opts.owner;
     el.dataset.kfmSlot = opts.slot;
+    // 上层容器开回点击（层根 pointer-events:none 只放行空层，不拦真容器）
+    if (opts.kind !== 'layout') el.style.pointerEvents = 'auto';
     this._layers[opts.kind].appendChild(el);
 
     const container = new Container(el, opts.kind, opts.owner, opts.slot, (c) => this._remove(c));

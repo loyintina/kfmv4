@@ -35,6 +35,17 @@ test('init 建三个层根挂 body（全项目唯一 body 入口），z-index �
   assert(z[0] < z[1] && z[1] < z[2], `z-index 应递升：${z.join(',')}`);
 });
 
+test('上层根透明放行点击，落容器才开回（终端卡软键盘实测教训）', () => {
+  const { doc, ctx } = newHost();
+  assert(layer(doc, 'kfm-layer-persistent').style.pointerEvents === 'none', 'persistent 层根应放行');
+  assert(layer(doc, 'kfm-layer-overlay').style.pointerEvents === 'none', 'overlay 层根应放行');
+  assert(layer(doc, 'kfm-layer-layout').style.pointerEvents !== 'none', 'layout 层根不应放行');
+  const o = createContainer(ctx, { kind: 'overlay', slot: 'c1', owner: 'p1' });
+  assert(asFake(o).style.pointerEvents === 'auto', 'overlay 容器应开回点击');
+  const l = createContainer(ctx, { kind: 'layout', slot: 'c2', owner: 'p1' });
+  assert(asFake(l).style.pointerEvents !== 'auto', 'layout 容器不画蛇添足');
+});
+
 test('create 按 kind 挂对应层根，登记可回查', () => {
   const { doc, ctx } = newHost();
   const h = createContainer(ctx, { kind: 'overlay', slot: 'confirm', owner: 'p1' });

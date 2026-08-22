@@ -583,3 +583,13 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   textarea 诱饵（.kfm-term-kb，1px 透明）：pointerdown 聚焦诱饵；桌面
   按键走 keydown（原 keyToBytes 映射），手机 IME/软键盘走 input 事件
   整段取走后清空（换行 \n→\r）。守视回归 PASS（KB-OK 回显）。
+- 2026-08-22：**软键盘弹不出的真凶=空 overlay 层根吃点击**（宿主级
+  修复）：三个层根 position:fixed inset:0 全屏叠放，persistent/overlay
+  空层也拦截全部指针事件——点终端实际点在空 overlay 上，焦点永远落
+  不下去（守视合成 click 直调处理器发现不了，真实 CDP 点击才暴露：
+  事件日志全空 → elementFromPoint 揪出 #kfm-layer-overlay）。修法：
+  上层根 pointer-events:none 透明放行，容器落上层时单独开回 auto。
+  同批教训：聚焦诱饵必须挂 click 而非 pointerdown（按下默认行为会把
+  焦点抢回 body，且 preventDefault 会杀死原生选中复制）。宿主补钉
+  1 枚（层根放行 + 容器开回），76 钉全绿。守视真实点击→focus 落
+  kb→echo FOCUS-OK 全链 PASS。
