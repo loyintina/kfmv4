@@ -64,4 +64,5 @@
 | design/d2-concurrency-discipline.md | D2 并发协作纪律：共享工作树撞车三规（写后即交/改前重读/链红先归因），契约 3 即刻手工纪律的实战扩展 |
 | design/d3-ledger-generation.md | D3 契约 3 机械件落地设计：信封机读头 schema + 台账投影生成器 + 归属行扫描器 + 代际戳（含存量回填过渡方案） |
 | design/d4-epoch-stamp.md | D4 代际戳落地设计：状态戳格式化（骑状态字段，不加第八字段）+ f 查三小条（格式/单调/头体咬合）+ e 查时钟换 last-touch（含 LEGACY 7 封豁免过渡） |
+| design/d5-auto-broker-interaction.md | D5 总线代理交互机制（实战发现，即 Q7「传输探针/通知」的可跑原型）：投递激活原语 + 会话空闲指纹 + 子代理监视 + 自动评审；2026-08-22 实操验证，喂 9.0 契约 3 的投递/通知/回执三原语 |
 | cases/case-001-gate-deadlock.md | 案例 001：闸门-互证-窗口三角死锁（9.0 线移交收编；预防条款待 9.0 线采纳进闸门登记纪律） |
