@@ -652,3 +652,8 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   拿到的是拼音残影+部分浏览器 compositionend 后补发同内容 input
   （"你"发两遍）。修：compositionend 只认 e.data，记 justCommitted
   吞掉补发事件。
+- 2026-08-22：**计数口径定规**（评审 ③bc 信问「75 vs 76」，③a 也曾
+  差 2——根因=commit 题手写「钉」数是会腐坏的快照，且「钉/考点」
+  与 npm test「passed/用例」本两个口径）：即日起 commit 题与通报信
+  不手写钉数；引用计数以当时 HEAD 实测 `npm test` passed 数为准并
+  注 HEAD 短哈希（如「76 passed @ da8b714d」）；「钉」只作概念词。
