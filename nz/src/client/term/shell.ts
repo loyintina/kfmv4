@@ -27,6 +27,8 @@ export class TermShell {
   private cellH = 0;
   private enc = new TextEncoder();
   private dec = new TextDecoder();
+  /** 重绘统计（真机闪烁诊断：frames/rowsPainted 经 window.__kfmNzTermDebug 可读） */
+  readonly stats = { frames: 0, rowsPainted: 0 };
 
   constructor(
     private core: TermCoreHandle,
@@ -146,12 +148,14 @@ export class TermShell {
   /** 取一帧新账，只重排有变的行；再摆光标。 */
   renderFrame() {
     this.measure();
+    this.stats.frames++;
     const frame = this.core.render_frame();
     const lines = frame.split('\n');
     for (let i = 0; i < this.opts.rows; i++) {
       const line = lines[i] ?? '\x1f';
       if (line === this.rowCache[i]) continue;
       this.rowCache[i] = line;
+      this.stats.rowsPainted++;
       this.renderRow(this.rowDivs[i], line);
     }
     // 光标：packed row<<16|col；row 可能为负（历史区）则不画

@@ -636,3 +636,12 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   整列变，像素抖动忽略——floor 已做）；②布局稳定才改尺寸（键盘
   动画/候选栏伸缩绝不触发 SIGWINCH——本步补上的）；③渲染与缓冲
   分离。守视回归 PASS（DEBOUNCE-OK）。
+- 2026-08-22：**IME 合成纪律 + 真机诊断角标**（用户手机实测⑦：中文
+  光标漂移变灰、英文仍闪）：①合成（composition）中间态曾全量发给
+  shell 且每次清空诱饵打断合成——拼音碎片（n/ni/nih…）+最终汉字
+  全灌进 shell，行内垃圾字符把光标越推越远。修：compositionstart/
+  end 标记合成态，中间态 keydown/input 一律不转发不清空，上屏
+  （compositionend）才发最终文本。②诊断角标（overlay 层，右下
+  半透明小字）：vp=可视区事件 rz=落地行列变更 f=渲染帧 rp=重排行，
+  每字健康值≈1帧1行——手机无控制台也能读数，守视可 eval
+  __kfmNzTermDebug。排查期常驻，收口移除。

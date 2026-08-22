@@ -80,6 +80,22 @@ export function applyTermBundle(ctx: Context): void {
   let gluePromise: Promise<TermCoreGlue> | null = null;
   const glue = () => (gluePromise ??= loadTermCoreShared());
 
+  // 真机诊断（闪烁排查期常驻，收口移除）：角标直读计数，手机无控制台也能看。
+  // vp=可视区事件 rz=落地的行列变更 f=渲染帧 rp=重排行（每字应 ≈1 帧 1 行）
+  const dbg = { viewportEvents: 0, resizesApplied: 0 };
+  const badge = createContainer(ctx, { kind: 'overlay', slot: 'term-debug', owner: 'term', reuse: true });
+  badge.el.style.cssText = 'position:fixed;right:4px;bottom:4px;z-index:400;pointer-events:none;'
+    + 'font:10px monospace;color:#888;background:rgba(0,0,0,.5);padding:2px 4px;';
+  const dbgTimer = setInterval(() => {
+    let frames = 0, rows = 0;
+    for (const inst of instances.values()) {
+      frames += inst.shell.stats.frames;
+      rows += inst.shell.stats.rowsPainted;
+    }
+    badge.el.textContent = `vp${dbg.viewportEvents} rz${dbg.resizesApplied} f${frames} rp${rows}`;
+  }, 500);
+  ctx.effect(() => () => clearInterval(dbgTimer));
+
   const bridge = new TermWsBridge(`${location.origin.replace(/^http/, 'ws')}/ws/term`, {
     onOutput(id, data, replay) {
       for (const inst of instances.values()) {
@@ -165,16 +181,32 @@ export function applyTermBundle(ctx: Context): void {
       // 把焦点抢走放回 body（聚焦被覆盖），且 preventDefault 会杀死原生
       // 选中复制。click 在抬手后触发，聚焦不被抢、选中不受影响；移动端的
       // 「用户手势内 focus() 才弹键盘」规矩也认 click。
+      // IME 合成纪律（中文实测教训：中间态全发=碎片灌进 shell+光标漂移）：
+      // 合成期间 keydown 属于输入法（Enter 选字/Backspace 删拼音），不转发；
+      // input 中间态不发送不清空（清空会打断合成）；compositionend 才发
+      // 最终上屏文本。
+      let composing = false;
+      kb.addEventListener('compositionstart', () => { composing = true; });
+      kb.addEventListener('compositionend', () => {
+        composing = false;
+        const text = kb.value;
+        kb.value = '';
+        if (text && card.sessionId) {
+          bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
+        }
+      });
       container.el.addEventListener('click', () => kb.focus());
       kb.addEventListener('keydown', (e) => {
+        if (composing || e.isComposing) return; // 合成中按键归输入法
         const bytes = keyToBytes(e);
         if (bytes && card.sessionId) {
           e.preventDefault();
           bridge.input(card.sessionId, bytes);
         }
       });
-      kb.addEventListener('input', () => {
-        // 手机软键盘产出的文本（含 IME 上屏）整段取走后清空诱饵
+      kb.addEventListener('input', (e) => {
+        if (composing || (e as InputEvent).isComposing) return; // 中间态不发
+        // 手机软键盘产出的文本整段取走后清空诱饵
         const text = kb.value;
         kb.value = '';
         if (text && card.sessionId) {
@@ -188,7 +220,10 @@ export function applyTermBundle(ctx: Context): void {
       const followBottom = () => {
         container.el.scrollTop = container.el.scrollHeight;
       };
+      // 真机诊断计数（守视/控制台也可 eval __kfmNzTermDebug 直读）
+      (window as unknown as Record<string, unknown>).__kfmNzTermDebug = dbg;
       const onViewportResize = () => {
+        dbg.viewportEvents++;
         // 键盘吞最后一行的根治：浏览器不认 resizes-content 时（部分国产
         // 浏览器/webview）键盘直接盖在页面上——手动把容器高度压到可视高，
         // 用 JS 模拟 resizes-content。阈值 40px 防动态工具栏抖动误判。
@@ -206,6 +241,7 @@ export function applyTermBundle(ctx: Context): void {
         resizeTimer = setTimeout(() => {
           const s = measure();
           if (s.cols !== card.cols || s.rows !== card.rows) {
+            dbg.resizesApplied++;
             card.cols = s.cols;
             card.rows = s.rows;
             card.core.resize(s.cols, s.rows);
