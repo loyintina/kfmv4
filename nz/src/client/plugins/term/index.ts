@@ -19,7 +19,7 @@
 import { Context } from 'cordis';
 import { registerCardType } from '../../card-types.js';
 import { createContainer } from '../../host.js';
-import { loadTermCoreBrowser, type TermCoreGlue, type TermCoreHandle } from '../../term-core.js';
+import { loadTermCoreShared, type TermCoreGlue, type TermCoreHandle } from '../../term-core.js';
 import { TermShell } from '../../term/shell.js';
 import { TermWsBridge } from '../../term/bridge.js';
 
@@ -74,7 +74,7 @@ export function applyTermBundle(ctx: Context): void {
   const instances = new Map<string, TermCardInstance>();
   let seq = 0;
   let gluePromise: Promise<TermCoreGlue> | null = null;
-  const glue = () => (gluePromise ??= loadTermCoreBrowser());
+  const glue = () => (gluePromise ??= loadTermCoreShared());
 
   const bridge = new TermWsBridge(`${location.origin.replace(/^http/, 'ws')}/ws/term`, {
     onOutput(id, data, replay) {

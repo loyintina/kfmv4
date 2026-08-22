@@ -554,3 +554,23 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   serverBootLog），转正期在 WS 桥边界生效。新钉 2 枚（72 钉全绿）。
   cordis 纪律新知：ctx 访问未 inject 的服务抛「without inject」——
   可选服务一律 ctx.get(name) 非严格访问。
+- 2026-08-22：**8.8.2③bc 落地，终端真链全通**。③b 服务端 WS 桥
+  （`src/server/ws-bridge.ts`）：帧↔方法翻译层，协议 open/attach/
+  input/resize/close/list → opened/attached+tail/output/exit/error；
+  订阅退订必须挪到 exit 帧发出之后，否则 exit 帧发不出去。钉 2 枚
+  （全链 echo 回环 + 断线会话不死 attach 补断档），74 钉全绿。
+  ③c 客户端合龙：`term/bridge.ts`（重连指数退避；replay 帧标记；
+  open() 返回 Promise、opened 帧 FIFO 配对）+ `plugins/term/index.ts`
+  （卡型注册 'term' + ctx.provide('termCards')；open() 建容器
+  （layout 层/owner 'term'）+ TermCore + TermShell + keydown→PTY
+  字节映射；**replay 帧先重建 TermCore 再喂 tail**——tail 是快照
+  尾迹非增量，喂旧网格会花屏；shell 加 setCore() 清行缓存）。
+  静态 TERM_DEMO 演示退役。守视实拍 PASS：真 PTY 提示符 +
+  `echo NZ-TERM-OK && pwd` 全链回环（浏览器 keydown→WS→PTY→wasm
+  解析→行 DOM）。**本步最大坑入档：wasm-bindgen glue 禁止二次
+  init**——main.ts 探针与终端卡各自调 loadTermCoreBrowser()，第二
+  次 init 把 glue 的 wasm 导出绑定换成新实例，旧实例出生的
+  TermCore 指针喂进新实例函数表 → RuntimeError: memory access out
+  of bounds（OPEN FAIL）。修法：term-core.ts 新增
+  `loadTermCoreShared()` 全局单例 promise，探针与终端卡同走一路。
+  依赖新增 ws@8 + @types/ws（服务端 WS 桥用）。

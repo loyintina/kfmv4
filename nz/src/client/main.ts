@@ -15,7 +15,7 @@ import { PermissionEngine } from './permission.js';
 import { PlugtestRunner } from './plugtest.js';
 import { mountDynamicPromptFiles } from './plugins/core/dynamic-prompt-files.js';
 import { applyEyesBundle } from './plugins/eyes/index.js';
-import { loadTermCoreBrowser, probeTermCore } from './term-core.js';
+import { loadTermCoreShared, probeTermCore } from './term-core.js';
 import { applyTermBundle } from './plugins/term/index.js';
 
 // ========== 内核件接线：宿主给盒子，手势管输入，broker 管卡类型户口 ==========
@@ -59,7 +59,7 @@ void bootCtxSelfTest().then(() => render());
 setInterval(render, 250);
 
 // 8.8.2 探针：rio-vt WASM 解析核浏览器侧装载验证（结果进 bootLog + window 供守视直读）
-void loadTermCoreBrowser()
+void loadTermCoreShared()
   .then((glue) => { (window as unknown as Record<string, unknown>).__kfmNzTermProbe = probeTermCore(glue); })
   .catch((e) => { (window as unknown as Record<string, unknown>).__kfmNzTermProbe = `PROBE FAIL ${e}`; });
 

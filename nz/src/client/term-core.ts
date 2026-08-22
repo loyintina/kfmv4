@@ -36,6 +36,21 @@ export async function loadTermCoreBrowser(base = '/term-core'): Promise<TermCore
   return glue;
 }
 
+let sharedGlue: Promise<TermCoreGlue> | null = null;
+
+/**
+ * 全局唯一 glue 装载——所有消费方（探针/终端卡/后续插件）必须走这里。
+ * wasm-bindgen glue 二次 init 会把 wasm 导出绑定换成新实例：旧实例出生
+ * 的 TermCore 指针喂进新实例的函数表 → memory access out of bounds。
+ * 单例 promise 从根上杜绝并发/重复 init。loader 可替换仅服务回归钉。
+ */
+export function loadTermCoreShared(
+  base = '/term-core',
+  loader: (base: string) => Promise<TermCoreGlue> = loadTermCoreBrowser,
+): Promise<TermCoreGlue> {
+  return (sharedGlue ??= loader(base));
+}
+
 /**
  * 探针：建 80×24 核 → 喂一段含 SGR 的样例 → 断言文本真落了网格。
  * 返回一行人读结果（守视 eval / 控制台直读）。
