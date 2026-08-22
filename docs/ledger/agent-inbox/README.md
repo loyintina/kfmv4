@@ -146,8 +146,10 @@
 | 2026-08-21 | [`kfmv4-9.0-nz-882-term-core-eval-review.md`](kfmv4-9.0-nz-882-term-core-eval-review.md) | kfmv4-9.0-nz-882-term-core-eval-report.md（裁决翻盘通报 + 数据公开）+ kfm-na-heavy-build-nice-notice.md（NA 降压建议） | 待回信（2026-08-21 评审：裁决批准 + 覆盖考卷前置要求） |
 | 2026-08-21 | [`kfmv4-9.0-nz-taskmap-revision-review.md`](kfmv4-9.0-nz-taskmap-revision-review.md) | kfmv4-9.0-nz-taskmap-revision-notice.md（任务图修订通报）+ kfmv4-9.0-nz-ledger-coverage-report.md（总账机制通报） | ✅ 已回（2026-08-21 9.0 线：收讫 + 875 发现已点名进 8.12.7 + deploy-freshness 用户拍板①+延迟②已执行完毕——见讨论区） |
 | 2026-08-21 | [`kfmv4-git-hygiene-v0-report.md`](kfmv4-git-hygiene-v0-report.md) | kfmv4-9.0-nz-taskmap-revision-review.md（链红复发处置的立款项落地） | 📢 通报完毕（2026-08-21 评审：v0 落地，warn-only 生效中） |
+| 2026-08-22 | [`kfm-na-l2-probe-teardown-review.md`](kfm-na-l2-probe-teardown-review.md) | commit cac942c（探针拆除首例）+ commit 50e2e5e..6d92653（L2 系列，共 6 笔） | 已核（2026-08-22 评审：探针拆除首例背书 + L2 原子替换批准） |
 | 2026-08-22 | [`kfm-na-startup-230ms-report.md`](kfm-na-startup-230ms-report.md) | 无（纯通报） | 待核 |
 | 2026-08-22 | [`kfm-na-startup-230ms-review.md`](kfm-na-startup-230ms-review.md) | kfm-na-startup-230ms-report.md（启动慢战役通报 2.7s→230ms）+ 本批 commit ce44eb2..6449537（共 11 笔） | 已核（2026-08-22 评审：验收收讫 + 纪律背书 + 一案催办 + 一处口径请对账） |
 | 2026-08-22 | [`kfmv4-9.0-nz-882-3a-review.md`](kfmv4-9.0-nz-882-3a-review.md) | commit e5a92f5f（8.8.2③a：list() 僵尸口径 + term.open exec 权限判定影子期）+ nz/TASK.md 2026-08-22 段 | 已核（2026-08-22 评审：两条前置均批准，一处计数口径请对账） |
+| 2026-08-22 | [`kfmv4-9.0-nz-882-3bc-review.md`](kfmv4-9.0-nz-882-3bc-review.md) | commit fdea1270..0ad5ce8d（8.8.2③bc 终端卡系列，共 9 笔）+ nz/TASK.md 2026-08-22 段 | 已核（2026-08-22 评审：③bc 终端卡全链通过 + 一处 count 口径请对账） |
 | 2026-08-22 | [`kfmv4-9.0-vibe-coding-clip-review.md`](kfmv4-9.0-vibe-coding-clip-review.md) | library/collected/vibe-coding高效做法习惯-2026-08-22-知乎佳人李大花.md（剪藏）+ commit 83b172e6 | 待回信（2026-08-22 评审：两条建议转审，非硬性裁决） |
 <!-- gen:agent-inbox:end -->
