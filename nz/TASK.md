@@ -618,3 +618,14 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   守视实拍 PASS：stty size=52×49（PTY 真实尺寸=实测尺寸），40 行
   输出铺满全屏不裁字。本步提前消化了原留白「按容器实测 + resize
   帧下行」。
+- 2026-08-22：**滚动/闪烁/吞行三连修**（用户手机实测⑤）：根因两条。
+  ①scrollIntoView 会把所有可滚祖先（含背景 boot 页）一起滚——每敲
+  一字回显都带全页从头滚=闪烁；改手写 nearest 语义只滚终端容器
+  （光标在视野内就一动不动）。②背景页本身可滚（boot 日志比屏高），
+  与终端抢滚动=「能滚动一部分」错觉；终端卡全屏期间 body overflow
+  hidden 锁死（dispose 复原），容器 v1 改 overflow:hidden（没有可滚
+  内容，scrollback 渲染落地时改回 auto）。③吞最后一行：部分浏览器
+  不认 interactive-widget，键盘直接盖页面——visualViewport resize 时
+  若可视高<窗口高-40px（阈值防动态工具栏误判），手动把容器高度压到
+  可视高（JS 模拟 resizes-content），再重测行列三方同步。守视实拍
+  PASS：51 行正好铺到屏底，提示符完整露出，scrollTop=0 不乱滚。

@@ -114,7 +114,15 @@ export function applyTermBundle(ctx: Context): void {
         slot: cardId,
         owner: 'term',
       });
-      container.el.style.cssText = 'position:absolute;inset:0;overflow:auto;';
+      // 容器=全屏视口。v1 口径 DOM 只画当前屏（回退历史未渲染上屏），
+      // 没有可滚内容——overflow:hidden 杜绝「能滚动一部分」的错觉；
+      // scrollback 渲染小步落地时改回 auto。
+      container.el.style.cssText = 'position:absolute;inset:0;overflow:hidden;';
+      // 终端卡全屏期间锁死背景页滚动（boot 页比屏幕高，不锁会和终端抢
+      // 滚动、被 scrollIntoView 类行为带着跑——实测闪烁根因之一）
+      const prevBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      ctx.effect(() => () => { document.body.style.overflow = prevBodyOverflow; });
       // 实测定尺寸（写死 80×24 时代结束）：先用与壳同字体的探针量字格，
       // 再按容器可视面积算行列——手机有多宽终端就有多少列，不再裁字。
       const probe = document.createElement('div');
@@ -181,6 +189,14 @@ export function applyTermBundle(ctx: Context): void {
         container.el.scrollTop = container.el.scrollHeight;
       };
       const onViewportResize = () => {
+        // 键盘吞最后一行的根治：浏览器不认 resizes-content 时（部分国产
+        // 浏览器/webview）键盘直接盖在页面上——手动把容器高度压到可视高，
+        // 用 JS 模拟 resizes-content。阈值 40px 防动态工具栏抖动误判。
+        const vv = window.visualViewport;
+        if (vv) {
+          container.el.style.height =
+            vv.height < window.innerHeight - 40 ? `${vv.height}px` : '';
+        }
         const s = measure();
         if (s.cols !== card.cols || s.rows !== card.rows) {
           card.cols = s.cols;

@@ -164,9 +164,18 @@ export class TermShell {
       this.cursorEl.style.top = `${row * this.cellH}px`;
       this.cursorEl.style.width = `${this.cellW}px`;
       this.cursorEl.style.height = `${this.cellH}px`;
-      // 光标跟随：软键盘挤矮可视区 / 新输出推屏时，滚动容器让光标行露出
-      // （nearest=能不滚就不滚）。display:none 时本调用是 no-op。
-      this.cursorEl.scrollIntoView({ block: 'nearest' });
+      // 光标跟随：只滚最近的可滚动祖先（容器），不碰页面——scrollIntoView
+      // 会把所有可滚祖先（含背景 boot 页）一起滚（实测：每敲一字全页从头
+      // 往下滚、闪烁）。nearest 语义手写：光标已在视野内就一动不动。
+      const parent = this.el.parentElement;
+      if (parent) {
+        const top = row * this.cellH;
+        if (top < parent.scrollTop) {
+          parent.scrollTop = top;
+        } else if (top + this.cellH > parent.scrollTop + parent.clientHeight) {
+          parent.scrollTop = top + this.cellH - parent.clientHeight;
+        }
+      }
     } else {
       this.cursorEl.style.display = 'none';
     }
