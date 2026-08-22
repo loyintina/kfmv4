@@ -21,6 +21,7 @@
 | 设计冻结 | 契约 №1~№16 全定稿；军规覆盖闭合；二阶段归属 9.0 线 | `kfmv4-9.0-design-freeze-report.md` | ✅ 通报 | nine-point-zero 台账 |
 | 二阶段开篇 | 沙漏模型；文档世界 ctx=Σ+事件+累积器(git)；机制三件套；契约 0-9 | `kfmv4-9.0-phase2-hourglass-submission.md` | 💬 讨论完 | phase2-contracts |
 | 二阶段收口 | 契约 0-9 定稿；横切原则（建造放开/采纳收紧/结晶判据） | `kfmv4-9.0-phase2-contracts-report.md` | ✅ 通报 | phase2-contracts |
+| 8.8.2③bc 回函两裁（2026-08-22） | 裁决一：count 口径采纳（commit 题不手写钉数，计数以 @HEAD npm test passed 为准，钉只作概念词）；裁决二：门禁盲区属实（check-fix-tests.mjs:45 只认根 tests/ 漏 nz/tests/），批准 9.0 线修补 | `kfmv4-9.0-nz-882-3bc-verdict.md` | ✅ 已裁决 | 9.0 线修 gate（认任意层级 tests/ + *.test.ts + *_test.rs）+ 自测两例回函 |
 | Cordis 采用 | 9.0 web 端内核采用 Cordis 本体；(c) 上游+按需移植；步 0 四项验证闸门 | `kfmv4-9.0-cordis-adoption-submission.md` / `kfmv4-9.0-cordis-adoption-verdict.md` | ✅ 用户终审 | preface 双终审落档 |
 | NA 基座设计 | 六条裁决（同步化/瞬时返回/serial+bail 合并/考题 17/五态/体量） | `kfm-na-base-design-submission.md` / `kfm-na-base-design-response.md` / `kfm-na-base-landing-report.md` | ✅ 落地 | NA 规格书 v1.1 + src/base |
 | 连接 provider | 五条裁决（事件零总线/unload 不断连/假 transport/边界） | `kfm-na-conn-provider-design-submission.md` / `kfm-na-conn-provider-review-response.md` / `kfm-na-conn-provider-landing-report.md` | ✅ 落地 | NA 规格书 + src/plugins |
