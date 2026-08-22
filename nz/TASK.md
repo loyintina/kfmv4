@@ -609,3 +609,12 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   cssText**。另澄清 v1 口径：DOM 只画当前屏 24 行，回退历史在 wasm
   核里未渲染上屏（虚拟化留白，后续小步做），所以现在「没有可滚的
   内容」是预期行为而非 bug。
+- 2026-08-22：**实测定尺寸落地**（用户手机实测④「还是不能全屏」——
+  写死 80×24 的双症状：列溢出裁字 + 24 行只填半屏）：①插件 open 前
+  用与壳同字体探针量字格（cellW/cellH），按容器 clientWidth/Height
+  实测行列（下限 20×5，量不到回落 80×24）；②visualViewport resize
+  时核/壳/PTY 三方同步（core.resize + shell.resize 增删行 div +
+  bridge.resize 下行 PTY）；③replay 重建核用实例当前行列不再用常量。
+  守视实拍 PASS：stty size=52×49（PTY 真实尺寸=实测尺寸），40 行
+  输出铺满全屏不裁字。本步提前消化了原留白「按容器实测 + resize
+  帧下行」。

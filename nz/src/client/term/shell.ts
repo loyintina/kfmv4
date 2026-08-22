@@ -58,6 +58,24 @@ export class TermShell {
     this.rowCache = this.rowCache.map(() => '');
   }
 
+  /** 改行数（容器可视高度变化时）：增删行 div，行缓存同步伸缩并重排。 */
+  resize(rows: number) {
+    if (rows === this.opts.rows) return;
+    while (this.rowDivs.length < rows) {
+      const d = document.createElement('div');
+      d.style.cssText = 'white-space:pre;height:1.25em;';
+      this.el.insertBefore(d, this.cursorEl);
+      this.rowDivs.push(d);
+      this.rowCache.push('');
+    }
+    while (this.rowDivs.length > rows) {
+      this.rowDivs.pop()!.remove();
+      this.rowCache.pop();
+    }
+    this.opts.rows = rows;
+    this.renderFrame();
+  }
+
   /** 量一个字符格的像素尺寸（等宽字体，测一次缓存）。 */
   private measure() {
     if (this.cellW > 0) return;

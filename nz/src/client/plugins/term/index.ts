@@ -12,9 +12,11 @@
  *   网格会重复。故 replay 帧先**重建 TermCore**（新网格）再喂 tail，
  *   后续实时帧续在同一颗核上。
  *
- * v1 留白：尺寸固定 80×24（按容器实测 + resize 帧下行留渲染壳实测量后
- * 接）；输入只认 可打印字符/Enter/Backspace/Tab/方向键（手机 IME 与组合
- * 键映射留 input 小插件）。
+ * 尺寸：实测字格 × 容器可视面积定行列（80×24 写死时代已结束），
+ * visualViewport resize 时核/壳/PTY 三方同步。
+ *
+ * v1 留白：输入只认 可打印字符/Enter/Backspace/Tab/方向键（手机 IME 与
+ * 组合键映射留 input 小插件）。
  */
 import { Context } from 'cordis';
 import { registerCardType } from '../../card-types.js';
@@ -31,6 +33,8 @@ interface TermCardInstance {
   sessionId: string | null;
   core: TermCoreHandle;
   shell: TermShell;
+  cols: number;
+  rows: number;
 }
 
 export interface TermCardService {
@@ -83,7 +87,7 @@ export function applyTermBundle(ctx: Context): void {
         if (replay && glueCtor) {
           // 重连 tail：先换新网格再喂（快照尾迹≠增量，喂旧网格会花屏）
           inst.core.free();
-          inst.core = new glueCtor(COLS, ROWS, 1000);
+          inst.core = new glueCtor(inst.cols, inst.rows, 1000);
           inst.shell.setCore(inst.core);
         }
         inst.core.feed(new TextEncoder().encode(data));
@@ -111,14 +115,29 @@ export function applyTermBundle(ctx: Context): void {
         owner: 'term',
       });
       container.el.style.cssText = 'position:absolute;inset:0;overflow:auto;';
-      const core = new g.TermCore(COLS, ROWS, 1000);
+      // 实测定尺寸（写死 80×24 时代结束）：先用与壳同字体的探针量字格，
+      // 再按容器可视面积算行列——手机有多宽终端就有多少列，不再裁字。
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;'
+        + 'font:13px/1.25 ui-monospace,Menlo,Consolas,monospace;';
+      probe.textContent = '0'.repeat(20);
+      container.el.appendChild(probe);
+      const cellW = probe.getBoundingClientRect().width / 20;
+      const cellH = probe.getBoundingClientRect().height;
+      probe.remove();
+      const measure = () => cellW > 0 && cellH > 0 ? {
+        cols: Math.max(20, Math.floor(container.el.clientWidth / cellW)),
+        rows: Math.max(5, Math.floor(container.el.clientHeight / cellH)),
+      } : { cols: COLS, rows: ROWS };
+      const size = measure();
+      const core = new g.TermCore(size.cols, size.rows, 1000);
       // 壳必须画在内层元素上——TermShell 构造函数会重写根元素的 cssText，
       // 直接传 container.el 会把容器的 inset:0 全屏定位冲掉（半屏+无法
       // 滚动的实测教训）。容器=全屏滚动视口，termEl=壳画布。
       const termEl = document.createElement('div');
       container.el.appendChild(termEl);
-      const shell = new TermShell(core, termEl, { cols: COLS, rows: ROWS });
-      const card: TermCardInstance = { cardId, sessionId: null, core, shell };
+      const shell = new TermShell(core, termEl, { cols: size.cols, rows: size.rows });
+      const card: TermCardInstance = { cardId, sessionId: null, core, shell, cols: size.cols, rows: size.rows };
       instances.set(cardId, card);
 
       // 软键盘入口（xterm 同款隐藏 textarea 诱饵）：移动浏览器只在可编辑
@@ -155,17 +174,28 @@ export function applyTermBundle(ctx: Context): void {
         }
       });
 
-      // 键盘跟随：软键盘弹起 → 可视区变矮（resizes-content）→ 滚到底让
-      // 光标行露出。iOS 不认 interactive-widget 时靠 visualViewport resize
-      // 兜底；输出帧的光标跟随由 shell.renderFrame 内 scrollIntoView 负责。
+      // 键盘跟随 + 尺寸跟随：软键盘弹起 → 可视区变矮（resizes-content）
+      // → 重测行列 → 核/壳/PTY 三方同步 resize，再滚到底让光标行露出。
+      // iOS 不认 interactive-widget 时 visualViewport resize 照样触发兜底。
       const followBottom = () => {
         container.el.scrollTop = container.el.scrollHeight;
       };
-      window.visualViewport?.addEventListener('resize', followBottom);
-      const unmountFollow = () => window.visualViewport?.removeEventListener('resize', followBottom);
+      const onViewportResize = () => {
+        const s = measure();
+        if (s.cols !== card.cols || s.rows !== card.rows) {
+          card.cols = s.cols;
+          card.rows = s.rows;
+          card.core.resize(s.cols, s.rows);
+          card.shell.resize(s.rows);
+          if (card.sessionId) bridge.resize(card.sessionId, s.cols, s.rows);
+        }
+        followBottom();
+      };
+      window.visualViewport?.addEventListener('resize', onViewportResize);
+      const unmountFollow = () => window.visualViewport?.removeEventListener('resize', onViewportResize);
       ctx.effect(() => unmountFollow);
 
-      const sessionId = await bridge.open({ command: opts.command, cols: COLS, rows: ROWS });
+      const sessionId = await bridge.open({ command: opts.command, cols: card.cols, rows: card.rows });
       card.sessionId = sessionId;
       shell.renderFrame();
       return inst.id;
