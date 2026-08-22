@@ -111,17 +111,38 @@ export function applyTermBundle(ctx: Context): void {
         owner: 'term',
       });
       container.el.style.cssText = 'position:absolute;inset:0;overflow:auto;';
-      container.el.tabIndex = 0; // 收键盘
       const core = new g.TermCore(COLS, ROWS, 1000);
       const shell = new TermShell(core, container.el, { cols: COLS, rows: ROWS });
       const card: TermCardInstance = { cardId, sessionId: null, core, shell };
       instances.set(cardId, card);
 
-      container.el.addEventListener('keydown', (e) => {
+      // 软键盘入口（xterm 同款隐藏 textarea 诱饵）：移动浏览器只在可编辑
+      // 元素聚焦时弹软键盘，div+tabIndex 没用。点卡片 → 聚焦诱饵；桌面
+      // 按键走 keydown，手机 IME/软键盘走 input 事件（不按 keydown 规矩来）。
+      const kb = document.createElement('textarea');
+      kb.className = 'kfm-term-kb';
+      kb.setAttribute('autocapitalize', 'off');
+      kb.setAttribute('autocomplete', 'off');
+      kb.setAttribute('autocorrect', 'off');
+      kb.setAttribute('spellcheck', 'false');
+      kb.setAttribute('aria-label', '终端输入');
+      kb.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;'
+        + 'opacity:0;padding:0;border:none;outline:none;resize:none;background:transparent;color:transparent;';
+      container.el.appendChild(kb);
+      container.el.addEventListener('pointerdown', () => kb.focus());
+      kb.addEventListener('keydown', (e) => {
         const bytes = keyToBytes(e);
         if (bytes && card.sessionId) {
           e.preventDefault();
           bridge.input(card.sessionId, bytes);
+        }
+      });
+      kb.addEventListener('input', () => {
+        // 手机软键盘产出的文本（含 IME 上屏）整段取走后清空诱饵
+        const text = kb.value;
+        kb.value = '';
+        if (text && card.sessionId) {
+          bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
         }
       });
 

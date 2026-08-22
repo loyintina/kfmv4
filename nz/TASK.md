@@ -324,6 +324,10 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 - apk 卡：用户已表态废弃（8022 直连手机，NA 线直接编译），收口终审确认；
 - 多端适配/桌面浮卡：远期，待确认；
 - 动画插件包：v1 组件零动画，是否要单独做动画包待确认；
+- 开屏动画插件（用户 2026-08-22 实拍提议）：启动期 bootLog 文字先于
+  终端卡出现（wasm 装载 + WS 连接 + PTY 孵化约数秒），视觉上已是
+  「事实开屏」。若未来做开屏动画插件，正好填这段加载真空期，可作为
+  动画插件包的首个用例，待确认；
 - 其他 dsh 远期能力（subagent/workflow/mcp/lsp/acp 等）：9.x 再说，待确认。
 
 ---
@@ -574,3 +578,8 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   of bounds（OPEN FAIL）。修法：term-core.ts 新增
   `loadTermCoreShared()` 全局单例 promise，探针与终端卡同走一路。
   依赖新增 ws@8 + @types/ws（服务端 WS 桥用）。
+- 2026-08-22：**终端卡软键盘入口**（用户手机实测发现）：移动浏览器只在
+  可编辑元素聚焦时弹软键盘，div+tabIndex 无效。采用 xterm 同款隐藏
+  textarea 诱饵（.kfm-term-kb，1px 透明）：pointerdown 聚焦诱饵；桌面
+  按键走 keydown（原 keyToBytes 映射），手机 IME/软键盘走 input 事件
+  整段取走后清空（换行 \n→\r）。守视回归 PASS（KB-OK 回显）。
