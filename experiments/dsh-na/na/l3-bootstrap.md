@@ -71,11 +71,45 @@ fork commit:`be9d770`,改动两处:
    已预置清单:rxvt-unicode(tuna debian 源池)、python 双源
    (huaweicloud + salsa 直连)、libxml2(nju gnome——注意 tuna/ustc/
    bfsu 的 gnome 路径对本包全是 404 HTML,南大才有;**验证镜像文件
-   先 `file` 看是不是 HTML 错误页再信 hash**)。
+   先 `file` 看是不是 HTML 错误页再信 hash**)、tor 0.4.9.11(tuna
+   debian 源池 orig.tar.gz,与上游 dist 逐位同 hash;tor 是 apt 构建
+   依赖链一员,torproject.org 双向被墙)。
 7. **容器缓存纪律**:`~/.termux-build` 默认不挂载进容器(`-m` 才挂),
    源码缓存/构建目录都在容器 fs 里——`docker rm` = 缓存全丢重编。
    重跑构建只 `run-docker.sh` 复用同名容器,别 rm(2026-08-20 实踩:
-   rm 一次,libgmp 等白重编一轮)。
+   rm 一次,libgmp 等白重编一轮)。`docker restart` 便宜且保 fs,随便用。
+8. termux-am 的 gradle 需要 SDK platform-33 + build-tools 30.0.3,容器
+   只有 24/28/35 + 37.0.0,dl.google.com 被墙致 gradle 自动装失败。
+   处置:腾讯镜像 `mirrors.cloud.tencent.com/AndroidSDK/` 直下——
+   repository2-1.xml 里没有 platform-33 基础版,但逐版本号试探发现
+   `platform-33_r02.zip` 在(r03 是 404),`build-tools_r30.0.3-linux.zip`
+   也在。布点注意目录层级:平台 zip 解开是 `android-13/` 要 rename 成
+   `platforms/android-33`;build-tools zip 解开是 `android-11/` 要放进
+   `build-tools/30.0.3/`。
+9. **docker cp 双陷阱**(2026-08-21 实踩两小时):① zip 内目录自带
+   770 root 模式被 docker cp 原样保留,builder 读不了;② **绝不能对
+   运行中容器的 overlay upperdir 做宿主机手术**(mv/cp -a/rm)——live
+   overlay 的内核视图与宿主不同步,会出现容器里看到空目录、stat 正常但
+   open EACCES 等幻觉,且 rename 换 inode 也甩不掉。正确姿势:
+   `docker stop` → 宿主直改 upperdir(`/var/lib/containerd/
+   io.containerd.snapshotter.v1.overlayfs/snapshots/<N>/fs`,N 从容器
+   /proc/mounts 的 upperdir 查)→ `docker start`。注意容器内连 root
+   也修不了 `/home/builder/lib/**`——profile-restricted.apparmor 有
+   `deny /home/builder/lib/** wlk`,只能宿主侧停机修。
+10. 上游把 bzip2 并入 `libbz2` 子包但 build-bootstraps.sh:432 的
+    bootstrap 清单没跟上(fork commit 62002c2 改清单为 libbz2;
+    bzip2 子包 deb 由 extract_debs 自动收编,zip 内容不变)。
+11. zip 成品落点:`build-bootstraps.sh` 的 `mv` 目标是仓库根,被
+    AppArmor restricted profile 拦(只放行 `output/**`),且失败后
+    清理陷阱会删掉临时 zip 毁尸灭迹。fork 已改 mv 到 `output/`;
+    宿主侧 package-apk.sh 的资产搜索路径同步加了 output/ 候选。
+12. **output/ 剪枝纪律**:`extract_debs` 无脑扫 output/ 里所有非
+    static deb。`-i` 被包名差异禁用后,构建期依赖(python/perl 等)
+    也全被编成 deb 堆在 output/,不剪就全进 zip(实踩:138M 胖包
+    带完整 python3.14)。正解:重打 zip 前按 27 个顶层包的
+    Depends+Pre-Depends 做 BFS 闭包(83 个),其余移到 output-excess/
+    (别删,后续做 apt 自建源还要用)。剪后 zip 32M/3771 文件,与
+    上游体量相符。
 
 ## 4. 构建(复现步骤)
 
