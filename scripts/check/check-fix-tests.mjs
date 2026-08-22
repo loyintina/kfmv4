@@ -5,7 +5,9 @@
  * 思想：修 bug 不带回归钉 = 同一个 bug 会回来第二次（testing.md「写钉子的纪律」、
  * bugs.md 登记表的存在理由）。纪律靠自觉 → 自觉不可靠 → 机械化（discipline-mechanize.yaml SOP）。
  *
- * 规则：提交信息首行是 fix: / fix(范围): 且未触及 tests/ 且提交信息无豁免标记 → 中断。
+ * 规则：提交信息首行是 fix: / fix(范围): 且未触及测试（判据见下）且提交信息无豁免标记 → 中断。
+ * 「触及测试」判据（2026-08-22 评审裁决二）：任意层级 tests/ 目录（含 nz/tests/）/
+ *   TS/JS 的 .test. 与 .spec. 文件 / Rust 的 _test.rs 尾与 tests.rs / diff 含 #[cfg(test)]。
  * 豁免：提交信息**独立一行**写 `tests:na`（声明「此修复无需/无法补钉」，如纯配置、文案、
  *   构建脚本修复）——独立行语法与 docs:na 同款，防 prose 字面串误认。
  *
@@ -42,10 +44,29 @@ try {
 
 const firstLine = (message.split('\n')[0] || '').trim();
 const isFix = /^fix(\([^)]*\))?:/.test(firstLine);
-const touchedTests = files.some(f => f.startsWith('tests/'));
+// 「触及测试」判据（2026-08-22 评审裁决二）：
+//   ①任意层级 tests/ 目录（含 nz/tests/，非根 */tests/）——原判据
+//     startsWith('tests/') 只认根目录，nz 线带钉 fix 两次被误拦（盲区）；
+//   ②测试文件名：TS/JS *.test.ts(x)/*.spec.ts(x)；Rust *_test.rs、*/tests.rs；
+//   ③diff 含 #[cfg(test)]（Rust 内联测试模块）。
+const touchedTests = files.some((f) =>
+  /(^|\/)tests\//.test(f) ||
+  /\.(test|spec)\.[tj]sx?$/.test(f) ||
+  /_test\.rs$/.test(f) ||
+  /(^|\/)tests\.rs$/.test(f)
+);
+let diffHasRustTests = false;
+if (!touchedTests) {
+  try {
+    const diff = STAGED
+      ? execSync('git diff --cached', { encoding: 'utf-8' })
+      : execSync('git show --format= HEAD', { encoding: 'utf-8' });
+    diffHasRustTests = diff.includes('#[cfg(test)]');
+  } catch { /* diff 取不到按无内联测试处理 */ }
+}
 const exempt = /^tests:na\s*$/m.test(message);
 
-if (isFix && !touchedTests && !exempt) {
+if (isFix && !touchedTests && !diffHasRustTests && !exempt) {
   console.error('╔══════════════════════════════════════════════════════════════╗');
   console.error('║  🚫 心法 24：fix 提交未带回归钉                                ');
   console.error('⛳ TEST-FLOW-01：fix 提交必须带回归钉——读 docs/guides/testing.md，走 workflows/bug-fix.yaml 补钉步骤');
@@ -59,4 +80,5 @@ if (isFix && !touchedTests && !exempt) {
   process.exit(1);
 }
 
-console.log(`[check-fix-tests] OK — ${label}${isFix ? (touchedTests ? '（fix 带钉）' : '（tests:na 豁免）') : '（非 fix 提交）'}`);
+const hasTests = touchedTests || diffHasRustTests;
+console.log(`[check-fix-tests] OK — ${label}${isFix ? (hasTests ? '（fix 带钉）' : '（tests:na 豁免）') : '（非 fix 提交）'}`);
