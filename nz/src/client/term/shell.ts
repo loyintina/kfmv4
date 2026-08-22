@@ -13,6 +13,15 @@
 import type { TermCoreHandle } from '../term-core.js';
 import { tokenToCss, TERM_FG, TERM_BG } from './palette.js';
 
+/**
+ * 宽字符（EAW Wide/Fullwidth + 常用 emoji 区间）——真终端纪律：宽字
+ * 必须裁进固定 2 格，不许按字形自然宽度推进（IME 黑匣子定位：格网
+ * 光标按 col×cellW 放，浏览器却按自然宽度画 CJK ≈2.4 格/字，每字
+ * 累积偏 0.4 格 = 光标漂移真凶）。v1 区间覆盖常用 CJK/全角/emoji，
+ * 生僻区间漏判留宽字符表完善小步。
+ */
+const WIDE_CHAR = /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F300}-\u{1FAFF}\u{20000}-\u{3FFFD}]/u;
+
 export interface TermShellOpts {
   cols: number;
   rows: number;
@@ -95,6 +104,34 @@ export class TermShell {
     probe.remove();
   }
 
+  /** 往容器里填文本：宽字符逐个裁进 2×cellW 固定格（inline-block 裁切），
+   * 窄字符走自然文本。cellW 未量出时退化为纯文本（首帧前不裁）。 */
+  private appendTextCells(parent: HTMLElement, text: string) {
+    if (this.cellW <= 0 || !WIDE_CHAR.test(text)) {
+      parent.appendChild(document.createTextNode(text));
+      return;
+    }
+    let buf = '';
+    const flush = () => {
+      if (buf) {
+        parent.appendChild(document.createTextNode(buf));
+        buf = '';
+      }
+    };
+    for (const ch of text) {
+      if (WIDE_CHAR.test(ch)) {
+        flush();
+        const w = document.createElement('span');
+        w.style.cssText = `display:inline-block;width:${2 * this.cellW}px;overflow:hidden;white-space:pre;`;
+        w.textContent = ch;
+        parent.appendChild(w);
+      } else {
+        buf += ch;
+      }
+    }
+    flush();
+  }
+
   /** 把一行 text+runs 渲染进 row div。runs 的 start 是字节下标。 */
   private renderRow(div: HTMLDivElement, line: string) {
     const sep = line.indexOf('\x1f');
@@ -117,7 +154,7 @@ export class TermShell {
       const seg = this.dec.decode(bytes.subarray(from, to));
       if (!seg) return;
       if (style === null) {
-        div.appendChild(document.createTextNode(seg));
+        this.appendTextCells(div, seg);
         return;
       }
       const [fg, bg, attrs] = style.split(',');
@@ -137,7 +174,7 @@ export class TermShell {
       if (deco) span.style.textDecoration = deco;
       if (attrs.includes('d')) span.style.opacity = '0.6';
       if (attrs.includes('h')) span.style.visibility = 'hidden';
-      span.textContent = seg;
+      this.appendTextCells(span, seg);
       div.appendChild(span);
     };
     let cursor = 0;

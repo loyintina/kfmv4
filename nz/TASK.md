@@ -672,3 +672,14 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   角标加 col（首卡光标列号，评审次选项同步落地）。守视端到端验证：
   ?debug 开页打 ab → 日志逐条 keydown 落盘。8023 服务重启纪律补记：
   pgrep 按命令行模式找不到 tsx 包装进程时用 ss -tlnp 按端口找 PID。
+- 2026-08-23：**IME 黑匣子两根因落地**（评审回放 168 事件实锤）：
+  ①光标漂移=格网光标 vs CJK 字形自然推进不裁格（每字累积偏 0.4 格）
+  ——修：宽字符（EAW W/F + emoji 区间）渲染时逐个裁进 2×cellW 固定
+  格（inline-block 裁切），真终端同款纪律。自验：col=42 时字形右缘
+  =42×cellW=328.9px 与光标 x 精确对齐。②英文抖=有滚动内容时 resize
+  无条件滚到底挤兑——修：砍掉 viewport 事件里的 followBottom，光标
+  露出只由 shell renderFrame 的 nearest 滚动兜底（被遮才滚）。
+  ③黑匣子新知入档：真机小鹤音形(Via) 走纯 input 分支（0 条
+  composition 事件，v==data 无拼音残影）——composition 纪律那套
+  在该 IME 上根本不触发，input 分支才是主路。④测量纪律：row 文本
+  尾部有填充空格，量文本右缘要用末字符节点而非整行 range。

@@ -252,22 +252,18 @@ export function applyTermBundle(ctx: Context): void {
         }
       });
 
-      // 键盘跟随 + 尺寸跟随：软键盘弹起 → 可视区变矮（resizes-content）
-      // → 重测行列 → 核/壳/PTY 三方同步 resize，再滚到底让光标行露出。
-      // iOS 不认 interactive-widget 时 visualViewport resize 照样触发兜底。
-      const followBottom = () => {
-        container.el.scrollTop = container.el.scrollHeight;
-      };
+      // 尺寸跟随：软键盘弹起 → 可视区变矮（resizes-content）→ 防抖后
+      // 重测行列 → 核/壳/PTY 三方同步 resize。光标露出由 shell 的
+      // nearest 滚动兜底（光标被遮才滚），不做无条件滚到底。
       // 真机诊断计数（守视/控制台也可 eval __kfmNzTermDebug 直读）
       (window as unknown as Record<string, unknown>).__kfmNzTermDebug = dbg;
       const onViewportResize = () => {
         dbg.viewportEvents++;
         // 英文闪取证：可视区事件随 IME 事件同流落日志（评审五节建议）
         postDebug?.({ type: 'viewport', vh: window.visualViewport?.height ?? 0, wh: window.innerHeight });
-        followBottom();
-        // 尺寸变更防抖（Termux 纪律：布局稳定才改尺寸）：IME 候选栏每敲
-        // 一字都伸缩可视高（实测 vp 每字 +1）——高度跟随与行列变更都等
-        // 150ms 稳定后才动，否则容器高度每字跳一下=肉眼可见的闪烁。
+        // 不滚！resize 时无条件滚到底是「每字抖几行」的真凶（黑匣子坐实：
+        // 滚动内容存在时 resize→重滚=挤兑）。光标真被遮住时由
+        // shell.renderFrame 的 nearest 滚动兜底（能不滚就不滚）。
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
           // 键盘吞最后一行的根治：浏览器不认 resizes-content 时（部分国产
@@ -284,10 +280,9 @@ export function applyTermBundle(ctx: Context): void {
             card.cols = s.cols;
             card.rows = s.rows;
             card.core.resize(s.cols, s.rows);
-            card.shell.resize(s.rows);
+            card.shell.resize(s.rows); // 内部 renderFrame → 光标 nearest 兜底
             if (card.sessionId) bridge.resize(card.sessionId, s.cols, s.rows);
           }
-          followBottom();
         }, 150);
       };
       let resizeTimer: ReturnType<typeof setTimeout> | undefined;
