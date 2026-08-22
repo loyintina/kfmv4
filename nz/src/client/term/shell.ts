@@ -30,6 +30,11 @@ export class TermShell {
   /** 重绘统计（真机闪烁诊断：frames/rowsPainted 经 window.__kfmNzTermDebug 可读） */
   readonly stats = { frames: 0, rowsPainted: 0 };
 
+  /** 字格尺寸（评审光标漂移探针取证用；measure() 跑过后才有真值，未量为 0） */
+  get metrics(): { cellW: number; cellH: number } {
+    return { cellW: this.cellW, cellH: this.cellH };
+  }
+
   constructor(
     private core: TermCoreHandle,
     private el: HTMLElement,

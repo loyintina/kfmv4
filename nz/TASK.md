@@ -657,3 +657,9 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   与 npm test「passed/用例」本两个口径）：即日起 commit 题与通报信
   不手写钉数；引用计数以当时 HEAD 实测 `npm test` passed 数为准并
   注 HEAD 短哈希（如「76 passed @ da8b714d」）；「钉」只作概念词。
+- 2026-08-22：**光标列号探针**（评审 IME 取证信）：window.__kfmNzTermCursor
+  () → { col, row, cols, cellW }，纯读无副作用。评审 headless 已证字节
+  层一字不差（20/20 汉字），光标漂移是列号累积偏而非双发；探针落地
+  后评审出逐词漂移曲线。守视侧自验：基线 col=32，打「你好」后 col=36
+  （CJK 一字两列，直发字节路径正确）。英文闪的怀疑链收窄到「软键盘
+  resize→整网格重绘」，真机盯角标 rz 是否每击 +1 坐实。

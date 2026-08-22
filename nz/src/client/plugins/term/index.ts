@@ -270,6 +270,14 @@ export function applyTermBundle(ctx: Context): void {
       const sessionId = await bridge.open({ command: opts.command, cols: card.cols, rows: card.rows });
       card.sessionId = sessionId;
       shell.renderFrame();
+      // 光标列号探针（评审 IME 漂移取证用，纯读无副作用）：
+      // window.__kfmNzTermCursor() → { col, row, cols, cellW }
+      // col 出自 wasm 核 cursor()（packed row<<16|col），cellW 是壳实测字格宽
+      // ——CJK 记几列、字格度量偏不偏，评审逐词曲线直接对照这两个数。
+      (window as unknown as Record<string, unknown>).__kfmNzTermCursor = () => {
+        const cur = card.core.cursor();
+        return { col: cur & 0xffff, row: cur >>> 16, cols: card.cols, cellW: shell.metrics.cellW };
+      };
       return inst.id;
     },
   };
