@@ -76,16 +76,21 @@ export interface TerminalCardMeta {
   _welcomed?: boolean;
   _selfHeal?: ReturnType<typeof setInterval>;
   _onVisible?: () => void; // 锁屏恢复：强制重绘+fit
-  _pinBottom?: boolean;    // 2026-08-23 加载/刷新贴底：初始 mount 置 true，贴底一次后 false
-  _pinTimer?: ReturnType<typeof setTimeout>; // 贴底 debounce timer
+  _pinTimer?: ReturnType<typeof setTimeout>; // 贴底 debounce timer（onOutput 防抖用）
 }
 
 /** 窄化守卫：将通用 CardInstance 窄化为 TerminalCardMeta 特化。全文件唯一 as 逃逸。 */
 /** fit 健壮化：多阶段（立即 + rAF + 150ms 延迟）——覆盖浮动卡动画中途的中间尺寸 */
+// 智能贴底钩子（2026-08-23）：fit/resize 后若视口已跟随底部（viewportY>=baseY-1）就钉回底，
+// 否则不钉（尊重用户上滚）。由各终端 mount 时赋值；robustFit 末尾统一调用，覆盖所有 fit 路径。
+let _pinBottomIfFollowing: (() => void) | null = null;
 function robustFit(fit: FitAddon) {
   try { fit.fit(); } catch {}
   requestAnimationFrame(() => { try { fit.fit(); } catch {} });
-  setTimeout(() => { try { fit.fit(); } catch {} }, 150);
+  setTimeout(() => {
+    try { fit.fit(); } catch {}
+    try { _pinBottomIfFollowing?.(); } catch {}
+  }, 150);
 }
 
 /** 半屏自愈：低频校验容器高度 vs canvas 高度，偏差 >20% re-fit（错过 resize 也能自愈） */
@@ -458,10 +463,15 @@ export function initTerminalCore(
   container.appendChild(termEl);
   term.open(termEl);
 
-  // 加载/刷新后贴底（2026-08-23 用户报：刷新/重连后 xterm 视口不钉底→从顶慢滚，
-  // 内容多滚很久、滚动中再触发就永不 settle）。只在初始 mount 置 true（下次某轮
-  // onOutput burst 收尾后一次性 scrollToBottom），重连不重臂（_pinBottom 已 false）。
-  tc.meta._pinBottom = true;
+  // 加载/刷新/软键盘 resize 后贴底（2026-08-23 用户报：刷新/首开 tmux 卡、召唤/收起输入法
+  // 都会让 code 重新滚动）。智能贴底：视口已跟随底部才钉回 -- 加载/首开/闪 resize 不乱滚，
+  // 用户上滚看历史时不被拉回底。重连不重臂（本函数被 robustFit 统一调用，mount 时赋一次）。
+  _pinBottomIfFollowing = () => {
+    try {
+      const b = term.buffer.active;
+      if (b.viewportY >= b.baseY - 1) { term.scrollToBottom(); }
+    } catch { /* noop */ }
+  };
 
 
   initAuxBar(container, term);
@@ -534,15 +544,11 @@ export function initTerminalCore(
     const d = p as { sessionId: string; data: string };
     if (d.sessionId === tc.meta.sessionId) {
       term.write(d.data);
-      // 加载/刷新贴底：初始 burst 收尾（250ms 无新输出）后一次性 scrollToBottom，
-      // 然后 _pinBottom 置 false——重连不再自动滚（用户要求：重连不乱滚）。
-      if (tc.meta._pinBottom) {
-        if (tc.meta._pinTimer) clearTimeout(tc.meta._pinTimer);
-        tc.meta._pinTimer = setTimeout(() => {
-          try { term.scrollToBottom(); } catch { /* noop */ }
-          tc.meta._pinBottom = false;
-        }, 250);
-      }
+      // 内容灌入后贴底（防抖）：跟随底部才钉，避免中途大量内容滚回顶（慢滚/永不 settle）
+      if (tc.meta._pinTimer) clearTimeout(tc.meta._pinTimer);
+      tc.meta._pinTimer = setTimeout(() => {
+        try { _pinBottomIfFollowing?.(); } catch { /* noop */ }
+      }, 250);
     }
   };
   wsChannel.onMessage('terminal-output', onOutput);
