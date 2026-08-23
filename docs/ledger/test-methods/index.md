@@ -23,6 +23,7 @@
 | 方法 | 类别 | 适用 | 工具/载体 |
 |---|---|---|---|
 | 守视截图 | C | 视觉对齐、是否出现、观感 | headless/真机截图 + 人眼直接看 |
+| 真实点击可测性 E2E | A | 真实点击 UI 的「点一下就该有反应」：可点达（elementFromPoint 命中自身）/ 点即有果（点击后发生变化）/ 焦点保持（不抢焦点→软键盘不塌） | playwright + 通用断言 `nz/tests/browser/clickability.mjs`（reachable/clickSends/focusKept）；模板 `nz/tests/browser/keybar-click.test.mjs`；case-003 |
 | headless 浏览器驱动 | A/C 桥 | 驱动真 PTY、读内部状态 | playwright + chromium |
 | 帧像素分析 | C | 抖动/闪（连拍 均值/标准差） | ImageMagick |
 | 黑匣子事件流 | A | 抓真实事件、复现时序 | `?debug` → 落盘 `/tmp` |
