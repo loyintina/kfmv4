@@ -27,7 +27,7 @@
 
 - 这类"按钮可点性/布局重叠"bug，**必须真浏览器**（elementFromPoint、真实点击命中测试）
   才能测——fake-dom 做不了。**A 档可测行为 + 真浏览器 = 标准 E2E**。
-- 载体是独立 `tests/browser/*.mjs`（不进 node 单测 `tests/index.test.ts`），用 playwright +
+- 载体是独立 `nz/tests/browser/*.mjs`（不进 node 单测 `nz/tests/index.test.ts`），用 playwright +
   chromium（已装）；nz 若要进 CI 需把 playwright 加为 devDependency + 建 browser-test runner。
 - 与「考题先行」纪律一致：**先写红测 → 修到绿**。此类 UI 交互 bug 用 E2E 断言钉死，不再靠
   用户真机报。
