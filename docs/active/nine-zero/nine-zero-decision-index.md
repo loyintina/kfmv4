@@ -1,6 +1,6 @@
-# 9.0 决策索引（跨线评审信箱 110 封信 → 决策一张表）
+# 9.0 决策索引（跨线评审信箱 111 封信 → 决策一张表）
 
-> 这是什么：`docs/ledger/agent-inbox/` 110 封信的**决策级索引**——信箱是
+> 这是什么：`docs/ledger/agent-inbox/` 111 封信的**决策级索引**——信箱是
 > ledger（只追加不删改），裁决史散在信里；本表把**已拍板决策**提取成一张表，
 > 「为什么这么定」从这里查、细节回信里读。信仍在，本表只索引不替代。
 > 别的去哪找：契约全文 → `nine-zero-phase1-contracts.md` / `nine-zero-phase2-contracts.md`；
@@ -45,7 +45,7 @@
 | kfmv4 仓内提交纪律（2026-08-20） | 8.7.4 commit 6b1ba5ce 混入事故整改：nz 提交只 `git add nz/...` 白名单式路径、提交前 `git status` 全量核对、禁用 `git add -A`；混入无数据丢失，他线 WIP 已入仓周知 | `kfmv4-9.0-nz-874-landing-report.md` 第四节 / `kfmv4-9.0-nz-874-review.md` | ✅ 已验证（追加两条：链红入仓教训 + git 卫生 v0 评审认领） | kfm-nz/TASK.md 决策记录 |
 | 跨会话完成通知协议（2026-08-23） | 评审轮询 pane 等空闲太慢 → agent 每轮收尾主动跑 `scripts/agent-notify.sh <session> <status>` 写 `/tmp/kfm-note/notify.log`（易失信号层，不进 ledger）；9.0 收讫本轮起执行；`await-user` 已采纳定版（done=交棒评审 / await-user=交棒用户物理动作）；新增「回函通知代字」纪律：来信头带 `> 回函通知: <session>` 则回函后必投信号；复盘裁决④补强：agent-send.sh 投后自验循环（首/中/尾三片段+只看框线行判滞留 → 补 C-m 重试 6 次 → 仍滞留非零退出；v1 尾部前缀口径假阴性已勘误实弹修正），目标忙时 C-m 被吞不再静默失败 | `kfmv4-9.0-agent-notify-report.md` / `kfmv4-9.0-agent-notify-response.md` / `kfmv4-9.0-awaituser-adopt-response.md` / `kfmv4-9.0-awaituser-adopt-ack-response.md` / `kfmv4-9.0-ime-retro-review.md` / `kfmv4-9.0-ime-retro-review-response.md` / `kfmv4-9.0-agentsend-selfcheck-fix-report.md` | ✅ 已落地（④v2 补丁待评审批：v1 前缀口径假阴性已勘误） | 9.0 线收尾清单 + inbox README |
 | IME 讨伐复盘四裁决（2026-08-23） | ①?debug 探针骨架常驻（管道+字段注册点=基建）/IME 专用字段随收口移除/角标移除——已入 TASK.md 收口口径修订；②计数单源=gen 脚本输出，来信方不推硬编码数字；③方法库开工前扫（fix 门禁 grep 补丁队列）+ 评审承诺验证先翻方法库；④agent-send C-m 自验进脚本（v2：首/中/尾三片段+框线行判滞留）；双方各立镜像规矩：真机数字收口 / headless 只配写「待真机对账」。**终审：三固化建议（真机症状第一天条/探针过备/骨架常驻）+ 镜像规矩全通过，并入 test-methods/index.md「真机取证纪律」节，IME 讨伐正式收尾** | `kfmv4-9.0-ime-retro-report.md` / `kfmv4-9.0-ime-retro-review.md` / `kfmv4-9.0-ime-retro-review-response.md` / `kfmv4-9.0-agentsend-selfcheck-fix-report.md` | ✅ 收尾（④v2 补丁批条未见明文，默认随裁决生效；若评审有异议再翻） | nz/TASK.md 收官条目 + test-methods/index.md 真机取证纪律节 |
-| tmux 线提速 + 弃 8.x（2026-08-23） | 弃 8.x（修不动的 IME 滚焦坑，nz 已有解不再投工时）；「tmux 窗口能用」= 用户迁 9.0 日用的判据，8.8.3→8.8.4→8.8.5 提为最高优先；8.8.2 考卷全集差分硬门与 tmux 三步零耦合 → **硬门后移不取消**：新挂点=8.8.5 闭环前置，敞口期真机实拍+NA 差分双覆盖；轻量收口三件先行不关闸门；评审盯 A/B/C 档 + 真机数字收口 | 会话拍板（用户）/ `kfmv4-9.0-tmux-priority-notice.md` | ✅ 用户拍板（通报评审） | nz/TASK.md 总表+详表 8.8.2–8.8.5 行 + 日志区 |
+| tmux 线提速 + 弃 8.x（2026-08-23） | 弃 8.x（修不动的 IME 滚焦坑，nz 已有解不再投工时）；「tmux 窗口能用」= 用户迁 9.0 日用的判据，8.8.3→8.8.4→8.8.5 提为最高优先；8.8.2 考卷全集差分硬门与 tmux 三步零耦合 → **硬门后移不取消**：新挂点=8.8.5 闭环前置，敞口期真机实拍+NA 差分双覆盖；轻量收口三件先行不关闸门；评审盯 A/B/C 档 + 真机数字收口；**8.8.2 轻收口三件已落地**（对照表 nz/docs/term-checklist.md + M3 基线 nz/tests/m3-baseline/ + 探针按裁决①收口：角标/专症字段移除、骨架常驻） | 会话拍板（用户）/ `kfmv4-9.0-tmux-priority-notice.md` / `kfmv4-9.0-nz-882-closeout-notice.md` | ✅ 用户拍板；8.8.2 已收口（2026-08-23） | nz/TASK.md 总表+详表 8.8.2–8.8.5 行 + 日志区 |
 | 终端按键栏立项 8.8.3b（2026-08-23） | 评审建议 nz 补仿 Termux 按键栏（照 NA keybar/keymap）；9.0 采纳并升格为 tmux 线刚需（手机无 Ctrl+B 前缀则 tmux 不可用）；插 8.8.3 后 8.8.4 前；两排七列布局 + 四条纪律（粘滞修饰/keymap A 档/栏随键盘上浮/NA KEYS 序）照 NA 抄；核加 `app_cursor()` 暴露（cursor_visible 同款小改） | `kfmv4-9.0-term-keybar-review.md` / `kfmv4-9.0-term-keybar-response.md` | ✅ 采纳立项 | nz/TASK.md 总表+详表 8.8.3b 行 |
 
 ## 待决/进行中
