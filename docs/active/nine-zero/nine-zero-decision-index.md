@@ -1,6 +1,6 @@
-# 9.0 决策索引（跨线评审信箱 106 封信 → 决策一张表）
+# 9.0 决策索引（跨线评审信箱 107 封信 → 决策一张表）
 
-> 这是什么：`docs/ledger/agent-inbox/` 106 封信的**决策级索引**——信箱是
+> 这是什么：`docs/ledger/agent-inbox/` 107 封信的**决策级索引**——信箱是
 > ledger（只追加不删改），裁决史散在信里；本表把**已拍板决策**提取成一张表，
 > 「为什么这么定」从这里查、细节回信里读。信仍在，本表只索引不替代。
 > 别的去哪找：契约全文 → `nine-zero-phase1-contracts.md` / `nine-zero-phase2-contracts.md`；
@@ -43,8 +43,8 @@
 | nz TASK.md 重构评审闭环（2026-08-18/20） | 9.0 线评 dsh 重构 8 条（4 必修+4 补强）全落实；发起方核验处置位置：数据区 2.5 / 端口 8023 在 2.3 / 单写者 1.2 | `kfmv4-9.0-nz-taskmap-review.md` | ✅ 已验证 | kfm-nz/TASK.md |
 | nz 落地评审 5 条处置（2026-08-20） | nz 补 git 仓库（首个 commit a0e37ce）+ DoD 追加「小步关账必 commit」；步号口径入 1.3；dsh=9.0 线双向讨论通道（非独立线）明文固定；package version 对齐 9.0.0-dev | `kfmv4-9.0-nz-landing-review.md` / `kfmv4-9.0-nz-landing-review-response.md` | ✅ 已回 | kfm-nz/TASK.md 决策记录 + nz 仓库 |
 | kfmv4 仓内提交纪律（2026-08-20） | 8.7.4 commit 6b1ba5ce 混入事故整改：nz 提交只 `git add nz/...` 白名单式路径、提交前 `git status` 全量核对、禁用 `git add -A`；混入无数据丢失，他线 WIP 已入仓周知 | `kfmv4-9.0-nz-874-landing-report.md` 第四节 / `kfmv4-9.0-nz-874-review.md` | ✅ 已验证（追加两条：链红入仓教训 + git 卫生 v0 评审认领） | kfm-nz/TASK.md 决策记录 |
-| 跨会话完成通知协议（2026-08-23） | 评审轮询 pane 等空闲太慢 → agent 每轮收尾主动跑 `scripts/agent-notify.sh <session> <status>` 写 `/tmp/kfm-note/notify.log`（易失信号层，不进 ledger）；9.0 收讫本轮起执行；`await-user` 已采纳定版（done=交棒评审 / await-user=交棒用户物理动作）；新增「回函通知代字」纪律：来信头带 `> 回函通知: <session>` 则回函后必投信号；复盘裁决④补强：agent-send.sh 投后自验循环（capture-pane 尾部 8 行看前缀滞留 → 补 C-m 重试 6 次 → 仍滞留非零退出），目标忙时 C-m 被吞不再静默失败 | `kfmv4-9.0-agent-notify-report.md` / `kfmv4-9.0-agent-notify-response.md` / `kfmv4-9.0-awaituser-adopt-response.md` / `kfmv4-9.0-awaituser-adopt-ack-response.md` / `kfmv4-9.0-ime-retro-review.md` / `kfmv4-9.0-ime-retro-review-response.md` | ✅ 已落地（④补丁待评审批） | 9.0 线收尾清单 + inbox README |
-| IME 讨伐复盘四裁决（2026-08-23） | ①?debug 探针骨架常驻（管道+字段注册点=基建）/IME 专用字段随收口移除/角标移除——已入 TASK.md 收口口径修订；②计数单源=gen 脚本输出，来信方不推硬编码数字；③方法库开工前扫（fix 门禁 grep 补丁队列）+ 评审承诺验证先翻方法库；④agent-send C-m 自验进脚本（9.0 出补丁评审批）；双方各立镜像规矩：真机数字收口 / headless 只配写「待真机对账」 | `kfmv4-9.0-ime-retro-report.md` / `kfmv4-9.0-ime-retro-review.md` / `kfmv4-9.0-ime-retro-review-response.md` | ✅ 四裁决收讫（④补丁呈批中） | nz/TASK.md 收官条目 + 9.0 线收尾清单 |
+| 跨会话完成通知协议（2026-08-23） | 评审轮询 pane 等空闲太慢 → agent 每轮收尾主动跑 `scripts/agent-notify.sh <session> <status>` 写 `/tmp/kfm-note/notify.log`（易失信号层，不进 ledger）；9.0 收讫本轮起执行；`await-user` 已采纳定版（done=交棒评审 / await-user=交棒用户物理动作）；新增「回函通知代字」纪律：来信头带 `> 回函通知: <session>` 则回函后必投信号；复盘裁决④补强：agent-send.sh 投后自验循环（首/中/尾三片段+只看框线行判滞留 → 补 C-m 重试 6 次 → 仍滞留非零退出；v1 尾部前缀口径假阴性已勘误实弹修正），目标忙时 C-m 被吞不再静默失败 | `kfmv4-9.0-agent-notify-report.md` / `kfmv4-9.0-agent-notify-response.md` / `kfmv4-9.0-awaituser-adopt-response.md` / `kfmv4-9.0-awaituser-adopt-ack-response.md` / `kfmv4-9.0-ime-retro-review.md` / `kfmv4-9.0-ime-retro-review-response.md` / `kfmv4-9.0-agentsend-selfcheck-fix-report.md` | ✅ 已落地（④v2 补丁待评审批：v1 前缀口径假阴性已勘误） | 9.0 线收尾清单 + inbox README |
+| IME 讨伐复盘四裁决（2026-08-23） | ①?debug 探针骨架常驻（管道+字段注册点=基建）/IME 专用字段随收口移除/角标移除——已入 TASK.md 收口口径修订；②计数单源=gen 脚本输出，来信方不推硬编码数字；③方法库开工前扫（fix 门禁 grep 补丁队列）+ 评审承诺验证先翻方法库；④agent-send C-m 自验进脚本（9.0 出补丁评审批）；双方各立镜像规矩：真机数字收口 / headless 只配写「待真机对账」 | `kfmv4-9.0-ime-retro-report.md` / `kfmv4-9.0-ime-retro-review.md` / `kfmv4-9.0-ime-retro-review-response.md` | ✅ 四裁决收讫（④v2 补丁呈批中，实弹补 C-m 1 次送达） | nz/TASK.md 收官条目 + 9.0 线收尾清单 |
 
 ## 待决/进行中
 

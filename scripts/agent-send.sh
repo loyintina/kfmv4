@@ -40,14 +40,24 @@ tmux send-keys -t "$TARGET" "$MSG" C-m 2>&1
 tmux send-keys -t "$TARGET" C-m 2>&1
 echo "[agent-send] $TARGET <- ${MSG:0:60}"
 
-# 自验循环：消息前缀仍出现在 pane 尾部（输入框区）= 滞留未提交，补 C-m。
-# 只看尾部是因为提交后消息虽回显进会话区，但输入框会缩回空提示符——尾部
-# 8 行基本只含输入框 + 状态行。前缀取 24 字符，grep -F 定字串防正则误伤。
+# 自验循环：消息仍滞留 = 补 C-m。检测口径（v2，首发实弹抓出的洞）：
+# 长消息在输入框里会滚动，可视尾部只见消息末尾、前缀早已滚出——只看
+# 尾部窗口 + 前缀会假阴性（消息明明滞留却报已送达，首发即踩）。故取
+# 首/中/尾三个 24 字符片段，且只看「框线行」（│ 开头——会话区回显无
+# 边框，天然排除），任一片段出现在框线行 = 滞留。grep -F 定字串防正则
+# 误伤。
 PREFIX="${MSG:0:24}"
+LEN=${#MSG}
+MID="${MSG:$((LEN / 2)):24}"
+SUFFIX="${MSG:$((LEN > 24 ? LEN - 24 : 0)):24}"
+in_box() {
+  tmux capture-pane -t "$TARGET" -p 2>/dev/null | grep '^[[:space:]]*│' \
+    | grep -qFe "$PREFIX" -e "$MID" -e "$SUFFIX"
+}
 attempt=0
 while [ $attempt -lt 6 ]; do
   sleep 2
-  if tmux capture-pane -t "$TARGET" -p 2>/dev/null | tail -8 | grep -qF "$PREFIX"; then
+  if in_box; then
     attempt=$((attempt + 1))
     tmux send-keys -t "$TARGET" C-m 2>/dev/null
   else

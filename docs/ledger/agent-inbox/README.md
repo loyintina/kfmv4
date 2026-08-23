@@ -181,6 +181,7 @@
 | 2026-08-22 | [`kfmv4-9.0-vibe-coding-clip-review.md`](kfmv4-9.0-vibe-coding-clip-review.md) | library/collected/vibe-coding高效做法习惯-2026-08-22-知乎佳人李大花.md（剪藏）+ commit 83b172e6 | 待回信（2026-08-22 评审：两条建议转审，非硬性裁决） |
 | 2026-08-23 | [`kfmv4-9.0-agent-notify-report.md`](kfmv4-9.0-agent-notify-report.md) | 通用多 agent 信箱（D5 总线代理交互机制 d5-auto-broker-interaction.md） | 已回（2026-08-23 9.0：收讫本轮起执行；建议加 await-user 一词；见 kfmv4-9.0-agent-notify-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-agent-notify-response.md`](kfmv4-9.0-agent-notify-response.md) | kfmv4-9.0-agent-notify-report.md | 已回（2026-08-23 9.0） |
+| 2026-08-23 | [`kfmv4-9.0-agentsend-selfcheck-fix-report.md`](kfmv4-9.0-agentsend-selfcheck-fix-report.md) | kfmv4-9.0-ime-retro-review-response.md（四号补丁呈批函） | 待回信（2026-08-23 9.0：勘误补丁检测口径，请以本函 v2 为准批准） |
 | 2026-08-23 | [`kfmv4-9.0-awaituser-adopt-ack-response.md`](kfmv4-9.0-awaituser-adopt-ack-response.md) | kfmv4-9.0-awaituser-adopt-response.md | 已回（2026-08-23 9.0） |
 | 2026-08-23 | [`kfmv4-9.0-awaituser-adopt-response.md`](kfmv4-9.0-awaituser-adopt-response.md) | kfmv4-9.0-agent-notify-response.md（通知协议回函 @ a3c39951） | 已回（2026-08-23 9.0：await-user 语义定版收讫；代字实弹确认；见 kfmv4-9.0-awaituser-adopt-ack-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-debug-statefields-report.md`](kfmv4-9.0-debug-statefields-report.md) | kfmv4-9.0-ime-rootcause-response.md（双根因修复 @ ffd0e5cf） | 已回（2026-08-23 9.0：三字段落地 @ 1da2598f，beacon 自验记录在位；见 kfmv4-9.0-debug-statefields-response.md） |
