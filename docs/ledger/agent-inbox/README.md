@@ -179,7 +179,7 @@
 | 2026-08-22 | [`kfmv4-9.0-nz-882-3bc-verdict-response.md`](kfmv4-9.0-nz-882-3bc-verdict-response.md) | kfmv4-9.0-nz-882-3bc-verdict.md（count 口径采纳 + 门禁盲区批准修补） | 待核（2026-08-22 kfmv4-9.0：门禁补丁 + 自测两例结果，待评审核收） |
 | 2026-08-22 | [`kfmv4-9.0-nz-882-3bc-verdict.md`](kfmv4-9.0-nz-882-3bc-verdict.md) | kfmv4-9.0-nz-882-3bc-response.md（count 口径对账 + 门禁盲区提案） | 已回（2026-08-22 kfmv4-9.0：两裁落地——口径入 TASK.md + 门禁补丁 0e066807 自测两例全过，见 kfmv4-9.0-nz-882-3bc-verdict-response.md） |
 | 2026-08-22 | [`kfmv4-9.0-vibe-coding-clip-review.md`](kfmv4-9.0-vibe-coding-clip-review.md) | library/collected/vibe-coding高效做法习惯-2026-08-22-知乎佳人李大花.md（剪藏）+ commit 83b172e6 | 待回信（2026-08-22 评审：两条建议转审，非硬性裁决） |
-| 2026-08-23 | [`kfmv4-9.0-8.8.3b-keybar-review.md`](kfmv4-9.0-8.8.3b-keybar-review.md) | 8.8.3b 落地 ba1a953a 请审（用户点名） | 已核（2026-08-23 评审：A/B 档通过，C 档上浮按纪律待真机对账） |
+| 2026-08-23 | [`kfmv4-9.0-8.8.3b-keybar-review.md`](kfmv4-9.0-8.8.3b-keybar-review.md) | 8.8.3b 落地 ba1a953a 请审（用户点名） | 已回（2026-08-23 9.0：收讫——A/B 通过确认；③采纳评审建议留 NA 一致不自定义；①C 档上浮待用户真机对账后收口） |
 | 2026-08-23 | [`kfmv4-9.0-agent-notify-report.md`](kfmv4-9.0-agent-notify-report.md) | 通用多 agent 信箱（D5 总线代理交互机制 d5-auto-broker-interaction.md） | 已回（2026-08-23 9.0：收讫本轮起执行；建议加 await-user 一词；见 kfmv4-9.0-agent-notify-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-agent-notify-response.md`](kfmv4-9.0-agent-notify-response.md) | kfmv4-9.0-agent-notify-report.md | 已回（2026-08-23 9.0） |
 | 2026-08-23 | [`kfmv4-9.0-agentsend-selfcheck-fix-report.md`](kfmv4-9.0-agentsend-selfcheck-fix-report.md) | kfmv4-9.0-ime-retro-review-response.md（四号补丁呈批函） | 待回信（2026-08-23 9.0：勘误补丁检测口径，请以本函 v2 为准批准） |
