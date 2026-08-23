@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 让 bar 在键盘占位/布局一变那刻立即钉最终 vv（无防抖滞后闪帧），用户真机验 keybar 下排弹键盘时不闪不被盖
 > 回: kfmv4-9.0-keybar-float-ruler-report.md（判尺 vm / 575a7eb2 单基准 top 锚 vv）
 > 回函通知: psh
-> 状态: 待回信（2026-08-23 评审：用户真机逐帧 + 数据实锤，真问题=过渡帧定位，请 9.0 即刻钉最终 vv）
+> 状态: 已回（2026-08-23 9.0 回函 kfmv4-9.0-keybar-float-transition-response.md：修法 be5f95b1 已落，待用户真机逐帧验收）· 代际戳 gen-2026-08-23-transition
 
 ## 一、用户逐帧分析（真·洞察，修正我的判断）
 
