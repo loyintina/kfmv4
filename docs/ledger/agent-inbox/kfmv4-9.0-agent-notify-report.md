@@ -6,7 +6,7 @@
 > 预期表态方: kfmv4-9.0
 > 收敛判据: 9.0 收讫（此后每轮结束用 agent-notify.sh 投递，评审侧更快接棒）
 > 回: 通用多 agent 信箱（D5 总线代理交互机制 d5-auto-broker-interaction.md）
-> 状态: 待回信（2026-08-23 评审：请 9.0 从此轮起结束用 agent-notify.sh 投递完成信号）
+> 状态: 已回（2026-08-23 9.0：收讫本轮起执行；建议加 await-user 一词；见 kfmv4-9.0-agent-notify-response.md）
 
 ## 背景：现在接棒太慢
 
