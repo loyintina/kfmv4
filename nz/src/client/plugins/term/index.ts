@@ -219,9 +219,15 @@ export function applyTermBundle(ctx: Context): void {
       // 基准打架）。cssText 全量赋值还会冲掉宿主内联 pointer-events:auto
       // （overlay 层根 none，容器靠它开回点击）——必须带上。
       barStrip.el.style.cssText = `position:absolute;left:0;right:0;top:0;height:${KEYBAR_H}px;pointer-events:auto;`;
+      // ?kbOff=<px> 代字（keybar-kboff-report，用户拍板）：个别浏览器
+      // （Via 有栏+键盘态）vv.height 多报 ~42px——栏底按 vv 底−kbOff 上移
+      // 落到真实键盘顶；无参数=0 现状不改。用户改书签链接即调，非硬编码。
+      const kbOffParam = Number(new URLSearchParams(location.search).get('kbOff'));
+      const kbOff = Number.isFinite(kbOffParam) && kbOffParam > 0 ? Math.round(kbOffParam) : 0;
       const keybar = mountKeybar(barStrip.el, {
         send: (bytes) => { if (card.sessionId) bridge.input(card.sessionId, bytes); },
         appCursor: () => card.core.app_cursor(),
+        bottomOffset: kbOff,
       });
       // 一次性粘滞联动：落字前读走修饰位（有则 mapText 变换 + 灭灯）
       const takeMods = (text: string): string => {
@@ -293,6 +299,8 @@ export function applyTermBundle(ctx: Context): void {
         // dch=documentElement.clientHeight（第三把尺：文档布局高）
         // brt/brb=条带实测渲染 rect 顶/底（transition-report③：别只报
         // style.top 设定值，要看实际渲染坐标对比键盘真实顶）
+        // kboff=?kbOff 代字命中值（0=未命中；非 0 即走了 Via 适配分支——
+        // 真机确认走没走对，避免测旧包/没进分支）
         const barRect = barStrip.el.getBoundingClientRect();
         postDebug?.({
           type,
@@ -301,6 +309,7 @@ export function applyTermBundle(ctx: Context): void {
           ot: vv0?.offsetTop ?? 0,
           dch: document.documentElement.clientHeight,
           kbb: parseFloat(barStrip.el.style.top) || 0,
+          kboff: kbOff,
           kbc: Math.round(barRect.bottom
             - ((vv0?.height ?? 0) + (vv0?.offsetTop ?? 0))),
           brt: Math.round(barRect.top),

@@ -72,6 +72,12 @@ export interface KeybarHooks {
   send(bytes: string): void;
   /** 实时读对端应用光标模式（?1h） */
   appCursor(): boolean;
+  /**
+   * 栏底上移量（px，默认 0）：?kbOff=<px> 代字——个别浏览器（Via 有栏
+   * +键盘态）vv.height 多报 ~42px，栏底按 vv 底−kbOff 上移，落到真实
+   * 键盘顶。用户改链接即调，不硬编码品牌死值（keybar-kboff-report）。
+   */
+  bottomOffset?: number;
 }
 
 export interface KeybarHandle {
@@ -135,7 +141,8 @@ export function mountKeybar(parent: HTMLElement, hooks: KeybarHooks): KeybarHand
       // vv.height - 栏高，栏底沿精确钉在可视底，chrome 显隐都盖不住。
       const vv = window.visualViewport;
       if (vv) {
-        parent.style.top = Math.max(0, vv.offsetTop + vv.height - KEYBAR_H) + 'px';
+        const off = hooks.bottomOffset ?? 0;
+        parent.style.top = Math.max(0, vv.offsetTop + vv.height - KEYBAR_H - off) + 'px';
         parent.style.bottom = 'auto';
       } else {
         parent.style.top = 'auto';
