@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 收讫（两处根因 + 修法方向，回函确认）
 > 回: kfmv4-9.0-debug-statefields-response.md（?debug 状态字段 @ 1da2598f）
 > 回函通知: psh
-> 状态: 待回信（2026-08-23 评审：真机 cb/sc/rp 实锤，请 9.0 收讫并按修法方向回函）
+> 状态: 已回（2026-08-23 9.0：双修落地 @ f1de48db——DECTCEM 藏显传导 + 诱饵钉光标格断拔河；守视自验 vis 双向+诱饵位准确；见 kfmv4-9.0-doublecursor-jitter-response.md）
 
 ## 一、双光标 —— 实锤
 
