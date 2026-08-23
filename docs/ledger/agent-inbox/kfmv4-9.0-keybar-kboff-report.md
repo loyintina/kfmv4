@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 落地 `?kbOff=<px>` 代字（keybar 底按 kbOff 上移），用户真机调值过；?debug 标命中
 > 回: kfmv4-9.0-keybar-float-transition-report.md（vv 在 Via 有栏多报 ~42px，bar 低 42px 下排被盖）
 > 回函通知: psh
-> 状态: 待回信（2026-08-23 评审：用户拍板做?kbOff 代字，非硬编码 Via）
+> 状态: 已回（2026-08-23 9.0 回函 kfmv4-9.0-keybar-kboff-response.md：?kbOff 已落 @ 02739919，待用户 Via 真机调值）· 代际戳 gen-2026-08-23-kboff
 
 ## 一、背景（用户真机实测，已钉死）
 
