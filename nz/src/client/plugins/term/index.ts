@@ -310,7 +310,7 @@ export function applyTermBundle(ctx: Context): void {
         // 视口事件随 IME 事件同流落日志（评审五节建议）。
         // 8.8.3b 上浮被盖取证（keybar-float-report，专症字段随症收口候选）：
         //   ih=innerHeight（布局视口，chrome 显示时含栏高）vh=vv.height
-        //   ot=vv.offsetTop kbb=keybar 当前 bottom 设定值
+        //   ot=vv.offsetTop kbb=条带 top 设定值（钉 vv：offsetTop+height-栏高）
         //   kbc=栏实际底沿超出可视底的像素（>0=下排被盖实锤，真机收口看这条归 0）
         const vv0 = window.visualViewport;
         postDebug?.({
@@ -318,7 +318,7 @@ export function applyTermBundle(ctx: Context): void {
           ih: window.innerHeight,
           vh: vv0?.height ?? 0,
           ot: vv0?.offsetTop ?? 0,
-          kbb: parseFloat(barStrip.el.style.bottom) || 0,
+          kbb: parseFloat(barStrip.el.style.top) || 0,
           kbc: Math.round(barStrip.el.getBoundingClientRect().bottom
             - ((vv0?.height ?? 0) + (vv0?.offsetTop ?? 0))),
         });
@@ -327,14 +327,15 @@ export function applyTermBundle(ctx: Context): void {
         // shell.renderFrame 的 nearest 滚动兜底（能不滚就不滚）。
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-          // 键盘吞最后一行的根治：浏览器不认 resizes-content 时（部分国产
-          // 浏览器/webview）键盘直接盖在页面上——手动把容器高度压到可视高，
-          // 用 JS 模拟 resizes-content。阈值 40px 防动态工具栏抖动误判。
-          // 8.8.3b：手动压高时同样预留按键栏高度（栏上浮占的就是这段）。
+          // 钉 visual viewport（8.8.3b 上浮被盖修法，keybar-float-locate
+          // -report）：容器顶=vv.offsetTop、高=vv.height-栏高，全程不以
+          // innerHeight 为基准——chrome 显示时两者差 1-2px 的真机实锤
+          // 不再适用；chrome 显隐/键盘弹收容器都恰好占满可视区（含栏位
+          // 预留）。chrome 先藏时序由 vv resize/scroll 双监听+本防抖覆盖。
           const vv2 = window.visualViewport;
           if (vv2) {
-            container.el.style.height =
-              vv2.height < window.innerHeight - 40 ? `${Math.max(80, vv2.height - KEYBAR_H)}px` : '';
+            container.el.style.top = `${vv2.offsetTop}px`;
+            container.el.style.height = `${Math.max(80, vv2.height - KEYBAR_H)}px`;
           }
           const s = measure();
           if (s.cols !== card.cols || s.rows !== card.rows) {
@@ -360,7 +361,7 @@ export function applyTermBundle(ctx: Context): void {
           ih: window.innerHeight,
           vh: vv0?.height ?? 0,
           ot: vv0?.offsetTop ?? 0,
-          kbb: parseFloat(barStrip.el.style.bottom) || 0,
+          kbb: parseFloat(barStrip.el.style.top) || 0,
           kbc: Math.round(barStrip.el.getBoundingClientRect().bottom
             - ((vv0?.height ?? 0) + (vv0?.offsetTop ?? 0))),
         });

@@ -9,9 +9,10 @@
  * 四条纪律：
  * ① 修饰键一次性粘滞（Termux 同款）：toggle 点亮，下一次落字时 take 读走
  *    清零（联动一次自动灭）；映射逻辑在 keymap.ts（纯逻辑，A 档有题）。
- * ③ 栏随软键盘上浮：fixed 定位贴可视区底（bottom = innerHeight - vv.height
- *    - vv.offsetTop），键盘弹起时栏跟着上浮，不被盖（NA 16777485 实拍教训：
- *    画死在屏底会被弹起的键盘盖住）。
+ * ③ 栏随软键盘上浮：钉 visual viewport（top = vv.offsetTop + vv.height
+ *    - 栏高），栏底沿精确贴可视底——不以 innerHeight 为基准（chrome 显示
+ *    时两者差 1-2px，底边必被盖，8.8.3b 真机数字实锤）；键盘弹起栏跟着
+ *    上浮（NA 16777485 实拍教训：画死在屏底会被弹起的键盘盖住）。
  * ④ 键位序按 KEYS 表（与 NA KEYS 逐格对齐，键序有考题盯）。
  * 浏览器侧特有一条：按键**不得抢焦点**——焦点离开诱饵 textarea 软键盘就
  * 收（pointerdown preventDefault 拦默认焦点转移，按下即触发不等抬手）。
@@ -128,11 +129,18 @@ export function mountKeybar(parent: HTMLElement, hooks: KeybarHooks): KeybarHand
     el: bar,
     mods,
     updateBottom() {
+      // 钉 visual viewport（8.8.3b 上浮被盖修法，keybar-float-locate-report）：
+      // 不用 innerHeight 基准算 bottom——chrome 显示时 innerHeight 含栏高、
+      // 与 vv.height 差 1-2px，底边必被盖。改用 top = vv.offsetTop +
+      // vv.height - 栏高，栏底沿精确钉在可视底，chrome 显隐都盖不住。
       const vv = window.visualViewport;
-      // 贴可视区底：键盘弹起时 bottom = 被盖住的高度，栏跟着上浮
-      parent.style.bottom = vv
-        ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) + 'px'
-        : '0';
+      if (vv) {
+        parent.style.top = Math.max(0, vv.offsetTop + vv.height - KEYBAR_H) + 'px';
+        parent.style.bottom = 'auto';
+      } else {
+        parent.style.top = 'auto';
+        parent.style.bottom = '0';
+      }
     },
     syncMods() {
       const bits = mods.peek();
