@@ -3,16 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
-  <title>kfm-nz 骨架</title>
+  <title>kfm-nz</title>
   <style>
-    body { background: #101014; color: #d8d8e0; font-family: monospace; padding: 24px; }
+    body { margin: 0; background: #101014; color: #d8d8e0; font-family: monospace; }
+    #boot-panel { padding: 24px; }
+    /* 8.8.3：刷新即全屏终端——开屏日志默认不挡门，URL 带 ?debug 才显示 */
+    .nz-term-first #boot-panel { display: none; }
     h1 { font-size: 16px; color: #8ab4f8; }
     pre { white-space: pre-wrap; font-size: 13px; line-height: 1.6; }
   </style>
+  <script>
+    // 首屏前判定（bundle 加载前生效，杜绝日志闪帧）：无 ?debug 即终端优先
+    if (!/[?&]debug([=&]|$)/.test(location.search)) {
+      document.documentElement.classList.add('nz-term-first');
+    }
+  </script>
 </head>
 <body>
-  <h1>kfm-nz · Cordis 根总线骨架</h1>
-  <pre id="boot-log">加载中…</pre>
+  <div id="boot-panel">
+    <h1>kfm-nz · Cordis 根总线骨架</h1>
+    <pre id="boot-log">加载中…</pre>
+  </div>
   <script type="module" src="./bundle.js"></script>
 </body>
 </html>

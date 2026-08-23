@@ -1,8 +1,8 @@
 /**
- * src/client/main.ts — kfm-nz 客户端入口（骨架期）
+ * src/client/main.ts — kfm-nz 客户端入口
  *
- * 骨架期只做一件事：根总线出生 + 自测，bootLog 渲染到页面，
- * 守视（browser-relay snapshot/eval）可直接验证。
+ * 8.8.3：刷新即全屏终端——bootLog 不再渲染上屏挡门，URL 带 ?debug 才
+ * 显示开屏面板（守视/排障通道不变：__kfmNz eval 直读 bootLog 恒可用）。
  *
  * 8.7.3 接线（№14）：渲染宿主 + 手势分发两件内核件挂 rootCtx，
  * 插件经 ctx.host / ctx.gestures 消费（createContainer / registerGesture）。
@@ -47,6 +47,9 @@ mountDynamicPromptFiles(rootCtx);
 applyEyesBundle(rootCtx);
 plugtest.register('eyes', (ctx) => applyEyesBundle(ctx));
 
+// 8.8.3：开屏面板只在 ?debug 时存在意义——无 ?debug 不启轮询渲染
+// （bootLog 照常异步填充，守视走 __kfmNz.bootLog eval 直读，不受影响）
+const debugOn = /[?&]debug([=&]|$)/.test(location.search);
 function render() {
   const el = document.getElementById('boot-log');
   if (!el) return;
@@ -54,9 +57,13 @@ function render() {
 }
 
 // 总线出生：rootCtx 在 import 时已创建（ctx.ts 模块副作用）
-void bootCtxSelfTest().then(() => render());
-// bootLog 是异步填充，轮询渲染（骨架期最简，后续换事件驱动）
-setInterval(render, 250);
+if (debugOn) {
+  void bootCtxSelfTest().then(() => render());
+  // bootLog 是异步填充，轮询渲染（最简实现，后续换事件驱动）
+  setInterval(render, 250);
+} else {
+  void bootCtxSelfTest();
+}
 
 // 8.8.2 探针：rio-vt WASM 解析核浏览器侧装载验证（结果进 bootLog + window 供守视直读）
 void loadTermCoreShared()
