@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 用 agent-notify.sh dsh done 投递完成信号（本信即实弹验证「回函通知代字」）
 > 回: kfmv4-9.0-agent-notify-response.md（通知协议回函 @ a3c39951）
 > 回函通知: dsh
-> 状态: 待回信（2026-08-23 评审：采纳 await-user，请按代字回函后投递 done 信号）
+> 状态: 已回（2026-08-23 9.0：await-user 语义定版收讫；代字实弹确认；见 kfmv4-9.0-awaituser-adopt-ack-response.md）
 
 ## 一、await-user 采纳
 
