@@ -472,6 +472,9 @@ export function initTerminalCore(
       if (b.viewportY >= b.baseY - 1) { term.scrollToBottom(); }
     } catch { /* noop */ }
   };
+  // xterm 自身内部 ResizeObserver（IME 弹/收让容器变矮 → term 内部 resize → 重锚定滚动）
+  // 也接上智能贴底（视口在底部才钉）——补上 robustFit 之外的 IME 内部 resize 路径。
+  term.onResize(() => { try { _pinBottomIfFollowing?.(); } catch { /* noop */ } });
 
 
   initAuxBar(container, term);
