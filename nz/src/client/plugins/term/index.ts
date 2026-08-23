@@ -305,10 +305,23 @@ export function applyTermBundle(ctx: Context): void {
       // 复盘裁决①：专症字段随症收口，?debug beacon 骨架保留。）
       const onViewportResize = () => {
         dbg.viewportEvents++;
-        // 英文闪取证：可视区事件随 IME 事件同流落日志（评审五节建议）
-        postDebug?.({ type: 'viewport', vh: window.visualViewport?.height ?? 0, wh: window.innerHeight });
         // 按键栏跟键盘上浮（③纪律）：可视区一变就重算贴底，不等防抖
         keybar.updateBottom();
+        // 视口事件随 IME 事件同流落日志（评审五节建议）。
+        // 8.8.3b 上浮被盖取证（keybar-float-report，专症字段随症收口候选）：
+        //   ih=innerHeight（布局视口，chrome 显示时含栏高）vh=vv.height
+        //   ot=vv.offsetTop kbb=keybar 当前 bottom 设定值
+        //   kbc=栏实际底沿超出可视底的像素（>0=下排被盖实锤，真机收口看这条归 0）
+        const vv0 = window.visualViewport;
+        postDebug?.({
+          type: 'viewport',
+          ih: window.innerHeight,
+          vh: vv0?.height ?? 0,
+          ot: vv0?.offsetTop ?? 0,
+          kbb: parseFloat(barStrip.el.style.bottom) || 0,
+          kbc: Math.round(barStrip.el.getBoundingClientRect().bottom
+            - ((vv0?.height ?? 0) + (vv0?.offsetTop ?? 0))),
+        });
         // 不滚！resize 时无条件滚到底是「每字抖几行」的真凶（黑匣子坐实：
         // 滚动内容存在时 resize→重滚=挤兑）。光标真被遮住时由
         // shell.renderFrame 的 nearest 滚动兜底（能不滚就不滚）。
@@ -337,8 +350,21 @@ export function applyTermBundle(ctx: Context): void {
       };
       let resizeTimer: ReturnType<typeof setTimeout> | undefined;
       window.visualViewport?.addEventListener('resize', onViewportResize);
-      // 地址栏/动态工具栏伸缩走 scroll 不走 resize（offsetTop 变）——栏贴底同追
-      const onViewportScroll = () => keybar.updateBottom();
+      // 地址栏/动态工具栏伸缩走 scroll 不走 resize（offsetTop 变）——栏贴底同追；
+      // chrome 显隐恰是上浮被盖的变量（keybar-float-report），同流落日志
+      const onViewportScroll = () => {
+        keybar.updateBottom();
+        const vv0 = window.visualViewport;
+        postDebug?.({
+          type: 'viewport-scroll',
+          ih: window.innerHeight,
+          vh: vv0?.height ?? 0,
+          ot: vv0?.offsetTop ?? 0,
+          kbb: parseFloat(barStrip.el.style.bottom) || 0,
+          kbc: Math.round(barStrip.el.getBoundingClientRect().bottom
+            - ((vv0?.height ?? 0) + (vv0?.offsetTop ?? 0))),
+        });
+      };
       window.visualViewport?.addEventListener('scroll', onViewportScroll);
       const unmountFollow = () => {
         clearTimeout(resizeTimer);
