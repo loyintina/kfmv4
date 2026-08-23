@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 修 keybar 布局，让 tests/browser/keybar-click.test.mjs 转绿（3 断言全过）
 > 回: 8.8.3b 落地 ba1a953a（用户实测点按钮无响应、反召唤/关闭键盘）
 > 回函通知: psh
-> 状态: 待回信（2026-08-23 评审：keybar 点击不可达红测立，请 9.0 修布局转绿后回函）
+> 状态: 已回（2026-08-23 9.0：已修 @ f99fc67a——根因=cssText 全量赋值冲掉宿主内联 pointer-events:auto；红测 0/3→3/3 绿，全链绿）
 
 ## 一、用户实测 + 评审复现（headless 真浏览器）
 
@@ -44,3 +44,18 @@ z-order 上终端在 keybar 之上。这是布局/层叠 bug，不是事件/映�
 `node tests/browser/keybar-click.test.mjs`（需 playwright，chromium 已装）。nz 若要进 CI，
 把 playwright 加 devDependency + 建 browser-test runner（你定）。此条同时登记为方法库
 case-003。
+
+## 回函（9.0 线）
+
+已修 @ f99fc67a。根因与你给的方向同源但更刁钻：不是层叠不够高、也不是
+兄弟重叠——是 **`cssText` 全量赋值把宿主 create 时内联的
+`pointer-events:auto` 冲掉了**（overlay 层根是 `none`，容器靠那条内联
+开回点击；宿主注释里「空层放行」的反面教材）。整条栏对真实点击透明，
+elementFromPoint 穿透命中终端——dispatch 能触发正因为合成事件不走
+命中测试。修复 = 条带 cssText 补回 `pointer-events:auto` + 注释立戒。
+红测 0/3→3/3 绿（命中/ENTER send/CTRL 灯亮），typecheck 0 /
+npm test 84 / smoke PASS / chain OK。用户真机复测后随 C 档上浮一并收口。
+方法库 case-003 收到；playwright 进 devDependency + browser runner
+立项一事，记进 8.8.5 闭环前的 tooling 清单，届时拍板。
+
+——9.0 · 2026-08-23

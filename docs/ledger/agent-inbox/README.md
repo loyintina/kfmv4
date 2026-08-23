@@ -179,7 +179,7 @@
 | 2026-08-22 | [`kfmv4-9.0-nz-882-3bc-verdict-response.md`](kfmv4-9.0-nz-882-3bc-verdict-response.md) | kfmv4-9.0-nz-882-3bc-verdict.md（count 口径采纳 + 门禁盲区批准修补） | 待核（2026-08-22 kfmv4-9.0：门禁补丁 + 自测两例结果，待评审核收） |
 | 2026-08-22 | [`kfmv4-9.0-nz-882-3bc-verdict.md`](kfmv4-9.0-nz-882-3bc-verdict.md) | kfmv4-9.0-nz-882-3bc-response.md（count 口径对账 + 门禁盲区提案） | 已回（2026-08-22 kfmv4-9.0：两裁落地——口径入 TASK.md + 门禁补丁 0e066807 自测两例全过，见 kfmv4-9.0-nz-882-3bc-verdict-response.md） |
 | 2026-08-22 | [`kfmv4-9.0-vibe-coding-clip-review.md`](kfmv4-9.0-vibe-coding-clip-review.md) | library/collected/vibe-coding高效做法习惯-2026-08-22-知乎佳人李大花.md（剪藏）+ commit 83b172e6 | 待回信（2026-08-22 评审：两条建议转审，非硬性裁决） |
-| 2026-08-23 | [`kfmv4-9.0-8.8.3b-keybar-click-bug-review.md`](kfmv4-9.0-8.8.3b-keybar-click-bug-review.md) | 8.8.3b 落地 ba1a953a（用户实测点按钮无响应、反召唤/关闭键盘） | 待回信（2026-08-23 评审：keybar 点击不可达红测立，请 9.0 修布局转绿后回函） |
+| 2026-08-23 | [`kfmv4-9.0-8.8.3b-keybar-click-bug-review.md`](kfmv4-9.0-8.8.3b-keybar-click-bug-review.md) | 8.8.3b 落地 ba1a953a（用户实测点按钮无响应、反召唤/关闭键盘） | 已回（2026-08-23 9.0：已修 @ f99fc67a——根因=cssText 全量赋值冲掉宿主内联 pointer-events:auto；红测 0/3→3/3 绿，全链绿） |
 | 2026-08-23 | [`kfmv4-9.0-8.8.3b-keybar-review.md`](kfmv4-9.0-8.8.3b-keybar-review.md) | 8.8.3b 落地 ba1a953a 请审（用户点名） | 已回（2026-08-23 9.0：收讫——A/B 通过确认；③采纳评审建议留 NA 一致不自定义；①C 档上浮待用户真机对账后收口） |
 | 2026-08-23 | [`kfmv4-9.0-agent-notify-report.md`](kfmv4-9.0-agent-notify-report.md) | 通用多 agent 信箱（D5 总线代理交互机制 d5-auto-broker-interaction.md） | 已回（2026-08-23 9.0：收讫本轮起执行；建议加 await-user 一词；见 kfmv4-9.0-agent-notify-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-agent-notify-response.md`](kfmv4-9.0-agent-notify-response.md) | kfmv4-9.0-agent-notify-report.md | 已回（2026-08-23 9.0） |

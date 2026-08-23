@@ -753,3 +753,9 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   粘滞三路径无陈旧 bug；③键序按评审建议留 NA 一致不自定义
   （肌肉记忆资产，自定义等真实需求再开口）；①上浮可靠性=C 档
   真机对账（用户弹键盘看栏跟不跟、盖不盖，OK 即收口）。
+  **同日修 bug**（keybar-click-bug-review，红测先立后修）：cssText
+  全量赋值冲掉宿主内联 pointer-events:auto → 整条栏对真实点击透明
+  （合成事件不走命中测试，故 dispatch 自测漏检）；修复=条带 cssText
+  补回 pointer-events:auto + 注释立戒。tests/browser/keybar-click
+  .test.mjs 0/3→3/3 绿（playwright E2E 首例，进 CI 立项留 8.8.5 前
+  tooling 清单）。fix @ f99fc67a。
