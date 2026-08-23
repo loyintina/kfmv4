@@ -137,11 +137,17 @@ export function applyTermBundle(ctx: Context): void {
       // 无键盘态布局底≠可视底，bottom 布局锚会把终端下部藏进 chrome 后；
       // top+height 显式钉上后 bottom 锚自然失效（over-constrained 时
       // bottom 被忽略），后续 vv 事件走同一钉法。
-      const vvInit = window.visualViewport;
-      if (vvInit) {
-        container.el.style.top = `${vvInit.offsetTop}px`;
-        container.el.style.height = `${Math.max(80, vvInit.height - KEYBAR_H)}px`;
-      }
+      // 过渡帧定位修法（keybar-float-transition-report①）：钉 vv 移出
+      // 防抖——键盘弹起是动画，vv 逐帧变，栏/容器等 150ms 防抖才追 =
+      // 那几帧下排被盖的闪帧真凶。样式改写很便宜，布局一变当拍就钉；
+      // 贵的重测行列+核 resize 仍留防抖（动画期不 thrash）。
+      const pinToVv = () => {
+        const vv0 = window.visualViewport;
+        if (!vv0) return;
+        container.el.style.top = `${vv0.offsetTop}px`;
+        container.el.style.height = `${Math.max(80, vv0.height - KEYBAR_H)}px`;
+      };
+      pinToVv();
       // 终端卡全屏期间锁死背景页滚动（boot 页比屏幕高，不锁会和终端抢
       // 滚动、被 scrollIntoView 类行为带着跑——实测闪烁根因之一）
       const prevBodyOverflow = document.body.style.overflow;
@@ -285,6 +291,9 @@ export function applyTermBundle(ctx: Context): void {
         // kbb=条带 top 设定值 kbc=栏底沿超出 vv 底像素（vv 基准下的被盖量）
         // fx=绿轨底沿（CSS 布局底）vm=紫轨底沿（vv 底）——真机判尺
         // dch=documentElement.clientHeight（第三把尺：文档布局高）
+        // brt/brb=条带实测渲染 rect 顶/底（transition-report③：别只报
+        // style.top 设定值，要看实际渲染坐标对比键盘真实顶）
+        const barRect = barStrip.el.getBoundingClientRect();
         postDebug?.({
           type,
           ih: window.innerHeight,
@@ -292,8 +301,10 @@ export function applyTermBundle(ctx: Context): void {
           ot: vv0?.offsetTop ?? 0,
           dch: document.documentElement.clientHeight,
           kbb: parseFloat(barStrip.el.style.top) || 0,
-          kbc: Math.round(barStrip.el.getBoundingClientRect().bottom
+          kbc: Math.round(barRect.bottom
             - ((vv0?.height ?? 0) + (vv0?.offsetTop ?? 0))),
+          brt: Math.round(barRect.top),
+          brb: Math.round(barRect.bottom),
           fx: probeFx ? Math.round(probeFx.getBoundingClientRect().bottom) : -1,
           vm: probeVv ? Math.round(probeVv.getBoundingClientRect().bottom) : -1,
         });
@@ -356,6 +367,8 @@ export function applyTermBundle(ctx: Context): void {
         dbg.viewportEvents++;
         // 按键栏跟键盘上浮（③纪律）：可视区一变就重算贴底，不等防抖
         keybar.updateBottom();
+        // 容器同拍钉 vv（transition-report①：防抖后跳=过渡闪帧真凶）
+        pinToVv();
         // 视口事件随 IME 事件同流落日志（评审五节建议）；
         // 上浮被盖取证字段与双轨校准见 reportViewport 定义处注释
         reportViewport('viewport');
@@ -364,16 +377,11 @@ export function applyTermBundle(ctx: Context): void {
         // shell.renderFrame 的 nearest 滚动兜底（能不滚就不滚）。
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-          // 钉 visual viewport（8.8.3b 上浮被盖修法，keybar-float-locate
-          // -report）：容器顶=vv.offsetTop、高=vv.height-栏高，全程不以
-          // innerHeight 为基准——chrome 显示时两者差 1-2px 的真机实锤
-          // 不再适用；chrome 显隐/键盘弹收容器都恰好占满可视区（含栏位
-          // 预留）。chrome 先藏时序由 vv resize/scroll 双监听+本防抖覆盖。
-          const vv2 = window.visualViewport;
-          if (vv2) {
-            container.el.style.top = `${vv2.offsetTop}px`;
-            container.el.style.height = `${Math.max(80, vv2.height - KEYBAR_H)}px`;
-          }
+          // 钉 vv 已在事件当拍完成（见上 pinToVv），防抖里只剩贵的部分：
+          // 重测行列 → 核/壳/PTY 三方同步 resize。钉法口径：容器顶=
+          // vv.offsetTop、高=vv.height-栏高，全程不以 innerHeight 为基准
+          // ——chrome 显示时两者差 1-2px 的真机实锤不再适用；chrome 显隐/
+          // 键盘弹收容器都恰好占满可视区（含栏位预留）。
           const s = measure();
           if (s.cols !== card.cols || s.rows !== card.rows) {
             dbg.resizesApplied++;
@@ -392,6 +400,7 @@ export function applyTermBundle(ctx: Context): void {
       // chrome 显隐恰是上浮被盖的变量（keybar-float-report），同流落日志
       const onViewportScroll = () => {
         keybar.updateBottom();
+        pinToVv();
         reportViewport('viewport-scroll');
       };
       window.visualViewport?.addEventListener('scroll', onViewportScroll);
