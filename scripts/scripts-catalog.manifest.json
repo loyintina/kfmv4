@@ -405,6 +405,11 @@
       "permission": "写 /sys/fs/cgroup/agent.slice/kfm-builds（mkdir + memory.max + cgroup.procs 移入自身进程）；无网络、不改仓库、不连 LLM",
       "prompt": "无（机械外壳：进 cgroup 桶 + exec）",
       "effect": "把重编译命令整体搬入 kfm-builds 独立 cgroup（内存隔离，与三线 agent 隔开），exec 执行；CPU 降压由调用方 nice/ionice"
+    },
+    "scripts/agent-notify.sh": {
+      "permission": "只写 /tmp/kfm-note/notify.log（跨会话完成信号，易失不入仓）；不联网、不改仓库",
+      "prompt": "无（机械）",
+      "effect": "agent 会话跨会话投递完成通知：写一行 JSON 完成信号到 notify.log，评审侧 watch 即知该会话结束，免轮询 pane 空闲"
     }
   }
 }

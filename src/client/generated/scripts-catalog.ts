@@ -603,6 +603,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "会话驱动内核：离线跑 kfm 工具流会话并落盘归档"
   },
   {
+    "name": "agent-notify.sh",
+    "file": "scripts/agent-notify.sh",
+    "category": "运维",
+    "description": "agent 会话「跨会话投递完成通知」协议",
+    "permission": "只写 /tmp/kfm-note/notify.log（跨会话完成信号，易失不入仓）；不联网、不改仓库",
+    "prompt": "无（机械）",
+    "effect": "agent 会话跨会话投递完成通知：写一行 JSON 完成信号到 notify.log，评审侧 watch 即知该会话结束，免轮询 pane 空闲"
+  },
+  {
     "name": "agent-runner.mjs",
     "file": "scripts/agent/agent-runner.mjs",
     "category": "agent 负载",
