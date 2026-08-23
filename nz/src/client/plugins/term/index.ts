@@ -133,6 +133,15 @@ export function applyTermBundle(ctx: Context): void {
       // 上屏），没有可滚内容——overflow:hidden 杜绝「能滚动一部分」的错觉；
       // scrollback 渲染小步（8.8.3c）落地时改回 auto。
       container.el.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:${KEYBAR_H}px;overflow:hidden;`;
+      // 出生即钉 vv（不等首个 vv 事件，判尺结论：vv 是唯一真尺）——有栏
+      // 无键盘态布局底≠可视底，bottom 布局锚会把终端下部藏进 chrome 后；
+      // top+height 显式钉上后 bottom 锚自然失效（over-constrained 时
+      // bottom 被忽略），后续 vv 事件走同一钉法。
+      const vvInit = window.visualViewport;
+      if (vvInit) {
+        container.el.style.top = `${vvInit.offsetTop}px`;
+        container.el.style.height = `${Math.max(80, vvInit.height - KEYBAR_H)}px`;
+      }
       // 终端卡全屏期间锁死背景页滚动（boot 页比屏幕高，不锁会和终端抢
       // 滚动、被 scrollIntoView 类行为带着跑——实测闪烁根因之一）
       const prevBodyOverflow = document.body.style.overflow;
@@ -199,10 +208,11 @@ export function applyTermBundle(ctx: Context): void {
         slot: `${cardId}-keybar`,
         owner: 'term',
       });
-      // 注意：cssText 全量赋值会冲掉宿主 create 时内联的 pointer-events:auto
-      // （overlay 层根是 none，容器靠它开回点击）——必须带上，否则整条栏
-      // 对真实点击透明（评审 8.8.3b 点击不可达 bug 的病根）。
-      barStrip.el.style.cssText = `position:absolute;left:0;right:0;bottom:0;height:${KEYBAR_H}px;pointer-events:auto;`;
+      // 条带只认 top 锚 vv 一个基准（keybar-float-ruler-report 判尺：vv 是
+      // 真尺，病根在应用层——cssText 背 bottom:0 与 updateBottom 的 top 双
+      // 基准打架）。cssText 全量赋值还会冲掉宿主内联 pointer-events:auto
+      // （overlay 层根 none，容器靠它开回点击）——必须带上。
+      barStrip.el.style.cssText = `position:absolute;left:0;right:0;top:0;height:${KEYBAR_H}px;pointer-events:auto;`;
       const keybar = mountKeybar(barStrip.el, {
         send: (bytes) => { if (card.sessionId) bridge.input(card.sessionId, bytes); },
         appCursor: () => card.core.app_cursor(),
