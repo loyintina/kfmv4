@@ -131,10 +131,10 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.6 | 眼睛最小包（bundle 骨架：dynamic-prompt-files 基建 + eyes 总插件 + coords 契约段 + 骨架自态段） | 无 | 无 | A 档：抽文件测试两式；禁用后系统无损；过 plugtest | ✅（2026-08-21） |
 | 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A 档：list/test/残留检查 ✅ |
 | 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty（仅 NA）；kfmv4 侧 Node 不 Rust | A 档：open/input/resize/close/重连 | ✅（2026-08-21，tmux 管理留 8.8.5 完整管理步） |
-| 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（评估翻盘：alacritty 被 polling 阻断上不了 wasm32；复活触发=rio-vt 功能缺口/行为考卷长期不齐） | A+B+C：终端功能对照 + M3 基线 | ⬜ |
-| 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C 档：刷新即终端 | ⬜ |
-| 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C 档：标签切换实拍 | ⬜ |
-| 8.8.5 | tmux 完整管理 + 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档 | ⬜ |
+| 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（评估翻盘：alacritty 被 polling 阻断上不了 wasm32；复活触发=rio-vt 功能缺口/行为考卷长期不齐） | A+B+C：终端功能对照 + M3 基线；考卷全集差分硬门移作 8.8.5 闭环前置（2026-08-23 拍板） | 🔄 主体完（IME 三症真机全解），收口差轻量三件 |
+| 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C 档：刷新即终端；真机数字收口 | ⬜ |
+| 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C 档：标签切换实拍；真机数字收口 | ⬜ |
+| 8.8.5 | tmux 完整管理 + 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档；闭环前置=考卷全集差分绿（硬门后移不取消） | ⬜ |
 | 8.8.6 | 手单实例（最小：press=视觉+注入一体，对真 UI 验证；坐标对齐眼睛 coords 段） | 无 | 无 | A+B：press 链路考题 + 过 plugtest | ⬜ |
 | 8.9.1 | tree-data 服务（懒加载） | dsh fs/directory-picker | ignore/globset 候选（实测驱动） | A 档：千级目录响应达标 | ⬜ |
 | 8.9.2 | 文件树卡 DOM 化（Obsidian 文件卡） | dsh ui-directory-picker | 无 | A+B+C：10–15 层不卡，截图 diff 为零 | ⬜ |
@@ -186,10 +186,10 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 小步 | 做什么 | dsh | Rust | 考题/验收 | 状态 |
 |------|--------|-----|------|-----------|------|
 | 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty；kfmv4 侧 Node 不 Rust；本步前完成 alacritty_terminal vs rio-vt WASM 评估 | A：连接五动作对照旧实现 | ✅（2026-08-21，tmux 留 8.8.5；WASM 评估挪 8.8.2 门口待拍板） |
-| 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（2026-08-21 用户拍板；NA 侧 alacritty 不动，行为一致靠两线同源考卷保证） | A+B+C：终端功能对照表全绿；M3 终端基线；开工先补：僵尸会话 list 口径 + open 挂权限判定；**收口硬门（评审前置要求，用户 2026-08-21 接受）：功能覆盖考卷全集对跑——NA 在用的解析序列全集差分（非抽查），rio-vt 缺序列即触发复活重议** | ⬜ |
-| 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C：实拍刷新即终端；不得依赖 №11 完整布局 | ⬜ |
-| 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C：标签切换实拍 | ⬜ |
-| 8.8.5 | tmux 完整管理（新建/清空/挂起/状态检测）+ 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档 | ⬜ |
+| 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（2026-08-21 用户拍板；NA 侧 alacritty 不动，行为一致靠两线同源考卷保证） | A+B+C：终端功能对照表全绿；M3 终端基线；开工先补：僵尸会话 list 口径 + open 挂权限判定；**收口硬门（评审前置要求，用户 2026-08-21 接受；2026-08-23 拍板后移挂点）：功能覆盖考卷全集对跑——NA 在用的解析序列全集差分（非抽查），rio-vt 缺序列即触发复活重议；硬门移作 8.8.5 闭环前置，8.8.3–8.8.5 开工不等它** | 🔄 主体完（IME 三症真机全解），收口差轻量三件（对照表核对/M3 基线/通报信+探针按新口径收口） |
+| 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C：实拍刷新即终端；不得依赖 №11 完整布局；**真机数字收口**（2026-08-23 拍板：tmux 线=用户迁 9.0 判据） | ⬜ |
+| 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C：标签切换实拍；**真机数字收口** | ⬜ |
+| 8.8.5 | tmux 完整管理（新建/清空/挂起/状态检测）+ 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档；**闭环前置：考卷全集差分绿** | ⬜ |
 | 8.8.6 | 手单实例（最小）：overlay 容器 + hand-press 事件 + press 一体链路，对终端卡真按 | 无 | 无 | A+B：press 注入经手势分发实测；过 plugtest | ⬜ |
 
 ### 4.3 8.9 Obsidian 文件卡
@@ -695,3 +695,15 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   sendBeacon 管道 + 字段注册点为常备基建保留；col/cv/cb 等 IME 专用
   字段随症状收口移除；诊断角标移除。此前日志里「排查期常驻，收口移除」
   的旧口径以本条为准。
+- 2026-08-23：**用户拍板·tmux 线提速 + 弃 8.x**（会话拍板，评审同步盯梢）：
+  ①8.x 有一个修不动的 IME 滚焦坑，用户决定弃 8.x——nz 终端已自带
+  preventScroll + 诱饵钉光标格（8.x 缺的解），九线不用担心 IME 滚焦/
+  闪烁回归，8.x 不再投 IME 修复工时；②「9.0 至少 tmux 窗口功能好了」
+  = 用户直接迁用的判据——8.8.3（刷新全屏终端）→ 8.8.4（tmux 标签）→
+  8.8.5（tmux 完整管理）为当前最高优先；③8.8.2 收口硬门（考卷全集
+  差分）与 tmux 三步零代码耦合（验的是解析核，三步不动核），可并行——
+  硬门不取消，挂点从「8.8.2 收口前置」后移为「8.8.5 闭环前置」，风险
+  敞口期由真机实拍 + NA 差分双覆盖；④评审盯 tmux 落地：A/B/C 档 +
+  真机数字收口（C 档实拍为准，headless 只配写「待真机对账」）。
+  轻量收口三件（对照表核对/M3 基线/通报信+探针按新口径收口）先行，
+  量小不关 tmux 线闸门。
