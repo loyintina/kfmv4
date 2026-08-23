@@ -30,6 +30,7 @@
 | DOM 几何测量 | A | 布局数值 | getBoundingClientRect / Range |
 | 源码走读 | A | 读 handler/渲染/修法依据 | Read / Grep |
 | 真机实拍 | C | **终端判卷（最终判卷）** | 用户物理操作 + 上报/判卷 |
+| 真机 ?debug 状态字段黑匣子 | A/C | 真机内部状态（光标 col/row、重绘 f/rp、滚动 sc、光标块 cb） | `?debug` → `/tmp/nz-ime-events.log`（app 主动上报，不依赖 WiFi/无线调试） |
 | 角标/探针 | A | 内剖量化（col / rz / rp / viewport） | `__kfmNzTerm*` / 角标数 |
 
 ## 回退协议（机械执行）
@@ -50,3 +51,4 @@
 | 案例 | 日期 | 目标 | 用到的关键方法 | 结果 | 教训 |
 |---|---|---|---|---|---|
 | [case-001](cases/case-001-ime-cursor-clip.md) | 2026-08-23 | IME 光标视觉对齐 | 量化测量卡死 → 守视截图一次过 | 修复有效 | 拿 A 类工具误判 C 类问题；默认测量而非观察 |
+| [case-002](cases/case-002-debug-statefields.md) | 2026-08-23 | 双光标 + 英文抖动 | headless A 类全堵 → 真机 ?debug 状态字段黑匣子（cb/sc/rp）实锤 | 双双铁证 | headless 够不着核心状态 → 用真机上报内部状态；「需新观测力」场景的正解 |
