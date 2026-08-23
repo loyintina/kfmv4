@@ -1,6 +1,6 @@
-# 9.0 决策索引（跨线评审信箱 100 封信 → 决策一张表）
+# 9.0 决策索引（跨线评审信箱 101 封信 → 决策一张表）
 
-> 这是什么：`docs/ledger/agent-inbox/` 100 封信的**决策级索引**——信箱是
+> 这是什么：`docs/ledger/agent-inbox/` 101 封信的**决策级索引**——信箱是
 > ledger（只追加不删改），裁决史散在信里；本表把**已拍板决策**提取成一张表，
 > 「为什么这么定」从这里查、细节回信里读。信仍在，本表只索引不替代。
 > 别的去哪找：契约全文 → `nine-zero-phase1-contracts.md` / `nine-zero-phase2-contracts.md`；
@@ -22,7 +22,7 @@
 | 二阶段开篇 | 沙漏模型；文档世界 ctx=Σ+事件+累积器(git)；机制三件套；契约 0-9 | `kfmv4-9.0-phase2-hourglass-submission.md` | 💬 讨论完 | phase2-contracts |
 | 二阶段收口 | 契约 0-9 定稿；横切原则（建造放开/采纳收紧/结晶判据） | `kfmv4-9.0-phase2-contracts-report.md` | ✅ 通报 | phase2-contracts |
 | 8.8.2③bc 回函两裁（2026-08-22） | 裁决一：count 口径采纳（commit 题不手写钉数，计数以 @HEAD npm test passed 为准，钉只作概念词）；裁决二：门禁盲区属实（check-fix-tests.mjs:45 只认根 tests/ 漏 nz/tests/），批准 9.0 线修补 | `kfmv4-9.0-nz-882-3bc-verdict.md` | ✅ 已裁决 | 9.0 线修 gate（认任意层级 tests/ + *.test.ts + *_test.rs）+ 自测两例回函 |
-| IME 光标双根因修复（2026-08-23） | 取证阶段见下行；评审黑匣子回放定双根因：①格网光标按 col×cellW 放 vs 浏览器按 CJK 自然宽（≈2.4 格）画 → 每字累积偏 0.4 格；②resize 时无条件滚到底挤兑英文输入。落地：宽字符裁 2 格（appendTextCells inline-block overflow:hidden）+ 删除 followBottom 滚底（ffd0e5cf） | `kfmv4-9.0-ime-rootcause-review.md` / `kfmv4-9.0-ime-rootcause-response.md` | ✅ 已修复待真机验证 | 待用户真机复测：中文长句光标贴末字 + 英文快打不抖 |
+| IME 光标双根因修复（2026-08-23） | 取证阶段见下行；评审黑匣子回放定双根因：①格网光标按 col×cellW 放 vs 浏览器按 CJK 自然宽（≈2.4 格）画 → 每字累积偏 0.4 格；②resize 时无条件滚到底挤兑英文输入。落地：宽字符裁 2 格（appendTextCells inline-block overflow:hidden）+ 删除 followBottom 滚底（ffd0e5cf）。中文光标真机已确认解决；余英文抖 + tmux 双光标，?debug 增三状态字段（col/row 历史、f/rp/sc 重绘滚动计数、cb 光标块清单 @ 1da2598f）待真机数字 | `kfmv4-9.0-ime-rootcause-review.md` / `kfmv4-9.0-ime-rootcause-response.md` / `kfmv4-9.0-debug-statefields-report.md` / `kfmv4-9.0-debug-statefields-response.md` | 🔬 中文已解，英文抖+双光标取证中 | 待用户真机 ?debug 打三轮（中文长句+tmux 内打字+英文快打）→ 评审拿数字定位 |
 | IME 光标取证（2026-08-23，已结） | 干净合成路径零漂移（字节 20/20 正确、col 数学全对）→ 真凶只可能在真机真实 IME 事件序列；落地：光标列号探针 `__kfmNzTermCursor`（94efbafb）+ ?debug 事件流探针 sendBeacon 落服务端日志（19f8b5d2）+ 角标加 col；黑匣子 168 条实锤真机小鹤音形走纯 input 分支（0 composition） | `kfmv4-9.0-ime-cursor-probe-report.md` / `kfmv4-9.0-ime-flow-logger-report.md` / `kfmv4-9.0-ime-flow-logger-response.md` | ✅ 已结（产出双根因） | 结论喂给上行根因修复；探针/角标 8.8.2 收口移除 |
 | Cordis 采用 | 9.0 web 端内核采用 Cordis 本体；(c) 上游+按需移植；步 0 四项验证闸门 | `kfmv4-9.0-cordis-adoption-submission.md` / `kfmv4-9.0-cordis-adoption-verdict.md` | ✅ 用户终审 | preface 双终审落档 |
 | NA 基座设计 | 六条裁决（同步化/瞬时返回/serial+bail 合并/考题 17/五态/体量） | `kfm-na-base-design-submission.md` / `kfm-na-base-design-response.md` / `kfm-na-base-landing-report.md` | ✅ 落地 | NA 规格书 v1.1 + src/base |

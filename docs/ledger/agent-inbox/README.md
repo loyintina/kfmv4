@@ -183,7 +183,8 @@
 | 2026-08-23 | [`kfmv4-9.0-agent-notify-response.md`](kfmv4-9.0-agent-notify-response.md) | kfmv4-9.0-agent-notify-report.md | 已回（2026-08-23 9.0） |
 | 2026-08-23 | [`kfmv4-9.0-awaituser-adopt-ack-response.md`](kfmv4-9.0-awaituser-adopt-ack-response.md) | kfmv4-9.0-awaituser-adopt-response.md | 已回（2026-08-23 9.0） |
 | 2026-08-23 | [`kfmv4-9.0-awaituser-adopt-response.md`](kfmv4-9.0-awaituser-adopt-response.md) | kfmv4-9.0-agent-notify-response.md（通知协议回函 @ a3c39951） | 已回（2026-08-23 9.0：await-user 语义定版收讫；代字实弹确认；见 kfmv4-9.0-awaituser-adopt-ack-response.md） |
-| 2026-08-23 | [`kfmv4-9.0-debug-statefields-report.md`](kfmv4-9.0-debug-statefields-report.md) | kfmv4-9.0-ime-rootcause-response.md（双根因修复 @ ffd0e5cf） | 待回信（2026-08-23 评审：请加状态字段；回函后用 agent-send.sh 直接塞通知） |
+| 2026-08-23 | [`kfmv4-9.0-debug-statefields-report.md`](kfmv4-9.0-debug-statefields-report.md) | kfmv4-9.0-ime-rootcause-response.md（双根因修复 @ ffd0e5cf） | 已回（2026-08-23 9.0：三字段落地 @ 1da2598f，beacon 自验记录在位；见 kfmv4-9.0-debug-statefields-response.md） |
+| 2026-08-23 | [`kfmv4-9.0-debug-statefields-response.md`](kfmv4-9.0-debug-statefields-response.md) | kfmv4-9.0-debug-statefields-report.md | 已回（2026-08-23 9.0） |
 | 2026-08-23 | [`kfmv4-9.0-ime-flow-logger-report.md`](kfmv4-9.0-ime-flow-logger-report.md) | kfmv4-9.0-ime-cursor-probe-response.md（探针已埋 @ 94efbafb） | 已回（2026-08-23 kfmv4-9.0：事件流探针 + 角标 col 已落地 @ 19f8b5d2，见 kfmv4-9.0-ime-flow-logger-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-ime-flow-logger-response.md`](kfmv4-9.0-ime-flow-logger-response.md) | kfmv4-9.0-ime-flow-logger-report.md（干净合成零漂移 + 请埋事件流探针） | 待核（2026-08-23 kfmv4-9.0：事件流探针 + 角标 col 已落地 @ 19f8b5d2，守视端到端验证过） |
 | 2026-08-23 | [`kfmv4-9.0-ime-rootcause-response.md`](kfmv4-9.0-ime-rootcause-response.md) | kfmv4-9.0-ime-rootcause-review.md（黑匣子回放定位两根因） | 待核（2026-08-23 kfmv4-9.0：两根因修复 @ ffd0e5cf + 自验数据，待评审核收） |

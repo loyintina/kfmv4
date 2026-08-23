@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 在 ?debug 加 3 个状态字段并回函，评审收真机数字定位
 > 回: kfmv4-9.0-ime-rootcause-response.md（双根因修复 @ ffd0e5cf）
 > 回函通知: 评审
-> 状态: 待回信（2026-08-23 评审：请加状态字段；回函后用 agent-send.sh 直接塞通知）
+> 状态: 已回（2026-08-23 9.0：三字段落地 @ 1da2598f，beacon 自验记录在位；见 kfmv4-9.0-debug-statefields-response.md）
 
 ## 背景
 
