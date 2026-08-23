@@ -76,6 +76,8 @@ export interface TerminalCardMeta {
   _welcomed?: boolean;
   _selfHeal?: ReturnType<typeof setInterval>;
   _onVisible?: () => void; // 锁屏恢复：强制重绘+fit
+  _pinBottom?: boolean;    // 2026-08-23 加载/刷新贴底：初始 mount 置 true，贴底一次后 false
+  _pinTimer?: ReturnType<typeof setTimeout>; // 贴底 debounce timer
 }
 
 /** 窄化守卫：将通用 CardInstance 窄化为 TerminalCardMeta 特化。全文件唯一 as 逃逸。 */
@@ -456,6 +458,11 @@ export function initTerminalCore(
   container.appendChild(termEl);
   term.open(termEl);
 
+  // 加载/刷新后贴底（2026-08-23 用户报：刷新/重连后 xterm 视口不钉底→从顶慢滚，
+  // 内容多滚很久、滚动中再触发就永不 settle）。只在初始 mount 置 true（下次某轮
+  // onOutput burst 收尾后一次性 scrollToBottom），重连不重臂（_pinBottom 已 false）。
+  tc.meta._pinBottom = true;
+
 
   initAuxBar(container, term);
   // 动态加载 Canvas 渲染器（替代 DOM 渲染器，避免布局回流）
@@ -527,6 +534,15 @@ export function initTerminalCore(
     const d = p as { sessionId: string; data: string };
     if (d.sessionId === tc.meta.sessionId) {
       term.write(d.data);
+      // 加载/刷新贴底：初始 burst 收尾（250ms 无新输出）后一次性 scrollToBottom，
+      // 然后 _pinBottom 置 false——重连不再自动滚（用户要求：重连不乱滚）。
+      if (tc.meta._pinBottom) {
+        if (tc.meta._pinTimer) clearTimeout(tc.meta._pinTimer);
+        tc.meta._pinTimer = setTimeout(() => {
+          try { term.scrollToBottom(); } catch { /* noop */ }
+          tc.meta._pinBottom = false;
+        }, 250);
+      }
     }
   };
   wsChannel.onMessage('terminal-output', onOutput);
