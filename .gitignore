@@ -10,3 +10,6 @@ public/bundle.js
 .qoder/
 tmp/
 .venv/
+
+# 本地研究材料（DSH agent-notes 全量，17M，不进库）
+library/研究/
