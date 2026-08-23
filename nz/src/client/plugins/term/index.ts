@@ -190,7 +190,19 @@ export function applyTermBundle(ctx: Context): void {
       const postDebug = debugIme
         ? (rec: Record<string, unknown>) => {
             try {
-              navigator.sendBeacon('/debug/ime-log', JSON.stringify({ t: Date.now(), ...rec }) + '\n');
+              // 内部状态三字段随每条事件同流上报（评审 debug-statefields 信）：
+              //   col/row = 此刻 wasm 核光标（列号历史：逐事件时间序列）；
+              //   f/rp/sc = 帧数/重排行/兜底滚动累计（英文抖：rp 或 sc 突增即根源）；
+              //   rz = 已落地行列变更；cb = 可见光标块清单（双光标铁证：
+              //   数组长度>1 即同一时刻两个光标块，带各自格网位置）。
+              const cur = card.core.cursor();
+              navigator.sendBeacon('/debug/ime-log', JSON.stringify({
+                t: Date.now(), ...rec,
+                col: cur & 0xffff, row: cur >>> 16,
+                f: shell.stats.frames, rp: shell.stats.rowsPainted, sc: shell.stats.scrolls,
+                rz: dbg.resizesApplied,
+                cb: shell.cursorBlocks(),
+              }) + '\n');
             } catch { /* 诊断通道不挡主流程 */ }
           }
         : null;
