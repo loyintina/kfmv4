@@ -199,7 +199,10 @@ export function applyTermBundle(ctx: Context): void {
         slot: `${cardId}-keybar`,
         owner: 'term',
       });
-      barStrip.el.style.cssText = `position:absolute;left:0;right:0;bottom:0;height:${KEYBAR_H}px;`;
+      // 注意：cssText 全量赋值会冲掉宿主 create 时内联的 pointer-events:auto
+      // （overlay 层根是 none，容器靠它开回点击）——必须带上，否则整条栏
+      // 对真实点击透明（评审 8.8.3b 点击不可达 bug 的病根）。
+      barStrip.el.style.cssText = `position:absolute;left:0;right:0;bottom:0;height:${KEYBAR_H}px;pointer-events:auto;`;
       const keybar = mountKeybar(barStrip.el, {
         send: (bytes) => { if (card.sessionId) bridge.input(card.sessionId, bytes); },
         appCursor: () => card.core.app_cursor(),
