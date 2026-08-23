@@ -115,6 +115,14 @@ impl TermCore {
         ((pos.row.0 as u32) << 16) | (pos.col.0 as u32 & 0xffff)
     }
 
+    /// 光标可见性（DECTCEM ?25h/?25l，rio-vt 内部 Mode::SHOW_CURSOR 本来
+    /// 就在记账，此前没暴露）。TUI 程序（tmux 里的 agent TUI 等）会 ?25l
+    /// 藏掉终端光标、自绘反色块当光标——渲染壳若不跟随，壳光标变鬼影，
+    /// 与反色块并排 = 双光标（真机黑匣子 cb 实锤：shell+inverse 相距 1 格）。
+    pub fn cursor_visible(&self) -> bool {
+        self.term.mode().contains(rio_vt::crosswords::Mode::SHOW_CURSOR)
+    }
+
     /// 渲染帧（渲染壳取数协议 v1）：可见区逐行，行间 '\n' 分隔；
     /// 每行 = `{text}\x1f{runs}`。text 是该行全部格子（占位格跳过、
     /// 空白 '\0'→空格，不裁尾——渲染要满宽）；runs 是同样式连续段的

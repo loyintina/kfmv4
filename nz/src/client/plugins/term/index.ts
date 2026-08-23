@@ -35,6 +35,8 @@ interface TermCardInstance {
   shell: TermShell;
   cols: number;
   rows: number;
+  /** 诱饵 textarea 钉到光标格（桥回调里帧后调用；定义见 open 内注释） */
+  placeKb: () => void;
 }
 
 export interface TermCardService {
@@ -111,6 +113,7 @@ export function applyTermBundle(ctx: Context): void {
         }
         inst.core.feed(new TextEncoder().encode(data));
         inst.shell.renderFrame();
+        inst.placeKb();
       }
     },
     onExit(id, code) {
@@ -118,6 +121,7 @@ export function applyTermBundle(ctx: Context): void {
         if (inst.sessionId !== id) continue;
         inst.core.feed(new TextEncoder().encode(`\r\n[进程已退出 code=${code}]\r\n`));
         inst.shell.renderFrame();
+        inst.placeKb();
       }
     },
   });
@@ -164,7 +168,7 @@ export function applyTermBundle(ctx: Context): void {
       const termEl = document.createElement('div');
       container.el.appendChild(termEl);
       const shell = new TermShell(core, termEl, { cols: size.cols, rows: size.rows });
-      const card: TermCardInstance = { cardId, sessionId: null, core, shell, cols: size.cols, rows: size.rows };
+      const card: TermCardInstance = { cardId, sessionId: null, core, shell, cols: size.cols, rows: size.rows, placeKb: () => {} };
       instances.set(cardId, card);
 
       // 软键盘入口（xterm 同款隐藏 textarea 诱饵）：移动浏览器只在可编辑
@@ -180,6 +184,20 @@ export function applyTermBundle(ctx: Context): void {
       kb.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;'
         + 'opacity:0;padding:0;border:none;outline:none;resize:none;background:transparent;color:transparent;';
       container.el.appendChild(kb);
+
+      // 诱饵跟随光标（xterm 同款纪律）：移动浏览器每次 input 都会把聚焦
+      // 元素滚进视野——钉死在 0,0 时浏览器把容器 scrollTop 拽回 0，
+      // renderFrame 的 nearest 兜底又滚回去 = 每敲一字一次滚动拔河
+      // （真机黑匣子实锤：sc 每键 +1、rp 暴涨、整屏从上到下闪）。让诱饵
+      // 钉在光标格上：浏览器想滚去的位置正好就是我们要的位置，拔河消失；
+      // 副作用是 IME 候选窗跟着光标走（xterm 同款，顺带改善）。
+      card.placeKb = () => {
+        const cur = card.core.cursor();
+        const m = shell.metrics;
+        if (m.cellW <= 0 || m.cellH <= 0) return;
+        kb.style.left = `${(cur & 0xffff) * m.cellW}px`;
+        kb.style.top = `${(cur >>> 16) * m.cellH}px`;
+      };
 
       // IME 事件流探针（评审取证信）：URL 带 ?debug 时，把 composition
       // 四事件 + input 的 e.data/isComposing/输入框残影值逐条 sendBeacon
@@ -198,7 +216,7 @@ export function applyTermBundle(ctx: Context): void {
               const cur = card.core.cursor();
               navigator.sendBeacon('/debug/ime-log', JSON.stringify({
                 t: Date.now(), ...rec,
-                col: cur & 0xffff, row: cur >>> 16,
+                col: cur & 0xffff, row: cur >>> 16, cv: card.core.cursor_visible(),
                 f: shell.stats.frames, rp: shell.stats.rowsPainted, sc: shell.stats.scrolls,
                 rz: dbg.resizesApplied,
                 cb: shell.cursorBlocks(),
@@ -238,7 +256,7 @@ export function applyTermBundle(ctx: Context): void {
           bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
         }
       });
-      container.el.addEventListener('click', () => kb.focus());
+      container.el.addEventListener('click', () => kb.focus({ preventScroll: true }));
       kb.addEventListener('keydown', (e) => {
         if (composing || e.isComposing) return; // 合成中按键归输入法
         const bytes = keyToBytes(e);
@@ -293,6 +311,7 @@ export function applyTermBundle(ctx: Context): void {
             card.rows = s.rows;
             card.core.resize(s.cols, s.rows);
             card.shell.resize(s.rows); // 内部 renderFrame → 光标 nearest 兜底
+            card.placeKb();
             if (card.sessionId) bridge.resize(card.sessionId, s.cols, s.rows);
           }
         }, 150);
@@ -308,13 +327,14 @@ export function applyTermBundle(ctx: Context): void {
       const sessionId = await bridge.open({ command: opts.command, cols: card.cols, rows: card.rows });
       card.sessionId = sessionId;
       shell.renderFrame();
+      card.placeKb();
       // 光标列号探针（评审 IME 漂移取证用，纯读无副作用）：
-      // window.__kfmNzTermCursor() → { col, row, cols, cellW }
+      // window.__kfmNzTermCursor() → { col, row, cols, cellW, vis }
       // col 出自 wasm 核 cursor()（packed row<<16|col），cellW 是壳实测字格宽
       // ——CJK 记几列、字格度量偏不偏，评审逐词曲线直接对照这两个数。
       (window as unknown as Record<string, unknown>).__kfmNzTermCursor = () => {
         const cur = card.core.cursor();
-        return { col: cur & 0xffff, row: cur >>> 16, cols: card.cols, cellW: shell.metrics.cellW };
+        return { col: cur & 0xffff, row: cur >>> 16, cols: card.cols, cellW: shell.metrics.cellW, vis: card.core.cursor_visible() };
       };
       return inst.id;
     },

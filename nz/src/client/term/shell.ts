@@ -204,11 +204,13 @@ export class TermShell {
       this.stats.rowsPainted++;
       this.renderRow(this.rowDivs[i], line);
     }
-    // 光标：packed row<<16|col；row 可能为负（历史区）则不画
+    // 光标：packed row<<16|col；row 可能为负（历史区）则不画。
+    // 可见性跟核走（DECTCEM ?25l 隐藏）：TUI 自绘反色块当光标时壳光标
+    // 必须跟着藏，否则灰鬼影与反色块并排 = 双光标（真机 cb 实锤）。
     const cur = this.core.cursor();
     const row = cur >>> 16;
     const col = cur & 0xffff;
-    if (row < this.opts.rows && this.cellW > 0) {
+    if (row < this.opts.rows && this.cellW > 0 && this.core.cursor_visible()) {
       this.cursorEl.style.display = 'block';
       this.cursorEl.style.left = `${col * this.cellW}px`;
       this.cursorEl.style.top = `${row * this.cellH}px`;

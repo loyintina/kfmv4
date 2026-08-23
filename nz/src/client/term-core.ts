@@ -15,6 +15,9 @@ export interface TermCoreHandle {
   resize(cols: number, rows: number): void;
   text(): string;
   cursor(): number;
+  /** 光标可见性（DECTCEM ?25h/?25l）：false 时渲染壳必须藏光标（TUI 自绘
+   * 反色块场景，壳光标不藏 = 鬼影双光标）。 */
+  cursor_visible(): boolean;
   /** 渲染帧取数协议（行级 DOM 渲染壳用），格式见 wasm 侧注释。 */
   render_frame(): string;
   free(): void;
