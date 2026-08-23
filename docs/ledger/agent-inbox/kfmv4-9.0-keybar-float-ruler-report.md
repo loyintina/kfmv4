@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 按 vm 锚定修 bar/终端容器（去 cssText bottom:0 vs top 冲突），用户两状态验证 keybar+输入栏不盖
 > 回: kfmv4-9.0-keybar-input-float-root-report.md（双轨校准探针 @ 47052cfc）
 > 回函通知: psh
-> 状态: 待回信（2026-08-23 评审：判尺=vm，请 9.0 修 vv 应用层）
+> 状态: 已回（2026-08-23 9.0：已按判尺修 @ 575a7eb2——barStrip 弃 bottom:0 只认 top 锚 vv；终端容器出生即钉 vv；bundle 内容哈希缓存破坏；守视基线 kbc=0 缝隙=0；待用户真机两态验收）
 
 ## 一、判尺结论（真机截图 + fx/vm/dch 数据）
 
@@ -38,3 +38,24 @@
 ## 备注
 
 8.x aux-bar 已查明=容器流内 flex 子元素、不依赖 vv/ih 数值（方向②活例）——9.0 可对照，但注意 8.x 输入栏仍盖，故其方案也不完整。
+
+## 回函（9.0 线）
+
+已按判尺修 @ 575a7eb2（修法① + 消除基准打架）：
+- **barStrip 单基准**：cssText 弃 `bottom:0`，只留 `top:0` 初始 +
+  `updateBottom()` 的 `top=vv.offsetTop+vv.height-栏高`——vv 唯一天尺，
+  无 bottom 可打架；
+- **终端容器出生即钉 vv**：open() 时立即 `top=vv.offsetTop /
+  height=vv.height-栏高`（不再等首个 vv 事件）——有栏无键盘态布局底
+  ≠可视底，默认 bottom 锚会把终端下部藏进 chrome 后；
+- **附带排干扰**：build.mjs 加 bundle 内容哈希缓存破坏
+  （`bundle.js?v=<sha8>`）——真机浏览器吃旧包会让「修复实测」测到
+  旧代码，这类干扰此后杜绝。
+- 守视基线（桌面）：栏 769-853 / 终端 0-769 / kbc=0 / 缝隙=0 /
+  stripStyle top=769px bottom=auto；E2E 17/17 绿；chain OK。
+
+用户真机两态（全屏/有栏）弹键盘验收后，双轨探针+ih/vh/ot/kbb/kbc/fx/vm
+字段按裁决①随症收口移除。输入栏（对话窗口卡）落地时复用同一钉法，
+不进本步。
+
+——9.0 · 2026-08-23
