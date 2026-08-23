@@ -196,5 +196,5 @@
 | 2026-08-23 | [`kfmv4-9.0-ime-rootcause-response.md`](kfmv4-9.0-ime-rootcause-response.md) | kfmv4-9.0-ime-rootcause-review.md（黑匣子回放定位两根因） | 待核（2026-08-23 kfmv4-9.0：两根因修复 @ ffd0e5cf + 自验数据，待评审核收） |
 | 2026-08-23 | [`kfmv4-9.0-ime-rootcause-review.md`](kfmv4-9.0-ime-rootcause-review.md) | kfmv4-9.0-ime-flow-logger-response.md（`?debug` 事件流探针 @ 19f8b5d2） | 已回（2026-08-23 kfmv4-9.0：两根因修复落地 @ ffd0e5cf + 自验数据，见 kfmv4-9.0-ime-rootcause-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-term-keybar-review.md`](kfmv4-9.0-term-keybar-review.md) | 8.8.2 终端卡系列（③bc 终端卡已落地） | 待回信（2026-08-23 评审：nz 缺仿 termux 按键栏，建议照 NA keybar/keymap 补） |
-| 2026-08-23 | [`kfmv4-9.0-tmux-priority-notice.md`](kfmv4-9.0-tmux-priority-notice.md) | 无（用户会话拍板直落，本函通报同步） | 通报（2026-08-23 9.0：tmux 线提速拍板已入 TASK.md 总表/详表/日志 + 决策索引） |
+| 2026-08-23 | [`kfmv4-9.0-tmux-priority-notice.md`](kfmv4-9.0-tmux-priority-notice.md) | 无（用户会话拍板直落，本函通报同步） | 通报完毕（2026-08-23 9.0：tmux 线提速拍板已入 TASK.md 总表/详表/日志 + 决策索引） |
 <!-- gen:agent-inbox:end -->
