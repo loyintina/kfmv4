@@ -66,3 +66,4 @@
 |---|---|---|---|---|---|
 | [case-001](cases/case-001-ime-cursor-clip.md) | 2026-08-23 | IME 光标视觉对齐 | 量化测量卡死 → 守视截图一次过 | 修复有效 | 拿 A 类工具误判 C 类问题；默认测量而非观察 |
 | [case-002](cases/case-002-debug-statefields.md) | 2026-08-23 | 双光标 + 英文抖动 | headless A 类全堵 → 真机 ?debug 状态字段黑匣子（cb/sc/rp）实锤 | 双双铁证 | headless 够不着核心状态 → 用真机上报内部状态；「需新观测力」场景的正解 |
+| [case-003](cases/case-003-keybar-clickability.md) | 2026-08-23 | keybar 按钮可点性（重叠/不响应/粘滞） | 浏览器 E2E（playwright，3 断言：elementFromPoint 命中/点击 send/粘滞灯亮） | 0/3 红（抓到 bug） | 布局重叠/点击不可达的 bug 必须真浏览器 E2E；考题先行：红测立、修到绿 |
