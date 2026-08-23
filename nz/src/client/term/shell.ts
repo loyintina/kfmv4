@@ -36,12 +36,9 @@ export class TermShell {
   private cellH = 0;
   private enc = new TextEncoder();
   private dec = new TextDecoder();
-  /** 重绘统计（真机闪烁诊断：frames/rowsPainted/scrolls 经 window.__kfmNzTermDebug 可读；
-   * scrolls = nearest 兜底实际滚动次数——英文抖取证：滚动存在时 rp/sc 突增即根源） */
+  /** 渲染健康统计（?debug 骨架常驻字段源：frames/rowsPainted/scrolls——
+   * scrolls = nearest 兜底实际滚动次数；rp/sc 突增 = 重绘或滚动挤兑） */
   readonly stats = { frames: 0, rowsPainted: 0, scrolls: 0 };
-  /** TERM_FG 的浏览器归一化值（反色块识别用：style.backgroundColor 读出的是
-   * rgb(...) 而非赋值的 #hex，须经探针归一化再比） */
-  private fgCanonical: string | null = null;
 
   /** 字格尺寸（评审光标漂移探针取证用；measure() 跑过后才有真值，未量为 0） */
   get metrics(): { cellW: number; cellH: number } {
@@ -233,34 +230,5 @@ export class TermShell {
     } else {
       this.cursorEl.style.display = 'none';
     }
-  }
-
-  /** 可见光标块清单（?debug 双光标取证，事件级调用，平时零开销）。
-   * 数两类：①壳光标 div（display 非 none）；②反色块——tmux 类程序自己
-   * 画的「假光标」其实是反色空格段（背景=默认前景色的空白 span）。
-   * 返回每块的格网位置 {col,row,kind}；col 由像素位 /cellW 取整。 */
-  cursorBlocks(): { col: number; row: number; kind: string }[] {
-    const out: { col: number; row: number; kind: string }[] = [];
-    if (this.cellW <= 0 || this.cellH <= 0) return out;
-    if (this.cursorEl.style.display !== 'none') {
-      out.push({
-        col: Math.round(parseFloat(this.cursorEl.style.left) / this.cellW),
-        row: Math.round(parseFloat(this.cursorEl.style.top) / this.cellH),
-        kind: 'shell',
-      });
-    }
-    if (!this.fgCanonical) {
-      const p = document.createElement('span');
-      p.style.backgroundColor = TERM_FG;
-      this.fgCanonical = p.style.backgroundColor; // 归一化（#hex → rgb(...)）
-    }
-    for (let r = 0; r < this.rowDivs.length; r++) {
-      for (const span of this.rowDivs[r].querySelectorAll('span')) {
-        if (span.style.backgroundColor === this.fgCanonical && /^ *$/.test(span.textContent ?? '')) {
-          out.push({ col: Math.round(span.offsetLeft / this.cellW), row: r, kind: 'inverse' });
-        }
-      }
-    }
-    return out;
   }
 }

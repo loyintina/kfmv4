@@ -82,24 +82,10 @@ export function applyTermBundle(ctx: Context): void {
   let gluePromise: Promise<TermCoreGlue> | null = null;
   const glue = () => (gluePromise ??= loadTermCoreShared());
 
-  // 真机诊断（闪烁排查期常驻，收口移除）：角标直读计数，手机无控制台也能看。
-  // vp=可视区事件 rz=落地的行列变更 f=渲染帧 rp=重排行（每字应 ≈1 帧 1 行）
+  // 渲染健康计数（?debug 骨架常驻字段的源头，平时零上报）：vp=可视区事件
+  // rz=落地的行列变更。f/rp/sc 在 shell.stats。诊断角标已随 IME 收口移除
+  // （2026-08-23 复盘裁决①：骨架常驻、专症字段随症收口、角标移除）。
   const dbg = { viewportEvents: 0, resizesApplied: 0 };
-  const badge = createContainer(ctx, { kind: 'overlay', slot: 'term-debug', owner: 'term', reuse: true });
-  badge.el.style.cssText = 'position:fixed;right:4px;bottom:4px;z-index:400;pointer-events:none;'
-    + 'font:10px monospace;color:#888;background:rgba(0,0,0,.5);padding:2px 4px;';
-  const dbgTimer = setInterval(() => {
-    let frames = 0, rows = 0;
-    for (const inst of instances.values()) {
-      frames += inst.shell.stats.frames;
-      rows += inst.shell.stats.rowsPainted;
-    }
-    // col = 首卡光标列号（评审次选项：真机打长句直读角标看每字是否 2 列漂开）
-    const first = instances.values().next().value;
-    const col = first ? first.core.cursor() & 0xffff : -1;
-    badge.el.textContent = `vp${dbg.viewportEvents} rz${dbg.resizesApplied} f${frames} rp${rows} col${col}`;
-  }, 500);
-  ctx.effect(() => () => clearInterval(dbgTimer));
 
   const bridge = new TermWsBridge(`${location.origin.replace(/^http/, 'ws')}/ws/term`, {
     onOutput(id, data, replay) {
@@ -199,27 +185,24 @@ export function applyTermBundle(ctx: Context): void {
         kb.style.top = `${(cur >>> 16) * m.cellH}px`;
       };
 
-      // IME 事件流探针（评审取证信）：URL 带 ?debug 时，把 composition
+      // ?debug 诊断骨架（常备基建，复盘裁决①：管道+字段注册点常驻，专症
+      // 字段随症收口——IME 专用 col/cv/cb 已随三症全解移除，保留通用渲染
+      // 健康字段 f/rp/sc/rz；角标已移除）：URL 带 ?debug 时把 composition
       // 四事件 + input 的 e.data/isComposing/输入框残影值逐条 sendBeacon
-      // 到服务端落 /tmp 日志。真实小鹤音形的事件序列 headless 模拟不出，
-      // 只能真机抓。本块必须注册在业务监听**之前**——否则读到的 kb.value
-      // 是业务清空后的残影，序列失真。
+      // 到服务端落 /tmp 日志。真实 IME 事件序列 headless 模拟不出，只能
+      // 真机抓。本块必须注册在业务监听**之前**——否则读到的 kb.value 是
+      // 业务清空后的残影，序列失真。
       const debugIme = /[?&]debug([=&]|$)/.test(location.search);
       const postDebug = debugIme
         ? (rec: Record<string, unknown>) => {
             try {
-              // 内部状态三字段随每条事件同流上报（评审 debug-statefields 信）：
-              //   col/row = 此刻 wasm 核光标（列号历史：逐事件时间序列）；
-              //   f/rp/sc = 帧数/重排行/兜底滚动累计（英文抖：rp 或 sc 突增即根源）；
-              //   rz = 已落地行列变更；cb = 可见光标块清单（双光标铁证：
-              //   数组长度>1 即同一时刻两个光标块，带各自格网位置）。
-              const cur = card.core.cursor();
+              // 通用渲染健康字段（专症字段的注册点——新症状要加字段在这里加）：
+              //   f/rp/sc = 帧数/重排行/兜底滚动累计（突增=重绘或滚动挤兑）；
+              //   rz = 已落地行列变更。
               navigator.sendBeacon('/debug/ime-log', JSON.stringify({
                 t: Date.now(), ...rec,
-                col: cur & 0xffff, row: cur >>> 16, cv: card.core.cursor_visible(),
                 f: shell.stats.frames, rp: shell.stats.rowsPainted, sc: shell.stats.scrolls,
                 rz: dbg.resizesApplied,
-                cb: shell.cursorBlocks(),
               }) + '\n');
             } catch { /* 诊断通道不挡主流程 */ }
           }
@@ -285,8 +268,8 @@ export function applyTermBundle(ctx: Context): void {
       // 尺寸跟随：软键盘弹起 → 可视区变矮（resizes-content）→ 防抖后
       // 重测行列 → 核/壳/PTY 三方同步 resize。光标露出由 shell 的
       // nearest 滚动兜底（光标被遮才滚），不做无条件滚到底。
-      // 真机诊断计数（守视/控制台也可 eval __kfmNzTermDebug 直读）
-      (window as unknown as Record<string, unknown>).__kfmNzTermDebug = dbg;
+      // （__kfmNzTermDebug/__kfmNzTermCursor 两探针已随 IME 收口移除——
+      // 复盘裁决①：专症字段随症收口，?debug beacon 骨架保留。）
       const onViewportResize = () => {
         dbg.viewportEvents++;
         // 英文闪取证：可视区事件随 IME 事件同流落日志（评审五节建议）
@@ -328,14 +311,6 @@ export function applyTermBundle(ctx: Context): void {
       card.sessionId = sessionId;
       shell.renderFrame();
       card.placeKb();
-      // 光标列号探针（评审 IME 漂移取证用，纯读无副作用）：
-      // window.__kfmNzTermCursor() → { col, row, cols, cellW, vis }
-      // col 出自 wasm 核 cursor()（packed row<<16|col），cellW 是壳实测字格宽
-      // ——CJK 记几列、字格度量偏不偏，评审逐词曲线直接对照这两个数。
-      (window as unknown as Record<string, unknown>).__kfmNzTermCursor = () => {
-        const cur = card.core.cursor();
-        return { col: cur & 0xffff, row: cur >>> 16, cols: card.cols, cellW: shell.metrics.cellW, vis: card.core.cursor_visible() };
-      };
       return inst.id;
     },
   };

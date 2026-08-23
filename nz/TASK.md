@@ -131,7 +131,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.7.6 | 眼睛最小包（bundle 骨架：dynamic-prompt-files 基建 + eyes 总插件 + coords 契约段 + 骨架自态段） | 无 | 无 | A 档：抽文件测试两式；禁用后系统无损；过 plugtest | ✅（2026-08-21） |
 | 8.7.7 | kfm-plugtest 最小版 | 无 | 无 | A 档：list/test/残留检查 ✅ |
 | 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty（仅 NA）；kfmv4 侧 Node 不 Rust | A 档：open/input/resize/close/重连 | ✅（2026-08-21，tmux 管理留 8.8.5 完整管理步） |
-| 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（评估翻盘：alacritty 被 polling 阻断上不了 wasm32；复活触发=rio-vt 功能缺口/行为考卷长期不齐） | A+B+C：终端功能对照 + M3 基线；考卷全集差分硬门移作 8.8.5 闭环前置（2026-08-23 拍板） | 🔄 主体完（IME 三症真机全解），收口差轻量三件 |
+| 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（评估翻盘：alacritty 被 polling 阻断上不了 wasm32；复活触发=rio-vt 功能缺口/行为考卷长期不齐） | A+B+C：终端功能对照 + M3 基线；考卷全集差分硬门移作 8.8.5 闭环前置（2026-08-23 拍板） | ✅（2026-08-23：IME 三症真机全解 + 轻收口三件落地——对照表 nz/docs/term-checklist.md、M3 基线 nz/tests/m3-baseline/、通报信 kfmv4-9.0-nz-882-closeout-notice；考卷硬门按拍板归 8.8.5 闭环） |
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C 档：刷新即终端；真机数字收口 | ⬜ |
 | 8.8.3b | 仿 Termux 按键栏（keybar UI 随键盘上浮）+ keymap 纯逻辑（粘滞修饰/控制字节/SS3-CSI 方向键） | NA keybar.rs/keymap.rs | 核加 `app_cursor()` 暴露（cursor_visible 同款小改） | A：keymap 考题（Ctrl+ASCII→字节 / Alt=ESC x / 方向键 ?1h SS3 vs CSI / 粘滞一次读走清零）；C：栏随软键盘上浮实拍 + 真机数字收口 | ⬜ |
 | 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C 档：标签切换实拍；真机数字收口 | ⬜ |
@@ -187,7 +187,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 小步 | 做什么 | dsh | Rust | 考题/验收 | 状态 |
 |------|--------|-----|------|-----------|------|
 | 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty；kfmv4 侧 Node 不 Rust；本步前完成 alacritty_terminal vs rio-vt WASM 评估 | A：连接五动作对照旧实现 | ✅（2026-08-21，tmux 留 8.8.5；WASM 评估挪 8.8.2 门口待拍板） |
-| 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（2026-08-21 用户拍板；NA 侧 alacritty 不动，行为一致靠两线同源考卷保证） | A+B+C：终端功能对照表全绿；M3 终端基线；开工先补：僵尸会话 list 口径 + open 挂权限判定；**收口硬门（评审前置要求，用户 2026-08-21 接受；2026-08-23 拍板后移挂点）：功能覆盖考卷全集对跑——NA 在用的解析序列全集差分（非抽查），rio-vt 缺序列即触发复活重议；硬门移作 8.8.5 闭环前置，8.8.3–8.8.5 开工不等它** | 🔄 主体完（IME 三症真机全解），收口差轻量三件（对照表核对/M3 基线/通报信+探针按新口径收口） |
+| 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（2026-08-21 用户拍板；NA 侧 alacritty 不动，行为一致靠两线同源考卷保证） | A+B+C：终端功能对照表全绿；M3 终端基线；开工先补：僵尸会话 list 口径 + open 挂权限判定；**收口硬门（评审前置要求，用户 2026-08-21 接受；2026-08-23 拍板后移挂点）：功能覆盖考卷全集对跑——NA 在用的解析序列全集差分（非抽查），rio-vt 缺序列即触发复活重议；硬门移作 8.8.5 闭环前置，8.8.3–8.8.5 开工不等它** | ✅（2026-08-23：IME 三症真机全解 + 轻收口三件落地——对照表 nz/docs/term-checklist.md、M3 基线 nz/tests/m3-baseline/、通报信 kfmv4-9.0-nz-882-closeout-notice；考卷硬门归 8.8.5 闭环） |
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C：实拍刷新即终端；不得依赖 №11 完整布局；**真机数字收口**（2026-08-23 拍板：tmux 线=用户迁 9.0 判据） | ⬜ |
 | 8.8.3b | 仿 Termux 按键栏 + keymap（2026-08-23 评审建议信 kfmv4-9.0-term-keybar-review，用户提过缺口；tmux 刚需：手机无 Ctrl+B 前缀）：两排七列照 NA keybar.rs 定稿（上 Esc/Alt/Home/PgUp/↑/PgDn/Shift，下 Tab/Ctrl/End/←/↓/→/Enter）；四条纪律照抄——①修饰键一次性粘滞（点亮后下次落字读走清零）②keymap 纯逻辑 A 档有题（Ctrl+ASCII→控制字节；Alt+X=ESC x；方向键/End 吃 app_cursor 模式位，?1h 发 SS3 `ESC O A` 否则 CSI `ESC [ A`）③栏随软键盘上浮（贴可视区底，防被键盘盖）④键位序按 NA KEYS 表；核需加 `app_cursor()` 暴露（cursor_visible 同款小改）；keymap 独立纯逻辑模块，keybar UI 进 term 插件包 | NA keybar.rs/keymap.rs | 核 `app_cursor()` | A：keymap 考题（Ctrl+字节/Alt/方向键 SS3-CSI/粘滞清零各一）+ B：栏装配冒烟 + C：上浮跟随真机实拍 | ⬜ |
 | 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C：标签切换实拍；**真机数字收口** | ⬜ |
@@ -709,3 +709,12 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   真机数字收口（C 档实拍为准，headless 只配写「待真机对账」）。
   轻量收口三件（对照表核对/M3 基线/通报信+探针按新口径收口）先行，
   量小不关 tmux 线闸门。
+- 2026-08-23：**8.8.2 收口**（轻量三件落地，考卷硬门按拍板归 8.8.5 闭环
+  前置）：①功能对照表核对落档 `nz/docs/term-checklist.md`（连接/渲染/
+  输入/尺寸滚动/诊断五族全绿，验证依据分自动化/守视/真机三级，真机
+  专属症状以真机数字收口）；②M3 终端视觉基线存档 `nz/tests/m3-baseline/`
+  （term-fresh + term-sgr-cjk 两态 + sha256 清单 + 复拍口径）；③诊断
+  探针按复盘裁决①收口：角标移除、IME 专症字段（col/cv/cb）+ 两个
+  window 探针（__kfmNzTermDebug/__kfmNzTermCursor）+ cursorBlocks()
+  移除，?debug 骨架（sendBeacon 管道 + /debug/ime-log 端点 + 通用健康
+  字段 f/rp/sc/rz）常驻。通报信 kfmv4-9.0-nz-882-closeout-notice。
