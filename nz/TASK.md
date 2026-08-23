@@ -683,3 +683,15 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   composition 事件，v==data 无拼音残影）——composition 纪律那套
   在该 IME 上根本不触发，input 分支才是主路。④测量纪律：row 文本
   尾部有填充空格，量文本右缘要用末字符节点而非整行 range。
+- 2026-08-23：**IME 讨伐收官**（用户真机确认三症全解）：二次根因修复
+  f1de48db——①双光标=DECTCEM ?25 藏显未从核暴露（TUI ?25l 藏终端光标
+  自绘反色块，壳光标不藏变灰鬼影）：term-core 新增 cursor_visible()
+  传导壳层；②英文抖=诱饵 textarea 钉死 0,0，浏览器每 input 把它滚进
+  视野拽回 scrollTop=0 与 nearest 兜底拔河：诱饵改钉光标格（placeKb，
+  xterm 同款）+ focus preventScroll。③复盘四条裁决（评审
+  ime-retro-review）：探针骨架常驻/临时字段移除/计数单源=gen/方法库
+  开工前扫/agent-send C-m 自验进脚本。
+  **收口口径修订（裁决①）**：8.8.2 收口时 ?debug 黑匣子**不整体移除**——
+  sendBeacon 管道 + 字段注册点为常备基建保留；col/cv/cb 等 IME 专用
+  字段随症状收口移除；诊断角标移除。此前日志里「排查期常驻，收口移除」
+  的旧口径以本条为准。

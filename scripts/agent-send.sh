@@ -17,6 +17,12 @@
 #
 # 注：多行/长文本在部分 TUI 里直接回车会把 Enter 当换行而非提交——本脚本
 #     发完文本后再补发一个 C-m 尝试提交（kimi TUI 实测如此），调用方仍应自测。
+#
+# 投后自验（2026-08-23 复盘裁决④，9.0 出补丁评审批）：目标忙时上面补发的
+# C-m 会被 TUI 吞掉，消息滞留输入框（IME 讨伐期实测踩中两次）。纪律会忘，
+# 脚本不会——投递后自动 capture-pane 看输入框区域（pane 尾部若干行），消息
+# 前缀还在 = 没提交成功 → 补 C-m 重试，最多 6 次；仍滞留则非零退出让调用方
+# 知道没送达，不许静默失败。
 
 set -u
 TARGET="${1:-}"
@@ -33,3 +39,23 @@ fi
 tmux send-keys -t "$TARGET" "$MSG" C-m 2>&1
 tmux send-keys -t "$TARGET" C-m 2>&1
 echo "[agent-send] $TARGET <- ${MSG:0:60}"
+
+# 自验循环：消息前缀仍出现在 pane 尾部（输入框区）= 滞留未提交，补 C-m。
+# 只看尾部是因为提交后消息虽回显进会话区，但输入框会缩回空提示符——尾部
+# 8 行基本只含输入框 + 状态行。前缀取 24 字符，grep -F 定字串防正则误伤。
+PREFIX="${MSG:0:24}"
+attempt=0
+while [ $attempt -lt 6 ]; do
+  sleep 2
+  if tmux capture-pane -t "$TARGET" -p 2>/dev/null | tail -8 | grep -qF "$PREFIX"; then
+    attempt=$((attempt + 1))
+    tmux send-keys -t "$TARGET" C-m 2>/dev/null
+  else
+    if [ $attempt -gt 0 ]; then
+      echo "[agent-send] 投后自验：补 C-m ${attempt} 次后确认送达"
+    fi
+    exit 0
+  fi
+done
+echo "[agent-send] ⚠ 重试 6 次后消息仍滞留 $TARGET 输入框（目标可能卡死），请人工核查" >&2
+exit 1
