@@ -60,6 +60,18 @@
      无此字段 = 按常规流程，是否 notify 由收信方自行判断。
      （note：机读头仍是七字段必填，`回函通知` 是可选附加字段，gen/check 只认七字段，
      附加字段不参与投影。）
+- **会话注册表**（2026-08-23 立，供 agent-send.sh 跨会话寻址；`<target-session>` 取值）：
+
+  | 窗口(session) | 对应 agent / 线 |
+  |---|---|---|
+  | `dsh` | kfmv4-9.0（nz 实现线；9.0 主线） |
+  | `kfm-na` | kfm-na（NA 独立仓客户端线） |
+  | `omp` | 用户主会话（另一个 kimi agent 窗口） |
+  | `psh` | 评审会话（Kimi Code，本评审/总线角色） |
+
+  任意 agent 要「塞对话」给另一 agent，用 `bash /root/kfmv4/scripts/agent-send.sh <上述窗口> <消息>`
+  （见 agent-send.sh 帮助）。消息建议引用真实信件文件（如「查看 docs/ledger/agent-inbox/<信>.md」），
+  内容留痕走信箱，send 只管时序投递。
 - **并发纪律**（2026-08-18 立；agent-mailbox 研究线 D2）：共享工作树撞车三规——
   **写后即交**（热点文件不跨任务持有未提交改动）/ **改前重读**（不信内存旧
   印象，append 语义追加）/ **链红先归因**（别线在途的红不替修不惊动）。

@@ -612,6 +612,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "agent 会话跨会话投递完成通知：写一行 JSON 完成信号到 notify.log，评审侧 watch 即知该会话结束，免轮询 pane 空闲"
   },
   {
+    "name": "agent-send.sh",
+    "file": "scripts/agent-send.sh",
+    "category": "运维",
+    "description": "「塞对话」通用原语：向任意 agent 会话窗口注入一条消息",
+    "permission": "tmux send-keys 向指定会话窗口注入消息（不改其内容、不动文件、不联网）；仅注入已存在会话，否则拒绝",
+    "prompt": "无（机械）",
+    "effect": "「塞对话」通用原语：任意 agent 向任意 agent 会话窗口注入一条消息并唤醒，N×N 网格通信的投递/唤醒动作（内容正本走信箱，本原语只管时序投递）"
+  },
+  {
     "name": "agent-runner.mjs",
     "file": "scripts/agent/agent-runner.mjs",
     "category": "agent 负载",
