@@ -15,6 +15,7 @@ import './server.test.ts';
 import './term-connection.test.ts';
 import './ws-bridge.test.ts';
 import './term-core-shared.test.ts';
+import './keymap.test.ts';
 import { runAll } from './runner.ts';
 
 await runAll();

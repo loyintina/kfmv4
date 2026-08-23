@@ -15,8 +15,11 @@
  * 尺寸：实测字格 × 容器可视面积定行列（80×24 写死时代已结束），
  * visualViewport resize 时核/壳/PTY 三方同步。
  *
- * v1 留白：输入只认 可打印字符/Enter/Backspace/Tab/方向键（手机 IME 与
- * 组合键映射留 input 小插件）。
+ * 8.8.3b 按键栏：仿 Termux 两排七列（term/keybar.ts + keymap.ts 纯逻辑），
+ * 修饰键一次性粘滞，方向键/Home/End 按 core.app_cursor() 实时翻
+ * SS3/CSI；栏随软键盘上浮，终端容器底部常驻预留 KEYBAR_H。
+ *
+ * v1 留白：IME 组合键之外的全集映射（F1-F12 等）留 input 小插件。
  */
 import { Context } from 'cordis';
 import { registerCardType } from '../../card-types.js';
@@ -24,6 +27,8 @@ import { createContainer } from '../../host.js';
 import { loadTermCoreShared, type TermCoreGlue, type TermCoreHandle } from '../../term-core.js';
 import { TermShell } from '../../term/shell.js';
 import { TermWsBridge } from '../../term/bridge.js';
+import { mapText } from '../../term/keymap.js';
+import { KEYBAR_H, MOD_ALT, MOD_CTRL, MOD_SHIFT, mountKeybar } from '../../term/keybar.js';
 
 const COLS = 80;
 const ROWS = 24;
@@ -123,10 +128,11 @@ export function applyTermBundle(ctx: Context): void {
         slot: cardId,
         owner: 'term',
       });
-      // 容器=全屏视口。v1 口径 DOM 只画当前屏（回退历史未渲染上屏），
-      // 没有可滚内容——overflow:hidden 杜绝「能滚动一部分」的错觉；
-      // scrollback 渲染小步落地时改回 auto。
-      container.el.style.cssText = 'position:absolute;inset:0;overflow:hidden;';
+      // 容器=全屏视口（底部常驻预留按键栏高度，Termux 同款：栏不在终端
+      // 区里，行列数不随栏沉浮）。v1 口径 DOM 只画当前屏（回退历史未渲染
+      // 上屏），没有可滚内容——overflow:hidden 杜绝「能滚动一部分」的错觉；
+      // scrollback 渲染小步（8.8.3c）落地时改回 auto。
+      container.el.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:${KEYBAR_H}px;overflow:hidden;`;
       // 终端卡全屏期间锁死背景页滚动（boot 页比屏幕高，不锁会和终端抢
       // 滚动、被 scrollIntoView 类行为带着跑——实测闪烁根因之一）
       const prevBodyOverflow = document.body.style.overflow;
@@ -185,6 +191,27 @@ export function applyTermBundle(ctx: Context): void {
         kb.style.top = `${(cur >>> 16) * m.cellH}px`;
       };
 
+      // 8.8.3b 按键栏（仿 Termux，纪律见 keybar.ts 头注释）：overlay 层条带，
+      // 底部贴可视区（键盘弹起跟着上浮）；修饰键粘滞态归本卡实例。
+      // 生灭经 createContainer 归宿主——owner=term 死自动摘，plugtest 量得到。
+      const barStrip = createContainer(ctx, {
+        kind: 'overlay',
+        slot: `${cardId}-keybar`,
+        owner: 'term',
+      });
+      barStrip.el.style.cssText = `position:absolute;left:0;right:0;bottom:0;height:${KEYBAR_H}px;`;
+      const keybar = mountKeybar(barStrip.el, {
+        send: (bytes) => { if (card.sessionId) bridge.input(card.sessionId, bytes); },
+        appCursor: () => card.core.app_cursor(),
+      });
+      // 一次性粘滞联动：落字前读走修饰位（有则 mapText 变换 + 灭灯）
+      const takeMods = (text: string): string => {
+        const bits = keybar.mods.take();
+        if (!bits) return text;
+        keybar.syncMods();
+        return mapText((bits & MOD_CTRL) !== 0, (bits & MOD_ALT) !== 0, (bits & MOD_SHIFT) !== 0, text);
+      };
+
       // ?debug 诊断骨架（常备基建，复盘裁决①：管道+字段注册点常驻，专症
       // 字段随症收口——IME 专用 col/cv/cb 已随三症全解移除，保留通用渲染
       // 健康字段 f/rp/sc/rz；角标已移除）：URL 带 ?debug 时把 composition
@@ -232,8 +259,9 @@ export function applyTermBundle(ctx: Context): void {
       kb.addEventListener('compositionstart', () => { composing = true; kb.value = ''; });
       kb.addEventListener('compositionend', (e) => {
         composing = false;
-        const text = e.data || kb.value;
+        let text = e.data || kb.value;
         kb.value = '';
+        if (text) text = takeMods(text); // 粘滞修饰：上屏落字读走清零
         justCommitted = text;
         if (text && card.sessionId) {
           bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
@@ -242,7 +270,8 @@ export function applyTermBundle(ctx: Context): void {
       container.el.addEventListener('click', () => kb.focus({ preventScroll: true }));
       kb.addEventListener('keydown', (e) => {
         if (composing || e.isComposing) return; // 合成中按键归输入法
-        const bytes = keyToBytes(e);
+        let bytes = keyToBytes(e);
+        if (bytes) bytes = takeMods(bytes); // 粘滞修饰（按键栏 Ctrl/Alt/Shift）
         if (bytes && card.sessionId) {
           e.preventDefault();
           bridge.input(card.sessionId, bytes);
@@ -257,9 +286,10 @@ export function applyTermBundle(ctx: Context): void {
           return;
         }
         justCommitted = '';
-        // 手机软键盘产出的文本整段取走后清空诱饵
-        const text = kb.value;
+        // 手机软键盘产出的文本整段取走后清空诱饵（粘滞修饰同路读走）
+        let text = kb.value;
         kb.value = '';
+        if (text) text = takeMods(text);
         if (text && card.sessionId) {
           bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
         }
@@ -274,6 +304,8 @@ export function applyTermBundle(ctx: Context): void {
         dbg.viewportEvents++;
         // 英文闪取证：可视区事件随 IME 事件同流落日志（评审五节建议）
         postDebug?.({ type: 'viewport', vh: window.visualViewport?.height ?? 0, wh: window.innerHeight });
+        // 按键栏跟键盘上浮（③纪律）：可视区一变就重算贴底，不等防抖
+        keybar.updateBottom();
         // 不滚！resize 时无条件滚到底是「每字抖几行」的真凶（黑匣子坐实：
         // 滚动内容存在时 resize→重滚=挤兑）。光标真被遮住时由
         // shell.renderFrame 的 nearest 滚动兜底（能不滚就不滚）。
@@ -282,10 +314,11 @@ export function applyTermBundle(ctx: Context): void {
           // 键盘吞最后一行的根治：浏览器不认 resizes-content 时（部分国产
           // 浏览器/webview）键盘直接盖在页面上——手动把容器高度压到可视高，
           // 用 JS 模拟 resizes-content。阈值 40px 防动态工具栏抖动误判。
+          // 8.8.3b：手动压高时同样预留按键栏高度（栏上浮占的就是这段）。
           const vv2 = window.visualViewport;
           if (vv2) {
             container.el.style.height =
-              vv2.height < window.innerHeight - 40 ? `${vv2.height}px` : '';
+              vv2.height < window.innerHeight - 40 ? `${Math.max(80, vv2.height - KEYBAR_H)}px` : '';
           }
           const s = measure();
           if (s.cols !== card.cols || s.rows !== card.rows) {
@@ -301,9 +334,13 @@ export function applyTermBundle(ctx: Context): void {
       };
       let resizeTimer: ReturnType<typeof setTimeout> | undefined;
       window.visualViewport?.addEventListener('resize', onViewportResize);
+      // 地址栏/动态工具栏伸缩走 scroll 不走 resize（offsetTop 变）——栏贴底同追
+      const onViewportScroll = () => keybar.updateBottom();
+      window.visualViewport?.addEventListener('scroll', onViewportScroll);
       const unmountFollow = () => {
         clearTimeout(resizeTimer);
         window.visualViewport?.removeEventListener('resize', onViewportResize);
+        window.visualViewport?.removeEventListener('scroll', onViewportScroll);
       };
       ctx.effect(() => unmountFollow);
 

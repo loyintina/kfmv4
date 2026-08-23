@@ -133,7 +133,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty（仅 NA）；kfmv4 侧 Node 不 Rust | A 档：open/input/resize/close/重连 | ✅（2026-08-21，tmux 管理留 8.8.5 完整管理步） |
 | 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（评估翻盘：alacritty 被 polling 阻断上不了 wasm32；复活触发=rio-vt 功能缺口/行为考卷长期不齐） | A+B+C：终端功能对照 + M3 基线；考卷全集差分硬门移作 8.8.5 闭环前置（2026-08-23 拍板） | ✅（2026-08-23：IME 三症真机全解 + 轻收口三件落地——对照表 nz/docs/term-checklist.md、M3 基线 nz/tests/m3-baseline/、通报信 kfmv4-9.0-nz-882-closeout-notice；考卷硬门按拍板归 8.8.5 闭环） |
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C 档：刷新即终端；真机数字收口 | ✅（2026-08-23：守视双态实拍绿 + 用户真机确认「确实没问题」） |
-| 8.8.3b | 仿 Termux 按键栏（keybar UI 随键盘上浮）+ keymap 纯逻辑（粘滞修饰/控制字节/SS3-CSI 方向键） | NA keybar.rs/keymap.rs | 核加 `app_cursor()` 暴露（cursor_visible 同款小改） | A：keymap 考题（Ctrl+ASCII→字节 / Alt=ESC x / 方向键 ?1h SS3 vs CSI / 粘滞一次读走清零）；C：栏随软键盘上浮实拍 + 真机数字收口 | ⬜ |
+| 8.8.3b | 仿 Termux 按键栏（keybar UI 随键盘上浮）+ keymap 纯逻辑（粘滞修饰/控制字节/SS3-CSI 方向键） | NA keybar.rs/keymap.rs | 核加 `app_cursor()` 暴露（cursor_visible 同款小改） | A：keymap 考题（Ctrl+ASCII→字节 / Alt=ESC x / 方向键 ?1h SS3 vs CSI / 粘滞一次读走清零）；C：栏随软键盘上浮实拍 + 真机数字收口 | 🔄（2026-08-23：A 档 8 题绿 + 核 ?1h/?1l 钉 + B 档守视真链绿（ENTER 提示符 3→4→5 / Ctrl→c=^C 5→6 灯自灭 / 焦点不丢）；待真机收口+评审） |
 | 8.8.3c | scrollback 历史渲染上屏（2026-08-23 用户拍板：随手上滑翻历史=基础体验，9.0 不得比 8 倒退；tmux copy-mode 不作替代）——核已存 1000 行历史，壳从「只画当前屏」扩为「历史+当前屏」同渲，容器 overflow:hidden→auto 开真滚动 | 无 | 核需历史行读取 API（grid 回退区遍历，评估 rio-vt 暴露面） | A：壳考题（历史行渲染 / 跟底判定：新输出仅当已在底部才跟底，用户上滚不拽回）；B：长输出装配冒烟；C：真机上滑翻历史实拍 + IME 纪律兼容（上滚中输入跳回底部再发）+ 真机数字收口 | ⬜ |
 | 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C 档：标签切换实拍；真机数字收口 | ⬜ |
 | 8.8.5 | tmux 完整管理 + 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档；闭环前置=考卷全集差分绿（硬门后移不取消） | ⬜ |
@@ -190,7 +190,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.8.1 | 终端连接家族（PTY/tmux 管理） | dsh terminal-bash | NA portable-pty；kfmv4 侧 Node 不 Rust；本步前完成 alacritty_terminal vs rio-vt WASM 评估 | A：连接五动作对照旧实现 | ✅（2026-08-21，tmux 留 8.8.5；WASM 评估挪 8.8.2 门口待拍板） |
 | 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（2026-08-21 用户拍板；NA 侧 alacritty 不动，行为一致靠两线同源考卷保证） | A+B+C：终端功能对照表全绿；M3 终端基线；开工先补：僵尸会话 list 口径 + open 挂权限判定；**收口硬门（评审前置要求，用户 2026-08-21 接受；2026-08-23 拍板后移挂点）：功能覆盖考卷全集对跑——NA 在用的解析序列全集差分（非抽查），rio-vt 缺序列即触发复活重议；硬门移作 8.8.5 闭环前置，8.8.3–8.8.5 开工不等它** | ✅（2026-08-23：IME 三症真机全解 + 轻收口三件落地——对照表 nz/docs/term-checklist.md、M3 基线 nz/tests/m3-baseline/、通报信 kfmv4-9.0-nz-882-closeout-notice；考卷硬门归 8.8.5 闭环） |
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C：实拍刷新即终端；不得依赖 №11 完整布局；**真机数字收口**（2026-08-23 拍板：tmux 线=用户迁 9.0 判据） | ✅（2026-08-23：守视双态实拍绿——无参刷新即终端 panel=none / ?debug 面板照常；用户真机确认「确实没问题」收口） |
-| 8.8.3b | 仿 Termux 按键栏 + keymap（2026-08-23 评审建议信 kfmv4-9.0-term-keybar-review，用户提过缺口；tmux 刚需：手机无 Ctrl+B 前缀）：两排七列照 NA keybar.rs 定稿（上 Esc/Alt/Home/PgUp/↑/PgDn/Shift，下 Tab/Ctrl/End/←/↓/→/Enter）；四条纪律照抄——①修饰键一次性粘滞（点亮后下次落字读走清零）②keymap 纯逻辑 A 档有题（Ctrl+ASCII→控制字节；Alt+X=ESC x；方向键/End 吃 app_cursor 模式位，?1h 发 SS3 `ESC O A` 否则 CSI `ESC [ A`）③栏随软键盘上浮（贴可视区底，防被键盘盖）④键位序按 NA KEYS 表；核需加 `app_cursor()` 暴露（cursor_visible 同款小改）；keymap 独立纯逻辑模块，keybar UI 进 term 插件包 | NA keybar.rs/keymap.rs | 核 `app_cursor()` | A：keymap 考题（Ctrl+字节/Alt/方向键 SS3-CSI/粘滞清零各一）+ B：栏装配冒烟 + C：上浮跟随真机实拍 | ⬜ |
+| 8.8.3b | 仿 Termux 按键栏 + keymap（2026-08-23 评审建议信 kfmv4-9.0-term-keybar-review，用户提过缺口；tmux 刚需：手机无 Ctrl+B 前缀）：两排七列照 NA keybar.rs 定稿（上 Esc/Alt/Home/PgUp/↑/PgDn/Shift，下 Tab/Ctrl/End/←/↓/→/Enter）；四条纪律照抄——①修饰键一次性粘滞（点亮后下次落字读走清零）②keymap 纯逻辑 A 档有题（Ctrl+ASCII→控制字节；Alt+X=ESC x；方向键/End 吃 app_cursor 模式位，?1h 发 SS3 `ESC O A` 否则 CSI `ESC [ A`）③栏随软键盘上浮（贴可视区底，防被键盘盖）④键位序按 NA KEYS 表；核需加 `app_cursor()` 暴露（cursor_visible 同款小改）；keymap 独立纯逻辑模块，keybar UI 进 term 插件包 | NA keybar.rs/keymap.rs | 核 `app_cursor()` | A：keymap 考题（Ctrl+字节/Alt/方向键 SS3-CSI/粘滞清零各一）+ B：栏装配冒烟 + C：上浮跟随真机实拍 | 🔄（2026-08-23：A 8 题绿 + 核 ?1h/?1l 钉 + B 守视真链绿；待真机收口+评审） |
 | 8.8.3c | scrollback 历史渲染上屏（2026-08-23 用户拍板：随手上滑翻历史=基础体验，9.0 体验不得比 8 倒退；AI 长对话场景必须可回翻；tmux copy-mode 不作替代——用户从没用过）：核侧 1000 行历史已在（8.8.2 起配置），本步改渲染壳——从「只画当前屏、overflow:hidden」扩为「历史+当前屏同渲、overflow:auto 真滚动」；跟底纪律=终端惯例：新输出到来仅当视口已在底部才跟底，用户上滚阅读时不拽回；输入即回底（xterm 同款：按键/上屏先把视口送回光标处再发字节，与 placeKb 钉光标格纪律兼容——上滚时诱饵在屏外，focus preventScroll 不拽，发字节前显式回底）；容器高度跟随软键盘的既有逻辑不变（8.8.2 吞末行根治保留） | 无 | 核需历史行读取面（评估 rio-vt grid 回退区遍历 API；若缺，cursor_visible 同款小改暴露） | A：壳考题（历史行逐行进屏 / 跟底判定两向 / 回底再发）；B：千行长输出装配冒烟（渲染不卡、内存有界）；C：真机上滑翻历史实拍 + 上滚中收新输出不拽回 + 真机数字收口 | ⬜ |
 | 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C：标签切换实拍；**真机数字收口** | ⬜ |
 | 8.8.5 | tmux 完整管理（新建/清空/挂起/状态检测）+ 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档；**闭环前置：考卷全集差分绿** | ⬜ |
@@ -735,3 +735,17 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   排序挂 8.8.3b 之后、8.8.4 之前——tmux 三步开工前终端本体体验
   先齐。关键纪律：跟底判定（新输出仅当视口在底部才跟底）、输入
   即回底（xterm 同款）、与 IME 钉光标格/吞末行根治两纪律兼容。
+- 2026-08-23：**8.8.3b 落地（A+B 绿，待真机收口+评审）**：仿 Termux
+  按键栏两排七列（键序照 NA KEYS 逐格对齐，键序有考题盯）+ keymap
+  纯逻辑（term/keymap.ts，语义逐行移植 NA keymap.rs）。核加
+  `app_cursor()` 暴露（Mode::APP_CURSOR，?1h/?1l 两向有钉）。四纪律
+  落地：①一次性粘滞（ModifierState toggle/take，落字读走清零+灭灯）
+  ②keymap A 档 8 题（Ctrl+ASCII→控制字节/Alt=ESC x/SS3-CSI 两模式/
+  粘滞清零）③栏随键盘上浮（overlay 条带贴可视区底，vv resize/scroll
+  双追；终端容器底部常驻预留 KEYBAR_H=84，手动压高路径同扣）
+  ④键序考题。浏览器侧特有纪律：pointerdown preventDefault 保焦点
+  （焦点离诱饵=软键盘收摊）。验证：cargo test 5 绿（含 app_cursor
+  新钉）/ npm test 84 passed（+8）/ typecheck 0 / build OK（65898B）
+  / smoke PASS；守视真链冒烟：ENTER 提示符 3→4→5、Ctrl→c=^C 提示符
+  5→6 且灯自灭、按键栏按压焦点不丢诱饵。真机收口（上浮跟随/手感）
+  待用户实测，评审信随后。

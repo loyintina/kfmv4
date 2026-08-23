@@ -54,8 +54,19 @@
 | 通用健康字段（f/rp/sc/rz 逐事件同流） | 同上（beacon 记录原件在信 kfmv4-9.0-debug-statefields-response） | ✅ 守视 |
 | IME 专症字段（col/cv/cb）+ 角标 + 两 window 探针 | **已随症收口移除**（本收口动作） | ✅ 已移除 |
 
+## 按键栏（8.8.3b）
+
+| 功能 | 验证依据 | 状态 |
+|------|---------|------|
+| 两排七列键序照 NA KEYS（上 Esc/Alt/Home/PgUp/↑/PgDn/Shift，下 Tab/Ctrl/End/←/↓/→/Enter） | tests/keymap.test.ts 键表序题 + 守视实拍 | ✅ A+守视 |
+| 粘滞修饰一次性（toggle 点亮 / 落字 take 清零灭灯） | 考题 + 守视真链（Ctrl→c=^C，提示符 5→6，灯自灭） | ✅ A+B |
+| Ctrl+ASCII→控制字节 / Alt=ESC x / 多字符不转 | tests/keymap.test.ts | ✅ A |
+| 方向键/Home/End 按 app_cursor 翻 SS3/CSI（核 `app_cursor()` 新暴露） | cargo test `app_cursor_tracks_decckm` + keymap 两模式题 | ✅ A（核钉+映射题） |
+| 栏随软键盘上浮（贴可视区底，vv resize/scroll 双追） | 真机待测 | 🔄 待真机 |
+| 按压不抢焦点（pointerdown preventDefault，软键盘不收摊） | 守视真链（按压前后 activeElement=诱饵） | ✅ B |
+
 ## 已知留白（非缺口，排期在后续小步）
 
-- 按键栏（Esc/Tab/Ctrl/方向键）+ keymap：立项 **8.8.3b**（tmux 线刚需）；
-- 组合键映射全集（Alt+ 等）、scrollback 历史渲染上屏：input 小插件/后续小步；
+- 组合键映射全集（F1-F12 等）：input 小插件/后续小步；
+- scrollback 历史渲染上屏：立项 **8.8.3c**（2026-08-23 用户拍板，体验对齐 8.x）；
 - 考卷全集差分（NA 在役序列 vs rio-vt）：**8.8.5 闭环前置硬门**，并行轨。

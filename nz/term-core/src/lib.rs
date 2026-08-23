@@ -10,6 +10,8 @@
 //! - `new(cols, rows, scrollback)` / `feed(bytes)` / `resize(cols, rows)`
 //! - `text()`：可见区文本 dump（验证与两线行为考卷用）
 //! - `cursor()`：光标位置 packed `row << 16 | col`
+//! - `cursor_visible()`（?25h/?25l）/ `app_cursor()`（DECCKM ?1h/?1l，
+//!   8.8.3b 按键栏方向键 SS3/CSI 映射的模式位）
 //! serialize/restore（会话快照）留待渲染壳接入时补——探针不背。
 
 use rio_vt::ansi::CursorShape;
@@ -121,6 +123,14 @@ impl TermCore {
     /// 与反色块并排 = 双光标（真机黑匣子 cb 实锤：shell+inverse 相距 1 格）。
     pub fn cursor_visible(&self) -> bool {
         self.term.mode().contains(rio_vt::crosswords::Mode::SHOW_CURSOR)
+    }
+
+    /// 应用光标模式（DECCKM ?1h/?1l，rio-vt Mode::APP_CURSOR 本来就在记账，
+    /// 此前没暴露）。按键映射的命根：对端开 ?1h 时方向键/Home/End 要发
+    /// SS3（ESC O A）不是 CSI（ESC [ A）——发错序列，tmux/vim 里方向键
+    /// 全哑（8.8.3b 按键栏 keymap 按本位实时翻序列，NA keymap.rs 同款）。
+    pub fn app_cursor(&self) -> bool {
+        self.term.mode().contains(rio_vt::crosswords::Mode::APP_CURSOR)
     }
 
     /// 渲染帧（渲染壳取数协议 v1）：可见区逐行，行间 '\n' 分隔；
@@ -250,6 +260,16 @@ mod tests {
         t.feed(b"before resize");
         t.resize(40, 10);
         assert!(t.text().contains("before resize"));
+    }
+
+    #[test]
+    fn app_cursor_tracks_decckm() {
+        let mut t = TermCore::new(80, 24, 1000);
+        assert!(!t.app_cursor(), "默认普通光标模式");
+        t.feed(b"\x1b[?1h");
+        assert!(t.app_cursor(), "?1h 后应为应用光标模式（SS3）");
+        t.feed(b"\x1b[?1l");
+        assert!(!t.app_cursor(), "?1l 后应回普通模式（CSI）");
     }
 
     #[test]

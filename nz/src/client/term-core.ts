@@ -18,6 +18,9 @@ export interface TermCoreHandle {
   /** 光标可见性（DECTCEM ?25h/?25l）：false 时渲染壳必须藏光标（TUI 自绘
    * 反色块场景，壳光标不藏 = 鬼影双光标）。 */
   cursor_visible(): boolean;
+  /** 应用光标模式（DECCKM ?1h/?1l）：true 时方向键/Home/End 发 SS3
+   * （ESC O A），false 发 CSI（ESC [ A）——按键栏 keymap 实时读本位。 */
+  app_cursor(): boolean;
   /** 渲染帧取数协议（行级 DOM 渲染壳用），格式见 wasm 侧注释。 */
   render_frame(): string;
   free(): void;
