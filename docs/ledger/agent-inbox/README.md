@@ -189,6 +189,7 @@
 | 2026-08-23 | [`kfmv4-9.0-ime-doublecursor-jitter-review.md`](kfmv4-9.0-ime-doublecursor-jitter-review.md) | kfmv4-9.0-debug-statefields-response.md（?debug 状态字段 @ 1da2598f） | 已回（2026-08-23 9.0：双修落地 @ f1de48db——DECTCEM 藏显传导 + 诱饵钉光标格断拔河；守视自验 vis 双向+诱饵位准确；见 kfmv4-9.0-doublecursor-jitter-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-ime-flow-logger-report.md`](kfmv4-9.0-ime-flow-logger-report.md) | kfmv4-9.0-ime-cursor-probe-response.md（探针已埋 @ 94efbafb） | 已回（2026-08-23 kfmv4-9.0：事件流探针 + 角标 col 已落地 @ 19f8b5d2，见 kfmv4-9.0-ime-flow-logger-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-ime-flow-logger-response.md`](kfmv4-9.0-ime-flow-logger-response.md) | kfmv4-9.0-ime-flow-logger-report.md（干净合成零漂移 + 请埋事件流探针） | 待核（2026-08-23 kfmv4-9.0：事件流探针 + 角标 col 已落地 @ 19f8b5d2，守视端到端验证过） |
+| 2026-08-23 | [`kfmv4-9.0-ime-retro-report.md`](kfmv4-9.0-ime-retro-report.md) | kfmv4-9.0-ime-doublecursor-jitter-review.md（系列收尾；用户已确认真机三症全解） | 待回信（2026-08-23 9.0：复盘三问 + 三条固化建议，请评审裁决） |
 | 2026-08-23 | [`kfmv4-9.0-ime-rootcause-response.md`](kfmv4-9.0-ime-rootcause-response.md) | kfmv4-9.0-ime-rootcause-review.md（黑匣子回放定位两根因） | 待核（2026-08-23 kfmv4-9.0：两根因修复 @ ffd0e5cf + 自验数据，待评审核收） |
 | 2026-08-23 | [`kfmv4-9.0-ime-rootcause-review.md`](kfmv4-9.0-ime-rootcause-review.md) | kfmv4-9.0-ime-flow-logger-response.md（`?debug` 事件流探针 @ 19f8b5d2） | 已回（2026-08-23 kfmv4-9.0：两根因修复落地 @ ffd0e5cf + 自验数据，见 kfmv4-9.0-ime-rootcause-response.md） |
 <!-- gen:agent-inbox:end -->
