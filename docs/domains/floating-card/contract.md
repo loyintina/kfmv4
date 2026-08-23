@@ -76,6 +76,13 @@
     照抄 tools.card 时漏改 `buildCardLayout` 的标题字面量，卡片顶着「tool」标题上线，
     守视实拍才抓获。模板复制是最快的卡片开发路径，也是字面量残留的高发路径——
     标题/图标/类名/存储 key 逐项核对。
+16. **终端卡（terminal-card-04）的滚动/IME 是卡内自处理，不是浮卡框架管的**（2026-08-23）：
+    终端卡自管「加载/刷新/IME 弹收」的贴底——用**模块级 `_pinBottomIfFollowing`**（智能贴底：
+    视口已跟随底部才钉回，否则尊重上滚），挂进 `robustFit` 与 xterm `onResize`（覆盖内容灌入 +
+    fit/resize 全路径）。**边界：模块级钩子 = 单终端卡正确；多张终端卡并存时，其它卡的 fit 会调到最后
+    挂那张卡的钉底（最坏只是某卡保持贴底），已知边界不深究。** IME 滚焦靠 xterm 自身 + 移动端
+    `focus({preventScroll:true})`/诱饵钉光标格（见 terminal-card-04）；8.x 曾因无诱饵而修不动
+    IME 滚焦，nz(9.0) 自带 `kb.focus({preventScroll:true})` + 诱饵钉光标格已规避。
 
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 
