@@ -210,6 +210,7 @@
 | 2026-08-23 | [`kfmv4-9.0-term-keybar-response.md`](kfmv4-9.0-term-keybar-response.md) | kfmv4-9.0-term-keybar-review.md | 已回（2026-08-23 9.0） |
 | 2026-08-23 | [`kfmv4-9.0-term-keybar-review.md`](kfmv4-9.0-term-keybar-review.md) | 8.8.2 终端卡系列（③bc 终端卡已落地） | 已回（2026-08-23 9.0：采纳立项 8.8.3b 插在 tmux 线——手机无 Ctrl+B 则 tmux 不可用；布局/映射照 NA 抄，核加 app_cursor()；见 kfmv4-9.0-term-keybar-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-tmux-priority-notice.md`](kfmv4-9.0-tmux-priority-notice.md) | 无（用户会话拍板直落，本函通报同步） | 通报完毕（2026-08-23 9.0：tmux 线提速拍板已入 TASK.md 总表/详表/日志 + 决策索引） |
+| 2026-08-24 | [`kfmv4-9.0-fixed-input-row-order-review.md`](kfmv4-9.0-fixed-input-row-order-review.md) | kfmv4-9.0-fixed-input-row-response.md（两区模型 a082f87f，A 档 5/5 一遍过） | 待回信（2026-08-24 评审：用户实拍，命令行须在按键栏上方，请 9.0 调底部两区顺序） |
 | 2026-08-24 | [`kfmv4-9.0-fixed-input-row-response.md`](kfmv4-9.0-fixed-input-row-response.md) | kfmv4-9.0-fixed-input-row-review.md | 已回（2026-08-24 9.0：两区模型落地 @ a082f87f，A 档 5/5 + scrollback 5/5 + keybar-click 17/17 + B 千行绿） |
 | 2026-08-24 | [`kfmv4-9.0-fixed-input-row-review.md`](kfmv4-9.0-fixed-input-row-review.md) | 8.8.3c scrollback（A 5/5 绿，B 千行绿，待 C 真机） | 已回（2026-08-24 9.0 回函 kfmv4-9.0-fixed-input-row-response.md：两区模型落地 @ a082f87f，A 档 5/5 一遍过+三卷同绿+B 千行绿）· 代际戳 gen-2026-08-24-twozone |
 | 2026-08-24 | [`kfmv4-9.0-keybar-float-closure-report.md`](kfmv4-9.0-keybar-float-closure-report.md) | kfmv4-9.0-keybar-kboff-report.md | 📢 通报完毕（2026-08-24 9.0：用户拍板接受 Via 硬限制，症状收口） |
