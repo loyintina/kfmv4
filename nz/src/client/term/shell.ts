@@ -137,6 +137,14 @@ export class TermShell {
     probe.remove();
   }
 
+  /** 字格缓存作废（字体晚到自适应，2026-08-24 真机图A 列截断修复）：
+   *  NF 字体若在首量后才加载完（fonts.load 提前 resolve 的浏览器），
+   *  渲染字宽突变而缓存不刷 = 列算多截断。调用后下一帧重量。 */
+  invalidateMetrics() {
+    this.cellW = 0;
+    this.cellH = 0;
+  }
+
   /** 往容器里填文本：宽字符逐个裁进 2×cellW 固定格（inline-block 裁切），
    * 窄字符走自然文本。cellW 未量出时退化为纯文本（首帧前不裁）。 */
   private appendTextCells(parent: HTMLElement, text: string) {

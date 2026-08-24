@@ -184,14 +184,19 @@ export function applyTermBundle(ctx: Context): void {
       try {
         await document.fonts.load(`13px 'JetBrainsMonoNL NFM'`, '0');
       } catch { /* 字体 404/受限 → fallback 栈，度量与渲染仍同源 */ }
-      const probe = document.createElement('div');
-      probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;'
-        + `font:13px/1.25 ${TERM_FONT_STACK};`;
-      probe.textContent = '0'.repeat(20);
-      container.el.appendChild(probe);
-      const cellW = probe.getBoundingClientRect().width / 20;
-      const cellH = probe.getBoundingClientRect().height;
-      probe.remove();
+      let cellW = 0;
+      let cellH = 0;
+      const measureCell = () => {
+        const probe = document.createElement('div');
+        probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;'
+          + `font:13px/1.25 ${TERM_FONT_STACK};`;
+        probe.textContent = '0'.repeat(20);
+        container.el.appendChild(probe);
+        cellW = probe.getBoundingClientRect().width / 20;
+        cellH = probe.getBoundingClientRect().height;
+        probe.remove();
+      };
+      measureCell();
       // 单区布局（行高量出后一次性落位）：
       //   scrollEl  终端本体 top:0 bottom:按键栏（overflow:auto + flex 列
       //             底锚——壳画布 margin-top:auto：内容不满屏时推底=空屏
@@ -450,16 +455,36 @@ export function applyTermBundle(ctx: Context): void {
         scheduleResize();
       };
       window.visualViewport?.addEventListener('resize', onViewportResize);
-      // 地址栏/动态工具栏伸缩走 scroll 不走 resize（offsetTop 变）——容器钉 vv 同追
+      // 地址栏/动态工具栏伸缩走 scroll 不走 resize（offsetTop 变）——容器钉 vv 同追；
+      // 且可视高变了行列必须同缩（真机图B：顶栏带出→可视区变小→htop 底行
+      // 切半=容器高了 rows 没缩，button-ime-tui-overflow-review 真机证据）
       const onViewportScroll = () => {
         pinToVv();
         reportViewport('viewport-scroll');
+        scheduleResize();
       };
       window.visualViewport?.addEventListener('scroll', onViewportScroll);
+      // 字体晚到自适应（真机图A 列截断修复）：fonts.load 在个别浏览器
+      // 可能提前 resolve/不可信——loadingdone/loadingerror 兜底重量字格，
+      // 字宽变了才动作：壳度量缓存作废 + 行列重测三方同步（cols 跟实际
+      // 渲染字宽走，htop 帮助栏右侧不再截断）。首载完成也会触发一次，
+      // 字格不变=无动作（幂等）。
+      const onFontsSettled = () => {
+        const w0 = cellW, h0 = cellH;
+        measureCell();
+        if (Math.abs(cellW - w0) > 0.01 || Math.abs(cellH - h0) > 0.01) {
+          shell.invalidateMetrics();
+          scheduleResize();
+        }
+      };
+      document.fonts?.addEventListener('loadingdone', onFontsSettled);
+      document.fonts?.addEventListener('loadingerror', onFontsSettled);
       const unmountFollow = () => {
         clearTimeout(resizeTimer);
         window.visualViewport?.removeEventListener('resize', onViewportResize);
         window.visualViewport?.removeEventListener('scroll', onViewportScroll);
+        document.fonts?.removeEventListener('loadingdone', onFontsSettled);
+        document.fonts?.removeEventListener('loadingerror', onFontsSettled);
       };
       ctx.effect(() => unmountFollow);
 
