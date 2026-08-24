@@ -32,7 +32,8 @@ const row0 = await inputRow();
 const there = row0 && row0.bottom > 0;
 check('钩子存在（输入行可读）', !!row0, row0 ? `bottom=${row0.bottom}` : '无 __kfmNzTermInputRow');
 
-// ① 输入行始终在底/可见（核心）：灌 80 行 + 打字，输入行 bottom 恒 ≈ 视口底
+// ① 输入行始终在底/可见（核心）：灌输出+打字后仍在"终端显示区底部"（语义锚 isAtBottom，不锚像素——
+//    输入行垫在按键栏上方，其 bottom = innerHeight − 按键栏高，非视口底；用语义 + 底部区域判）
 if (there) {
   const vhBefore = await page.evaluate(()=>window.innerHeight);
   await type('seq 1 80\r');
@@ -40,8 +41,9 @@ if (there) {
   await type('echo hello');
   await page.waitForTimeout(600);
   const row1 = await inputRow();
-  const atBottom = row1 && Math.abs(row1.bottom - vhBefore) < 20;
-  check('①输入行始终在底/可见（灌输出+打字后仍在视口底）', atBottom === true, `bottom=${row1?.bottom} vh=${vhBefore} isAtBottom=${row1?.isAtBottom}`);
+  const atBottom = row1 && row1.isAtBottom === true
+    && (row1.bottom > vhBefore - 200) && (row1.bottom < vhBefore + 20); // 底部区域（垫在按键栏上方，非视口像素底）
+  check('①输入行始终在底/可见（语义 isAtBottom + 底部区域）', atBottom === true, `bottom=${row1?.bottom} vh=${vhBefore} isAtBottom=${row1?.isAtBottom}`);
 } else { check('①输入行始终在底', false, '无钩子'); }
 
 // ② 输出进滚动区、输入行不动：再灌大量输出，输入行 bottom 不变
