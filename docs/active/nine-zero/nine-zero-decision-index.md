@@ -1,6 +1,6 @@
-# 9.0 决策索引（跨线评审信箱 138 封信 → 决策一张表）
+# 9.0 决策索引（跨线评审信箱 139 封信 → 决策一张表）
 
-> 这是什么：`docs/ledger/agent-inbox/` 138 封信的**决策级索引**——信箱是
+> 这是什么：`docs/ledger/agent-inbox/` 139 封信的**决策级索引**——信箱是
 > ledger（只追加不删改），裁决史散在信里；本表把**已拍板决策**提取成一张表，
 > 「为什么这么定」从这里查、细节回信里读。信仍在，本表只索引不替代。
 > 别的去哪找：契约全文 → `nine-zero-phase1-contracts.md` / `nine-zero-phase2-contracts.md`；
@@ -49,6 +49,7 @@
 | 终端按键栏立项 8.8.3b（2026-08-23） | 评审建议 nz 补仿 Termux 按键栏（照 NA keybar/keymap）；9.0 采纳并升格为 tmux 线刚需（手机无 Ctrl+B 前缀则 tmux 不可用）；插 8.8.3 后 8.8.4 前；两排七列布局 + 四条纪律（粘滞修饰/keymap A 档/栏随键盘上浮/NA KEYS 序）照 NA 抄；核加 `app_cursor()` 暴露（cursor_visible 同款小改） | `kfmv4-9.0-term-keybar-review.md` / `kfmv4-9.0-term-keybar-response.md` | ✅ 采纳立项 | nz/TASK.md 总表+详表 8.8.3b 行 |
 | 8.8.3d 两区模型①锚点修卷（2026-08-24） | 布局更正后 fixed-input-row ①红=考卷锚点停在旧布局（bottom 现=innerHeight−84=按键栏正上方=设计位）；评审裁决采纳 isAtBottom 语义锚（不锚像素，键栏高可调不碎），①块改断 isAtBottom+底部区域（test 1d68bf2d），重跑 A 档 5/5 绿 → A 档修正通过、实现正确；教训「锚语义不锚像素」与 scrollback 修卷互证 | `kfmv4-9.0-fixed-input-row-order-response.md` / `kfmv4-9.0-fixed-input-row-order-accept-review.md` | ✅ 已裁决（后被下行单区回退**取代**） | nz/TASK.md 8.8.3d 总表+详表+日志区；随两区回退作废 |
 | 8.8.3d 单区底锚定：回退两区（2026-08-24 用户拍板） | 用户拍板**回退两区**（不要「滚动区+独立固定输入行」），改**单一连续终端区底锚定**：最底=最新、输出续输入下上滚、空屏提示符也在视口底行（上方留白）、去掉独立输入行；壳塌尾空行+flex 底锚 margin-top:auto；复用 8.8.3c 滚动状态机、核 alt_screen() 保留（TUI 不塌行）；fixed-input-row.test.mjs 删除、bottom-anchor.test.mjs 接管 A 档；`__kfmNzTermInputRow` 退役。落地 @ 7aa1962b，评审亲跑三卷（bottom-anchor 5/5+scrollback 5/5+keybar 17/17）A 档通过 | `kfmv4-9.0-single-zone-bottom-anchor-review.md` / `kfmv4-9.0-single-zone-bottom-anchor-response.md` / `kfmv4-9.0-single-zone-bottom-anchor-verify-review.md` | ✅ 已核（待用户真机 C 档） | nz/TASK.md 8.8.3d 总表+详表+日志区；待 C 档真机收口 |
+| PTY 默认 shell 用登录 shell（2026-08-24 用户发现，9.0 修复） | web 终端无 oh-my-zsh：根因=PTY 默认取 process.env.SHELL（服务进程 SHELL=/bin/bash）而非 /etc/passwd 登录 shell(zsh)。修复=resolveLoginShell() 读 passwd 按 uid 取登录 shell+校验存在性，容器受限回落 env.SHELL→/bin/sh；不加 -l（oh-my-zsh 在 .zshrc，交互态 source 已够，避免 .zprofile 重排 PATH）；-c 分支不变；env.SHELL 覆写=登录 shell。落地 @ fb9b6841，headless 实证提示符变 oh-my-zsh ⚡，三卷+npm85 绿；keybar clickSends 偶红(zsh 回显 RTT 慢于零等待快照)=考卷 artifact 已修卷(轮询等待，09605cea) 稳定 17/17 | `kfmv4-9.0-pty-login-shell-review.md` / `kfmv4-9.0-pty-login-shell-response.md` / `kfmv4-9.0-pty-login-shell-verify-review.md` | ✅ 已核（待用户真机 C 档） | nz/TASK.md ？；修正 src/server/term-connection.ts resolveLoginShell；方法库「真实点击可测性」条目修订注 |
 
 ## 待决/进行中
 
