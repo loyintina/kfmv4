@@ -26,10 +26,6 @@ export interface TermShellOpts {
   cols: number;
   rows: number;
   fontSize?: number; // px，默认 13
-  /** 固定输入行容器（两区模型，2026-08-24 用户拍板）：光标所在行剥出
-   * 滚动区、恒钉底渲染在这里；ALT_SCREEN（TUI 整屏）时隐藏、全屏行
-   * 回滚动区。 */
-  inputRowEl: HTMLElement;
 }
 
 export class TermShell {
@@ -42,9 +38,6 @@ export class TermShell {
   private histEvicted = 0;
   /** 已渲染历史行数（historyDiv 子节点数应恒等于它） */
   private histCount = 0;
-  /** 固定输入行的行内容 div（两区模型；opts.inputRowEl 的子元素） */
-  private inputLineEl: HTMLDivElement;
-  private inputLineCache = '';
   private cellW = 0;
   private cellH = 0;
   private enc = new TextEncoder();
@@ -74,9 +67,6 @@ export class TermShell {
       `user-select:text;-webkit-user-select:text;overflow:hidden;`;
     this.historyDiv = document.createElement('div');
     el.appendChild(this.historyDiv);
-    this.inputLineEl = document.createElement('div');
-    this.inputLineEl.style.cssText = 'white-space:pre;height:1.25em;';
-    opts.inputRowEl.appendChild(this.inputLineEl);
     for (let i = 0; i < opts.rows; i++) {
       const d = document.createElement('div');
       d.style.cssText = 'white-space:pre;height:1.25em;';
@@ -85,6 +75,8 @@ export class TermShell {
       this.rowCache.push('');
     }
     this.cursorEl = document.createElement('div');
+    // class 名是判卷/取证锚点（bottom-anchor 考卷 ③ 直接 querySelector 量 rect）
+    this.cursorEl.className = 'nz-term-cursor';
     this.cursorEl.style.cssText =
       `position:absolute;background:${TERM_FG};opacity:0.7;pointer-events:none;display:none;`;
     el.appendChild(this.cursorEl);
@@ -253,10 +245,12 @@ export class TermShell {
   }
 
   /** 取一帧新账，只重排有变的行；再摆光标。
-   * 两区模型（2026-08-24 用户拍板，fixed-input-row-review）：行模式下
-   * 光标所在行剥出滚动区 → 固定输入行渲染（恒钉底，输出顶不走——根治
-   * 「正在打的命令行消失」）；ALT_SCREEN（TUI 整屏程序）时输入行/历史
-   * 块隐藏、全屏行回滚动区（TUI 光标满屏跑，剥行=毁布局）。 */
+   * 单区底锚定（2026-08-24 用户拍板回退两区，single-zone-bottom-anchor-review）：
+   * 历史+屏幕行同一个连续滚动区，无独立输入行。行模式**塌尾空行**——
+   * 只渲染到 max(光标行, 最后非空行)，尾空行 display:none；配合容器
+   * flex 底锚（termEl margin-top:auto）：空屏时提示符/光标贴视口底行
+   * （上方留白，像内容已充满屏幕），内容增长从底往上顶，超屏后真滚动。
+   * ALT_SCREEN（TUI 整屏）不塌行：全屏行列恒定，布局归 TUI 自己。 */
   renderFrame() {
     this.measure();
     this.stats.frames++;
@@ -265,50 +259,44 @@ export class TermShell {
     if (!alt) this.renderHistory();
     const frame = this.core.render_frame();
     const lines = frame.split('\n');
-    // 光标：packed row<<16|col；row 可能为负（历史区）则不画。
-    // 可见性跟核走（DECTCEM ?25l 隐藏）：TUI 自绘反色块当光标时壳光标
-    // 必须跟着藏，否则灰鬼影与反色块并排 = 双光标（真机 cb 实锤）。
+    // 光标：packed row<<16|col；row 可能为负（历史区，packed 后 65535+
+    // 被 row<rows 判定天然排除）则不画。可见性跟核走（DECTCEM ?25l 隐
+    // 藏）：TUI 自绘反色块当光标时壳光标必须跟着藏，否则灰鬼影与反色
+    // 块并排 = 双光标（真机 cb 实锤）。
     const cur = this.core.cursor();
     const row = cur >>> 16;
     const col = cur & 0xffff;
-    // 剥行下标：行模式且光标在屏内 = 光标行（进输入行）；其上方行留滚动
-    // 区、下方行（空）留白；否则（ALT/越界）= -1 不剥（整帧进滚动区）。
-    const peeled = !alt && row < this.opts.rows ? row : -1;
-    for (let i = 0; i < this.opts.rows; i++) {
-      const line = peeled >= 0 && i >= peeled ? '\x1f' : (lines[i] ?? '\x1f');
-      if (line === this.rowCache[i]) continue;
-      this.rowCache[i] = line;
-      this.stats.rowsPainted++;
-      this.renderRow(this.rowDivs[i], line);
-    }
-    // 固定输入行渲染（剥出的光标行，样式协议同帧）
-    const inputLine = peeled >= 0 ? (lines[peeled] ?? '\x1f') : '\x1f';
-    if (inputLine !== this.inputLineCache) {
-      this.inputLineCache = inputLine;
-      this.stats.rowsPainted++;
-      this.renderRow(this.inputLineEl, inputLine);
-    }
-    const showCursor = this.cellW > 0 && this.core.cursor_visible();
-    if (!alt && peeled >= 0) {
-      // 行模式：光标在固定输入行内（恒钉底，无滚动兜底——输入行恒可见）
-      const inputRow = this.opts.inputRowEl;
-      if (this.cursorEl.parentElement !== inputRow) inputRow.appendChild(this.cursorEl);
-      if (showCursor) {
-        this.cursorEl.style.display = 'block';
-        this.cursorEl.style.left = `${col * this.cellW}px`;
-        this.cursorEl.style.top = '0px';
-        this.cursorEl.style.width = `${this.cellW}px`;
-        this.cursorEl.style.height = `${this.cellH}px`;
-      } else {
-        this.cursorEl.style.display = 'none';
+    const rowInGrid = row < this.opts.rows;
+    // 塌尾空行边界：光标行与最后非空行的较大者（行模式才塌；ALT 全量）
+    let lastRow = this.opts.rows - 1;
+    if (!alt) {
+      let last = -1;
+      for (let i = 0; i < this.opts.rows; i++) {
+        const l = lines[i] ?? '';
+        const sep = l.indexOf('\x1f');
+        if ((sep < 0 ? l : l.slice(0, sep)).trim() !== '') last = i;
       }
-    } else if (alt && row < this.opts.rows && showCursor) {
-      // ALT 整屏：光标回滚动区（历史块 display:none → offsetHeight=0，
-      // 纵坐标天然正确）。光标跟随：只滚最近的可滚动祖先（容器），不碰
-      // 页面——scrollIntoView 会把所有可滚祖先（含背景 boot 页）一起滚
-      // （实测：每敲一字全页从头往下滚、闪烁）。nearest 语义手写：光标
-      // 已在视野内就一动不动。autoScroll=false（用户上滑中）兜底歇火。
-      if (this.cursorEl.parentElement !== this.el) this.el.appendChild(this.cursorEl);
+      lastRow = Math.max(last, rowInGrid ? row : 0);
+    }
+    for (let i = 0; i < this.opts.rows; i++) {
+      const line = lines[i] ?? '\x1f';
+      if (line !== this.rowCache[i]) {
+        this.rowCache[i] = line;
+        this.stats.rowsPainted++;
+        this.renderRow(this.rowDivs[i], line);
+      }
+      const disp = !alt && i > lastRow ? 'none' : '';
+      if (this.rowDivs[i].style.display !== disp) this.rowDivs[i].style.display = disp;
+    }
+    // 光标统一进滚动区（行模式/ALT 同式；历史块 display:none 时
+    // offsetHeight=0，ALT 纵坐标天然正确）。光标跟随：只滚最近的可滚
+    // 动祖先（容器），不碰页面——scrollIntoView 会把所有可滚祖先（含
+    // 背景 boot 页）一起滚（实测：每敲一字全页从头往下滚、闪烁）。
+    // nearest 语义手写：光标已在视野内就一动不动。autoScroll=false
+    // （用户上滑中）兜底歇火。
+    const showCursor = this.cellW > 0 && this.core.cursor_visible() && rowInGrid;
+    if (this.cursorEl.parentElement !== this.el) this.el.appendChild(this.cursorEl);
+    if (showCursor) {
       this.cursorEl.style.display = 'block';
       this.cursorEl.style.left = `${col * this.cellW}px`;
       this.cursorEl.style.top = `${this.historyDiv.offsetHeight + row * this.cellH}px`;
@@ -328,5 +316,18 @@ export class TermShell {
     } else {
       this.cursorEl.style.display = 'none';
     }
+  }
+
+  /** 光标格在 termEl 内的像素坐标（placeKb 诱饵钉光标格用）；
+   * 光标越界/未量字格时 null。 */
+  cursorOffset(): { x: number; y: number } | null {
+    if (this.cellW <= 0) return null;
+    const cur = this.core.cursor();
+    const row = cur >>> 16;
+    if (row >= this.opts.rows) return null;
+    return {
+      x: (cur & 0xffff) * this.cellW,
+      y: this.historyDiv.offsetHeight + row * this.cellH,
+    };
   }
 }

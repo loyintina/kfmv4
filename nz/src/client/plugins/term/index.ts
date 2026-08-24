@@ -29,7 +29,6 @@ import { TermShell } from '../../term/shell.js';
 import { TermWsBridge } from '../../term/bridge.js';
 import { mapText } from '../../term/keymap.js';
 import { KEYBAR_H, MOD_ALT, MOD_CTRL, MOD_SHIFT, mountKeybar } from '../../term/keybar.js';
-import { TERM_BG } from '../../term/palette.js';
 
 const COLS = 80;
 const ROWS = 24;
@@ -49,8 +48,6 @@ interface TermCardInstance {
   followOutput: () => void;
   /** 输入即回底（打字/按键栏/IME 落字）：atBottom=true + 立即滚到底 */
   inputToBottom: () => void;
-  /** 帧后同步 ALT_SCREEN 模式位（两区模型：TUI 整屏 ↔ 行模式布局翻转） */
-  syncAlt: () => void;
 }
 
 export interface TermCardService {
@@ -112,7 +109,6 @@ export function applyTermBundle(ctx: Context): void {
           inst.shell.setCore(inst.core);
         }
         inst.core.feed(new TextEncoder().encode(data));
-        inst.syncAlt();
         inst.shell.renderFrame();
         inst.placeKb();
         inst.followOutput();
@@ -122,7 +118,6 @@ export function applyTermBundle(ctx: Context): void {
       for (const inst of instances.values()) {
         if (inst.sessionId !== id) continue;
         inst.core.feed(new TextEncoder().encode(`\r\n[进程已退出 code=${code}]\r\n`));
-        inst.syncAlt();
         inst.shell.renderFrame();
         inst.placeKb();
         inst.followOutput();
@@ -141,16 +136,17 @@ export function applyTermBundle(ctx: Context): void {
         slot: cardId,
         owner: 'term',
       });
-      // 容器=全屏视口（两区模型 2026-08-24 用户拍板，fixed-input-row-review）：
-      // 内部绝对分区——scrollEl 滚动区（历史/输出，overflow:auto 真滚动，
-      // 8.8.3c 状态机）+ barStrip 按键栏（流内，钉输入行上方）+ inputRowEl
-      // 固定输入行（光标行剥出恒钉底，根治「正在打的命令行被输出顶出视野」
-      // ——?kbOff 的碰巧掩盖退役）。按键栏/输入行回流内 = 8.x aux-bar 存活
-      // 模式，钉 vv 的条带定位复杂度结构性蒸发。容器自身 overflow:hidden。
+      // 容器=全屏视口（单区底锚定 2026-08-24 用户拍板回退两区，
+      // single-zone-bottom-anchor-review）：内部绝对分区——scrollEl 即
+      // 终端本体（历史+屏幕行同一连续滚动区，overflow:auto 真滚动，
+      // 8.8.3c 状态机；flex 列 + 壳画布 margin-top:auto = 底锚定：空屏
+      // 提示符贴底行、新内容从底往上顶）+ barStrip 按键栏（流内垫底拇指
+      // 区）。无独立固定输入行（两区分割随拍板退役）。容器自身
+      // overflow:hidden。
       container.el.style.cssText = 'position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;';
       // ?kbOff=<px> 代字（keybar-kboff-report，用户拍板）：个别浏览器
       // （Via 有栏+键盘态）vv.height 多报 ~42px——容器高按 vv−kbOff 收，
-      // 整组底部 UI（输入行+按键栏）随之上移；无参数=0 现状不改。
+      // 整组底部 UI（按键栏）随之上移；无参数=0 现状不改。
       const kbOffParam = Number(new URLSearchParams(location.search).get('kbOff'));
       const kbOff = Number.isFinite(kbOffParam) && kbOffParam > 0 ? Math.round(kbOffParam) : 0;
       // 出生即钉 vv（不等首个 vv 事件，判尺结论：vv 是唯一真尺）——有栏
@@ -183,56 +179,44 @@ export function applyTermBundle(ctx: Context): void {
       const cellW = probe.getBoundingClientRect().width / 20;
       const cellH = probe.getBoundingClientRect().height;
       probe.remove();
-      // 两区布局（行高量出后一次性落位；2026-08-24 布局更正：命令行在
-      // 按键栏**上方**，按键栏垫最底拇指区——用户实拍定序）：
-      //   scrollEl  滚动区 top:0 bottom:按键栏+输入行（overflow:auto）
-      //   inputRowEl 固定输入行 bottom:KEYBAR_H（光标行剥出，紧贴按键栏上方）
+      // 单区布局（行高量出后一次性落位）：
+      //   scrollEl  终端本体 top:0 bottom:按键栏（overflow:auto + flex 列
+      //             底锚——壳画布 margin-top:auto：内容不满屏时推底=空屏
+      //             提示符在底行；超屏时 margin 归零正常滚动。flex 容器内
+      //             画布必须 flex:none 防 shrink 压缩）
       //   barStrip  按键栏 bottom:0 height:KEYBAR_H（垫底）
-      const inputRowH = Math.max(10, Math.round(cellH));
       const scrollEl = document.createElement('div');
-      scrollEl.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:${KEYBAR_H + inputRowH}px;overflow:auto;`;
+      scrollEl.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:${KEYBAR_H}px;`
+        + 'overflow:auto;display:flex;flex-direction:column;';
       container.el.appendChild(scrollEl);
-      const inputRowEl = document.createElement('div');
-      inputRowEl.style.cssText = `position:absolute;left:0;right:0;bottom:${KEYBAR_H}px;height:${inputRowH}px;`
-        + `background:${TERM_BG};overflow:hidden;`;
-      container.el.appendChild(inputRowEl);
-      // ALT_SCREEN 模式位（TUI 整屏）：帧后发现翻转才换布局——输入行隐藏、
-      // 滚动区吃下它的高度（行列数不变：行模式多出的那 1 行正是输入行）。
-      let altMode = false;
+      // 实测定尺寸（写死 80×24 时代结束）：先用与壳同字体的探针量字格，
+      // 再按容器可视面积算行列——手机有多宽终端就有多少列，不再裁字。
       const measure = () => cellW > 0 && cellH > 0 ? {
         cols: Math.max(20, Math.floor(container.el.clientWidth / cellW)),
-        // 行模式：滚动区行数+1 输入行；ALT：滚动区全量（高度已涨一行高，
-        // floor 后正好同行数——两种模式行列恒定，切模式不触发 PTY resize）
-        rows: Math.max(5, Math.floor(scrollEl.clientHeight / cellH) + (altMode ? 0 : 1)),
+        rows: Math.max(5, Math.floor(scrollEl.clientHeight / cellH)),
       } : { cols: COLS, rows: ROWS };
       const size = measure();
       const core = new g.TermCore(size.cols, size.rows, 1000);
       // 壳必须画在内层元素上——TermShell 构造函数会重写根元素的 cssText，
       // 直接传 scrollEl 会把滚动区定位冲掉（半屏+无法滚动的实测教训）。
-      // scrollEl=滚动视口，termEl=壳画布（历史块+屏幕行），inputRowEl=输入行。
+      // scrollEl=滚动视口（flex 列底锚），termEl=壳画布（历史块+屏幕行）。
       const termEl = document.createElement('div');
       scrollEl.appendChild(termEl);
-      const shell = new TermShell(core, termEl, { cols: size.cols, rows: size.rows, inputRowEl });
+      const shell = new TermShell(core, termEl, { cols: size.cols, rows: size.rows });
+      // 底锚定两件套（构造后补——构造函数会重写 cssText，属性级补设不冲）
+      termEl.style.marginTop = 'auto';
+      termEl.style.flex = 'none';
       const card: TermCardInstance = {
         cardId, sessionId: null, core, shell, cols: size.cols, rows: size.rows,
         placeKb: () => {}, atBottom: true, followOutput: () => {}, inputToBottom: () => {},
-        syncAlt: () => {},
       };
       instances.set(cardId, card);
-      card.syncAlt = () => {
-        const altNow = card.core.alt_screen();
-        if (altNow === altMode) return;
-        altMode = altNow;
-        inputRowEl.style.display = altNow ? 'none' : '';
-        scrollEl.style.bottom = altNow ? `${KEYBAR_H}px` : `${KEYBAR_H + inputRowH}px`;
-        card.placeKb();
-      };
 
       // 8.8.3c scrollback 集中状态机（standard-scrollback-8.8.3c 纪律，
       // 散写必翻车）：atBottom 初始 true；新输出仅 true 才跟底（follow
       // Output 挂桥回调）；滚动事件双向翻转；输入（打字/按键栏/IME 落
       // 字）= true + 立即回底；IME 合成中不回底（落字才走 inputToBottom）。
-      // 两区模型下滚动对象=scrollEl（输入行恒钉底不参与滚动）。
+      // 单区模型滚动对象=scrollEl（终端本体，历史+屏幕行同一连续区）。
       card.followOutput = () => {
         if (card.atBottom) scrollEl.scrollTop = scrollEl.scrollHeight;
       };
@@ -246,9 +230,10 @@ export function applyTermBundle(ctx: Context): void {
           >= scrollEl.scrollHeight - 5;
         shell.autoScroll = card.atBottom; // 上滑中光标 nearest 兜底歇火
       });
-      // 判卷/取证钩子契约（standard-scrollback 三节 + fixed-input-row
-      // 四节）：v1 单卡口径，多卡并存时后开的覆盖——多卡改造小步再按
-      // cardId 分键。
+      // 判卷/取证钩子契约（standard-scrollback 三节 + bottom-anchor
+      // 考卷）：v1 单卡口径，多卡并存时后开的覆盖——多卡改造小步再按
+      // cardId 分键。两区模型的 __kfmNzTermInputRow 随单区回退退役
+      // （2026-08-24 拍板：无独立输入行，光标格 rect 走 .nz-term-cursor）。
       (window as unknown as Record<string, unknown>).__kfmNzTermScroll = () => ({
         scrollTop: scrollEl.scrollTop,
         scrollHeight: scrollEl.scrollHeight,
@@ -256,16 +241,6 @@ export function applyTermBundle(ctx: Context): void {
         isAtBottom: card.atBottom,
         getContainer: () => scrollEl,
       });
-      // 固定输入行 rect 钩子（两区模型判卷核心；布局更正后输入行在按键
-      // 栏上方——isAtBottom=贴住「容器底−按键栏」位而非容器底）
-      (window as unknown as Record<string, unknown>).__kfmNzTermInputRow = () => {
-        const r = inputRowEl.getBoundingClientRect();
-        const cr = container.el.getBoundingClientRect();
-        return {
-          top: r.top, bottom: r.bottom, height: r.height,
-          isAtBottom: !altMode && Math.abs(r.bottom - (cr.bottom - KEYBAR_H)) < 2,
-        };
-      };
 
       // 软键盘入口（xterm 同款隐藏 textarea 诱饵）：移动浏览器只在可编辑
       // 元素聚焦时弹软键盘，div+tabIndex 没用。点卡片 → 聚焦诱饵；桌面
@@ -287,23 +262,21 @@ export function applyTermBundle(ctx: Context): void {
       // （真机黑匣子实锤：sc 每键 +1、rp 暴涨、整屏从上到下闪）。让诱饵
       // 钉在光标格上：浏览器想滚去的位置正好就是我们要的位置，拔河消失；
       // 副作用是 IME 候选窗跟着光标走（xterm 同款，顺带改善）。
-      // 两区模型：行模式光标在固定输入行（诱饵钉输入行上）；ALT 整屏
-      // 光标在滚动区（钉光标格原式）。
+      // 单区模型：光标行在滚动区流内，诱饵钉光标格的**可视**位置
+      // （termEl 内纵坐标 − 当前滚动量；kb 挂容器下，scrollEl 顶=0 故
+      // 坐标系直通）。atBottom 时光标恒在底可视区，浏览器「滚进视野」
+      // 发现已在视野 = 不滚，拔河消失；IME 候选窗跟光标走（顺带改善）。
       card.placeKb = () => {
-        const cur = card.core.cursor();
-        const m = shell.metrics;
-        if (m.cellW <= 0 || m.cellH <= 0) return;
-        kb.style.left = `${(cur & 0xffff) * m.cellW}px`;
-        kb.style.top = card.core.alt_screen()
-          ? `${(cur >>> 16) * m.cellH}px`
-          : `${inputRowEl.offsetTop}px`;
+        const off = shell.cursorOffset();
+        if (!off) return;
+        kb.style.left = `${off.x}px`;
+        kb.style.top = `${off.y - scrollEl.scrollTop}px`;
       };
 
-      // 8.8.3b 按键栏（仿 Termux，纪律见 keybar.ts 头注释）：两区模型起
-      // 改为容器流内条带（垫底拇指区，bottom:0——2026-08-24 布局更正：
-      // 命令行在按键栏上方）——回到 8.x aux-bar 流内存活模式，键盘弹起
-      // 随容器钉 vv 同步上浮，条带自身不再追 vv（判尺/过渡帧/双基准打架
-      // 那套随布局重构退役）。生灭随容器（owner 死容器摘=子树同摘）。
+      // 8.8.3b 按键栏（仿 Termux，纪律见 keybar.ts 头注释）：容器流内
+      // 条带（垫底拇指区，bottom:0）——8.x aux-bar 流内存活模式，键盘弹
+      // 起随容器钉 vv 同步上浮，条带自身不再追 vv（判尺/过渡帧/双基准
+      // 打架那套随布局重构退役）。生灭随容器（owner 死容器摘=子树同摘）。
       // pointer-events:auto 防层根 none 拦截。
       const barStripEl = document.createElement('div');
       barStripEl.style.cssText = `position:absolute;left:0;right:0;bottom:0;height:${KEYBAR_H}px;pointer-events:auto;`;
@@ -424,7 +397,7 @@ export function applyTermBundle(ctx: Context): void {
       const onViewportResize = () => {
         dbg.viewportEvents++;
         // 容器同拍钉 vv（transition-report①：防抖后跳=过渡闪帧真凶）；
-        // 按键栏/输入行在容器流内，容器底动=整组底部 UI 同步上浮
+        // 按键栏在容器流内，容器底动=整组底部 UI 同步上浮
         pinToVv();
         // 视口事件随 IME 事件同流落日志（评审五节建议）
         reportViewport('viewport');
@@ -467,7 +440,6 @@ export function applyTermBundle(ctx: Context): void {
 
       const sessionId = await bridge.open({ command: opts.command, cols: card.cols, rows: card.rows });
       card.sessionId = sessionId;
-      card.syncAlt();
       shell.renderFrame();
       card.placeKb();
       return inst.id;
