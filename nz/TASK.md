@@ -835,3 +835,14 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   artifact（clickSends 零等待快照，zsh RTT 慢于 bash），修法建议已随
   回函请评审裁决。待 C 档真机（oh-my-zsh 提示符+字形无乱码）随单区
   底锚定 C 档一并收口。
+- 2026-08-24：**配色换 NA 板 + 捆绑 Nerd Font**（用户守视拍板，评审信
+  kfmv4-9.0-palette-font-na-review）：palette.ts 16 色逐值对齐 NA
+  ANSI_16（黄=VGA 棕/蓝=品牌正蓝 #3B82F6）+ TERM_FG 白/TERM_BG 黑；
+  捆绑 JetBrainsMonoNL NFM（NoLigatures Mono 变体，2.4MB ttf 入仓
+  public/fonts/）治 U+E0B0 箭头色块；字体栈抽 TERM_FONT_STACK 共享
+  常量（NF 打头+CJK fallback 栈尾兜中文），壳渲染与量字格探针同栈；
+  字体就绪门（open 量格前 await document.fonts.load——异步加载不等
+  会拿 fallback 字宽致光标/裁切错位）。feat @ 1f1fb05a。三考卷不回
+  退+npm 85 绿；headless 截图人审：箭头成色/黑底白字/中文不塌/底锚
+  正常。M3 基线两图预期失效，C 档真机收口后重拍。待 C 档真机（配色
+  比照 NA/箭头正常/中文正常）随底锚定+oh-my-zsh 三单并验。
