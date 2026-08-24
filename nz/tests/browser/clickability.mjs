@@ -29,10 +29,18 @@ export async function reachable(page, { label, selector, text }) {
 /**
  * ② 点即有果：点击后 snapshot() 返回值变化（DOM/state/frame 前后对比）。
  */
-export async function clickSends(page, { label, locator, click = (l) => l.click({ force: true }), snapshot }) {
+export async function clickSends(page, { label, locator, click = (l) => l.click({ force: true }), snapshot, timeout = 3000, interval = 50 }) {
   const before = await snapshot();
   await click(locator);
-  const after = await snapshot();
+  // 零等待快照与回显 RTT 竞态（2026-08-24 评审裁决：keybar 点 ENTER 偶红=
+  // zsh+oh-my-zsh 启动回显慢于裸 bash，零等待快照偶发早于回显落地非回归）——
+  // 改轮询等待 snapshot 变化，超时判红（语义不变：点即有果 = 点后终有变化）。
+  let after = await snapshot();
+  const deadline = Date.now() + timeout;
+  while (after === before && Date.now() < deadline) {
+    await page.waitForTimeout(interval);
+    after = await snapshot();
+  }
   const ok = after !== before;
   return { name: `点即有果(${label})`, ok, detail: ok ? '有变化' : '无变化' };
 }
