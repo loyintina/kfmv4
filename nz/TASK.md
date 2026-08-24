@@ -857,3 +857,11 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   症字段（真机超屏排查用，随症收口）。fix @ fde0d792。遗留：真机「超屏
   需上滑」headless 未复现，待真机 ?debug 取证。待 C 档真机（点按钮不弹
   键盘+TUI 占满不超屏）随底锚定/oh-my-zsh/配色字体四单并验。
+- 2026-08-24：**TUI 真机行列失配两症修复**（用户真机截图实证，评审信五节）：
+  图A 帮助栏右侧截断=cellW 竞态（NF 晚到渲染变宽、cols 按 fallback 窄宽
+  算多）——字体晚到自适应：measureCell() 可重测 + fonts loadingdone/
+  loadingerror 兜底 + shell.invalidateMetrics() 新增；图B 顶栏带出底行
+  切半=地址栏伸缩走 vv scroll 不触发 resize——onViewportScroll 补
+  scheduleResize() 行列同缩。fix @ d1884a38（tests:na：真机/浏览器差异
+  向 headless 不可补钉，防线=三考卷不回退+?debug 取证字段）。headless
+  复核 htop 占满 F1-F10 贴底、vv scroll 后尺寸稳定。待真机复核。
