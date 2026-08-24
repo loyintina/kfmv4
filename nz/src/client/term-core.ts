@@ -21,6 +21,9 @@ export interface TermCoreHandle {
   /** 应用光标模式（DECCKM ?1h/?1l）：true 时方向键/Home/End 发 SS3
    * （ESC O A），false 发 CSI（ESC [ A）——按键栏 keymap 实时读本位。 */
   app_cursor(): boolean;
+  /** 备用屏幕（ALT_SCREEN，TUI 整屏程序）：true 时渲染壳切整屏渲染
+   * （两区模型的固定输入行只对行模式成立，TUI 光标满屏跑不能剥行）。 */
+  alt_screen(): boolean;
   /** 渲染帧取数协议（行级 DOM 渲染壳用），格式见 wasm 侧注释。 */
   render_frame(): string;
   /** 历史区行数（scrollback 已攒，8.8.3c） */

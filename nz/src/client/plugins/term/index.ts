@@ -29,6 +29,7 @@ import { TermShell } from '../../term/shell.js';
 import { TermWsBridge } from '../../term/bridge.js';
 import { mapText } from '../../term/keymap.js';
 import { KEYBAR_H, MOD_ALT, MOD_CTRL, MOD_SHIFT, mountKeybar } from '../../term/keybar.js';
+import { TERM_BG } from '../../term/palette.js';
 
 const COLS = 80;
 const ROWS = 24;
@@ -48,6 +49,8 @@ interface TermCardInstance {
   followOutput: () => void;
   /** 输入即回底（打字/按键栏/IME 落字）：atBottom=true + 立即滚到底 */
   inputToBottom: () => void;
+  /** 帧后同步 ALT_SCREEN 模式位（两区模型：TUI 整屏 ↔ 行模式布局翻转） */
+  syncAlt: () => void;
 }
 
 export interface TermCardService {
@@ -109,6 +112,7 @@ export function applyTermBundle(ctx: Context): void {
           inst.shell.setCore(inst.core);
         }
         inst.core.feed(new TextEncoder().encode(data));
+        inst.syncAlt();
         inst.shell.renderFrame();
         inst.placeKb();
         inst.followOutput();
@@ -118,6 +122,7 @@ export function applyTermBundle(ctx: Context): void {
       for (const inst of instances.values()) {
         if (inst.sessionId !== id) continue;
         inst.core.feed(new TextEncoder().encode(`\r\n[进程已退出 code=${code}]\r\n`));
+        inst.syncAlt();
         inst.shell.renderFrame();
         inst.placeKb();
         inst.followOutput();
@@ -136,23 +141,31 @@ export function applyTermBundle(ctx: Context): void {
         slot: cardId,
         owner: 'term',
       });
-      // 容器=全屏视口（底部常驻预留按键栏高度，Termux 同款：栏不在终端
-      // 区里，行列数不随栏沉浮）。8.8.3c 起 DOM 渲染历史区+当前屏，
-      // overflow:auto 出真滚动——跟底/回底归下方的集中状态机（散写必翻车）。
-      container.el.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:${KEYBAR_H}px;overflow:auto;`;
+      // 容器=全屏视口（两区模型 2026-08-24 用户拍板，fixed-input-row-review）：
+      // 内部绝对分区——scrollEl 滚动区（历史/输出，overflow:auto 真滚动，
+      // 8.8.3c 状态机）+ barStrip 按键栏（流内，钉输入行上方）+ inputRowEl
+      // 固定输入行（光标行剥出恒钉底，根治「正在打的命令行被输出顶出视野」
+      // ——?kbOff 的碰巧掩盖退役）。按键栏/输入行回流内 = 8.x aux-bar 存活
+      // 模式，钉 vv 的条带定位复杂度结构性蒸发。容器自身 overflow:hidden。
+      container.el.style.cssText = 'position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;';
+      // ?kbOff=<px> 代字（keybar-kboff-report，用户拍板）：个别浏览器
+      // （Via 有栏+键盘态）vv.height 多报 ~42px——容器高按 vv−kbOff 收，
+      // 整组底部 UI（输入行+按键栏）随之上移；无参数=0 现状不改。
+      const kbOffParam = Number(new URLSearchParams(location.search).get('kbOff'));
+      const kbOff = Number.isFinite(kbOffParam) && kbOffParam > 0 ? Math.round(kbOffParam) : 0;
       // 出生即钉 vv（不等首个 vv 事件，判尺结论：vv 是唯一真尺）——有栏
       // 无键盘态布局底≠可视底，bottom 布局锚会把终端下部藏进 chrome 后；
       // top+height 显式钉上后 bottom 锚自然失效（over-constrained 时
       // bottom 被忽略），后续 vv 事件走同一钉法。
       // 过渡帧定位修法（keybar-float-transition-report①）：钉 vv 移出
-      // 防抖——键盘弹起是动画，vv 逐帧变，栏/容器等 150ms 防抖才追 =
-      // 那几帧下排被盖的闪帧真凶。样式改写很便宜，布局一变当拍就钉；
+      // 防抖——键盘弹起是动画，vv 逐帧变，容器等 150ms 防抖才追 =
+      // 那几帧底部 UI 被盖的闪帧真凶。样式改写很便宜，布局一变当拍就钉；
       // 贵的重测行列+核 resize 仍留防抖（动画期不 thrash）。
       const pinToVv = () => {
         const vv0 = window.visualViewport;
         if (!vv0) return;
         container.el.style.top = `${vv0.offsetTop}px`;
-        container.el.style.height = `${Math.max(80, vv0.height - KEYBAR_H)}px`;
+        container.el.style.height = `${Math.max(80, vv0.height - kbOff)}px`;
       };
       pinToVv();
       // 终端卡全屏期间锁死背景页滚动（boot 页比屏幕高，不锁会和终端抢
@@ -170,50 +183,87 @@ export function applyTermBundle(ctx: Context): void {
       const cellW = probe.getBoundingClientRect().width / 20;
       const cellH = probe.getBoundingClientRect().height;
       probe.remove();
+      // 两区布局（行高量出后一次性落位）：
+      //   scrollEl  滚动区 top:0 bottom:按键栏+输入行（overflow:auto）
+      //   barStrip  按键栏 bottom:输入行高 height:KEYBAR_H（流内钉输入行上方）
+      //   inputRowEl 固定输入行 bottom:0 height:行高（光标行剥出恒钉底）
+      const inputRowH = Math.max(10, Math.round(cellH));
+      const scrollEl = document.createElement('div');
+      scrollEl.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:${KEYBAR_H + inputRowH}px;overflow:auto;`;
+      container.el.appendChild(scrollEl);
+      const inputRowEl = document.createElement('div');
+      inputRowEl.style.cssText = `position:absolute;left:0;right:0;bottom:0;height:${inputRowH}px;`
+        + `background:${TERM_BG};overflow:hidden;`;
+      container.el.appendChild(inputRowEl);
+      // ALT_SCREEN 模式位（TUI 整屏）：帧后发现翻转才换布局——输入行隐藏、
+      // 滚动区吃下它的高度（行列数不变：行模式多出的那 1 行正是输入行）。
+      let altMode = false;
       const measure = () => cellW > 0 && cellH > 0 ? {
         cols: Math.max(20, Math.floor(container.el.clientWidth / cellW)),
-        rows: Math.max(5, Math.floor(container.el.clientHeight / cellH)),
+        // 行模式：滚动区行数+1 输入行；ALT：滚动区全量（高度已涨一行高，
+        // floor 后正好同行数——两种模式行列恒定，切模式不触发 PTY resize）
+        rows: Math.max(5, Math.floor(scrollEl.clientHeight / cellH) + (altMode ? 0 : 1)),
       } : { cols: COLS, rows: ROWS };
       const size = measure();
       const core = new g.TermCore(size.cols, size.rows, 1000);
       // 壳必须画在内层元素上——TermShell 构造函数会重写根元素的 cssText，
-      // 直接传 container.el 会把容器的 inset:0 全屏定位冲掉（半屏+无法
-      // 滚动的实测教训）。容器=全屏滚动视口，termEl=壳画布。
+      // 直接传 scrollEl 会把滚动区定位冲掉（半屏+无法滚动的实测教训）。
+      // scrollEl=滚动视口，termEl=壳画布（历史块+屏幕行），inputRowEl=输入行。
       const termEl = document.createElement('div');
-      container.el.appendChild(termEl);
-      const shell = new TermShell(core, termEl, { cols: size.cols, rows: size.rows });
+      scrollEl.appendChild(termEl);
+      const shell = new TermShell(core, termEl, { cols: size.cols, rows: size.rows, inputRowEl });
       const card: TermCardInstance = {
         cardId, sessionId: null, core, shell, cols: size.cols, rows: size.rows,
         placeKb: () => {}, atBottom: true, followOutput: () => {}, inputToBottom: () => {},
+        syncAlt: () => {},
       };
       instances.set(cardId, card);
+      card.syncAlt = () => {
+        const altNow = card.core.alt_screen();
+        if (altNow === altMode) return;
+        altMode = altNow;
+        inputRowEl.style.display = altNow ? 'none' : '';
+        scrollEl.style.bottom = altNow ? `${KEYBAR_H}px` : `${KEYBAR_H + inputRowH}px`;
+        card.placeKb();
+      };
 
       // 8.8.3c scrollback 集中状态机（standard-scrollback-8.8.3c 纪律，
       // 散写必翻车）：atBottom 初始 true；新输出仅 true 才跟底（follow
       // Output 挂桥回调）；滚动事件双向翻转；输入（打字/按键栏/IME 落
       // 字）= true + 立即回底；IME 合成中不回底（落字才走 inputToBottom）。
+      // 两区模型下滚动对象=scrollEl（输入行恒钉底不参与滚动）。
       card.followOutput = () => {
-        if (card.atBottom) container.el.scrollTop = container.el.scrollHeight;
+        if (card.atBottom) scrollEl.scrollTop = scrollEl.scrollHeight;
       };
       card.inputToBottom = () => {
         card.atBottom = true;
         shell.autoScroll = true;
-        container.el.scrollTop = container.el.scrollHeight;
+        scrollEl.scrollTop = scrollEl.scrollHeight;
       };
-      container.el.addEventListener('scroll', () => {
-        card.atBottom = container.el.scrollTop + container.el.clientHeight
-          >= container.el.scrollHeight - 5;
+      scrollEl.addEventListener('scroll', () => {
+        card.atBottom = scrollEl.scrollTop + scrollEl.clientHeight
+          >= scrollEl.scrollHeight - 5;
         shell.autoScroll = card.atBottom; // 上滑中光标 nearest 兜底歇火
       });
-      // 判卷/取证钩子契约（standard-scrollback 三节）：v1 单卡口径，
-      // 多卡并存时后开的覆盖——多卡改造小步再按 cardId 分键。
+      // 判卷/取证钩子契约（standard-scrollback 三节 + fixed-input-row
+      // 四节）：v1 单卡口径，多卡并存时后开的覆盖——多卡改造小步再按
+      // cardId 分键。
       (window as unknown as Record<string, unknown>).__kfmNzTermScroll = () => ({
-        scrollTop: container.el.scrollTop,
-        scrollHeight: container.el.scrollHeight,
-        clientHeight: container.el.clientHeight,
+        scrollTop: scrollEl.scrollTop,
+        scrollHeight: scrollEl.scrollHeight,
+        clientHeight: scrollEl.clientHeight,
         isAtBottom: card.atBottom,
-        getContainer: () => container.el,
+        getContainer: () => scrollEl,
       });
+      // 固定输入行 rect 钩子（两区模型判卷核心：bottom 恒≈视口底）
+      (window as unknown as Record<string, unknown>).__kfmNzTermInputRow = () => {
+        const r = inputRowEl.getBoundingClientRect();
+        const cr = container.el.getBoundingClientRect();
+        return {
+          top: r.top, bottom: r.bottom, height: r.height,
+          isAtBottom: !altMode && Math.abs(r.bottom - cr.bottom) < 2,
+        };
+      };
 
       // 软键盘入口（xterm 同款隐藏 textarea 诱饵）：移动浏览器只在可编辑
       // 元素聚焦时弹软键盘，div+tabIndex 没用。点卡片 → 聚焦诱饵；桌面
@@ -235,36 +285,29 @@ export function applyTermBundle(ctx: Context): void {
       // （真机黑匣子实锤：sc 每键 +1、rp 暴涨、整屏从上到下闪）。让诱饵
       // 钉在光标格上：浏览器想滚去的位置正好就是我们要的位置，拔河消失；
       // 副作用是 IME 候选窗跟着光标走（xterm 同款，顺带改善）。
+      // 两区模型：行模式光标在固定输入行（诱饵钉输入行上）；ALT 整屏
+      // 光标在滚动区（钉光标格原式）。
       card.placeKb = () => {
         const cur = card.core.cursor();
         const m = shell.metrics;
         if (m.cellW <= 0 || m.cellH <= 0) return;
         kb.style.left = `${(cur & 0xffff) * m.cellW}px`;
-        kb.style.top = `${(cur >>> 16) * m.cellH}px`;
+        kb.style.top = card.core.alt_screen()
+          ? `${(cur >>> 16) * m.cellH}px`
+          : `${inputRowEl.offsetTop}px`;
       };
 
-      // 8.8.3b 按键栏（仿 Termux，纪律见 keybar.ts 头注释）：overlay 层条带，
-      // 底部贴可视区（键盘弹起跟着上浮）；修饰键粘滞态归本卡实例。
-      // 生灭经 createContainer 归宿主——owner=term 死自动摘，plugtest 量得到。
-      const barStrip = createContainer(ctx, {
-        kind: 'overlay',
-        slot: `${cardId}-keybar`,
-        owner: 'term',
-      });
-      // 条带只认 top 锚 vv 一个基准（keybar-float-ruler-report 判尺：vv 是
-      // 真尺，病根在应用层——cssText 背 bottom:0 与 updateBottom 的 top 双
-      // 基准打架）。cssText 全量赋值还会冲掉宿主内联 pointer-events:auto
-      // （overlay 层根 none，容器靠它开回点击）——必须带上。
-      barStrip.el.style.cssText = `position:absolute;left:0;right:0;top:0;height:${KEYBAR_H}px;pointer-events:auto;`;
-      // ?kbOff=<px> 代字（keybar-kboff-report，用户拍板）：个别浏览器
-      // （Via 有栏+键盘态）vv.height 多报 ~42px——栏底按 vv 底−kbOff 上移
-      // 落到真实键盘顶；无参数=0 现状不改。用户改书签链接即调，非硬编码。
-      const kbOffParam = Number(new URLSearchParams(location.search).get('kbOff'));
-      const kbOff = Number.isFinite(kbOffParam) && kbOffParam > 0 ? Math.round(kbOffParam) : 0;
-      const keybar = mountKeybar(barStrip.el, {
+      // 8.8.3b 按键栏（仿 Termux，纪律见 keybar.ts 头注释）：两区模型起
+      // 改为容器流内条带（钉输入行上方）——回到 8.x aux-bar 流内存活
+      // 模式，键盘弹起随容器钉 vv 同步上浮，条带自身不再追 vv（判尺/
+      // 过渡帧/双基准打架那套随布局重构退役）。生灭随容器（owner 死
+      // 容器摘=子树同摘）。pointer-events:auto 防层根 none 拦截。
+      const barStripEl = document.createElement('div');
+      barStripEl.style.cssText = `position:absolute;left:0;right:0;bottom:${inputRowH}px;height:${KEYBAR_H}px;pointer-events:auto;`;
+      container.el.appendChild(barStripEl);
+      const keybar = mountKeybar(barStripEl, {
         send: (bytes) => { if (card.sessionId) { card.inputToBottom(); bridge.input(card.sessionId, bytes); } },
         appCursor: () => card.core.app_cursor(),
-        bottomOffset: kbOff,
       });
       // 一次性粘滞联动：落字前读走修饰位（有则 mapText 变换 + 灭灯）
       const takeMods = (text: string): string => {
@@ -377,9 +420,8 @@ export function applyTermBundle(ctx: Context): void {
       // 复盘裁决①：专症字段随症收口，?debug beacon 骨架保留。）
       const onViewportResize = () => {
         dbg.viewportEvents++;
-        // 按键栏跟键盘上浮（③纪律）：可视区一变就重算贴底，不等防抖
-        keybar.updateBottom();
-        // 容器同拍钉 vv（transition-report①：防抖后跳=过渡闪帧真凶）
+        // 容器同拍钉 vv（transition-report①：防抖后跳=过渡闪帧真凶）；
+        // 按键栏/输入行在容器流内，容器底动=整组底部 UI 同步上浮
         pinToVv();
         // 视口事件随 IME 事件同流落日志（评审五节建议）
         reportViewport('viewport');
@@ -390,9 +432,9 @@ export function applyTermBundle(ctx: Context): void {
         resizeTimer = setTimeout(() => {
           // 钉 vv 已在事件当拍完成（见上 pinToVv），防抖里只剩贵的部分：
           // 重测行列 → 核/壳/PTY 三方同步 resize。钉法口径：容器顶=
-          // vv.offsetTop、高=vv.height-栏高，全程不以 innerHeight 为基准
+          // vv.offsetTop、高=vv.height−kbOff，全程不以 innerHeight 为基准
           // ——chrome 显示时两者差 1-2px 的真机实锤不再适用；chrome 显隐/
-          // 键盘弹收容器都恰好占满可视区（含栏位预留）。
+          // 键盘弹收容器都恰好占满可视区。
           const s = measure();
           if (s.cols !== card.cols || s.rows !== card.rows) {
             dbg.resizesApplied++;
@@ -407,10 +449,8 @@ export function applyTermBundle(ctx: Context): void {
       };
       let resizeTimer: ReturnType<typeof setTimeout> | undefined;
       window.visualViewport?.addEventListener('resize', onViewportResize);
-      // 地址栏/动态工具栏伸缩走 scroll 不走 resize（offsetTop 变）——栏贴底同追；
-      // chrome 显隐恰是上浮被盖的变量（keybar-float-report），同流落日志
+      // 地址栏/动态工具栏伸缩走 scroll 不走 resize（offsetTop 变）——容器钉 vv 同追
       const onViewportScroll = () => {
-        keybar.updateBottom();
         pinToVv();
         reportViewport('viewport-scroll');
       };
@@ -424,6 +464,7 @@ export function applyTermBundle(ctx: Context): void {
 
       const sessionId = await bridge.open({ command: opts.command, cols: card.cols, rows: card.rows });
       card.sessionId = sessionId;
+      card.syncAlt();
       shell.renderFrame();
       card.placeKb();
       return inst.id;

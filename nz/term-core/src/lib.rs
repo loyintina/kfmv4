@@ -135,6 +135,13 @@ impl TermCore {
         self.term.mode().contains(rio_vt::crosswords::Mode::APP_CURSOR)
     }
 
+    /// 备用屏幕（ALT_SCREEN，vim/tmux/htop 等 TUI 整屏程序）。两区模型
+    /// （固定输入行）只对行模式成立：TUI 光标满屏跑，剥光标行=毁布局。
+    /// 渲染壳读本位切整屏渲染（输入行隐藏、历史块隐藏、全屏行进滚动区）。
+    pub fn alt_screen(&self) -> bool {
+        self.term.mode().contains(rio_vt::crosswords::Mode::ALT_SCREEN)
+    }
+
     /// 渲染帧（渲染壳取数协议 v1）：可见区逐行，行间 '\n' 分隔；
     /// 每行 = `{text}\x1f{runs}`。text 是该行全部格子（占位格跳过、
     /// 空白 '\0'→空格，不裁尾——渲染要满宽）；runs 是同样式连续段的
@@ -329,6 +336,16 @@ mod tests {
         assert!(runs.starts_with("2,Red,Background,;4,,,;"), "runs={runs:?}");
         // 24 行满帧（默认挂载无滚动偏移时可见区=screen_lines）
         assert_eq!(frame.matches('\n').count(), 23, "frame={frame:?}");
+    }
+
+    #[test]
+    fn alt_screen_tracks_mode() {
+        let mut t = TermCore::new(80, 24, 1000);
+        assert!(!t.alt_screen(), "默认主屏幕");
+        t.feed(b"\x1b[?1049h");
+        assert!(t.alt_screen(), "?1049h 后应进备用屏幕");
+        t.feed(b"\x1b[?1049l");
+        assert!(!t.alt_screen(), "?1049l 后应回主屏幕");
     }
 
     #[test]

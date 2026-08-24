@@ -72,27 +72,23 @@ export interface KeybarHooks {
   send(bytes: string): void;
   /** 实时读对端应用光标模式（?1h） */
   appCursor(): boolean;
-  /**
-   * 栏底上移量（px，默认 0）：?kbOff=<px> 代字——个别浏览器（Via 有栏
-   * +键盘态）vv.height 多报 ~42px，栏底按 vv 底−kbOff 上移，落到真实
-   * 键盘顶。用户改链接即调，不硬编码品牌死值（keybar-kboff-report）。
-   */
-  bottomOffset?: number;
 }
 
 export interface KeybarHandle {
   readonly el: HTMLElement;
   readonly mods: ModifierState;
-  /** 跟随软键盘：按 visualViewport 重算 bottom（键盘上浮/动态工具栏） */
+  /** 布局从命（两区模型 2026-08-24：栏改容器流内、钉输入行上方，不再
+   * 追 vv——判尺/过渡帧/双基准那套随布局重构退役）。方法形状保留，
+   * 调用方兼容；现为无操作。 */
   updateBottom(): void;
   /** 同步修饰键点亮外观（take 清零后由调用方触发一次） */
   syncMods(): void;
 }
 
 /**
- * 装按键栏：parent = 条带容器（调用方经 createContainer 拿，并摆好
- * position/left/right/bottom/height——bottom 由 handle.updateBottom 追
- * 键盘）；本函数把两排七列铺满 parent。容器生灭归宿主（owner 死自动摘）。
+ * 装按键栏：parent = 条带容器（调用方摆好位置/高度——两区模型起栏在
+ * 容器流内，bottom 钉输入行上方）；本函数把两排七列铺满 parent。
+ * 容器生灭随宿主（父容器摘=子树同摘）。
  */
 export function mountKeybar(parent: HTMLElement, hooks: KeybarHooks): KeybarHandle {
   const mods = new ModifierState();
@@ -135,19 +131,8 @@ export function mountKeybar(parent: HTMLElement, hooks: KeybarHooks): KeybarHand
     el: bar,
     mods,
     updateBottom() {
-      // 钉 visual viewport（8.8.3b 上浮被盖修法，keybar-float-locate-report）：
-      // 不用 innerHeight 基准算 bottom——chrome 显示时 innerHeight 含栏高、
-      // 与 vv.height 差 1-2px，底边必被盖。改用 top = vv.offsetTop +
-      // vv.height - 栏高，栏底沿精确钉在可视底，chrome 显隐都盖不住。
-      const vv = window.visualViewport;
-      if (vv) {
-        const off = hooks.bottomOffset ?? 0;
-        parent.style.top = Math.max(0, vv.offsetTop + vv.height - KEYBAR_H - off) + 'px';
-        parent.style.bottom = 'auto';
-      } else {
-        parent.style.top = 'auto';
-        parent.style.bottom = '0';
-      }
+      // 无操作（两区模型：栏在容器流内钉输入行上方，键盘弹起随容器底
+      // 同步上浮——不再需要按 vv 重算）。历史见 keybar-float 五轮讨伐。
     },
     syncMods() {
       const bits = mods.peek();
