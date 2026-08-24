@@ -13,7 +13,7 @@
 
 用户守视 web 终端提示符（oh-my-zsh agnoster 主题，`ZSH_THEME=agnoster`）发现两点：
 
-1. **配色丑**：`root@host`（agnoster 上黄）用 `#cdcd00` 刺眼、蓝 `#0000ee`、底 `#0a0a0f`。nz 调色板在 `src/client/term/palette.ts`，16 色是 xterm classic。NA 用精修板（`kfm-na/src/termview.rs ANSI_16`）。
+1. **配色丑**：`root@host`（agnoster 上黄）用 `#cdcd00` 刺眼、蓝 `#0000ee`、底 `#0a0a0f`。nz 调色板在 `nz/src/client/term/palette.ts`，16 色是 xterm classic。NA 用精修板（`kfm-na/src/termview.rs ANSI_16`）。
 2. **`~` 两边符号不对**：提示符行实为 `⚡ root@iZ0...Z ⏷ ~ ⏷ `，`~` 两侧各一个 **U+E0B0**（powerline 私有区箭头）——**web 终端字体没有该字形**，渲染成错位色块/空白。根因：`shell.ts:66` / `term/index.ts:176` 用系统 mono 栈（`ui-monospace,Menlo,Consolas,monospace`），**无捆绑字体、无显式 CJK**。
 
 ## 二、请 9.0 改
