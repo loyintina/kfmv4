@@ -210,4 +210,5 @@
 | 2026-08-23 | [`kfmv4-9.0-term-keybar-response.md`](kfmv4-9.0-term-keybar-response.md) | kfmv4-9.0-term-keybar-review.md | 已回（2026-08-23 9.0） |
 | 2026-08-23 | [`kfmv4-9.0-term-keybar-review.md`](kfmv4-9.0-term-keybar-review.md) | 8.8.2 终端卡系列（③bc 终端卡已落地） | 已回（2026-08-23 9.0：采纳立项 8.8.3b 插在 tmux 线——手机无 Ctrl+B 则 tmux 不可用；布局/映射照 NA 抄，核加 app_cursor()；见 kfmv4-9.0-term-keybar-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-tmux-priority-notice.md`](kfmv4-9.0-tmux-priority-notice.md) | 无（用户会话拍板直落，本函通报同步） | 通报完毕（2026-08-23 9.0：tmux 线提速拍板已入 TASK.md 总表/详表/日志 + 决策索引） |
+| 2026-08-24 | [`kfmv4-9.0-keybar-float-closure-report.md`](kfmv4-9.0-keybar-float-closure-report.md) | kfmv4-9.0-keybar-kboff-report.md | 📢 通报完毕（2026-08-24 9.0：用户拍板接受 Via 硬限制，症状收口） |
 <!-- gen:agent-inbox:end -->
