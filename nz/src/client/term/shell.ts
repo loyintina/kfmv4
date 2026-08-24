@@ -32,10 +32,19 @@ export class TermShell {
   private rowDivs: HTMLDivElement[] = [];
   private rowCache: string[] = [];
   private cursorEl: HTMLDivElement;
+  /** 历史区 DOM 块（8.8.3c）：el 首子元素，滚出屏幕的行增量追加进来 */
+  private historyDiv: HTMLDivElement;
+  /** 已渲染历史块首行的绝对游标（=当时的 core.lines_evicted()） */
+  private histEvicted = 0;
+  /** 已渲染历史行数（historyDiv 子节点数应恒等于它） */
+  private histCount = 0;
   private cellW = 0;
   private cellH = 0;
   private enc = new TextEncoder();
   private dec = new TextDecoder();
+  /** 滚动主导权归插件集中状态机（8.8.3c 纪律）：false 时（用户上滑中）
+   * 光标 nearest 兜底也歇火——否则新输出会把视口拽回底（跟底翻车态）。 */
+  autoScroll = true;
   /** 渲染健康统计（?debug 骨架常驻字段源：frames/rowsPainted/scrolls——
    * scrolls = nearest 兜底实际滚动次数；rp/sc 突增 = 重绘或滚动挤兑） */
   readonly stats = { frames: 0, rowsPainted: 0, scrolls: 0 };
@@ -56,6 +65,8 @@ export class TermShell {
       `position:relative;background:${TERM_BG};color:${TERM_FG};` +
       `font:${fs}px/1.25 ui-monospace,Menlo,Consolas,monospace;` +
       `user-select:text;-webkit-user-select:text;overflow:hidden;`;
+    this.historyDiv = document.createElement('div');
+    el.appendChild(this.historyDiv);
     for (let i = 0; i < opts.rows; i++) {
       const d = document.createElement('div');
       d.style.cssText = 'white-space:pre;height:1.25em;';
@@ -69,15 +80,23 @@ export class TermShell {
     el.appendChild(this.cursorEl);
   }
 
-  /** 换核（重连 tail 回放前重建网格）：清行缓存强制全量重排。 */
+  /** 换核（重连 tail 回放前重建网格）：清行缓存强制全量重排；历史块
+   * 同清（新核 evicted 游标归零，旧增量失效）。 */
   setCore(core: TermCoreHandle) {
     this.core = core;
     this.rowCache = this.rowCache.map(() => '');
+    this.historyDiv.textContent = '';
+    this.histCount = 0;
+    this.histEvicted = 0;
   }
 
-  /** 改行数（容器可视高度变化时）：增删行 div，行缓存同步伸缩并重排。 */
+  /** 改行数（容器可视高度变化时）：增删行 div，行缓存同步伸缩并重排。
+   * resize 会让核对历史区重排（reflow）——本地增量游标失效，历史块
+   * 整段重建（renderHistory 的 histCount=0 路径）。 */
   resize(rows: number) {
     if (rows === this.opts.rows) return;
+    this.historyDiv.textContent = '';
+    this.histCount = 0;
     while (this.rowDivs.length < rows) {
       const d = document.createElement('div');
       d.style.cssText = 'white-space:pre;height:1.25em;';
@@ -188,10 +207,46 @@ export class TermShell {
     if (cursor < bytes.length) appendSeg(cursor, bytes.length, null);
   }
 
+  /** 历史区增量渲染（8.8.3c）：绝对游标对齐——evicted 涨=截断丢头，
+   * 本地块与核区间完全错位（核重换/reflow 漏网）= 整段重建；正常路径
+   * 只 append 新滚出的尾巴（history_frame(from, h)），每帧开销 ∝ 新行数。 */
+  private renderHistory() {
+    const ev = this.core.lines_evicted();
+    const h = this.core.history_len();
+    if (this.histCount > 0) {
+      if (ev < this.histEvicted || ev > this.histEvicted + this.histCount) {
+        // 本地块整体失效（核重换/replay）：整段重建
+        this.historyDiv.textContent = '';
+        this.histCount = 0;
+        this.histEvicted = ev;
+      } else if (ev > this.histEvicted) {
+        // 截断丢头：从 DOM 顶摘 evicted 涨出来的行
+        const d = Math.min(this.histCount, ev - this.histEvicted);
+        for (let i = 0; i < d; i++) this.historyDiv.firstChild?.remove();
+        this.histEvicted = ev;
+        this.histCount -= d;
+      }
+    } else {
+      this.histEvicted = ev;
+    }
+    // 本地块首行在核历史区的相对下标 + 已渲染数 = 待追加起点
+    const from = (this.histEvicted - ev) + this.histCount;
+    if (from >= h || from < 0) return;
+    const frame = this.core.history_frame(from, h);
+    for (const line of frame.split('\n')) {
+      const d = document.createElement('div');
+      d.style.cssText = 'white-space:pre;height:1.25em;';
+      this.renderRow(d, line); // 协议同 render_frame：样式在历史区不掉
+      this.historyDiv.appendChild(d);
+      this.histCount++;
+    }
+  }
+
   /** 取一帧新账，只重排有变的行；再摆光标。 */
   renderFrame() {
     this.measure();
     this.stats.frames++;
+    this.renderHistory();
     const frame = this.core.render_frame();
     const lines = frame.split('\n');
     for (let i = 0; i < this.opts.rows; i++) {
@@ -216,9 +271,11 @@ export class TermShell {
       // 光标跟随：只滚最近的可滚动祖先（容器），不碰页面——scrollIntoView
       // 会把所有可滚祖先（含背景 boot 页）一起滚（实测：每敲一字全页从头
       // 往下滚、闪烁）。nearest 语义手写：光标已在视野内就一动不动。
+      // 8.8.3c 起屏幕行上面还有历史块，光标纵坐标 = 历史高 + row×cellH；
+      // autoScroll=false（用户上滑中）时兜底歇火，滚动主导权归状态机。
       const parent = this.el.parentElement;
-      if (parent) {
-        const top = row * this.cellH;
+      if (parent && this.autoScroll) {
+        const top = this.historyDiv.offsetHeight + row * this.cellH;
         if (top < parent.scrollTop) {
           parent.scrollTop = top;
           this.stats.scrolls++;

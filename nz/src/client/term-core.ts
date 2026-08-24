@@ -23,6 +23,12 @@ export interface TermCoreHandle {
   app_cursor(): boolean;
   /** 渲染帧取数协议（行级 DOM 渲染壳用），格式见 wasm 侧注释。 */
   render_frame(): string;
+  /** 历史区行数（scrollback 已攒，8.8.3c） */
+  history_len(): number;
+  /** 已挤出缓冲区总行数（单调递增，截断/错位检测游标） */
+  lines_evicted(): number;
+  /** 历史区渲染帧：协议同 render_frame，dump 相对区间 [from, to)（0=最旧） */
+  history_frame(from: number, to: number): string;
   free(): void;
 }
 

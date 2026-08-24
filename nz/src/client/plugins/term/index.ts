@@ -42,6 +42,12 @@ interface TermCardInstance {
   rows: number;
   /** 诱饵 textarea 钉到光标格（桥回调里帧后调用；定义见 open 内注释） */
   placeKb: () => void;
+  /** 8.8.3c 集中状态机：视口是否在底（跟底判定唯一真源） */
+  atBottom: boolean;
+  /** 新输出落地后调用：仅 atBottom 才跟底（上滑中不拽回） */
+  followOutput: () => void;
+  /** 输入即回底（打字/按键栏/IME 落字）：atBottom=true + 立即滚到底 */
+  inputToBottom: () => void;
 }
 
 export interface TermCardService {
@@ -105,6 +111,7 @@ export function applyTermBundle(ctx: Context): void {
         inst.core.feed(new TextEncoder().encode(data));
         inst.shell.renderFrame();
         inst.placeKb();
+        inst.followOutput();
       }
     },
     onExit(id, code) {
@@ -113,6 +120,7 @@ export function applyTermBundle(ctx: Context): void {
         inst.core.feed(new TextEncoder().encode(`\r\n[进程已退出 code=${code}]\r\n`));
         inst.shell.renderFrame();
         inst.placeKb();
+        inst.followOutput();
       }
     },
   });
@@ -129,10 +137,9 @@ export function applyTermBundle(ctx: Context): void {
         owner: 'term',
       });
       // 容器=全屏视口（底部常驻预留按键栏高度，Termux 同款：栏不在终端
-      // 区里，行列数不随栏沉浮）。v1 口径 DOM 只画当前屏（回退历史未渲染
-      // 上屏），没有可滚内容——overflow:hidden 杜绝「能滚动一部分」的错觉；
-      // scrollback 渲染小步（8.8.3c）落地时改回 auto。
-      container.el.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:${KEYBAR_H}px;overflow:hidden;`;
+      // 区里，行列数不随栏沉浮）。8.8.3c 起 DOM 渲染历史区+当前屏，
+      // overflow:auto 出真滚动——跟底/回底归下方的集中状态机（散写必翻车）。
+      container.el.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:${KEYBAR_H}px;overflow:auto;`;
       // 出生即钉 vv（不等首个 vv 事件，判尺结论：vv 是唯一真尺）——有栏
       // 无键盘态布局底≠可视底，bottom 布局锚会把终端下部藏进 chrome 后；
       // top+height 显式钉上后 bottom 锚自然失效（over-constrained 时
@@ -175,8 +182,38 @@ export function applyTermBundle(ctx: Context): void {
       const termEl = document.createElement('div');
       container.el.appendChild(termEl);
       const shell = new TermShell(core, termEl, { cols: size.cols, rows: size.rows });
-      const card: TermCardInstance = { cardId, sessionId: null, core, shell, cols: size.cols, rows: size.rows, placeKb: () => {} };
+      const card: TermCardInstance = {
+        cardId, sessionId: null, core, shell, cols: size.cols, rows: size.rows,
+        placeKb: () => {}, atBottom: true, followOutput: () => {}, inputToBottom: () => {},
+      };
       instances.set(cardId, card);
+
+      // 8.8.3c scrollback 集中状态机（standard-scrollback-8.8.3c 纪律，
+      // 散写必翻车）：atBottom 初始 true；新输出仅 true 才跟底（follow
+      // Output 挂桥回调）；滚动事件双向翻转；输入（打字/按键栏/IME 落
+      // 字）= true + 立即回底；IME 合成中不回底（落字才走 inputToBottom）。
+      card.followOutput = () => {
+        if (card.atBottom) container.el.scrollTop = container.el.scrollHeight;
+      };
+      card.inputToBottom = () => {
+        card.atBottom = true;
+        shell.autoScroll = true;
+        container.el.scrollTop = container.el.scrollHeight;
+      };
+      container.el.addEventListener('scroll', () => {
+        card.atBottom = container.el.scrollTop + container.el.clientHeight
+          >= container.el.scrollHeight - 5;
+        shell.autoScroll = card.atBottom; // 上滑中光标 nearest 兜底歇火
+      });
+      // 判卷/取证钩子契约（standard-scrollback 三节）：v1 单卡口径，
+      // 多卡并存时后开的覆盖——多卡改造小步再按 cardId 分键。
+      (window as unknown as Record<string, unknown>).__kfmNzTermScroll = () => ({
+        scrollTop: container.el.scrollTop,
+        scrollHeight: container.el.scrollHeight,
+        clientHeight: container.el.clientHeight,
+        isAtBottom: card.atBottom,
+        getContainer: () => container.el,
+      });
 
       // 软键盘入口（xterm 同款隐藏 textarea 诱饵）：移动浏览器只在可编辑
       // 元素聚焦时弹软键盘，div+tabIndex 没用。点卡片 → 聚焦诱饵；桌面
@@ -225,7 +262,7 @@ export function applyTermBundle(ctx: Context): void {
       const kbOffParam = Number(new URLSearchParams(location.search).get('kbOff'));
       const kbOff = Number.isFinite(kbOffParam) && kbOffParam > 0 ? Math.round(kbOffParam) : 0;
       const keybar = mountKeybar(barStrip.el, {
-        send: (bytes) => { if (card.sessionId) bridge.input(card.sessionId, bytes); },
+        send: (bytes) => { if (card.sessionId) { card.inputToBottom(); bridge.input(card.sessionId, bytes); } },
         appCursor: () => card.core.app_cursor(),
         bottomOffset: kbOff,
       });
@@ -299,6 +336,7 @@ export function applyTermBundle(ctx: Context): void {
         if (text) text = takeMods(text); // 粘滞修饰：上屏落字读走清零
         justCommitted = text;
         if (text && card.sessionId) {
+          card.inputToBottom(); // IME 落字才回底（合成中不回底）
           bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
         }
       });
@@ -309,6 +347,7 @@ export function applyTermBundle(ctx: Context): void {
         if (bytes) bytes = takeMods(bytes); // 粘滞修饰（按键栏 Ctrl/Alt/Shift）
         if (bytes && card.sessionId) {
           e.preventDefault();
+          card.inputToBottom(); // 打字回底
           bridge.input(card.sessionId, bytes);
         }
       });
@@ -326,6 +365,7 @@ export function applyTermBundle(ctx: Context): void {
         kb.value = '';
         if (text) text = takeMods(text);
         if (text && card.sessionId) {
+          card.inputToBottom(); // 打字回底
           bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
         }
       });

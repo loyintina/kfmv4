@@ -15,8 +15,10 @@
 //! serialize/restore（会话快照）留待渲染壳接入时补——探针不背。
 
 use rio_vt::ansi::CursorShape;
+use rio_vt::crosswords::grid::{Dimensions, Grid, Indexed};
+use rio_vt::crosswords::pos::{Line, Pos};
+use rio_vt::crosswords::square::Square;
 use rio_vt::crosswords::Crosswords;
-use rio_vt::crosswords::grid::Dimensions;
 use rio_vt::event::{VoidListener, WindowId};
 use rio_vt::performer::handler::Processor;
 use wasm_bindgen::prelude::*;
@@ -142,12 +144,54 @@ impl TermCore {
     /// 颜色/属性 token 与考卷 dump 同协议（Foreground/Background/
     /// Bright 前缀/idx{N}/rgb 六位 hex；b/i/u/s/v/d/h），两线永不鸡同鸭讲。
     pub fn render_frame(&self) -> String {
-        let grid = &self.term.grid;
+        self.dump_frame(self.term.grid.display_iter())
+    }
+
+    /// 历史区行数（scrollback 已攒行数，8.8.3c）。
+    pub fn history_len(&self) -> usize {
+        self.term.grid.history_size()
+    }
+
+    /// 已被挤出缓冲区的总行数（单调递增）：历史行的绝对游标 = evicted +
+    /// 相对下标。渲染壳靠它检测截断（超 1000 行丢最旧）与错位重建。
+    /// u64 过 wasm 走 f64（JS number，2^53 内精确）。
+    pub fn lines_evicted(&self) -> f64 {
+        self.term.grid.lines_evicted() as f64
+    }
+
+    /// 历史区渲染帧（协议同 render_frame）：dump 相对区间 [from, to)
+    /// （0=现存最旧一行）。渲染壳增量维护历史 DOM——正常追加只取新滚出
+    /// 的尾巴（from=已渲染行数），截断/resize 重排时整段 [0, len) 重取。
+    pub fn history_frame(&self, from: usize, to: usize) -> String {
+        let h = self.term.grid.history_size();
+        let from = from.min(h);
+        let to = to.min(h).max(from);
+        if from >= to {
+            return String::new();
+        }
+        let base = -(h as i32);
+        // GridIterator 先走一格再出账（display_iter 从视口上一格起跳同款）：
+        // 要拿 (base+from, 0)，游标得摆在该行上一格。
+        let start = Pos::new(Line(base + from as i32 - 1), self.term.grid.last_column());
+        let end_row = base + to as i32;
+        let iter = self.term.grid.iter_from(start);
+        self.dump_frame(iter.take_while(move |indexed| indexed.pos.row.0 < end_row))
+    }
+}
+
+impl TermCore {
+    /// 帧序列化（render_frame/history_frame 共用）：把迭代器走过的格子
+    /// 按「行间 \n、行内 {text}\x1f{runs}」协议拼帧。
+    fn dump_frame<'a, I>(&'a self, iter: I) -> String
+    where
+        I: Iterator<Item = Indexed<&'a Square>>,
+    {
+        let grid: &Grid<Square> = &self.term.grid;
         let mut out = String::new();
         let mut cur_row: Option<i32> = None;
         let mut cur_runs = String::new();
         let mut last_style = String::new();
-        for indexed in grid.display_iter() {
+        for indexed in iter {
             let sq = indexed.square;
             if sq.is_spacer() {
                 continue; // 宽字符占位格：字形归前导格，不下标
@@ -285,5 +329,32 @@ mod tests {
         assert!(runs.starts_with("2,Red,Background,;4,,,;"), "runs={runs:?}");
         // 24 行满帧（默认挂载无滚动偏移时可见区=screen_lines）
         assert_eq!(frame.matches('\n').count(), 23, "frame={frame:?}");
+    }
+
+    #[test]
+    fn history_frame_appends_and_truncates() {
+        // 8.8.3c 钉：超屏行滚入历史区；超 scrollback 上限丢最旧行（截断）。
+        let mut t = TermCore::new(80, 5, 10);
+        assert_eq!(t.history_len(), 0);
+        // 灌 8 行：屏幕 5 行，3 行滚入历史
+        for i in 1..=8 {
+            t.feed(format!("line{i}\r\n").as_bytes());
+        }
+        let h = t.history_len();
+        assert!(h >= 3, "8 行进 5 行屏，历史区应≥3 行，实={h}");
+        let frame = t.history_frame(0, h);
+        assert!(frame.contains("line1"), "最旧历史行应在帧里，frame={frame:?}");
+        // 区间切片：跳过最旧 1 行后 line1 不在、line2 在
+        let tail = t.history_frame(1, h);
+        assert!(!tail.contains("line1") && tail.contains("line2"), "tail={tail:?}");
+        // 截断：再灌 20 行，历史区超 10 行上限，最旧行被挤出
+        for i in 9..=28 {
+            t.feed(format!("line{i}\r\n").as_bytes());
+        }
+        assert_eq!(t.history_len(), 10, "历史区封顶 scrollback=10");
+        assert!(t.lines_evicted() > 0.0, "截断后 evicted 应>0");
+        let frame = t.history_frame(0, 10);
+        assert!(!frame.contains("line1\x1f"), "最旧行应已被截掉，frame={frame:?}");
+        assert!(frame.contains("line19"), "次旧行应还在，frame={frame:?}");
     }
 }
