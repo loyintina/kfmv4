@@ -15,6 +15,7 @@
  */
 import { Context } from 'cordis';
 import * as pty from 'node-pty-prebuilt-multiarch';
+import { existsSync, readFileSync } from 'node:fs';
 
 declare module 'cordis' {
   interface Events {
@@ -65,12 +66,37 @@ const DEFAULT_ROWS = 24;
 /** 回环尾迹封顶（字节）——够重连补屏，不够成内存坑 */
 const TAIL_CAP = 64 * 1024;
 
+/** 默认 shell 解析（2026-08-24 评审信 pty-login-shell-review）：优先取
+ *  /etc/passwd 里当前 uid 的登录 shell——web 终端应像 SSH 登录一样
+ * （zsh 交互态自动 source ~/.zshrc → oh-my-zsh 生效）。process.env.SHELL
+ *  取决于谁拉起服务进程（实测 nz 服务进程 SHELL=/bin/bash ≠ 登录 shell
+ *  /usr/bin/zsh），不可靠。passwd 不可读/无 uid/字段非法（容器/受限环境）
+ *  退回 env.SHELL ?? '/bin/sh'，不硬报错。 */
+export function resolveLoginShell(): string {
+  try {
+    const uid = process.getuid?.();
+    if (uid !== undefined) {
+      const line = readFileSync('/etc/passwd', 'utf8')
+        .split('\n')
+        .find((l) => l && !l.startsWith('#') && Number(l.split(':')[2]) === uid);
+      const shell = line?.split(':')[6]?.trim();
+      if (shell && shell.startsWith('/') && existsSync(shell)) return shell;
+    }
+  } catch { /* 受限环境落退回链 */ }
+  return process.env.SHELL ?? '/bin/sh';
+}
+
 export class TermConnectionService {
   private _sessions = new Map<string, SessionInner>();
   private _shell: string;
 
   constructor(private _ctx: Context, opts: { shell?: string } = {}) {
-    this._shell = opts.shell ?? process.env.SHELL ?? '/bin/sh';
+    this._shell = opts.shell ?? resolveLoginShell();
+  }
+
+  /** 默认 shell 解析结果（判卷/取证锚点，pty-login-shell-review A 档） */
+  get shell(): string {
+    return this._shell;
   }
 
   /** №1 契约：open。command 为空则起交互 shell。
@@ -92,7 +118,10 @@ export class TermConnectionService {
       cols: opts.cols ?? DEFAULT_COLS,
       rows: opts.rows ?? DEFAULT_ROWS,
       cwd: opts.cwd ?? process.env.HOME ?? '/',
-      env: process.env as Record<string, string>,
+      // SHELL 覆写为解析出的登录 shell（login 程序语义：进程 env 继承自
+      // 服务拉立方，不覆写则终端里 echo $SHELL 与真实运行 shell 不符）。
+      // 交互/`-c` 两分支同带——读 $SHELL 的命令得到的正是登录 shell。
+      env: { ...process.env, SHELL: this._shell } as Record<string, string>,
     });
     const inner: SessionInner = {
       id, proc, outCbs: new Set(), exitCbs: new Set(), tail: '', exited: false,

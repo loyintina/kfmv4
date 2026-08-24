@@ -10,7 +10,7 @@
  */
 import { Context } from 'cordis';
 import { test, group, assert } from './runner.ts';
-import { mountTermConnection, type TermConnectionService } from '../src/server/term-connection.ts';
+import { mountTermConnection, resolveLoginShell, type TermConnectionService } from '../src/server/term-connection.ts';
 
 function newEnv(): { ctx: Context; conn: TermConnectionService } {
   const ctx = new Context();
@@ -135,4 +135,34 @@ test('open 挂权限判定：交互 shell=exec:no-meta allow；含元字符命�
   assert(perms.audit.every((e) => e.mode === 'shadow'), '影子期全部 shadow 不拦截');
   s1.close();
   s2.close();
+});
+
+test('默认 shell=passwd 登录 shell（2026-08-24 评审信 pty-login-shell-review）：不传 opts 走 passwd 解析，交互会话真起登录 shell 且 $SHELL 覆写', async () => {
+  // 动态对照（不写死 zsh）：测试自解 /etc/passwd 当前 uid 末字段
+  const { readFileSync } = await import('node:fs');
+  const uid = process.getuid!();
+  const passwdShell = readFileSync('/etc/passwd', 'utf8').split('\n')
+    .find((l) => l && !l.startsWith('#') && Number(l.split(':')[2]) === uid)!.split(':')[6].trim();
+  // ①纯函数钉：解析结果=passwd 登录 shell
+  assert(resolveLoginShell() === passwdShell,
+    `resolveLoginShell()=${resolveLoginShell()} 应=passwd 登录 shell ${passwdShell}`);
+  // ②opts 优先钉：显式传 shell 不被 passwd 抢
+  const ctxOpt = new Context();
+  mountTermConnection(ctxOpt, { shell: '/bin/sh' });
+  assert(ctxOpt.termConn.shell === '/bin/sh', '显式 opts.shell 应优先于 passwd 解析');
+  // ③默认挂载钉：不传 opts → 服务默认 shell=passwd 登录 shell
+  const ctx = new Context();
+  mountTermConnection(ctx);
+  assert(ctx.termConn.shell === passwdShell,
+    `默认挂载 shell=${ctx.termConn.shell} 应=passwd ${passwdShell}`);
+  // ④真 PTY 行为钉：交互会话（command 空）进程名=passwd shell basename，
+  //   且 $SHELL 同步覆写为登录 shell（login 语义）
+  const s = await ctx.termConn.open();
+  let out = '';
+  s.onOutput((d) => { out += d; });
+  s.sendInput('echo "PROBE:$(ps -o comm= -p $$):$SHELL"\n');
+  const base = passwdShell.split('/').pop()!;
+  const re = new RegExp(`PROBE:\\s*${base}:${passwdShell.replace(/\//g, '\\/')}`);
+  await until(() => re.test(out), `交互会话进程=${base} 且 $SHELL=${passwdShell}（实收尾迹 ${out.slice(-160)}）`);
+  s.close();
 });
