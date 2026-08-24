@@ -121,6 +121,11 @@ export function mountKeybar(parent: HTMLElement, hooks: KeybarHooks): KeybarHand
       // pointerdown 按下即触发（Termux 手感）；preventDefault 后 click 不发，
       // 不重复挂 click。touchstart 的默认滚动由 touch-action:none 拦。
       b.addEventListener('pointerdown', onPress);
+      // 点按钮 ≠ 点终端：click 冒泡到容器会触发「聚焦 IME 诱饵」→ 手机
+      // 软键盘被召唤（2026-08-24 两痛点①，button-ime-tui-overflow-review）。
+      // pointerdown 的 preventDefault 拦不住 click 派发（实测穿透），
+      // 在按钮上把 click 冒泡断掉——点按钮=发按键字节，不激活 IME。
+      b.addEventListener('click', (e) => e.stopPropagation());
       if (def.mod) modButtons.set(def.mod, b);
       bar.appendChild(b);
     }

@@ -48,6 +48,23 @@ await page.waitForTimeout(150);
 const bgAfter = await page.evaluate(() => { const e=[...document.querySelectorAll('.kfm-term-keybar div')].find(d=>d.textContent==='CTRL'); return e?getComputedStyle(e).backgroundColor:null; });
 results.push({ name: '点CTRL 粘滞灯亮(syncMods)', ok: bgBefore !== bgAfter, detail: `${bgBefore} → ${bgAfter}` });
 
+// ④ 点按钮不召唤 IME（2026-08-24 两痛点①，button-ime-tui-overflow-review 回归钉）：
+// 未聚焦状态点 ENTER → 焦点不得被抢到 IME 诱饵（容器 click→kb.focus 冒泡已断）；
+// 反向钉：点终端文本区 → 焦点应落诱饵（聚焦通路未堵死）。
+await page.evaluate(() => { const a = document.activeElement; if (a && a.blur) a.blur(); });
+await page.waitForTimeout(100);
+await enterLoc.click({ force: true }).catch(()=>{});
+await page.waitForTimeout(200);
+const notKb = await page.evaluate(() => !document.querySelector('textarea.kfm-term-kb')?.matches(':focus')
+  && !(document.activeElement?.classList.contains('kfm-term-kb')));
+results.push({ name: '点按钮不召唤IME(失焦点ENTER→焦点不落诱饵)', ok: notKb,
+  detail: await page.evaluate(() => document.activeElement?.className || document.activeElement?.tagName || 'none') });
+await page.locator('.nz-term').click({ force: true, position: { x: 100, y: 60 } }).catch(()=>{});
+await page.waitForTimeout(200);
+const kbGot = await page.evaluate(() => document.activeElement?.classList.contains('kfm-term-kb') === true);
+results.push({ name: '点终端文本区→焦点落诱饵(聚焦通路正常)', ok: kbGot,
+  detail: await page.evaluate(() => document.activeElement?.className || document.activeElement?.tagName || 'none') });
+
 await browser.close();
 const { allOk } = summarize(results);
 process.exit(allOk ? 0 : 1);

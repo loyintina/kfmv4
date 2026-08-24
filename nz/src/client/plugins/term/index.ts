@@ -48,6 +48,9 @@ interface TermCardInstance {
   followOutput: () => void;
   /** 输入即回底（打字/按键栏/IME 落字）：atBottom=true + 立即滚到底 */
   inputToBottom: () => void;
+  /** 帧后同步 ALT_SCREEN 模式位（TUI 整屏 ↔ 行模式：按键栏收/放 +
+   *  滚动区占满/让位 + 行列重测——2026-08-24 两痛点② TUI 挤占修复） */
+  syncAlt: () => void;
 }
 
 export interface TermCardService {
@@ -109,6 +112,7 @@ export function applyTermBundle(ctx: Context): void {
           inst.shell.setCore(inst.core);
         }
         inst.core.feed(new TextEncoder().encode(data));
+        inst.syncAlt();
         inst.shell.renderFrame();
         inst.placeKb();
         inst.followOutput();
@@ -118,6 +122,7 @@ export function applyTermBundle(ctx: Context): void {
       for (const inst of instances.values()) {
         if (inst.sessionId !== id) continue;
         inst.core.feed(new TextEncoder().encode(`\r\n[进程已退出 code=${code}]\r\n`));
+        inst.syncAlt();
         inst.shell.renderFrame();
         inst.placeKb();
         inst.followOutput();
@@ -217,6 +222,7 @@ export function applyTermBundle(ctx: Context): void {
       const card: TermCardInstance = {
         cardId, sessionId: null, core, shell, cols: size.cols, rows: size.rows,
         placeKb: () => {}, atBottom: true, followOutput: () => {}, inputToBottom: () => {},
+        syncAlt: () => {},
       };
       instances.set(cardId, card);
 
@@ -342,8 +348,16 @@ export function applyTermBundle(ctx: Context): void {
       // 代字转常驻调节入口）——专症字段（ih/vh/ot/dch/kbb/kbc/brt/brb/
       // fx/vm）与双轨校准色条（probeFx/probeVv）已随症拆除（复盘裁决①）。
       // kboff 保留：?kbOff 是常驻代字，命中标记便于真机确认走没走对分支。
+      // 专症字段（随症收口，button-ime-tui-overflow-review 二节排查用）：
+      // rows/cols/cellH/cellW/ch——TUI 超屏真机取证（cellH 度量竞态 vs
+      // vv 可视区差两方向定位行数是否偏多）。
       const reportViewport = (type: string) => {
-        postDebug?.({ type, kboff: kbOff });
+        postDebug?.({
+          type, kboff: kbOff,
+          rows: card.rows, cols: card.cols,
+          cellH: shell.metrics.cellH, cellW: shell.metrics.cellW,
+          ch: scrollEl.clientHeight,
+        });
       };
       // 必须挂在 click 而非 pointerdown/mousedown：按下事件的默认行为会
       // 把焦点抢走放回 body（聚焦被覆盖），且 preventDefault 会杀死原生
@@ -402,23 +416,14 @@ export function applyTermBundle(ctx: Context): void {
       // nearest 滚动兜底（光标被遮才滚），不做无条件滚到底。
       // （__kfmNzTermDebug/__kfmNzTermCursor 两探针已随 IME 收口移除——
       // 复盘裁决①：专症字段随症收口，?debug beacon 骨架保留。）
-      const onViewportResize = () => {
-        dbg.viewportEvents++;
-        // 容器同拍钉 vv（transition-report①：防抖后跳=过渡闪帧真凶）；
-        // 按键栏在容器流内，容器底动=整组底部 UI 同步上浮
-        pinToVv();
-        // 视口事件随 IME 事件同流落日志（评审五节建议）
-        reportViewport('viewport');
-        // 不滚！resize 时无条件滚到底是「每字抖几行」的真凶（黑匣子坐实：
-        // 滚动内容存在时 resize→重滚=挤兑）。光标真被遮住时由
-        // shell.renderFrame 的 nearest 滚动兜底（能不滚就不滚）。
+      // 防抖重测块（贵的部分）：视口事件与 ALT 翻转（keybar 收/放改变
+      // scrollEl 高度）共用——钉 vv 在事件当拍，这里只跑重测+三方同步。
+      const scheduleResize = () => {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-          // 钉 vv 已在事件当拍完成（见上 pinToVv），防抖里只剩贵的部分：
-          // 重测行列 → 核/壳/PTY 三方同步 resize。钉法口径：容器顶=
-          // vv.offsetTop、高=vv.height−kbOff，全程不以 innerHeight 为基准
-          // ——chrome 显示时两者差 1-2px 的真机实锤不再适用；chrome 显隐/
-          // 键盘弹收容器都恰好占满可视区。
+          // 钉法口径：容器顶=vv.offsetTop、高=vv.height−kbOff，全程不以
+          // innerHeight 为基准——chrome 显示时两者差 1-2px 的真机实锤不再
+          // 适用；chrome 显隐/键盘弹收容器都恰好占满可视区。
           const s = measure();
           if (s.cols !== card.cols || s.rows !== card.rows) {
             dbg.resizesApplied++;
@@ -432,6 +437,18 @@ export function applyTermBundle(ctx: Context): void {
         }, 150);
       };
       let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+      const onViewportResize = () => {
+        dbg.viewportEvents++;
+        // 容器同拍钉 vv（transition-report①：防抖后跳=过渡闪帧真凶）；
+        // 按键栏在容器流内，容器底动=整组底部 UI 同步上浮
+        pinToVv();
+        // 视口事件随 IME 事件同流落日志（评审五节建议）
+        reportViewport('viewport');
+        // 不滚！resize 时无条件滚到底是「每字抖几行」的真凶（黑匣子坐实：
+        // 滚动内容存在时 resize→重滚=挤兑）。光标真被遮住时由
+        // shell.renderFrame 的 nearest 滚动兜底（能不滚就不滚）。
+        scheduleResize();
+      };
       window.visualViewport?.addEventListener('resize', onViewportResize);
       // 地址栏/动态工具栏伸缩走 scroll 不走 resize（offsetTop 变）——容器钉 vv 同追
       const onViewportScroll = () => {
@@ -446,8 +463,25 @@ export function applyTermBundle(ctx: Context): void {
       };
       ctx.effect(() => unmountFollow);
 
+      // ALT_SCREEN 翻转（2026-08-24 两痛点②，button-ime-tui-overflow-review）：
+      // TUI 整屏应用（htop/ranger/vim）应收起按键栏占满终端可视区——常驻
+      // keybar 会把 TUI 挤进 container−84（TUI 底行贴在按键栏上方=挤占
+      // 实锤）。行模式翻转回来按键栏放回原位。scrollEl 高度变 → 行列变 →
+      // 走 scheduleResize 三方同步（TUI 会适配新尺寸，真终端窗口变更同款
+      // 语义）。帧后发现翻转才切，不翻不动。
+      let altMode = false;
+      card.syncAlt = () => {
+        const altNow = card.core.alt_screen();
+        if (altNow === altMode) return;
+        altMode = altNow;
+        barStripEl.style.display = altNow ? 'none' : '';
+        scrollEl.style.bottom = altNow ? '0px' : `${KEYBAR_H}px`;
+        scheduleResize();
+      };
+
       const sessionId = await bridge.open({ command: opts.command, cols: card.cols, rows: card.rows });
       card.sessionId = sessionId;
+      card.syncAlt();
       shell.renderFrame();
       card.placeKb();
       return inst.id;
