@@ -57,8 +57,8 @@
       "attempts": 1
     },
     "inter-readme-codemap": {
-      "hash": "027fc5f24b6863c5425cc63ac2eb83e2064b9966",
-      "lastRun": "2026-08-22",
+      "hash": "f39c27831d6ae91235c30c1173af728e5117bf2d",
+      "lastRun": "2026-08-23",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -85,8 +85,8 @@
       "attempts": 1
     },
     "vision-vs-maps": {
-      "hash": "2fe6e0015142b844cc6bd012cc4f21bba32ceacb",
-      "lastRun": "2026-08-22",
+      "hash": "925180c8efef1a782c9669badc47b7940522d4f3",
+      "lastRun": "2026-08-23",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -127,8 +127,8 @@
       "attempts": 1
     },
     "claude-vs-docs": {
-      "hash": "4b53a6d6138f39eb74eb36db0db7441349de83ae",
-      "lastRun": "2026-08-22",
+      "hash": "37fec8d5075fb2413099663ca05526b157ec49b3",
+      "lastRun": "2026-08-23",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -241,8 +241,8 @@
       "attempts": 1
     },
     "contract-vs-map-floating-card": {
-      "hash": "01e7f5058a2b81f99d7eb6164514d3e3aeddcca5",
-      "lastRun": "2026-08-20",
+      "hash": "5910f2e6ddf273f47285ad1d7df5d2114369b33c",
+      "lastRun": "2026-08-23",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -291,16 +291,24 @@
       "attempts": 1
     },
     "crossdomain-vs-inventory": {
-      "hash": "75171a496806b0137efcbb8bb348e1f924eab6cd",
-      "lastRun": "2026-08-22",
+      "hash": "28f2c782a58d7c50f56803edce1ea4c09d460d48",
+      "lastRun": "2026-08-23",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 0,
+      "reported": 1,
       "kept": 0,
-      "dropped": 0,
+      "dropped": 1,
       "keptFindings": [],
-      "droppedFindings": [],
+      "droppedFindings": [
+        {
+          "type": "SEM001",
+          "claim": "docs/domains/cross-domain.md:68",
+          "against": "docs/domains/code-inventory.md:197",
+          "quote": "canvas-tree → ai-chat 仅 1 边",
+          "note": "语义层断言 canvas-tree→ai-chat 仅 1 边(tree-render→ws-channel)，机械层枚举 3 边(chat-dom→color"
+        }
+      ],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
@@ -1174,6 +1182,20 @@
       "date": "2026-08-22",
       "ran": 9,
       "skipped": 21,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-23",
+      "ran": 5,
+      "skipped": 25,
+      "kept": 0,
+      "dropped": 1
+    },
+    {
+      "date": "2026-08-23",
+      "ran": 0,
+      "skipped": 30,
       "kept": 0,
       "dropped": 0
     }
