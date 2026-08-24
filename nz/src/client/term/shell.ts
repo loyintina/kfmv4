@@ -13,6 +13,17 @@
 import type { TermCoreHandle } from '../term-core.js';
 import { tokenToCss, TERM_FG, TERM_BG } from './palette.js';
 
+/** 终端字体栈（2026-08-24 palette-font-na-review，用户拍板换 Nerd Font
+ *  不改共享 .zshrc）：捆绑 JetBrainsMonoNL NFM 打头——含 U+E0B0
+ *  powerline 箭头（agnoster 提示符 `~` 两侧字形，系统 mono 栈没有 →
+ *  曾渲染成错位色块）。CJK 必须不塌（中文核心场景）：NF 无中文字形，
+ *  栈尾 Noto Sans CJK SC/PingFang SC/微软雅黑 fallback 兜住（浏览器按
+ *  字符逐个 fallback）。字宽几何纪律：probe 量字格（term/index.ts）与
+ *  壳渲染必须用同一栈——度量同源，换字体后 cell 自动从实际渲染字体取。 */
+export const TERM_FONT_STACK =
+  `'JetBrainsMonoNL NFM', ui-monospace, Menlo, Consolas, ` +
+  `'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', monospace`;
+
 /**
  * 宽字符（EAW Wide/Fullwidth + 常用 emoji 区间）——真终端纪律：宽字
  * 必须裁进固定 2 格，不许按字形自然宽度推进（IME 黑匣子定位：格网
@@ -63,7 +74,7 @@ export class TermShell {
     el.classList.add('nz-term');
     el.style.cssText =
       `position:relative;background:${TERM_BG};color:${TERM_FG};` +
-      `font:${fs}px/1.25 ui-monospace,Menlo,Consolas,monospace;` +
+      `font:${fs}px/1.25 ${TERM_FONT_STACK};` +
       `user-select:text;-webkit-user-select:text;overflow:hidden;`;
     this.historyDiv = document.createElement('div');
     el.appendChild(this.historyDiv);

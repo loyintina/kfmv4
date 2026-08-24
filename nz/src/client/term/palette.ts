@@ -7,18 +7,21 @@
  * 一张表管两边，永不鸡同鸭讲。
  */
 
-/** 16 色表（xterm 标准值）。 */
+/** 16 色表（NA 同款精修板，kfm-na/src/termview.rs ANSI_16 逐值对齐
+ *  ——2026-08-24 评审信 palette-font-na-review：xterm classic 刺眼
+ *  （黄 #cdcd00/蓝 #0000ee），换 NA 板：黄=VGA 棕、蓝=品牌正蓝
+ *  #3B82F6（原 VGA #0000AA 黑底不可读）。两线同源，观感一致。 */
 const NAMED_HEX: Record<string, string> = {
-  Black: '#000000', Red: '#cd0000', Green: '#00cd00', Yellow: '#cdcd00',
-  Blue: '#0000ee', Magenta: '#cd00cd', Cyan: '#00cdcd', White: '#e5e5e5',
-  BrightBlack: '#7f7f7f', BrightRed: '#ff0000', BrightGreen: '#00ff00',
-  BrightYellow: '#ffff00', BrightBlue: '#5c5cff', BrightMagenta: '#ff00ff',
-  BrightCyan: '#00ffff', BrightWhite: '#ffffff',
+  Black: '#000000', Red: '#AA0000', Green: '#00AA00', Yellow: '#AA5500',
+  Blue: '#3B82F6', Magenta: '#AA00AA', Cyan: '#00AAAA', White: '#AAAAAA',
+  BrightBlack: '#555555', BrightRed: '#FF5555', BrightGreen: '#55FF55',
+  BrightYellow: '#FFFF55', BrightBlue: '#60A5FA', BrightMagenta: '#FF55FF',
+  BrightCyan: '#55FFFF', BrightWhite: '#FFFFFF',
 };
 
-/** 主题默认色（nz 终端底色/字色——渲染壳主题化时收编）。 */
-export const TERM_FG = '#e5e5e5';
-export const TERM_BG = '#0a0a0f';
+/** 主题默认色（NA DEFAULT_FG/DEFAULT_BG 对齐：白字黑底——渲染壳主题化时收编）。 */
+export const TERM_FG = '#ffffff';
+export const TERM_BG = '#000000';
 
 /** idx{N} → hex：0-15 查 16 色表，16-231 是 6×6×6 立方，232-255 灰阶。 */
 function indexedHex(n: number): string {

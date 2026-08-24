@@ -25,7 +25,7 @@ import { Context } from 'cordis';
 import { registerCardType } from '../../card-types.js';
 import { createContainer } from '../../host.js';
 import { loadTermCoreShared, type TermCoreGlue, type TermCoreHandle } from '../../term-core.js';
-import { TermShell } from '../../term/shell.js';
+import { TermShell, TERM_FONT_STACK } from '../../term/shell.js';
 import { TermWsBridge } from '../../term/bridge.js';
 import { mapText } from '../../term/keymap.js';
 import { KEYBAR_H, MOD_ALT, MOD_CTRL, MOD_SHIFT, mountKeybar } from '../../term/keybar.js';
@@ -171,9 +171,17 @@ export function applyTermBundle(ctx: Context): void {
       ctx.effect(() => () => { document.body.style.overflow = prevBodyOverflow; });
       // 实测定尺寸（写死 80×24 时代结束）：先用与壳同字体的探针量字格，
       // 再按容器可视面积算行列——手机有多宽终端就有多少列，不再裁字。
+      // 探针字体栈=壳渲染栈（TERM_FONT_STACK 同源——换字体后度量自动跟
+      // 实际渲染字体，字宽几何不回退的根基）。
+      // 字体就绪门：@font-face 异步加载——不等就量会拿到 fallback 字宽，
+      // 字体落地后渲染字宽突变而 cell 缓存不刷 = 光标/裁切错位。显式
+      // load 打头字体（失败不挡路：回落系统 mono，几何仍自洽）。
+      try {
+        await document.fonts.load(`13px 'JetBrainsMonoNL NFM'`, '0');
+      } catch { /* 字体 404/受限 → fallback 栈，度量与渲染仍同源 */ }
       const probe = document.createElement('div');
       probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;'
-        + 'font:13px/1.25 ui-monospace,Menlo,Consolas,monospace;';
+        + `font:13px/1.25 ${TERM_FONT_STACK};`;
       probe.textContent = '0'.repeat(20);
       container.el.appendChild(probe);
       const cellW = probe.getBoundingClientRect().width / 20;
