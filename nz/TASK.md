@@ -135,7 +135,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C 档：刷新即终端；真机数字收口 | ✅（2026-08-23：守视双态实拍绿 + 用户真机确认「确实没问题」） |
 | 8.8.3b | 仿 Termux 按键栏（keybar UI 随键盘上浮）+ keymap 纯逻辑（粘滞修饰/控制字节/SS3-CSI 方向键） | NA keybar.rs/keymap.rs | 核加 `app_cursor()` 暴露（cursor_visible 同款小改） | A：keymap 考题（Ctrl+ASCII→字节 / Alt=ESC x / 方向键 ?1h SS3 vs CSI / 粘滞一次读走清零）；C：栏随软键盘上浮实拍 + 真机数字收口 | ✅（2026-08-24 收口：A 8 题绿 + 核 ?1h/?1l 钉 + B 守视真链绿 + 评审通过；上浮被盖症五轮讨伐落幕——判尺 vm=vv 真尺 / 钉 vv 移出防抖治过渡闪帧 / `?kbOff=<px>` 常驻代字适配 Via 有栏 vv 虚报 ~42px（浏览器硬限制，用户拍板接受现状）；专症字段+双轨色条随症拆，kboff 命中标记保留） |
 | 8.8.3c | scrollback 历史渲染上屏（2026-08-23 用户拍板：随手上滑翻历史=基础体验，9.0 不得比 8 倒退；tmux copy-mode 不作替代）——核已存 1000 行历史，壳从「只画当前屏」扩为「历史+当前屏」同渲，容器 overflow:hidden→auto 开真滚动 | 无 | 核需历史行读取 API（grid 回退区遍历，评估 rio-vt 暴露面） | A：壳考题（历史行渲染 / 跟底判定：新输出仅当已在底部才跟底，用户上滚不拽回）；B：长输出装配冒烟；C：真机上滑翻历史实拍 + IME 纪律兼容（上滚中输入跳回底部再发）+ 真机数字收口 | 🔄（2026-08-24：实现落地 @ 6d261e15——核三 API+壳增量历史块+集中状态机+钩子；A 档裁决两红=考卷 artifact，修卷后 5/5 绿（评审复核+本地复核同数）；B 档千行冒烟绿；待 C 档真机上滑实拍收口） |
-| 8.8.3d | 两区模型：固定底部输入行（2026-08-24 用户拍板：根治「无代字时正在打的命令行被输出顶出视野」，?kbOff 碰巧掩盖退役）——光标行剥出滚动区恒钉底；滚动区复用 8.8.3c；按键栏+输入行改容器流内分区 | 无 | 核加 `alt_screen()`（TUI 整屏切回单区，行列恒定不触发 resize） | A：fixed-input-row 考卷（输入行恒底/输出不动行/滚动区可滚/键盘占位上移）；B：千行输入行不动；C：守视/真机上滑+键盘弹起逐帧 | 🔄（2026-08-24：落地 @ a082f87f 两区模型 + 5e3dd75c 布局更正；A 档①锚点修卷裁决采纳语义锚（test 1d68bf2d）恢复 5/5，scrollback 5/5+keybar 17/17+B 千行全绿；实现正确，待 C 档真机收口） |
+| 8.8.3d | 单区底锚定终端（2026-08-24 用户拍板**回退两区**，评审契约信 kfmv4-9.0-single-zone-bottom-anchor-review）：单一连续终端区——最底=最新、输出续输入下上滚、空屏提示符也在视口底行（壳塌尾空行 + flex 底锚 margin-top:auto）、去掉独立固定输入行；滚动/状态机复用 8.8.3c，按键栏流内垫底不动 | 无 | 核 `alt_screen()` 保留（TUI 整屏不塌行，行列恒定） | A：bottom-anchor 考卷（空屏提示符底行/输出续输入下/超屏最底=最新/键盘占位整体上移底锚不回退）+ scrollback 5/5 + keybar 17/17 不回退；B：千行不卡；C：真机实拍底锚定视觉+上滑翻历史+键盘弹起整体上移 | 🔄（2026-08-24：两区落地 a082f87f+5e3dd75c 后用户拍板回退→单区底锚定 @ 7aa1962b；A 档新考卷 5/5 一遍绿 + scrollback 5/5 + keybar 17/17 不回退 + B 千行绿；`__kfmNzTermInputRow` 退役明示；待 C 档真机收口） |
 | 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C 档：标签切换实拍；真机数字收口 | ⬜ |
 | 8.8.5 | tmux 完整管理 + 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档；闭环前置=考卷全集差分绿（硬门后移不取消） | ⬜ |
 | 8.8.6 | 手单实例（最小：press=视觉+注入一体，对真 UI 验证；坐标对齐眼睛 coords 段） | 无 | 无 | A+B：press 链路考题 + 过 plugtest | ⬜ |
@@ -193,7 +193,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C：实拍刷新即终端；不得依赖 №11 完整布局；**真机数字收口**（2026-08-23 拍板：tmux 线=用户迁 9.0 判据） | ✅（2026-08-23：守视双态实拍绿——无参刷新即终端 panel=none / ?debug 面板照常；用户真机确认「确实没问题」收口） |
 | 8.8.3b | 仿 Termux 按键栏 + keymap（2026-08-23 评审建议信 kfmv4-9.0-term-keybar-review，用户提过缺口；tmux 刚需：手机无 Ctrl+B 前缀）：两排七列照 NA keybar.rs 定稿（上 Esc/Alt/Home/PgUp/↑/PgDn/Shift，下 Tab/Ctrl/End/←/↓/→/Enter）；四条纪律照抄——①修饰键一次性粘滞（点亮后下次落字读走清零）②keymap 纯逻辑 A 档有题（Ctrl+ASCII→控制字节；Alt+X=ESC x；方向键/End 吃 app_cursor 模式位，?1h 发 SS3 `ESC O A` 否则 CSI `ESC [ A`）③栏随软键盘上浮（贴可视区底，防被键盘盖）④键位序按 NA KEYS 表；核需加 `app_cursor()` 暴露（cursor_visible 同款小改）；keymap 独立纯逻辑模块，keybar UI 进 term 插件包 | NA keybar.rs/keymap.rs | 核 `app_cursor()` | A：keymap 考题（Ctrl+字节/Alt/方向键 SS3-CSI/粘滞清零各一）+ B：栏装配冒烟 + C：上浮跟随真机实拍 | ✅（2026-08-24 收口：A/B 绿+评审通过+点击不可达修复（f99fc67a）；上浮被盖症五轮落幕=判尺 vm=vv 真尺（575a7eb2 单基准 top 锚 vv）+过渡帧闪帧=钉 vv 移出防抖（be5f95b1）+`?kbOff=<px>` 常驻代字（02739919）适配 Via 有栏 vv 虚报 ~42px（浏览器硬限制，用户拍板接受现状）；专症字段/双轨色条随症拆，kboff 命中标记保留） |
 | 8.8.3c | scrollback 历史渲染上屏（2026-08-23 用户拍板：随手上滑翻历史=基础体验，9.0 体验不得比 8 倒退；AI 长对话场景必须可回翻；tmux copy-mode 不作替代——用户从没用过）：核侧 1000 行历史已在（8.8.2 起配置），本步改渲染壳——从「只画当前屏、overflow:hidden」扩为「历史+当前屏同渲、overflow:auto 真滚动」；跟底纪律=终端惯例：新输出到来仅当视口已在底部才跟底，用户上滚阅读时不拽回；输入即回底（xterm 同款：按键/上屏先把视口送回光标处再发字节，与 placeKb 钉光标格纪律兼容——上滚时诱饵在屏外，focus preventScroll 不拽，发字节前显式回底）；容器高度跟随软键盘的既有逻辑不变（8.8.2 吞末行根治保留） | 无 | 核需历史行读取面（评估 rio-vt grid 回退区遍历 API；若缺，cursor_visible 同款小改暴露） | A：壳考题（历史行逐行进屏 / 跟底判定两向 / 回底再发）；B：千行长输出装配冒烟（渲染不卡、内存有界）；C：真机上滑翻历史实拍 + 上滚中收新输出不拽回 + 真机数字收口 | 🔄（2026-08-24：实现落地 @ 6d261e15——核三 API+壳增量历史块+集中状态机+钩子；A 档裁决两红=考卷 artifact，修卷后 5/5 绿（评审复核+本地复核同数）；B 档千行冒烟绿；待 C 档真机上滑实拍收口） |
-| 8.8.3d | 两区模型：固定底部输入行（2026-08-24 用户拍板，评审验收契约信 kfmv4-9.0-fixed-input-row-review）：终端拆两区——滚动区（历史/输出，可上滑，复用 8.8.3c 状态机）+ 固定输入行（光标行剥出恒钉底，键盘弹起整行同步上移）；输出绝不挪输入行；IME 合成中不滚焦落字才回底；ALT_SCREEN（TUI 整屏）隐藏输入行回单区（核 `alt_screen()` 模式位，?1049h/?1049l 钉）；布局红利：按键栏+输入行回流内（8.x aux-bar 模式），条带追 vv 复杂度退役，?kbOff 迁至容器钉高 | 无 | 核 `alt_screen()` | A：fixed-input-row.test.mjs 5 断言 + scrollback 5/5 不回退 + keybar-click 17/17 不回退；B：千行输入行钉底不动；C：守视/真机逐帧（上滑+键盘弹起输入行恒底+光标在底） | 🔄（2026-08-24：落地 @ a082f87f 两区模型 + 5e3dd75c 布局更正；A 档①锚点修卷裁决采纳 isAtBottom 语义锚（test 1d68bf2d）恢复 5/5，A 档修正通过；待 C 档真机收口） |
+| 8.8.3d | 单区底锚定终端（2026-08-24 用户拍板**回退两区**，评审契约信 kfmv4-9.0-single-zone-bottom-anchor-review；两区 fixed-input-row 模型作废）：单一连续终端区——历史+屏幕行同一滚动区（复用 8.8.3c 状态机/增量渲染），无独立输入行；底锚定=壳塌尾空行（渲染到 max(光标行, 最后非空行)）+ 容器 flex 列画布 margin-top:auto：空屏提示符贴视口底行（上方留白）、新内容从底往上顶、超屏真滚动；光标行模式/ALT 统一进滚动区 + nearest 兜底；placeKb 钉光标格可视位（cursorOffset−scrollTop）；按键栏流内垫底、?kbOff/钉 vv 纪律不动 | 无 | 核 `alt_screen()` 保留（TUI 不塌行） | A：bottom-anchor.test.mjs 5 断言 + scrollback 5/5 + keybar-click 17/17 不回退；B：千行长输出上滚不卡；C：真机实拍（底锚定视觉+上滑+键盘弹起整体上移）+ 数字收口 | 🔄（2026-08-24：两区 a082f87f+5e3dd75c 后用户拍板回退→单区 @ 7aa1962b；A 档 5/5 一遍绿+不回退双全绿+B 千行绿；fixed-input-row.test.mjs 作废删除、`__kfmNzTermInputRow` 退役明示；已知悉单区下输入行会被输出顶动（自然终端手感优先，缓解再议不回滚）；待 C 档真机收口） |
 | 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C：标签切换实拍；**真机数字收口** | ⬜ |
 | 8.8.5 | tmux 完整管理（新建/清空/挂起/状态检测）+ 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档；**闭环前置：考卷全集差分绿** | ⬜ |
 | 8.8.6 | 手单实例（最小）：overlay 容器 + hand-press 事件 + press 一体链路，对终端卡真按 | 无 | 无 | A+B：press 注入经手势分发实测；过 plugtest | ⬜ |
@@ -807,3 +807,18 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   不碎），①块改断 isAtBottom+底部区域（test 1d68bf2d），重跑 A 档
   5/5 绿 → A 档修正通过、实现正确；待用户真机 C 档收口。
   fix/feat @ a082f87f（两区模型）· 5e3dd75c（布局更正）。
+- 2026-08-24：**8.8.3d 单区底锚定（用户拍板回退两区）**：评审契约信
+  kfmv4-9.0-single-zone-bottom-anchor-review——不要两区，要单一连续
+  终端区：最底=最新 / 输出续输入下上滚 / 空屏提示符也在底行 / 去掉
+  独立固定输入行；两区 C 档作废由新信 A/B/C 接管。实现 @ 7aa1962b：
+  壳塌尾空行（渲染到 max(光标行, 最后非空行)，尾空行 display:none）
+  + 容器 flex 列画布 margin-top:auto 底锚（空屏提示符贴底行、上方
+  留白、超屏真滚动）；光标行模式/ALT 统一进滚动区同式摆位 + nearest
+  兜底；placeKb 钉光标格可视位（cursorOffset.y−scrollTop）；钩子
+  __kfmNzTermInputRow 退役明示、__kfmNzTermScroll 保留、cursorEl 加
+  .nz-term-cursor 取证锚；按键栏流内垫底、?kbOff/钉 vv 纪律不动。
+  考卷处置：fixed-input-row.test.mjs 作废删除，bottom-anchor.test.mjs
+  接管 A 档 **5/5 一遍绿**；不回退：scrollback 5/5 + keybar 17/17 +
+  npm 84 + smoke + cargo 7/7 全绿。已知悉拍板：单区下输入行会被后续
+  输出顶动（自然终端手感优先，如后续要缓解再议），不回滚两区。
+  待 C 档真机（底锚定视觉+上滑翻历史+键盘弹起整体上移）。

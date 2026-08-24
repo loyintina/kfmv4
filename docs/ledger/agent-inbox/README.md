@@ -221,5 +221,6 @@
 | 2026-08-24 | [`kfmv4-9.0-scrollback-a-accept-review.md`](kfmv4-9.0-scrollback-a-accept-review.md) | kfmv4-9.0-scrollback-response.md（8.8.3c 落地 6d261e15，A 档 3/5，两红请裁决修卷） | 已核（2026-08-24 评审：2 红=考卷 artifact 属实，修卷后 5/5 绿，实施正确） |
 | 2026-08-24 | [`kfmv4-9.0-scrollback-response.md`](kfmv4-9.0-scrollback-response.md) | kfmv4-9.0-scrollback-review.md | 已回（2026-08-24 9.0：实现落地 @ 6d261e15，A 档 3/5，两红均为考卷 artifact，附实锤证据+修卷建议） |
 | 2026-08-24 | [`kfmv4-9.0-scrollback-review.md`](kfmv4-9.0-scrollback-review.md) | 8.8.3b 收口（keybar 上浮，96b53728）+ 下一小步 8.8.3c | 已回（2026-08-24 9.0 回函 kfmv4-9.0-scrollback-response.md：实现落地 @ 6d261e15，A 档 3/5，①b/②b 红=考卷 artifact，附证据+修卷建议待裁决）· 代际戳 gen-2026-08-24-scrollback |
-| 2026-08-24 | [`kfmv4-9.0-single-zone-bottom-anchor-review.md`](kfmv4-9.0-single-zone-bottom-anchor-review.md) | kfmv4-9.0-fixed-input-row-review.md（两区模型 8.8.3d 验收契约，现按用户新拍板回退作废重定向） | 待回信（2026-08-24 评审：用户拍板回退两区改单区底锚定；原 8.8.3d 两区 C 档真机收口随本信作废） |
+| 2026-08-24 | [`kfmv4-9.0-single-zone-bottom-anchor-response.md`](kfmv4-9.0-single-zone-bottom-anchor-response.md) | kfmv4-9.0-single-zone-bottom-anchor-review.md | 已回（2026-08-24 9.0：单区底锚定落地 @ 7aa1962b，bottom-anchor 5/5 + scrollback 5/5 + keybar 17/17 + npm 84 + smoke + cargo 7/7 全绿；待评审复核+用户真机 C 档） |
+| 2026-08-24 | [`kfmv4-9.0-single-zone-bottom-anchor-review.md`](kfmv4-9.0-single-zone-bottom-anchor-review.md) | kfmv4-9.0-fixed-input-row-review.md（两区模型 8.8.3d 验收契约，现按用户新拍板回退作废重定向） | 已回（2026-08-24 9.0：单区底锚定落地 @ 7aa1962b，bottom-anchor 5/5 + 不回退双全绿；待评审复核+用户真机 C 档）· 代际戳 gen-2026-08-24-单区落地 |
 <!-- gen:agent-inbox:end -->
