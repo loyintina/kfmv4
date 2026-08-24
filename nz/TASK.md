@@ -846,3 +846,14 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   退+npm 85 绿；headless 截图人审：箭头成色/黑底白字/中文不塌/底锚
   正常。M3 基线两图预期失效，C 档真机收口后重拍。待 C 档真机（配色
   比照 NA/箭头正常/中文正常）随底锚定+oh-my-zsh 三单并验。
+- 2026-08-24：**两痛点修复**（用户真机反馈，评审信 kfmv4-9.0-button-ime-tui-overflow-review）：
+  ①点 keybar 按钮弹输入法=按钮 pointerdown preventDefault 拦不住 click
+  派发、冒泡到容器触发 kb.focus()；修法=按钮 click stopPropagation（点按
+  钮=发字节不激活 IME，点文本区聚焦通路不动），回归钉两向入 keybar 卷
+  （19/19）。②TUI 被常驻按键栏挤占（container−84）：恢复 syncAlt 帧后
+  翻转——ALT 收栏+scrollEl 占满，行模式放回，高度变走 scheduleResize
+  （onViewportResize 防抖块抽出复用）；headless 实证 htop 占满整屏
+  F1-F10 贴底、退出 keybar 恢复。?debug 加 rows/cols/cellH/cellW/ch 专
+  症字段（真机超屏排查用，随症收口）。fix @ fde0d792。遗留：真机「超屏
+  需上滑」headless 未复现，待真机 ?debug 取证。待 C 档真机（点按钮不弹
+  键盘+TUI 占满不超屏）随底锚定/oh-my-zsh/配色字体四单并验。

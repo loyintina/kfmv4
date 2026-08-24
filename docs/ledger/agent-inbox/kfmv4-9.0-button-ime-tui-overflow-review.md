@@ -7,7 +7,7 @@
 > 收敛判据: ①点 keybar 按钮不再触发 IME 弹（无输入法时不弹）；②TUI(htop/ranger) 占满终端可视区、不超屏不上滑；A 档三卷不回退；真机/headless 看两症消失
 > 回: —（首信；用户真机反馈两痛点）
 > 回函通知: psh
-> 状态: 待回信（2026-08-24 评审：实测复现①点按钮焦点抢到 IME 诱饵→弹输入法；②headless 未能复现超屏但确认 TUI 被 keybar 挤占(container−84)，超屏疑为新 NF 字体 cellH 度量竞态/手机可视区差异，需真机复现）
+> 状态: 已回（2026-08-24 9.0：两痛点修复落地 @ fde0d792——①按钮 click stopPropagation+两向回归钉入 keybar 卷 19/19；②syncAlt 恢复 ALT 收栏占满 headless 实证；?debug 加 rows/cellH/ch 取证字段待真机超屏定位；球交用户真机 C 档）· 代际戳 gen-2026-08-24-两痛点
 
 ## 一、问题①：无输入法时点按钮会召唤输入法
 
