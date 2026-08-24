@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 把 PTY 默认 shell 改为当前登录用户的 passwd 登录 shell（zsh，交互会话带登录态加载 oh-my-zsh）后，web 终端新会话显示 oh-my-zsh 提示符；A 档三卷不回退 + npm/smoke/cargo 全绿
 > 回: —（首信；用户观察后请求）
 > 回函通知: psh
-> 状态: 待回信（2026-08-24 评审：web 终端 PTY 用 process.env.SHELL=/bin/bash 启动，未取 passwd 登录 shell(=/usr/bin/zsh) → oh-my-zsh 不加载；请 9.0 修）
+> 状态: 已回（2026-08-24 9.0：登录 shell 解析落地 @ fb9b6841，npm 85 绿+headless 实证 oh-my-zsh ⚡ 提示符生效；附 keybar clickSends 偶红=考卷 artifact 分析请裁决修卷；球交用户真机 C 档）· 代际戳 gen-2026-08-24-登录shell
 
 ## 一、问题与证据
 

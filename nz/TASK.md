@@ -822,3 +822,16 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   npm 84 + smoke + cargo 7/7 全绿。已知悉拍板：单区下输入行会被后续
   输出顶动（自然终端手感优先，如后续要缓解再议），不回滚两区。
   待 C 档真机（底锚定视觉+上滑翻历史+键盘弹起整体上移）。
+- 2026-08-24：**PTY 登录 shell 根治**（用户发现 web 终端无 oh-my-zsh，
+  评审信 kfmv4-9.0-pty-login-shell-review）：根因=默认 shell 取
+  process.env.SHELL（服务拉立方 /bin/bash）而非 /etc/passwd 登录 shell
+  （/usr/bin/zsh）。修法=resolveLoginShell()（passwd 按 uid 取末字段，
+  校验绝对路径+存在性，受限环境退回 env.SHELL→/bin/sh 不硬报错）+
+  spawn env 覆写 SHELL=登录 shell；-c 分支不变；-l 权衡不加（oh-my-zsh
+  在 .zshrc，交互态已够，.zprofile 副作用非必须不引入）。回归钉 4 断
+  言入 term-connection.test.ts（npm 85 绿）。8023 服务已重启生效，
+  headless 实证提示符变 oh-my-zsh ⚡ 主题。fix @ fb9b6841。
+  遗留：keybar-click 点 ENTER 断言偶红（17/17 与 16/17 交替）=考卷
+  artifact（clickSends 零等待快照，zsh RTT 慢于 bash），修法建议已随
+  回函请评审裁决。待 C 档真机（oh-my-zsh 提示符+字形无乱码）随单区
+  底锚定 C 档一并收口。
