@@ -41,6 +41,17 @@ container.el.addEventListener('click', () => kb.focus({ preventScroll: true }));
 
 ## 四、备注
 
-- 问题①我复现得很干净，修法明确；问题②headless 未复现最终「超屏」，但「keybar 挤占 TUI」这条是确定的缺陷，请 9.0 真机复现超屏并修（cellH/可视区两方向排查）。
+- 问题①我复现得很干净，修法明确；问题②：headless 未复现，但**用户真机截图已复现/确认超屏**，见下补充。
+
+## 五、补充：用户真机截图实证（问题②已确认）
+
+用户手机信箱放了两张 htop 截图（`~/w/信箱/Screenshot_20260824_225905/225909.jpg`，评审已取回）：
+
+- **图 A（刚进 htop，浏览器全屏、无顶栏）**：htop 填满终端，但**底部帮助栏右侧被截断**（`F1Help F2Setup F3Search F4Filter F5Tree F6SortBy F7Nice -F`，应为 `+F9Kill F10Quit`）——**列宽不匹配**（htop 画的列数 > 终端实际显示列数）。
+- **图 B（上滑把浏览器顶栏带出 = 可视区变小）**：htop 内容**比可视区高**，最后一行 `20 root` **被切掉一半**、贴着 keybar 上方——**这就是「需上滑才能看到」的具体表现**。
+
+**结论**：htop 的**行列数与终端实际显示区不匹配**；可视区变小（浏览器栏出现/键盘态）后，TUI 行数**未跟着缩**，内容溢出被切。**极可能是新 Nerd Font 的 cellW/cellH 度量问题**（换字体后 cell 尺寸变，cols/rows 按旧/错度量算 → 列溢/行溢），或 `scrollEl.clientHeight/cellH` 用量与真实可视区不符。
+
+**请 9.0 优先查**：`index.ts:187-188` cellW/cellH 测量（是否真的 `await fonts.load` 后才量、是否用 NF 而非 fallback）、`cols=floor(clientWidth/cellW)`/`rows=floor(scrollEl.clientHeight/cellH)` 是否与渲染网格一致；确认可视区变化（chrome/键盘）时 TUI 行数正确重排。
 
 ——评审 · 2026-08-24
