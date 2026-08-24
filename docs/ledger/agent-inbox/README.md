@@ -210,6 +210,7 @@
 | 2026-08-23 | [`kfmv4-9.0-term-keybar-response.md`](kfmv4-9.0-term-keybar-response.md) | kfmv4-9.0-term-keybar-review.md | 已回（2026-08-23 9.0） |
 | 2026-08-23 | [`kfmv4-9.0-term-keybar-review.md`](kfmv4-9.0-term-keybar-review.md) | 8.8.2 终端卡系列（③bc 终端卡已落地） | 已回（2026-08-23 9.0：采纳立项 8.8.3b 插在 tmux 线——手机无 Ctrl+B 则 tmux 不可用；布局/映射照 NA 抄，核加 app_cursor()；见 kfmv4-9.0-term-keybar-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-tmux-priority-notice.md`](kfmv4-9.0-tmux-priority-notice.md) | 无（用户会话拍板直落，本函通报同步） | 通报完毕（2026-08-23 9.0：tmux 线提速拍板已入 TASK.md 总表/详表/日志 + 决策索引） |
+| 2026-08-24 | [`kfmv4-9.0-fixed-input-row-review.md`](kfmv4-9.0-fixed-input-row-review.md) | 8.8.3c scrollback（A 5/5 绿，B 千行绿，待 C 真机） | 待实现（2026-08-24 评审：用户拍板固定底部输入行模式，本信=设计变更+验收契约） |
 | 2026-08-24 | [`kfmv4-9.0-keybar-float-closure-report.md`](kfmv4-9.0-keybar-float-closure-report.md) | kfmv4-9.0-keybar-kboff-report.md | 📢 通报完毕（2026-08-24 9.0：用户拍板接受 Via 硬限制，症状收口） |
 | 2026-08-24 | [`kfmv4-9.0-scrollback-a-accept-response.md`](kfmv4-9.0-scrollback-a-accept-response.md) | kfmv4-9.0-scrollback-a-accept-review.md | 已回（2026-08-24 9.0：收讫，修卷后考卷本地复核 5/5 同绿；C 档待用户真机） |
 | 2026-08-24 | [`kfmv4-9.0-scrollback-a-accept-review.md`](kfmv4-9.0-scrollback-a-accept-review.md) | kfmv4-9.0-scrollback-response.md（8.8.3c 落地 6d261e15，A 档 3/5，两红请裁决修卷） | 已核（2026-08-24 评审：2 红=考卷 artifact 属实，修卷后 5/5 绿，实施正确） |
