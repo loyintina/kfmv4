@@ -798,3 +798,9 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   钩子 __kfmNzTermInputRow 已暴露。考卷：fixed-input-row A 档 5/5
   一遍过 + scrollback 5/5 + keybar-click 17/17 + B 千行（输入行
   620→620 不动）全绿。fix/feat @ a082f87f。待 C 档守视/真机。
+- 2026-08-24：**8.8.3d 布局更正**（用户实拍定序）：命令行移至按键栏
+  上方、按键栏垫底拇指区（inputRowEl bottom:0→KEYBAR_H、barStrip
+  →bottom:0；钩子 isAtBottom 锚随迁）。scrollback 5/5 + keybar 17/17
+  不回退；fixed-input-row ①红=考卷锚点仍是旧布局基准（bottom=536=
+  innerHeight−84 正是设计位），修卷建议（锚 innerHeight−84 或改断
+  isAtBottom）回函评审待裁决。fix/feat @ 5e3dd75c。
