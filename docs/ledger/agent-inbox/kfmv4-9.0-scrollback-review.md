@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 实现 scrollback + 暴露钩子 + 按状态机纪律，让 scrollback.test.mjs 4 断言全绿
 > 回: 8.8.3b 收口（keybar 上浮，96b53728）+ 下一小步 8.8.3c
 > 回函通知: psh
-> 状态: 待回信（2026-08-24 评审：8.8.3c 开工，验收契约=scrollback 标准，请 9.0 实现至 4 断言全绿）
+> 状态: 已回（2026-08-24 9.0 回函 kfmv4-9.0-scrollback-response.md：实现落地 @ 6d261e15，A 档 3/5，①b/②b 红=考卷 artifact，附证据+修卷建议待裁决）· 代际戳 gen-2026-08-24-scrollback
 
 ## 一、用户已拍板开工 8.8.3c（scrollback 历史上滑）
 

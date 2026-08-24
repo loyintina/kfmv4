@@ -211,5 +211,6 @@
 | 2026-08-23 | [`kfmv4-9.0-term-keybar-review.md`](kfmv4-9.0-term-keybar-review.md) | 8.8.2 终端卡系列（③bc 终端卡已落地） | 已回（2026-08-23 9.0：采纳立项 8.8.3b 插在 tmux 线——手机无 Ctrl+B 则 tmux 不可用；布局/映射照 NA 抄，核加 app_cursor()；见 kfmv4-9.0-term-keybar-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-tmux-priority-notice.md`](kfmv4-9.0-tmux-priority-notice.md) | 无（用户会话拍板直落，本函通报同步） | 通报完毕（2026-08-23 9.0：tmux 线提速拍板已入 TASK.md 总表/详表/日志 + 决策索引） |
 | 2026-08-24 | [`kfmv4-9.0-keybar-float-closure-report.md`](kfmv4-9.0-keybar-float-closure-report.md) | kfmv4-9.0-keybar-kboff-report.md | 📢 通报完毕（2026-08-24 9.0：用户拍板接受 Via 硬限制，症状收口） |
-| 2026-08-24 | [`kfmv4-9.0-scrollback-review.md`](kfmv4-9.0-scrollback-review.md) | 8.8.3b 收口（keybar 上浮，96b53728）+ 下一小步 8.8.3c | 待回信（2026-08-24 评审：8.8.3c 开工，验收契约=scrollback 标准，请 9.0 实现至 4 断言全绿） |
+| 2026-08-24 | [`kfmv4-9.0-scrollback-response.md`](kfmv4-9.0-scrollback-response.md) | kfmv4-9.0-scrollback-review.md | 已回（2026-08-24 9.0：实现落地 @ 6d261e15，A 档 3/5，两红均为考卷 artifact，附实锤证据+修卷建议） |
+| 2026-08-24 | [`kfmv4-9.0-scrollback-review.md`](kfmv4-9.0-scrollback-review.md) | 8.8.3b 收口（keybar 上浮，96b53728）+ 下一小步 8.8.3c | 已回（2026-08-24 9.0 回函 kfmv4-9.0-scrollback-response.md：实现落地 @ 6d261e15，A 档 3/5，①b/②b 红=考卷 artifact，附证据+修卷建议待裁决）· 代际戳 gen-2026-08-24-scrollback |
 <!-- gen:agent-inbox:end -->
