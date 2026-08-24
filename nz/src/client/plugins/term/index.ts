@@ -272,51 +272,14 @@ export function applyTermBundle(ctx: Context): void {
         });
       }
 
-      // ?debug 基准校准双轨（keybar-input-float-root-report：Via 有栏+键盘态
-      // vv.height 多报 ~40px——尺子本身不可信，需真机判定哪把尺真）：
-      //   绿轨 fx = CSS 布局视口底（absolute bottom:0，resizes-content 若生效
-      //           应贴键盘顶——8.x aux-bar 在容器流内同理存活的假设验证）；
-      //   紫轨 vm = vv 底（ot+vh，现行钉法的基准）。
-      // 真机弹键盘截图：哪条轨贴键盘顶，哪把尺就是真的——修法跟着换轨。
-      // 专症字段随症收口（裁决①），症状关闭后整段移除。
-      let probeFx: HTMLElement | null = null;
-      let probeVv: HTMLElement | null = null;
-      if (postDebug) {
-        probeFx = createContainer(ctx, { kind: 'overlay', slot: `${cardId}-probe-fx`, owner: 'term' }).el;
-        probeFx.style.cssText = 'position:absolute;left:0;right:0;bottom:0;height:4px;'
-          + 'background:#3f3;pointer-events:none;';
-        probeVv = createContainer(ctx, { kind: 'overlay', slot: `${cardId}-probe-vv`, owner: 'term' }).el;
-        probeVv.style.cssText = 'position:absolute;left:0;right:0;top:0;height:4px;'
-          + 'background:#f3f;pointer-events:none;';
-      }
-      // 视口取证统一出口（resize/scroll 双通道同一组字段）
+      // 视口事件出口（?debug 骨架的字段注册点——新症状要加字段在这里加）。
+      // keybar 上浮被盖症已收口（2026-08-24：判尺结论 vm=vv 真尺；Via 有栏
+      // +键盘态 vv 多报 ~42px 属浏览器硬限制，用户拍板接受现状，?kbOff
+      // 代字转常驻调节入口）——专症字段（ih/vh/ot/dch/kbb/kbc/brt/brb/
+      // fx/vm）与双轨校准色条（probeFx/probeVv）已随症拆除（复盘裁决①）。
+      // kboff 保留：?kbOff 是常驻代字，命中标记便于真机确认走没走对分支。
       const reportViewport = (type: string) => {
-        const vv0 = window.visualViewport;
-        if (probeVv && vv0) probeVv.style.top = `${vv0.offsetTop + vv0.height - 4}px`;
-        // ih=innerHeight（布局视口）vh=vv.height ot=vv.offsetTop
-        // kbb=条带 top 设定值 kbc=栏底沿超出 vv 底像素（vv 基准下的被盖量）
-        // fx=绿轨底沿（CSS 布局底）vm=紫轨底沿（vv 底）——真机判尺
-        // dch=documentElement.clientHeight（第三把尺：文档布局高）
-        // brt/brb=条带实测渲染 rect 顶/底（transition-report③：别只报
-        // style.top 设定值，要看实际渲染坐标对比键盘真实顶）
-        // kboff=?kbOff 代字命中值（0=未命中；非 0 即走了 Via 适配分支——
-        // 真机确认走没走对，避免测旧包/没进分支）
-        const barRect = barStrip.el.getBoundingClientRect();
-        postDebug?.({
-          type,
-          ih: window.innerHeight,
-          vh: vv0?.height ?? 0,
-          ot: vv0?.offsetTop ?? 0,
-          dch: document.documentElement.clientHeight,
-          kbb: parseFloat(barStrip.el.style.top) || 0,
-          kboff: kbOff,
-          kbc: Math.round(barRect.bottom
-            - ((vv0?.height ?? 0) + (vv0?.offsetTop ?? 0))),
-          brt: Math.round(barRect.top),
-          brb: Math.round(barRect.bottom),
-          fx: probeFx ? Math.round(probeFx.getBoundingClientRect().bottom) : -1,
-          vm: probeVv ? Math.round(probeVv.getBoundingClientRect().bottom) : -1,
-        });
+        postDebug?.({ type, kboff: kbOff });
       };
       // 必须挂在 click 而非 pointerdown/mousedown：按下事件的默认行为会
       // 把焦点抢走放回 body（聚焦被覆盖），且 preventDefault 会杀死原生
@@ -378,8 +341,7 @@ export function applyTermBundle(ctx: Context): void {
         keybar.updateBottom();
         // 容器同拍钉 vv（transition-report①：防抖后跳=过渡闪帧真凶）
         pinToVv();
-        // 视口事件随 IME 事件同流落日志（评审五节建议）；
-        // 上浮被盖取证字段与双轨校准见 reportViewport 定义处注释
+        // 视口事件随 IME 事件同流落日志（评审五节建议）
         reportViewport('viewport');
         // 不滚！resize 时无条件滚到底是「每字抖几行」的真凶（黑匣子坐实：
         // 滚动内容存在时 resize→重滚=挤兑）。光标真被遮住时由
