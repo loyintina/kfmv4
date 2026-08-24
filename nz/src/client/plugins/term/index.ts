@@ -183,16 +183,17 @@ export function applyTermBundle(ctx: Context): void {
       const cellW = probe.getBoundingClientRect().width / 20;
       const cellH = probe.getBoundingClientRect().height;
       probe.remove();
-      // 两区布局（行高量出后一次性落位）：
+      // 两区布局（行高量出后一次性落位；2026-08-24 布局更正：命令行在
+      // 按键栏**上方**，按键栏垫最底拇指区——用户实拍定序）：
       //   scrollEl  滚动区 top:0 bottom:按键栏+输入行（overflow:auto）
-      //   barStrip  按键栏 bottom:输入行高 height:KEYBAR_H（流内钉输入行上方）
-      //   inputRowEl 固定输入行 bottom:0 height:行高（光标行剥出恒钉底）
+      //   inputRowEl 固定输入行 bottom:KEYBAR_H（光标行剥出，紧贴按键栏上方）
+      //   barStrip  按键栏 bottom:0 height:KEYBAR_H（垫底）
       const inputRowH = Math.max(10, Math.round(cellH));
       const scrollEl = document.createElement('div');
       scrollEl.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:${KEYBAR_H + inputRowH}px;overflow:auto;`;
       container.el.appendChild(scrollEl);
       const inputRowEl = document.createElement('div');
-      inputRowEl.style.cssText = `position:absolute;left:0;right:0;bottom:0;height:${inputRowH}px;`
+      inputRowEl.style.cssText = `position:absolute;left:0;right:0;bottom:${KEYBAR_H}px;height:${inputRowH}px;`
         + `background:${TERM_BG};overflow:hidden;`;
       container.el.appendChild(inputRowEl);
       // ALT_SCREEN 模式位（TUI 整屏）：帧后发现翻转才换布局——输入行隐藏、
@@ -255,13 +256,14 @@ export function applyTermBundle(ctx: Context): void {
         isAtBottom: card.atBottom,
         getContainer: () => scrollEl,
       });
-      // 固定输入行 rect 钩子（两区模型判卷核心：bottom 恒≈视口底）
+      // 固定输入行 rect 钩子（两区模型判卷核心；布局更正后输入行在按键
+      // 栏上方——isAtBottom=贴住「容器底−按键栏」位而非容器底）
       (window as unknown as Record<string, unknown>).__kfmNzTermInputRow = () => {
         const r = inputRowEl.getBoundingClientRect();
         const cr = container.el.getBoundingClientRect();
         return {
           top: r.top, bottom: r.bottom, height: r.height,
-          isAtBottom: !altMode && Math.abs(r.bottom - cr.bottom) < 2,
+          isAtBottom: !altMode && Math.abs(r.bottom - (cr.bottom - KEYBAR_H)) < 2,
         };
       };
 
@@ -298,12 +300,13 @@ export function applyTermBundle(ctx: Context): void {
       };
 
       // 8.8.3b 按键栏（仿 Termux，纪律见 keybar.ts 头注释）：两区模型起
-      // 改为容器流内条带（钉输入行上方）——回到 8.x aux-bar 流内存活
-      // 模式，键盘弹起随容器钉 vv 同步上浮，条带自身不再追 vv（判尺/
-      // 过渡帧/双基准打架那套随布局重构退役）。生灭随容器（owner 死
-      // 容器摘=子树同摘）。pointer-events:auto 防层根 none 拦截。
+      // 改为容器流内条带（垫底拇指区，bottom:0——2026-08-24 布局更正：
+      // 命令行在按键栏上方）——回到 8.x aux-bar 流内存活模式，键盘弹起
+      // 随容器钉 vv 同步上浮，条带自身不再追 vv（判尺/过渡帧/双基准打架
+      // 那套随布局重构退役）。生灭随容器（owner 死容器摘=子树同摘）。
+      // pointer-events:auto 防层根 none 拦截。
       const barStripEl = document.createElement('div');
-      barStripEl.style.cssText = `position:absolute;left:0;right:0;bottom:${inputRowH}px;height:${KEYBAR_H}px;pointer-events:auto;`;
+      barStripEl.style.cssText = `position:absolute;left:0;right:0;bottom:0;height:${KEYBAR_H}px;pointer-events:auto;`;
       container.el.appendChild(barStripEl);
       const keybar = mountKeybar(barStripEl, {
         send: (bytes) => { if (card.sessionId) { card.inputToBottom(); bridge.input(card.sessionId, bytes); } },
