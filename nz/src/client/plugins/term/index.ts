@@ -141,34 +141,21 @@ export function applyTermBundle(ctx: Context): void {
         slot: cardId,
         owner: 'term',
       });
-      // 容器=全屏视口（单区底锚定 2026-08-24 用户拍板回退两区，
-      // single-zone-bottom-anchor-review）：内部绝对分区——scrollEl 即
-      // 终端本体（历史+屏幕行同一连续滚动区，overflow:auto 真滚动，
-      // 8.8.3c 状态机；flex 列 + 壳画布 margin-top:auto = 底锚定：空屏
-      // 提示符贴底行、新内容从底往上顶）+ barStrip 按键栏（流内垫底拇指
-      // 区）。无独立固定输入行（两区分割随拍板退役）。容器自身
-      // overflow:hidden。
-      container.el.style.cssText = 'position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;';
-      // ?kbOff=<px> 代字（keybar-kboff-report，用户拍板）：个别浏览器
-      // （Via 有栏+键盘态）vv.height 多报 ~42px——容器高按 vv−kbOff 收，
-      // 整组底部 UI（按键栏）随之上移；无参数=0 现状不改。
-      const kbOffParam = Number(new URLSearchParams(location.search).get('kbOff'));
-      const kbOff = Number.isFinite(kbOffParam) && kbOffParam > 0 ? Math.round(kbOffParam) : 0;
-      // 出生即钉 vv（不等首个 vv 事件，判尺结论：vv 是唯一真尺）——有栏
-      // 无键盘态布局底≠可视底，bottom 布局锚会把终端下部藏进 chrome 后；
-      // top+height 显式钉上后 bottom 锚自然失效（over-constrained 时
-      // bottom 被忽略），后续 vv 事件走同一钉法。
-      // 过渡帧定位修法（keybar-float-transition-report①）：钉 vv 移出
-      // 防抖——键盘弹起是动画，vv 逐帧变，容器等 150ms 防抖才追 =
-      // 那几帧底部 UI 被盖的闪帧真凶。样式改写很便宜，布局一变当拍就钉；
-      // 贵的重测行列+核 resize 仍留防抖（动画期不 thrash）。
-      const pinToVv = () => {
-        const vv0 = window.visualViewport;
-        if (!vv0) return;
-        container.el.style.top = `${vv0.offsetTop}px`;
-        container.el.style.height = `${Math.max(80, vv0.height - kbOff)}px`;
-      };
-      pinToVv();
+      // 容器=全屏卡身（2026-08-25 用户拍板搬 8.0 全屏卡片机制，
+      // fullscreen-card-port-review——TUI 超屏根治：不修「算对高度」，改
+      // 「物理裁剪」）：
+      //   ①尺寸锚不裸信 vv.height（Via 有栏态多报 ~42px 实锤）——
+      //     position:fixed + inset:0：viewport meta 有 interactive-widget=
+      //     resizes-content，布局视口随键盘弹收/地址栏伸缩真实缩放，fixed
+      //     元素天然贴真实可视区（8.0 锚输入栏顶边同款「锚可见 DOM」思想，
+      //     9.0 无输入栏，整个可视区即锚）。
+      //   ②卡身 overflow:hidden 硬裁剪——内容物理画不出卡外（8.0 卡体
+      //     flex:1+overflow:hidden 同款）。
+      //   ③行数对卡身量（measure 读 scrollEl.clientHeight，卡身限高后
+      //     rows×cellH 恒 ≤ 可视区）。
+      // ?kbOff 代字随 vv 钉法退役（不信 vv 数值后无作用点）。
+      // 内部绝对分区不变：scrollEl 终端本体（flex 列底锚）+ barStrip 垫底。
+      container.el.style.cssText = 'position:fixed;left:0;right:0;top:0;bottom:0;overflow:hidden;';
       // 终端卡全屏期间锁死背景页滚动（boot 页比屏幕高，不锁会和终端抢
       // 滚动、被 scrollIntoView 类行为带着跑——实测闪烁根因之一）
       const prevBodyOverflow = document.body.style.overflow;
@@ -352,13 +339,14 @@ export function applyTermBundle(ctx: Context): void {
       // +键盘态 vv 多报 ~42px 属浏览器硬限制，用户拍板接受现状，?kbOff
       // 代字转常驻调节入口）——专症字段（ih/vh/ot/dch/kbb/kbc/brt/brb/
       // fx/vm）与双轨校准色条（probeFx/probeVv）已随症拆除（复盘裁决①）。
-      // kboff 保留：?kbOff 是常驻代字，命中标记便于真机确认走没走对分支。
+      // kboff 字段随 ?kbOff 代字一并退役（2026-08-25 全屏卡身移植：容器
+      // 改 fixed 锚真实可视区，不信 vv 数值后 kbOff 无作用点）。
       // 专症字段（随症收口，button-ime-tui-overflow-review 二节排查用）：
       // rows/cols/cellH/cellW/ch——TUI 超屏真机取证（cellH 度量竞态 vs
       // vv 可视区差两方向定位行数是否偏多）。
       const reportViewport = (type: string) => {
         postDebug?.({
-          type, kboff: kbOff,
+          type,
           rows: card.rows, cols: card.cols,
           cellH: shell.metrics.cellH, cellW: shell.metrics.cellW,
           ch: scrollEl.clientHeight,
@@ -422,13 +410,14 @@ export function applyTermBundle(ctx: Context): void {
       // （__kfmNzTermDebug/__kfmNzTermCursor 两探针已随 IME 收口移除——
       // 复盘裁决①：专症字段随症收口，?debug beacon 骨架保留。）
       // 防抖重测块（贵的部分）：视口事件与 ALT 翻转（keybar 收/放改变
-      // scrollEl 高度）共用——钉 vv 在事件当拍，这里只跑重测+三方同步。
+      // scrollEl 高度）共用——卡身已由 fixed+硬裁剪物理锚定，这里只跑
+      // 重测+三方同步。
       const scheduleResize = () => {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-          // 钉法口径：容器顶=vv.offsetTop、高=vv.height−kbOff，全程不以
-          // innerHeight 为基准——chrome 显示时两者差 1-2px 的真机实锤不再
-          // 适用；chrome 显隐/键盘弹收容器都恰好占满可视区。
+          // 行数对卡身量：scrollEl.clientHeight 源自 fixed 卡身（已被
+          // 真实可视区限高 + overflow:hidden 硬裁剪），rows×cellH 恒
+          // ≤ 可视区——chrome 显隐/键盘弹收都物理画不出卡外。
           const s = measure();
           if (s.cols !== card.cols || s.rows !== card.rows) {
             dbg.resizesApplied++;
@@ -444,9 +433,6 @@ export function applyTermBundle(ctx: Context): void {
       let resizeTimer: ReturnType<typeof setTimeout> | undefined;
       const onViewportResize = () => {
         dbg.viewportEvents++;
-        // 容器同拍钉 vv（transition-report①：防抖后跳=过渡闪帧真凶）；
-        // 按键栏在容器流内，容器底动=整组底部 UI 同步上浮
-        pinToVv();
         // 视口事件随 IME 事件同流落日志（评审五节建议）
         reportViewport('viewport');
         // 不滚！resize 时无条件滚到底是「每字抖几行」的真凶（黑匣子坐实：
@@ -455,11 +441,11 @@ export function applyTermBundle(ctx: Context): void {
         scheduleResize();
       };
       window.visualViewport?.addEventListener('resize', onViewportResize);
-      // 地址栏/动态工具栏伸缩走 scroll 不走 resize（offsetTop 变）——容器钉 vv 同追；
-      // 且可视高变了行列必须同缩（真机图B：顶栏带出→可视区变小→htop 底行
-      // 切半=容器高了 rows 没缩，button-ime-tui-overflow-review 真机证据）
+      // 地址栏/动态工具栏伸缩走 scroll 不走 resize（offsetTop 变）——
+      // 可视高变了行列必须同缩（真机图B：顶栏带出→可视区变小→htop 底行
+      // 切半=容器高了 rows 没缩，button-ime-tui-overflow-review 真机证据）；
+      // 卡身 fixed 锚布局视口随伸缩自动变高，此处只补重测。
       const onViewportScroll = () => {
-        pinToVv();
         reportViewport('viewport-scroll');
         scheduleResize();
       };
@@ -501,6 +487,9 @@ export function applyTermBundle(ctx: Context): void {
         altMode = altNow;
         barStripEl.style.display = altNow ? 'none' : '';
         scrollEl.style.bottom = altNow ? '0px' : `${KEYBAR_H}px`;
+        // TUI 填满不滚、行模式可回翻（fullscreen-card-port-review 三节③：
+        // ALT 内容物理画不出卡外，overflow:hidden 防 TUI 溢出撑出滚动条）
+        scrollEl.style.overflow = altNow ? 'hidden' : 'auto';
         scheduleResize();
       };
 

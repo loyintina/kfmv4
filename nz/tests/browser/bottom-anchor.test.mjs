@@ -98,11 +98,14 @@ await page.waitForTimeout(1500);
         `st=${p.sc?.scrollTop?.toFixed(0)} sh=${p.sc?.scrollHeight} tail=[${lastVisible.join(',')}] cursor.bottom=${p.cursor?.bottom?.toFixed(1)} scroll.bottom=${p.scroll?.bottom?.toFixed(1)}`);
 }
 
-// ④ 键盘占位整体上移不回退：vv 高度缩小（模拟键盘），滚动区底边上移且底锚保持
+// ④ 键盘占位整体上移不回退：真缩窗口（setViewportSize，布局视口真缩 =
+// resizes-content 下键盘占位的同款物理），滚动区底边上移且底锚保持。
+// （2026-08-25 修卷：全屏卡身移植后容器改 fixed 锚布局视口、不再钉 vv
+// 数值，原 vv height mock 手法失效——改真缩窗，fixed 元素随布局视口缩。）
 {
   const before = await probe();
-  await page.evaluate(()=>{ try { Object.defineProperty(window.visualViewport,'height',{get:()=>400,configurable:true}); } catch(e){} window.visualViewport?.dispatchEvent(new Event('resize')); });
-  await page.waitForTimeout(900); // 钉 vv 当拍 + 行列重测防抖 150ms 稳态
+  await page.setViewportSize({ width: 900, height: 400 });
+  await page.waitForTimeout(900); // 行列重测防抖 150ms 稳态
   const after = await probe();
   const ok = before.scroll && after.scroll
     && after.scroll.bottom < before.scroll.bottom - 100                       // 整体上移
