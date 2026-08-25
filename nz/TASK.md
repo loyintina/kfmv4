@@ -898,3 +898,18 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   实证占满整屏（ch=620=vh）、F1-F10 贴底无截断、退出 keybar 复原。
   待真机 C 档：htop/ranger 占满不超屏（顶栏伸缩+键盘弹起两态），随
   底锚定/oh-my-zsh/配色字体四单并验收口。
+- 2026-08-25：**卡身改锚视觉视口**（评审扰动实验证伪上轮 fixed inset:0
+  等价锚，评审信 kfmv4-9.0-card-visual-viewport-anchor-review）：fixed
+  inset:0 锚的是布局视口 innerHeight，地址栏 chrome 覆盖布局视口不缩它
+  （resizes-content 只管键盘）——真机有栏态 innerH=915/vvH=855，ranger
+  仍超屏被裁。修正：卡身 top=vv.offsetTop、height=vv.height 锚真可见区
+  （8.0 卡高=barTop−2、输入栏用 vv 锚视觉视口的同款边界），vv 事件当拍
+  即钉不防抖；overflow:hidden 硬裁剪保留兜底（vv 个别态失真时裁的是
+  超出部分，卡身先锚对就不裁「该看到的」）；无 vv API 时 height:100%
+  贴布局视口兜底。bottom-anchor 补④b扰动钉：布局视口 620 不动 mock
+  vv=400，锚视觉=316/锚布局=536 可分——headless 从此能量这个坑。
+  fix @ e4e9ad95。bottom-anchor 6/6+scrollback 5/5+keybar-click 19/19
+  +npm85 绿；headless htop+地址栏扰动实证 ch=480=vvH、F1-F10 贴 480
+  边界无截断。待真机 C 档：地址栏+键盘两态 ranger/htop 占满真可见区
+  不超屏，随四单并验收口。教训（评审立）：黑盒诊断用扰动实验自观测，
+  不用用户当测试员。
