@@ -141,26 +141,36 @@ export function applyTermBundle(ctx: Context): void {
         slot: cardId,
         owner: 'term',
       });
-      // 容器=全屏卡身（2026-08-25 用户拍板搬 8.0 全屏卡片机制，
-      // fullscreen-card-port-review——TUI 超屏根治：不修「算对高度」，改
-      // 「物理裁剪」）：
-      //   ①尺寸锚不裸信 vv.height（Via 有栏态多报 ~42px 实锤）——
-      //     position:fixed + inset:0：viewport meta 有 interactive-widget=
-      //     resizes-content，布局视口随键盘弹收/地址栏伸缩真实缩放，fixed
-      //     元素天然贴真实可视区（8.0 锚输入栏顶边同款「锚可见 DOM」思想，
-      //     9.0 无输入栏，整个可视区即锚）。
+      // 容器=全屏卡身（2026-08-25 两拍：先搬 8.0 全屏卡片机制
+      // fullscreen-card-port-review，再经评审扰动实验修正锚点
+      // card-visual-viewport-anchor-review——fixed inset:0 锚的是布局视口
+      // innerHeight，地址栏 chrome 覆盖布局视口不缩它（resizes-content 只管
+      // 键盘）：真机有栏态 innerH=915 而 vvH=855，ranger 仍超屏被裁）：
+      //   ①尺寸锚=视觉视口真可见区：top=vv.offsetTop、height=vv.height
+      //     （8.0 卡高=barTop−2、输入栏用 vv.height 锚视觉视口的同款边界；
+      //     vv 事件当拍即钉不防抖——防抖后跳=过渡闪帧真凶）。vv 多报旧顾虑
+      //     保留硬裁剪兜底：超出的部分裁掉，裁的不是「该看到的部分」的前提
+      //     是卡身先锚对。无 vv API 时 height:100% 贴布局视口兜底。
       //   ②卡身 overflow:hidden 硬裁剪——内容物理画不出卡外（8.0 卡体
       //     flex:1+overflow:hidden 同款）。
       //   ③行数对卡身量（measure 读 scrollEl.clientHeight，卡身限高后
-      //     rows×cellH 恒 ≤ 可视区）。
-      // ?kbOff 代字随 vv 钉法退役（不信 vv 数值后无作用点）。
+      //     rows×cellH 恒 ≤ 真可见区）。
       // 内部绝对分区不变：scrollEl 终端本体（flex 列底锚）+ barStrip 垫底。
-      container.el.style.cssText = 'position:fixed;left:0;right:0;top:0;bottom:0;overflow:hidden;';
+      container.el.style.cssText = 'position:fixed;left:0;right:0;top:0;height:100%;overflow:hidden;';
       // 终端卡全屏期间锁死背景页滚动（boot 页比屏幕高，不锁会和终端抢
       // 滚动、被 scrollIntoView 类行为带着跑——实测闪烁根因之一）
       const prevBodyOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       ctx.effect(() => () => { document.body.style.overflow = prevBodyOverflow; });
+      // 钉视觉视口（锚真可见区）：卡身 top/height 随 vv 走。初次即钉，
+      // 让下面 measure() 读到的 scrollEl.clientHeight 就是真可见区高度。
+      const pinToVv = () => {
+        const vv = window.visualViewport;
+        if (!vv) return; // 无 vv API：height:100% 贴布局视口兜底
+        container.el.style.top = `${vv.offsetTop}px`;
+        container.el.style.height = `${vv.height}px`;
+      };
+      pinToVv();
       // 实测定尺寸（写死 80×24 时代结束）：先用与壳同字体的探针量字格，
       // 再按容器可视面积算行列——手机有多宽终端就有多少列，不再裁字。
       // 探针字体栈=壳渲染栈（TERM_FONT_STACK 同源——换字体后度量自动跟
@@ -410,14 +420,14 @@ export function applyTermBundle(ctx: Context): void {
       // （__kfmNzTermDebug/__kfmNzTermCursor 两探针已随 IME 收口移除——
       // 复盘裁决①：专症字段随症收口，?debug beacon 骨架保留。）
       // 防抖重测块（贵的部分）：视口事件与 ALT 翻转（keybar 收/放改变
-      // scrollEl 高度）共用——卡身已由 fixed+硬裁剪物理锚定，这里只跑
+      // scrollEl 高度）共用——钉 vv 在事件当拍（pinToVv），这里只跑
       // 重测+三方同步。
       const scheduleResize = () => {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-          // 行数对卡身量：scrollEl.clientHeight 源自 fixed 卡身（已被
-          // 真实可视区限高 + overflow:hidden 硬裁剪），rows×cellH 恒
-          // ≤ 可视区——chrome 显隐/键盘弹收都物理画不出卡外。
+          // 行数对卡身量：scrollEl.clientHeight 源自 vv 锚定的卡身（已被
+          // 真可见区限高 + overflow:hidden 硬裁剪），rows×cellH 恒
+          // ≤ 真可见区——chrome 显隐/键盘弹收都物理画不出卡外。
           const s = measure();
           if (s.cols !== card.cols || s.rows !== card.rows) {
             dbg.resizesApplied++;
@@ -433,6 +443,9 @@ export function applyTermBundle(ctx: Context): void {
       let resizeTimer: ReturnType<typeof setTimeout> | undefined;
       const onViewportResize = () => {
         dbg.viewportEvents++;
+        // 卡身同拍钉 vv（transition-report①：防抖后跳=过渡闪帧真凶）；
+        // 按键栏在容器流内，卡身底动=整组底部 UI 同步上浮
+        pinToVv();
         // 视口事件随 IME 事件同流落日志（评审五节建议）
         reportViewport('viewport');
         // 不滚！resize 时无条件滚到底是「每字抖几行」的真凶（黑匣子坐实：
@@ -441,11 +454,12 @@ export function applyTermBundle(ctx: Context): void {
         scheduleResize();
       };
       window.visualViewport?.addEventListener('resize', onViewportResize);
-      // 地址栏/动态工具栏伸缩走 scroll 不走 resize（offsetTop 变）——
-      // 可视高变了行列必须同缩（真机图B：顶栏带出→可视区变小→htop 底行
-      // 切半=容器高了 rows 没缩，button-ime-tui-overflow-review 真机证据）；
-      // 卡身 fixed 锚布局视口随伸缩自动变高，此处只补重测。
+      // 地址栏/动态工具栏伸缩走 scroll 不走 resize（offsetTop/height 变）——
+      // 卡身同拍钉 vv 追真可见区（扰动实验实锤：布局视口不随地址栏缩，
+      // 只有 vv 是真边界）；可视高变了行列必须同缩（真机图B：顶栏带出→
+      // 可视区变小→htop 底行切半，button-ime-tui-overflow-review 真机证据）
       const onViewportScroll = () => {
+        pinToVv();
         reportViewport('viewport-scroll');
         scheduleResize();
       };

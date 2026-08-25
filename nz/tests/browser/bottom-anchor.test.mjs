@@ -99,9 +99,8 @@ await page.waitForTimeout(1500);
 }
 
 // ④ 键盘占位整体上移不回退：真缩窗口（setViewportSize，布局视口真缩 =
-// resizes-content 下键盘占位的同款物理），滚动区底边上移且底锚保持。
-// （2026-08-25 修卷：全屏卡身移植后容器改 fixed 锚布局视口、不再钉 vv
-// 数值，原 vv height mock 手法失效——改真缩窗，fixed 元素随布局视口缩。）
+// resizes-content 下键盘占位的同款物理；headless 里 vv 随窗口同缩，
+// 卡身锚 vv 跟随），滚动区底边上移且底锚保持。
 {
   const before = await probe();
   await page.setViewportSize({ width: 900, height: 400 });
@@ -113,6 +112,29 @@ await page.waitForTimeout(1500);
     && Math.abs(after.cursor.bottom - after.scroll.bottom) <= 6;              // 底锚不回退（提示符仍贴新底）
   check('④键盘占位→整体上移且底锚不回退', ok === true,
         `before=${before.scroll?.bottom?.toFixed(1)} after=${after.scroll?.bottom?.toFixed(1)} cursor.bottom=${after.cursor?.bottom?.toFixed(1)}`);
+}
+
+// ④b 布局视口≠视觉视口扰动钉（2026-08-25 评审扰动实验证伪 fixed inset:0
+// 等价锚后补，card-visual-viewport-anchor-review 五节）：窗口还原 620
+// （布局视口不动），mock vv=400（模拟地址栏把视觉视口压扁）——卡身必须
+// 锚 vv 缩到底边 316(400−84)；若锚布局视口会停在 536=必红。正对
+// 「地址栏 chrome 覆盖布局视口、resizes-content 不管」这个真机坑。
+{
+  await page.setViewportSize({ width: 900, height: 620 });
+  await page.waitForTimeout(900);
+  const before = await probe();
+  await page.evaluate(()=>{ try {
+    Object.defineProperty(window.visualViewport,'height',{get:()=>400,configurable:true});
+    Object.defineProperty(window.visualViewport,'offsetTop',{get:()=>0,configurable:true});
+  } catch(e){} window.visualViewport?.dispatchEvent(new Event('resize')); });
+  await page.waitForTimeout(900);
+  const after = await probe();
+  const ok = before.scroll && after.scroll
+    && before.scroll.bottom > 500                                             // 布局视口已还原(620−84=536)
+    && Math.abs(after.scroll.bottom - 316) <= 6                               // 卡身锚视觉视口：400−84=316
+    && after.cursor && Math.abs(after.cursor.bottom - after.scroll.bottom) <= 6;
+  check('④b布局≠视觉视口→卡身锚视觉视口（扰动钉）', ok === true,
+        `before=${before.scroll?.bottom?.toFixed(1)} after=${after.scroll?.bottom?.toFixed(1)}（锚布局=536 锚视觉=316）cursor.bottom=${after.cursor?.bottom?.toFixed(1)}`);
 }
 
 await browser.close();
