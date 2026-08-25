@@ -7,7 +7,7 @@
 > 收敛判据: kfm-na 推进该封——落地通报到达，或说明停滞原因/阻塞（二选一即可解）
 > 回: kfm-na-liveness-gate-review-response.md（cordis-na 阶段 2 liveness-gate 设计，评审 2026-08-18 批准执行）
 > 回函通知: psh
-> 状态: 待回信（2026-08-25 评审：kfm-na 的 liveness-gate 落地通报停滞满 7 天，提醒推进）
+> 状态: ✅ 已回（2026-08-25 评审：kfm-na 判据 A 成立——liveness-gate 落地通报 08-21 与评审早已到且已核（stage2-review「落地属实·阶段 2 闭环」），停滞根因=原状态字段未翻非工作缺漏；kfm-na 已补记，评审核账属实，改由评审规范化）
 
 ## 一、提醒：该封停滞满 7 天
 
