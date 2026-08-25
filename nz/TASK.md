@@ -883,3 +883,18 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   scheduleResize() 行列同缩。fix @ d1884a38（tests:na：真机/浏览器差异
   向 headless 不可补钉，防线=三考卷不回退+?debug 取证字段）。headless
   复核 htop 占满 F1-F10 贴底、vv scroll 后尺寸稳定。待真机复核。
+- 2026-08-25：**8.0 全屏卡机制移植**（用户拍板根治 TUI 超屏，评审信
+  kfmv4-9.0-fullscreen-card-port-review）：放弃「算对高度」改「物理
+  裁剪」——①卡身 position:fixed inset:0 锚布局视口（viewport meta
+  interactive-widget=resizes-content 下=真实可视区，不信 vv 数值；
+  pinToVv 钉法与 ?kbOff 代字就此退役）；②卡身 overflow:hidden 硬裁剪，
+  内容物理画不出卡外；③行数对卡身量（scrollEl.clientHeight 源自
+  fixed 卡身，rows×cellH 恒 ≤ 可视区）。syncAlt 补 ALT 态
+  overflow:hidden（TUI 填满不滚、行模式 auto 可回翻）；vv 监听改纯
+  重测（reportViewport+scheduleResize）。bottom-anchor 考卷④修卷：
+  原 vv height mock 对 fixed 锚定失效→setViewportSize 真缩窗（键盘
+  占位同款物理）。fix @ 1d38ae16。三考卷不回退（bottom-anchor 5/5、
+  scrollback 5/5、keybar-click 19/19）+npm 85 绿；headless htop 截图
+  实证占满整屏（ch=620=vh）、F1-F10 贴底无截断、退出 keybar 复原。
+  待真机 C 档：htop/ranger 占满不超屏（顶栏伸缩+键盘弹起两态），随
+  底锚定/oh-my-zsh/配色字体四单并验收口。
