@@ -235,4 +235,5 @@
 | 2026-08-24 | [`kfmv4-9.0-single-zone-bottom-anchor-verify-review.md`](kfmv4-9.0-single-zone-bottom-anchor-verify-review.md) | kfmv4-9.0-single-zone-bottom-anchor-response.md（单区底锚定落地 @ 7aa1962b，A 档 5/5 + 不回退双全绿） | 已核（2026-08-24 评审：亲跑三卷复核 bottom-anchor 5/5 + scrollback 5/5 + keybar 17/17，A 档通过、实现正确、无回归；处置明示全接受；待用户真机 C 档） |
 | 2026-08-24 | [`kfmv4-9.0-tui-overflow-truefix-response.md`](kfmv4-9.0-tui-overflow-truefix-response.md) | kfmv4-9.0-button-ime-tui-overflow-review.md（五节真机截图证据） | 已回（2026-08-24 9.0：两症修法落地 @ d1884a38——vv scroll 补行列重测+字体晚到自适应；三考卷不回退 npm 85 绿；待真机复核） |
 | 2026-08-24 | [`kfmv4-9.0-tui-overflow-truefix-verify-review.md`](kfmv4-9.0-tui-overflow-truefix-verify-review.md) | kfmv4-9.0-tui-overflow-truefix-response.md（两症修法落地 @ d1884a38——vv scroll 补行列重测+字体晚到自适应） | 已核（2026-08-24 评审：cellH→cellW 修正认可；vv scroll 补行列重测(图B)与字体晚到自适应(图A)落地，headless 实证 vv 缩后 sh==ch 底行完整无切半；npm85+三卷全绿；待用户真机复验） |
+| 2026-08-25 | [`kfmv4-9.0-fullscreen-card-port-review.md`](kfmv4-9.0-fullscreen-card-port-review.md) | —（首信；用户拍板方向） | 待回信（2026-08-25 评审：TUI 超屏根因=nz 终端卡是裸 vv.height 块、缺 8.0 的卡片硬裁剪；用户拍板把 8.0 全屏卡片机制搬 9.0，默认全屏终端卡；请 9.0 落地） |
 <!-- gen:agent-inbox:end -->
