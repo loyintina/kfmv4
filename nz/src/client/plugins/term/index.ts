@@ -48,8 +48,9 @@ interface TermCardInstance {
   followOutput: () => void;
   /** 输入即回底（打字/按键栏/IME 落字）：atBottom=true + 立即滚到底 */
   inputToBottom: () => void;
-  /** 帧后同步 ALT_SCREEN 模式位（TUI 整屏 ↔ 行模式：按键栏收/放 +
-   *  滚动区占满/让位 + 行列重测——2026-08-24 两痛点② TUI 挤占修复） */
+  /** 帧后同步 ALT_SCREEN 模式位（TUI ↔ 行模式：scrollTop 清零 +
+   *  overflow 切换 + 行列重测；按键栏两态都钉视口底不藏——
+   *  2026-08-26 用户拍板 TUI 底部要求，tui-keybar-bottom-review） */
   syncAlt: () => void;
   checkDrift: () => void;
 }
@@ -580,11 +581,13 @@ export function applyTermBundle(ctx: Context): void {
       };
       ctx.effect(() => unmountFollow);
 
-      // ALT_SCREEN 翻转（2026-08-24 两痛点②，button-ime-tui-overflow-review）：
-      // TUI 整屏应用（htop/ranger/vim）应收起按键栏占满终端可视区——常驻
-      // keybar 会把 TUI 挤进 container−84（TUI 底行贴在按键栏上方=挤占
-      // 实锤）。行模式翻转回来按键栏放回原位。scrollEl 高度变 → 行列变 →
-      // 走 scheduleResize 三方同步（TUI 会适配新尺寸，真终端窗口变更同款
+      // ALT_SCREEN 翻转：TUI（htop/ranger/vim）与行模式的布局差异只剩
+      // overflow（TUI 禁滚硬裁剪、行模式可回翻）——按键栏两态都在流内
+      // 垫底可见、scrollEl bottom 恒 KEYBAR_H（2026-08-26 用户拍板 TUI
+      // 底部要求：TUI 窗口=视口−键栏高，键栏按钮恒在视口底端，
+      // tui-keybar-bottom-review；推翻 2026-08-24 两痛点②的藏键栏占满
+      // 方案——那套让 TUI 里发不了 Ctrl/方向键）。行列重测走
+      // scheduleResize 三方同步（TUI 会适配新尺寸，真终端窗口变更同款
       // 语义）。帧后发现翻转才切，不翻不动。
       let altMode = false;
       card.syncAlt = () => {
@@ -594,10 +597,9 @@ export function applyTermBundle(ctx: Context): void {
         // ALT 进入时清行模式残留的程序化滚动：行模式 scrollTop 可能>0，
         // ALT 下禁滚后这值会残留成"超屏几帧"的起点（runaway 实锤其一）。
         if (altNow) scrollEl.scrollTop = 0;
-        barStripEl.style.display = altNow ? 'none' : '';
-        scrollEl.style.bottom = altNow ? '0px' : `${KEYBAR_H}px`;
-        // TUI 填满不滚、行模式可回翻（fullscreen-card-port-review 三节③：
-        // ALT 内容物理画不出卡外，overflow:hidden 防 TUI 溢出撑出滚动条）
+        // TUI 填满（视口−键栏高）不滚、行模式可回翻（fullscreen-card-port
+        // 三节③：ALT 内容物理画不出卡外，overflow:hidden 防 TUI 溢出撑
+        // 出滚动条；三路禁滚治程序化赋值，与此正交）
         scrollEl.style.overflow = altNow ? 'hidden' : 'auto';
         scheduleResize();
         reportViewport(altNow ? 'alt-enter' : 'alt-exit'); // TUI 翻转=超屏诊断关键事件

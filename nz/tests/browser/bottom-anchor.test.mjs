@@ -183,10 +183,11 @@ await page.waitForTimeout(1500);
 // 真机遥测 rows 32→38→58→61 持续增长、scrollTop 0→72→89→137 失控）。
 // 双修复回归护栏：①字格单源（measure 吃壳渲染尺，不再两套度量各量各的）
 // ②ALT 三路禁滚（壳游标兜底/followOutput/inputToBottom + syncAlt 清零）。
-// 流程：还原 vv mock（delete configurable getter）→ 进 htop（ALT，按键栏
-// 收、scrollEl 占满卡身 620 → rows=floor(620/16.25)=38）→ 真缩窗到 400
-// （ALT 下卡身锚 vv=400、scrollEl=400 → rows=floor(400/16.25)=24）→ 断言
-// rows=24 且 scrollTop=0 且 scrollHeight≤clientHeight+1；再空闲 1.2s 复探，
+// 流程：还原 vv mock（delete configurable getter）→ 进 htop（ALT——
+// 2026-08-26 用户拍板 TUI 底部要求后按键栏两态都不藏，scrollEl 恒
+// bottom:KEYBAR_H，scrollClientH=620−84=536 → rows=floor(536/16.25)=32）
+// → 真缩窗到 400（卡身锚 vv=400 → scrollClientH=316 → rows=19）→ 断言
+// rows=19 且 scrollTop=0 且 scrollHeight≤clientHeight+1；再空闲 1.2s 复探，
 // rows/scrollTop 不得增长（runaway 签名=随时间恶化）。退出 q + 还原窗。
 // 诚实声明：headless 双源本一致，此钉绿色两可，是回归护栏非 red-first；
 // 真凶 divergence 实锤靠新遥测字段（mCellH/mCellW/rawH/src）真机取证。
@@ -198,19 +199,37 @@ await page.waitForTimeout(1500);
   await type('htop\r');
   await page.waitForTimeout(2500); // ALT 进入 + TUI 首帧稳定
   const altBase = await probe();
+  // ④f TUI 底部钉（2026-08-26 用户拍板 tui-keybar-bottom-review）：TUI 态
+  // 按键栏不藏——scrollClientH==vh−KEYBAR_H（不能=vh）、keybar display
+  // !=none 且矩形底=视口底。vv=620（headless vv==innerHeight）：
+  // scrollClientH=536、keybar 底=620。
+  {
+    const kb = await page.evaluate(() => {
+      const e = document.querySelector('.kfm-term-keybar');
+      if (!e) return null;
+      const r = e.getBoundingClientRect();
+      return { display: getComputedStyle(e).display, bottom: r.bottom, ih: window.innerHeight };
+    });
+    const ok = altBase.sc && kb
+      && Math.abs(altBase.sc.clientHeight - (kb.ih - 84)) <= 1      // scrollClientH==vh−KEYBAR_H(≠vh)
+      && kb.display !== 'none'                                       // 键栏可见
+      && Math.abs(kb.bottom - kb.ih) <= 2;                           // 键栏矩形底=视口底
+    check('④f TUI态→键栏可见钉视口底+scrollClientH=vh−KEYBAR_H', ok === true,
+          `clientHeight=${altBase.sc?.clientHeight}（期望${kb ? kb.ih - 84 : '?'}） display=${kb?.display} kb.bottom=${kb?.bottom?.toFixed(1)} ih=${kb?.ih}`);
+  }
   await page.setViewportSize({ width: 900, height: 400 });
   await page.waitForTimeout(1500); // 防抖150+空闲巡查500+RO 落地
   const shrunk = await probe();
   await page.waitForTimeout(1200); // 空闲复探：runaway 签名=随时间增长
   const idle = await probe();
   const ok = altBase.sc && shrunk.sc && idle.sc
-    && altBase.sc.rows === 38                                        // ALT 占满 620
-    && shrunk.sc.rows === 24                                         // 缩窗 rows 跟随=floor(400/16.25)
+    && altBase.sc.rows === 32                                        // ALT 占满键栏上方 536
+    && shrunk.sc.rows === 19                                         // 缩窗 rows 跟随=floor(316/16.25)
     && shrunk.sc.scrollTop === 0                                     // ALT 禁滚
     && shrunk.sc.scrollHeight <= shrunk.sc.clientHeight + 1          // 画布不溢出
-    && idle.sc.rows === 24 && idle.sc.scrollTop === 0;               // 空闲不跑飞
+    && idle.sc.rows === 19 && idle.sc.scrollTop === 0;               // 空闲不跑飞
   check('④e ALT缩窗→rows跟随+禁滚+空闲不跑飞（runaway回归钉）', ok === true,
-        `rows ${altBase.sc?.rows}→${shrunk.sc?.rows}→${idle.sc?.rows}（期望38→24→24） st=${shrunk.sc?.scrollTop}/${idle.sc?.scrollTop} sh=${shrunk.sc?.scrollHeight} ch=${shrunk.sc?.clientHeight}`);
+        `rows ${altBase.sc?.rows}→${shrunk.sc?.rows}→${idle.sc?.rows}（期望32→19→19） st=${shrunk.sc?.scrollTop}/${idle.sc?.scrollTop} sh=${shrunk.sc?.scrollHeight} ch=${shrunk.sc?.clientHeight}`);
   await type('q');
   await page.waitForTimeout(800);
   await page.setViewportSize({ width: 900, height: 620 });
