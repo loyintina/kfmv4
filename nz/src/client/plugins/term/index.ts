@@ -612,6 +612,54 @@ export function applyTermBundle(ctx: Context): void {
       card.placeKb();
       // 开页即报（Stage①：真实设备开 ?debug 页即自报基线几何，agent 直读）
       reportViewport('open');
+      // CJK 基线探针（2026-08-26 随症字段，ranger-cjk-baseline-review；
+      // 症收口后拆除）：真机 ranger 中文行内容上移几 px，headless 复现
+      // 不出（shift=0）——疑犯=宽字 span 的 inline-block+overflow:hidden
+      // 触发「baseline=盒底边」CSS 规则，真机 CJK fallback 字体的行盒
+      // 更高时整盒上移。本探针复刻壳渲染结构量真值：spanTop−rowTop
+      // （shift，0=正常/负=上移 px 数）、spanH（>16.25=CJK 行盒撑高实
+      // 锤）、canvas 墨迹盒 asc/desc。等字体就绪再量（NF 晚到竞态）。
+      if (postDebug) {
+        const cjkProbe = () => {
+          try {
+            const cv = document.createElement('canvas').getContext('2d');
+            if (!cv) return;
+            cv.font = `13px ${TERM_FONT_STACK}`;
+            const m = (t: string) => {
+              const x = cv.measureText(t);
+              return { a: +x.actualBoundingBoxAscent.toFixed(2), d: +x.actualBoundingBoxDescent.toFixed(2), w: +x.width.toFixed(2) };
+            };
+            const { cellW, cellH } = shell.metrics;
+            const host = document.createElement('div');
+            host.style.cssText = `position:absolute;left:-9999px;top:0;font:13px/1.25 ${TERM_FONT_STACK};`;
+            container.el.appendChild(host);
+            const row = document.createElement('div');
+            row.style.cssText = 'white-space:pre;height:1.25em;';
+            row.textContent = 'A';
+            const sp = document.createElement('span');
+            // 与 shell.appendTextCells 宽字 span 同款样式（复刻被测对象）
+            sp.style.cssText = `display:inline-block;width:${2 * cellW}px;overflow:hidden;white-space:pre;`;
+            sp.textContent = '中';
+            row.appendChild(sp);
+            host.appendChild(row);
+            const rr = row.getBoundingClientRect(), sr = sp.getBoundingClientRect();
+            postDebug({
+              type: 'cjk-probe',
+              cellW: +cellW.toFixed(2), cellH: +cellH.toFixed(2),
+              inkA: m('A'), inkZhong: m('中'),
+              spanW: 2 * cellW, zhongNaturalW: m('中').w,
+              rowH: +rr.height.toFixed(2),
+              spanH: +sr.height.toFixed(2),
+              shift: +(sr.top - rr.top).toFixed(2), // 0=对齐；负=span 上移 px
+              nfLoaded: document.fonts.check(`13px 'JetBrainsMonoNL NFM'`, 'A'),
+              cjkLoaded: document.fonts.check(`13px 'Noto Sans CJK SC'`, '中'),
+            });
+            host.remove();
+          } catch { /* 探针不挡主流程 */ }
+        };
+        Promise.race([document.fonts?.ready ?? Promise.resolve(), new Promise(r => setTimeout(r, 3000))])
+          .then(() => setTimeout(cjkProbe, 100));
+      }
       return inst.id;
     },
   };
