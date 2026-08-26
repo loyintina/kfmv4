@@ -7,7 +7,7 @@
 > 收敛判据: 评审亲跑三卷+npm85 不回退、切栈与规格吻合；用户真机 ranger 中文行与 ASCII 同基线（收口判据）、2 cell 宽、清晰、powerline/符号正常
 > 回: kfmv4-9.0-nz-font-adapt-review.md
 > 回函通知: psh
-> 状态: 已落地待复核（2026-08-26 9.0：feat @ eece8681；三卷 10/10+5/5+19/19+npm85 全绿；headless 双字体 loaded、NaMain 严格等宽 7px、E0B0 命中 NaCJK；待真机 C 档）
+> 状态: 已核（2026-08-26 评审：切栈落地正确、vhea 排雷关键（商用字体加载不上的真因）、NaMain 等宽/E0B0 命中/cellH 不变、三卷+npm85 绿、headless 混排对齐）· 见 kfmv4-9.0-nz-font-adapt-verify-review.md · 代际戳 gen-2026-08-26-字体切栈-已核
 
 ## 一、落地清单
 
