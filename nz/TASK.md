@@ -12,22 +12,56 @@
 
 ## 0. 当前状态快照
 
+> **⏸ 2026-08-26 用户拍板：nz 实验台（设备代理）为最高优先——8.x/9.x 全部版本号「后推」，实验台先做出来，其余再说。** 见 §0.5。
+
 > 每次进度更新只改本节。
 
-- **当前阶段**：内核地基期（8.8 主题推进中——终端连接家族）
-- **刚完成**：8.8.1 终端连接家族（2026-08-21）——`src/server/
-  term-connection.ts`：№1 连接层纯会话管理，**传输无关**（切断 v8
-  PtyManager 把 WS 焊进 spawn 的耦合）：输出走单会话订阅 + 总线
-  `term/output` 事件双通道，WS 桥/眼睛/审计将来各听各的。重连 =
-  按 sessionId attach 复挂 + replayTail 回环尾迹（64KB 封顶）补断档。
-  node-pty-prebuilt-multiarch 后端（沿用 v8 已验证依赖；本机 spawn
-  实测可用）。70 钉全绿（+连接 5 钉：open+input 双通道 / resize 真
-  ioctl（stty size 报 30 100）/ close+exit 透传（exit 7）/ 重连
-  attach+尾迹 / 卸载全杀）。8023 常驻服务已带新件重启，slog 在案。
-- **下一步**：8.8.2 终端渲染卡（解析核=**rio-vt→WASM**——2026-08-21
-  评估翻盘裁决：alacritty_terminal 上不了 wasm32；渲染壳 TS 自研；
-  开工先补两件：僵尸会话 list 口径 + open 挂权限判定）。
+- **当前阶段**：**nz 实验台（设备代理，device-agent）· 最高优先**——可控真机 APK（真机渲染截图 + 输入注入 + 遥测回传 + 插件/热更/自重启），最终当 nz 启动器。见 §0.5 计划。
+- **后推**：原 8.7 内核/8.8 终端/8.9 自观测/8.10-8.13/9.x 里程碑**整体后推**，等实验台落地后再续（版本号暂不改，避免全图级联重编号；要整体重编号另议）。
+- **刚完成**：8.8.x 终端系列（终端连接家族 / 渲染卡 / 全屏 / 按键栏 / scrollback / 两区改单区底锚定 / TUI 键栏在底 / CJK 墨迹对齐——详见下表，均已核）。
+- **下一步**：实验台 **P0**——nz 终端补「程序化注入输入 + 读当前屏」钩子（`__kfmNzTermInject` / `__kfmNzTermScreen`），这是「能动手」的前提。
 - **阻塞**：无
+
+---
+
+## 0.5 nz 实验台（设备代理 device-agent）· 最高优先（2026-08-26 用户拍板）
+
+> **一句话**：做一个**可控真机 APK**，nz 线自己的工具——真机渲染截图 + 输入注入 + 遥测回传 + 插件/热更/自重启，最终当 **nz 启动器**（替代手机浏览器 + 桌面网页快捷方式）。完全镜像 NA「自己握住渲染/输入/网格」哲学，但渲染走 **wry WebView（Android 系统 WebView=Chromium）= 真机光栅化**（中文居上这类问题直接现形）。
+
+### 架构（镜像 NA gate/report/plugin）
+
+| 层 | nz 实验台 | 对应 NA |
+|---|---|---|
+| 渲染 | **wry WebView** 加载 nz 终端 | Rust 软渲染+内存网格 |
+| 截图 | **WebView 捕获**（App 拥有自己的 View→不需权限；真机 Chromium 光栅化） | 离屏光栅化 in-memory 网格 |
+| 输入 | **JS 注入 nz 输入钩子** `__kfmNzTermInject` | keys-in→PTY 裸字节 |
+| 读状态 | **`__kfmNzTermScreen`/`__kfmNzTermScroll`** | text-req→网格导出 |
+| 闸门 | **文件信号 gate**：DUMP_DIR + 值守线程 300ms（shot/keys-in/text/ping/restart/trace/stats）+ **nz 自己的端口**（ssh 可达） | NA gate.rs |
+| 遥测 | **report 隧道**（SSH 反隧到服务器，nz 端口，`report()/report_sync()`） | NA report.rs |
+| 插件/热更/自重启 | 镜像 NA：cordis 插件面 + gate `restart-req`（记遗言→exit→守护 am start 拉回） | NA |
+
+**为何绕开权限墙**：App 拥有自己的 WebView（截图不需权限）+ JS 桥注入输入 + 读终端钩子——三件事全在自己手里，**无需 adb/root/调试端口**。
+
+### 分阶段执行（每步有验收，遇问题中途变向）
+
+- **P0 · nz 终端前置钩子**（能动手的前提，必须最先）：给 nz 终端补 `window.__kfmNzTermInject(str)`（程序化注入输入）+ `window.__kfmNzTermScreen()`（读当前可视屏文本/网格）。验收：headless 这两个钩子可用。
+- **P1 · wry WebView 壳**：Rust wry 加载 nz 终端 + `setWebContentsDebuggingEnabled(true)` + 反隧道（nz 端口）。验收：APK 起 nz；服务器 CDP attach 成功；**首张真机渲染终端截图**。
+- **P2 · 文件信号闸门 gate**（镜像 NA gate.rs）：DUMP_DIR + 值守线程（shot/keys-in/text/ping）+ nz 端口 ssh 可达 + `scripts/nz-shot.sh / nz-text.sh / nz-type.sh`。验收：服务器一键拿 shot.rgb（真机渲染）+ screen.txt + keys-in 注入生效。
+- **P3 · report 遥测 + 插件/热更/自重启**：report 隧道回传落 `/tmp`；cordis 插件面（镜 NA）；restart-req→守护拉回。验收：遥测落服务器、插件 push 生效、热更重启闭环。
+- **P4 · 启动器化**：App 前台常驻、开机进工作台；弃用手机浏览器/网页快捷方式。验收：日常工作只用这个 APK 进 nz。
+
+### 关键决策点（执行中可能变向）
+
+1. **端口分配**：nz 自己的端口对（闸门+report），避开 NA 的 8021/8024/8027。
+2. **插件/热更机制**：照搬 NA cordis，还是面向 nz 简化（nz 是 web，插件=JS 包推送？）。
+3. **截图途径**：WebView 捕获（推荐，真机 Chromium）——nz 是 web，内存栅格不可行。
+4. **nz 终端钩子接口形态**：注入/读屏的粒度（整字 vs 键码；文本 vs 网格）。**P0 定案**。
+
+### 待深入研究（P1/P3 细看）
+
+- NA 精确的插件加载/热更/守护拉回代码（P3 读透再照抄）。
+- wry WebView 在 Android 的截图 API + JS 注入可靠性（P1 先验证）。
+- 实验台 WebView 视口/DPR（设成你手机规格——顺带解决 headless 校准）。
 
 ---
 
@@ -120,6 +154,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 ## 3. 总时间线（一页总表）
 
 > 状态：⬜ 待办 · 🔄 进行中 · ✅ 完成 · ⏸ 待用户裁决
+> **⏸ 2026-08-26 用户拍板「后推」**：本总表及 §4 的 8.7/8.8/8.9/8.10-8.13/9.x 里程碑**整体后推**（版本号暂不改、避免全图级联重编号），**先做 §0.5 实验台（device-agent）**，实验台落地后再续本表。已完成项（✅）不回退。
 
 | 小步 | 做什么 | dsh 参考 | Rust 共享 | 测试/考题 | 状态 |
 |------|--------|----------|-----------|-----------|------|
