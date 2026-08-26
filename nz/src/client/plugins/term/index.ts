@@ -167,11 +167,17 @@ export function applyTermBundle(ctx: Context): void {
       ctx.effect(() => () => { document.body.style.overflow = prevBodyOverflow; });
       // 钉视觉视口（锚真可见区）：卡身 top/height 随 vv 走。初次即钉，
       // 让下面 measure() 读到的 scrollEl.clientHeight 就是真可见区高度。
+      // 同值跳过：pinToVv 被帧级/空闲巡查高频调用，值没变就别写 style
+      // （避免无意义的 style recalc 失效）。
+      let pinnedTop = -1, pinnedH = -1;
       const pinToVv = () => {
         const vv = window.visualViewport;
         if (!vv) return; // 无 vv API：height:100% 贴布局视口兜底
-        container.el.style.top = `${vv.offsetTop}px`;
-        container.el.style.height = `${vv.height}px`;
+        const top = vv.offsetTop, h = vv.height;
+        if (top === pinnedTop && h === pinnedH) return;
+        pinnedTop = top; pinnedH = h;
+        container.el.style.top = `${top}px`;
+        container.el.style.height = `${h}px`;
       };
       pinToVv();
       // 实测定尺寸（写死 80×24 时代结束）：先用与壳同字体的探针量字格，
@@ -490,6 +496,12 @@ export function applyTermBundle(ctx: Context): void {
         const wantCols = Math.max(20, Math.floor(container.el.clientWidth / cellW));
         if (wantRows !== card.rows || wantCols !== card.cols) scheduleResize();
       };
+      // 空闲巡查（2026-08-26 checkdrift-idle-gap-review：checkDrift 原仅
+      // onOutput/onExit 触发=PTY 输出门控——ranger 空闲无输出 + vv 事件不
+      // 送达 = 永不自愈，正是真机「落定近 2 秒无事件」的残留洞）。500ms
+      // 低频兜底：幂等（一致即 no-op），恒成本≈直读一次 vv 属性+两次几何
+      // 读；checkDrift 只发现不一致、量算仍归 scheduleResize 防抖块。
+      const driftTimer = setInterval(() => card.checkDrift(), 500);
       const onViewportResize = () => {
         dbg.viewportEvents++;
         // 卡身同拍钉 vv（transition-report①：防抖后跳=过渡闪帧真凶）；
@@ -537,6 +549,7 @@ export function applyTermBundle(ctx: Context): void {
         clearTimeout(resizeTimer);
         clearTimeout(fontsRetry1);
         clearTimeout(fontsRetry2);
+        clearInterval(driftTimer);
         scrollRO.disconnect();
         window.visualViewport?.removeEventListener('resize', onViewportResize);
         window.visualViewport?.removeEventListener('scroll', onViewportScroll);

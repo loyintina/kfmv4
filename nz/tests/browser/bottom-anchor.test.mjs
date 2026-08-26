@@ -159,6 +159,26 @@ await page.waitForTimeout(1500);
         `rows ${before.sc?.rows}→${after.sc?.rows}（期望19→13） scroll.bottom=${after.scroll?.bottom?.toFixed(1)}（期望216）`);
 }
 
+// ④d 空闲态自愈钉（2026-08-26 checkdrift-idle-gap-review：④c 靠输入产生
+// 输出帧驱动 checkDrift，真机 ranger 空闲无输出态覆盖不到）：mock vv 到
+// 新值、不派发事件、**不注入任何输入**——500ms 空闲巡查必须把卡身钉到
+// live vv 且 rows 在 ~1-2s 内自愈落地；无空闲驱动的旧实现必红。
+// 承接④c 末态：vv mock=300、rows=13。
+{
+  const before = await probe();
+  await page.evaluate(()=>{ try {
+    Object.defineProperty(window.visualViewport,'height',{get:()=>340,configurable:true});
+  } catch(e){} }); // 不 dispatch、不输入——纯空闲
+  await page.waitForTimeout(1600); // 空闲巡查500ms+防抖150ms 落地
+  const after = await probe();
+  const ok = before.sc && after.sc
+    && before.sc.rows === 13                                                  // ④c 末态
+    && Math.abs(after.scroll.bottom - 256) <= 6                               // 卡身钉到 340：340−84=256
+    && after.sc.rows === 15;                                                  // floor(256/16.25)=15
+  check('④d vv事件不送达+无输入空闲→巡查自愈（rows跟随）', ok === true,
+        `rows ${before.sc?.rows}→${after.sc?.rows}（期望13→15） scroll.bottom=${after.scroll?.bottom?.toFixed(1)}（期望256）`);
+}
+
 await browser.close();
 const allOk = results.every(r=>r.ok);
 console.log(`\n=== bottom-anchor A 档：${results.filter(r=>r.ok).length}/${results.length} 通过（单区底锚定，8.8.3d 接管卷）===`);
