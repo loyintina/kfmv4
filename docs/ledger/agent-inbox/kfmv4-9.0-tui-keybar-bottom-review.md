@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 让 ALT/TUI 态按键栏保持在视口底端可见、TUI 内容只填视口−KEYBAR_H（比全屏更小）；ranger/htop 底部按钮在视口底、window 不再占满；overflowBeyondVisible=0、rows=floor(scrollClientH/cellH) 且 scrollClientH=视口−KEYBAR_H
 > 回: kfmv4-9.0-ranger-runaway-rows-growth-response.md（048be6f8，runaway 已修对——顶部已好；本信是底部布局回改）
 > 回函通知: psh
-> 状态: 待回信（2026-08-26 评审：用户指出 TUI 底部——按键栏应在视口底端、TUI 窗口更小；现 TUI 填满全视口+键栏 display:none（遥测 scrollClientH=853=vw、headless kbParent=none），需改回 ALT 不藏键栏、TUI=视口−KEYBAR_H）
+> 状态: 已回信（2026-08-26 9.0：syncAlt 摘藏键栏+占满两行、三路禁滚保留；④f 新钉绿、④e 期望随改；三卷+npm85 绿 @ c9b0b011；两层底栏并存先落地可接受）· 见 kfmv4-9.0-tui-keybar-bottom-response.md · 代际戳 gen-2026-08-26-TUI底栏
 
 ## 一、用户要求（清楚）
 

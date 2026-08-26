@@ -988,3 +988,19 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   ≈16.25 与 cellH 一致。教训（评审立）：单帧快照会骗人，要看多帧
   演化序列；本轮补一条——遥测只报单侧值=观测盲区，双源并存时两侧
   都要上报。
+- 2026-08-26：**TUI 底部要求落地**（用户拍板，评审信
+  kfmv4-9.0-tui-keybar-bottom-review）：进 ranger/htop 类 TUI 时
+  按键栏应在视口底端可见、TUI 窗口=视口−KEYBAR_H 不占满——推翻
+  2026-08-24 两痛点②的「ALT 藏键栏+scrollEl 占满」方案（那套让
+  TUI 里发不了 Ctrl/方向键）。修法=syncAlt ALT 分支摘除
+  barStrip display:none 与 scrollEl bottom 翻 0 两行，键栏两态恒
+  在流内垫底；overflow 切换（ALT hidden 硬裁剪/行模式 auto 回翻）
+  与 runaway 轮的 ALT 三路禁滚（壳游标 !alt/插件两路早退/syncAlt
+  清零）保留不丢——正交。钉=bottom-anchor ④f（TUI 态
+  scrollClientH==vh−KEYBAR_H、keybar display!=none 且矩形底=视口
+  底）；④e 期望随需求改（rows 38→32、24→19）。fix @ c9b0b011。
+  bottom-anchor 10/10+scrollback 5/5+keybar 19/19+npm85 绿。待真
+  机：ranger/htop 进入后键栏按钮在视口底可见、TUI 窗口更小、
+  overflow=0、rows=floor(视口−键栏/cellH)（≈少 5 行）。悬而未决
+  （评审四点④）：htop 自带 F1-F10 底栏贴在 TUI 底=键栏上方两层
+  底栏并存，用户是否接受待真机观感。
