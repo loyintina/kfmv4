@@ -30,7 +30,7 @@
 |--------|------|
 | agent 脚本负载 | 巡逻 / 语义审计 / 守视（browser-relay 视觉自测）→ [`docs/guides/agent-runner.md`](docs/guides/agent-runner.md) |
 | 部署与发布 | deploy-fast 构建握手 + kfm-restart → [`docs/guides/release.md`](docs/guides/release.md) |
-| 研究实验基建 | `experiments/` 下 paradigm / coldstart / docprobe 三条研究线 + session-runner 跑批；收集信息素材库 → [`library/README.md`](library/README.md)（剪藏/文章/笔记） |
+| 研究实验基建 | `experiments/` 下 paradigm / coldstart / docprobe 三条研究线 + session-runner 跑批；收集信息素材库 → [`library/README.md`](library/README.md)（剪藏/文章/笔记）；知乎 MHT 剪藏流程 → [`docs/skills/zhihu-mht-clipping/SKILL.md`](docs/skills/zhihu-mht-clipping/SKILL.md) |
 
 ## 快速开始
 
