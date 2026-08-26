@@ -38,7 +38,7 @@ const probe = () => page.evaluate(() => {
   const term = document.querySelector('.nz-term');
   const cr = cur?.getBoundingClientRect(), sr = cont?.getBoundingClientRect(), tr = term?.getBoundingClientRect();
   return {
-    sc: sc ? { scrollTop: sc.scrollTop, scrollHeight: sc.scrollHeight, clientHeight: sc.clientHeight, isAtBottom: sc.isAtBottom } : null,
+    sc: sc ? { scrollTop: sc.scrollTop, scrollHeight: sc.scrollHeight, clientHeight: sc.clientHeight, isAtBottom: sc.isAtBottom, rows: sc.rows, cols: sc.cols } : null,
     cursor: cr ? { top: cr.top, bottom: cr.bottom, display: getComputedStyle(cur).display } : null,
     scroll: sr ? { top: sr.top, bottom: sr.bottom } : null,
     term: tr ? { top: tr.top, bottom: tr.bottom } : null,
@@ -135,6 +135,27 @@ await page.waitForTimeout(1500);
     && after.cursor && Math.abs(after.cursor.bottom - after.scroll.bottom) <= 6;
   check('④b布局≠视觉视口→卡身锚视觉视口（扰动钉）', ok === true,
         `before=${before.scroll?.bottom?.toFixed(1)} after=${after.scroll?.bottom?.toFixed(1)}（锚布局=536 锚视觉=316）cursor.bottom=${after.cursor?.bottom?.toFixed(1)}`);
+}
+
+// ④c 几何变但 vv 事件不送达→ResizeObserver 自愈钉（2026-08-26 真机 ranger
+// rows 未缩修复的回归钉，ranger-rows-not-shrink-review）：直接改卡身高度、
+// 不派发任何 vv 事件（模拟 Via 地址栏伸缩不送 vv 事件的路径）——rows 必须
+// 经 ResizeObserver→scheduleResize 落地到新几何；无 RO 的旧实现 rows 卡
+// 旧值=必红。承接④b 末态：卡身 400、rows=19。
+{
+  const before = await probe();
+  await page.evaluate(() => {
+    const cont = window.__kfmNzTermScroll?.().getContainer();
+    cont.parentElement.style.height = '500px'; // 直接改卡身高度，无 vv 事件
+  });
+  await page.waitForTimeout(900); // RO→防抖150ms→落地
+  const after = await probe();
+  const ok = before.sc && after.sc
+    && before.sc.rows === 19                                                  // ④b 末态（卡身400）
+    && Math.abs(after.sc.clientHeight - 416) <= 2                             // 500−84=416
+    && after.sc.rows === 25;                                                  // floor(416/16.25)=25
+  check('④c几何变无vv事件→ResizeObserver自愈（rows跟随落地）', ok === true,
+        `rows ${before.sc?.rows}→${after.sc?.rows}（期望19→25） ch=${after.sc?.clientHeight?.toFixed(0)}（期望416）`);
 }
 
 await browser.close();

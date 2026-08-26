@@ -255,6 +255,8 @@ export function applyTermBundle(ctx: Context): void {
         scrollHeight: scrollEl.scrollHeight,
         clientHeight: scrollEl.clientHeight,
         isAtBottom: card.atBottom,
+        rows: card.rows, // RO 自愈钉要断言行列落地（ranger-rows-not-shrink）
+        cols: card.cols,
         getContainer: () => scrollEl,
       });
 
@@ -460,6 +462,14 @@ export function applyTermBundle(ctx: Context): void {
         }, 150);
       };
       let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+      // 自愈观测（2026-08-26 真机 ranger rows 未缩定位，
+      // ranger-rows-not-shrink-review）：vv 事件与字体事件在个别浏览器
+      // （Via 地址栏伸缩/字体缓存秒载）可能整组不送达——卡身钉对了而
+      // rows 卡在旧值的真机实锤。ResizeObserver 直接盯 scrollEl 几何，
+      // 布局落定后必触发，事件送不达也不卡 rows；与 vv/ALT/字体三路同走
+      // scheduleResize 防抖块（重复触发幂等：行列没变就是 no-op）。
+      const scrollRO = new ResizeObserver(() => scheduleResize());
+      scrollRO.observe(scrollEl);
       const onViewportResize = () => {
         dbg.viewportEvents++;
         // 卡身同拍钉 vv（transition-report①：防抖后跳=过渡闪帧真凶）；
@@ -498,8 +508,16 @@ export function applyTermBundle(ctx: Context): void {
       };
       document.fonts?.addEventListener('loadingdone', onFontsSettled);
       document.fonts?.addEventListener('loadingerror', onFontsSettled);
+      // 字体事件整组不送达的兜底（Via 缓存秒载可能不发 loadingdone，且
+      // fonts.load 可能提前 resolve 量到 fallback 字格）——开后 1s/3s
+      // 幂等复量：字格没变就是 no-op，变了才作废缓存+重测行列。
+      const fontsRetry1 = setTimeout(onFontsSettled, 1000);
+      const fontsRetry2 = setTimeout(onFontsSettled, 3000);
       const unmountFollow = () => {
         clearTimeout(resizeTimer);
+        clearTimeout(fontsRetry1);
+        clearTimeout(fontsRetry2);
+        scrollRO.disconnect();
         window.visualViewport?.removeEventListener('resize', onViewportResize);
         window.visualViewport?.removeEventListener('scroll', onViewportScroll);
         document.fonts?.removeEventListener('loadingdone', onFontsSettled);
