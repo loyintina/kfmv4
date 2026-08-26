@@ -954,3 +954,15 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   rows 19→13），无帧级自愈必红。fix @ 353a4a0b。bottom-anchor 7/7+
   scrollback 5/5+keybar 19/19+npm85 绿。待真机：地址栏态 ranger
   resized 记录 rows=floor(scrollClientH/cellH)≈32、overflow=0。
+- 2026-08-26：**checkDrift 空闲覆盖洞补齐**（评审清测证伪输出门控，
+  评审信 kfmv4-9.0-checkdrift-idle-gap-review）：checkDrift 原仅
+  onOutput/onExit 触发——mock vv=300 无事件无输出 rows=38 不自愈，
+  输入 j 才自愈；真机「落定近 2 秒无事件」正是 ranger 空闲无输出态。
+  修法=500ms 空闲巡查（方案 B：无 PTY 输出也自愈；幂等一致即 no-op，
+  量算仍归 scheduleResize 防抖块）+pinToVv 同值跳过（高频调用不写
+  同值 style 防空转）。④d 空闲自愈钉：mock vv 无事件无输入，卡身
+  300→340、rows 13→15 落地，无巡查必红。fix @ 805602a4。
+  bottom-anchor 8/8+scrollback 5/5+keybar 19/19+npm85 绿。待真机：
+  地址栏态 ranger resized rows=floor(scrollClientH/cellH)、overflow=0。
+  教训（评审清测立）：「结构封死」要用干净实验证伪——④c 靠输入驱动
+  输出帧，恰恰没覆盖真机落的空闲洞。

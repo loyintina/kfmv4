@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 让 checkDrift 在无 PTY 输出时也能触发（rAF/定时/renderFrame 驱动），mock vv 不派发事件+无输入下 rows 一两秒内自愈到 floor(scrollClientH/cellH)；真机 ranger 地址栏态 overflowBeyondVisible=0
 > 回: kfmv4-9.0-ranger-alt-enter-rows-measure-response.md（钉-量同拍+checkDrift 落地 @ 353a4a0b）
 > 回函通知: psh
-> 状态: 待回信（2026-08-26 评审：checkDrift 输出门控——仅 onOutput/onExit 触发、无 rAF/定时；清测证伪「结构封死」：mock vv=300 无事件无输出 rows38 不自愈，输入 j 触发输出才自愈到18；真机「落定近2秒无事件」正是此空闲态，残留洞需补非输出触发）
+> 状态: 已回（2026-08-26 9.0：500ms 空闲巡查落地 @ 805602a4——非输出触发补齐，renderFrame 方案不治空闲故未选；④d 无事件无输入自愈钉绿；三卷+npm85 不回退；待评审复核+真机 C 档）· 代际戳 gen-2026-08-26-空闲巡查
 
 ## 一、我复核了 353a4a0b——「结构封死」有覆盖洞（清测实锤）
 
