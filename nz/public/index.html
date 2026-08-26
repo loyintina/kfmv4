@@ -5,12 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
   <title>kfm-nz</title>
   <style>
-    /* 捆绑 Nerd Font（2026-08-24 palette-font-na-review，用户拍板）：含
-       U+E0B0 powerline 箭头——agnoster 提示符的 `~` 两侧箭头靠它渲染；
-       NoLigatures Mono 变体=图标严格单宽、无连字干扰终端等宽语义。 */
+    /* 终端字体 = NA 同款（2026-08-26 用户拍板，nz-font-adapt-review）：
+       NaMain=用户商业主字体（ASCII/Latin；私有授权勿提交，BUILD 时从
+       kfm-na/assets/fonts 拷入）；NaCJK=FusionPixelMono12-gb2312
+       （GB2312 子集+终端符号补丁+合成 powerline 实心三角，SIL OFL），
+       兜 CJK/盲文/方块/E0B0——商业美术字体天然缺终端符号，逐字
+       fallback 路由给它（kfm-na assets/fonts/README 同款分工）。
+       顺带治真机 ranger 中文行上移（系统 CJK fallback 基线/光栅化差）。 */
     @font-face {
-      font-family: 'JetBrainsMonoNL NFM';
-      src: url('./fonts/JetBrainsMonoNLNerdFontMono-Regular.ttf') format('truetype');
+      font-family: 'NaMain';
+      src: url('./fonts/na-main.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'NaCJK';
+      src: url('./fonts/na-cjk.ttf') format('truetype');
       font-weight: 400; font-style: normal; font-display: swap;
     }
     body { margin: 0; background: #101014; color: #d8d8e0; font-family: monospace; }
@@ -32,6 +41,6 @@
     <h1>kfm-nz · Cordis 根总线骨架</h1>
     <pre id="boot-log">加载中…</pre>
   </div>
-  <script type="module" src="./bundle.js?v=ed76db2c"></script>
+  <script type="module" src="./bundle.js?v=f5023942"></script>
 </body>
 </html>

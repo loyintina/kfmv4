@@ -187,9 +187,13 @@ export function applyTermBundle(ctx: Context): void {
       // 实际渲染字体，字宽几何不回退的根基）。
       // 字体就绪门：@font-face 异步加载——不等就量会拿到 fallback 字宽，
       // 字体落地后渲染字宽突变而 cell 缓存不刷 = 光标/裁切错位。显式
-      // load 打头字体（失败不挡路：回落系统 mono，几何仍自洽）。
+      // load 两个打头字体（主+CJK 各一——几何两边都吃；失败不挡路：
+      // 回落系统 mono，几何仍自洽）。
       try {
-        await document.fonts.load(`13px 'JetBrainsMonoNL NFM'`, '0');
+        await Promise.all([
+          document.fonts.load(`13px 'NaMain'`, '0'),
+          document.fonts.load(`13px 'NaCJK'`, '中'),
+        ]);
       } catch { /* 字体 404/受限 → fallback 栈，度量与渲染仍同源 */ }
       let cellW = 0;
       let cellH = 0;
@@ -618,7 +622,7 @@ export function applyTermBundle(ctx: Context): void {
       // 触发「baseline=盒底边」CSS 规则，真机 CJK fallback 字体的行盒
       // 更高时整盒上移。本探针复刻壳渲染结构量真值：spanTop−rowTop
       // （shift，0=正常/负=上移 px 数）、spanH（>16.25=CJK 行盒撑高实
-      // 锤）、canvas 墨迹盒 asc/desc。等字体就绪再量（NF 晚到竞态）。
+      // 锤）、canvas 墨迹盒 asc/desc。等字体就绪再量（主字体晚到竞态）。
       if (postDebug) {
         const cjkProbe = () => {
           try {
@@ -651,8 +655,8 @@ export function applyTermBundle(ctx: Context): void {
               rowH: +rr.height.toFixed(2),
               spanH: +sr.height.toFixed(2),
               shift: +(sr.top - rr.top).toFixed(2), // 0=对齐；负=span 上移 px
-              nfLoaded: document.fonts.check(`13px 'JetBrainsMonoNL NFM'`, 'A'),
-              cjkLoaded: document.fonts.check(`13px 'Noto Sans CJK SC'`, '中'),
+              mainLoaded: document.fonts.check(`13px 'NaMain'`, 'A'),
+              cjkLoaded: document.fonts.check(`13px 'NaCJK'`, '中'),
             });
             host.remove();
           } catch { /* 探针不挡主流程 */ }

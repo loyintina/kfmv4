@@ -13,16 +13,15 @@
 import type { TermCoreHandle } from '../term-core.js';
 import { tokenToCss, TERM_FG, TERM_BG } from './palette.js';
 
-/** 终端字体栈（2026-08-24 palette-font-na-review，用户拍板换 Nerd Font
- *  不改共享 .zshrc）：捆绑 JetBrainsMonoNL NFM 打头——含 U+E0B0
- *  powerline 箭头（agnoster 提示符 `~` 两侧字形，系统 mono 栈没有 →
- *  曾渲染成错位色块）。CJK 必须不塌（中文核心场景）：NF 无中文字形，
- *  栈尾 Noto Sans CJK SC/PingFang SC/微软雅黑 fallback 兜住（浏览器按
- *  字符逐个 fallback）。字宽几何纪律：probe 量字格（term/index.ts）与
+/** 终端字体栈 = NA 同款（2026-08-26 用户拍板，nz-font-adapt-review；
+ *  NaMain 主（用户商业字体，ASCII/Latin；私有勿提交，见 index.html
+ *  @font-face 注释），NaCJK（FusionPixelMono12-gb2312）兜 CJK/终端
+ *  符号/powerline——像素等宽 CJK 字形贴格，顺带治真机 ranger 中文
+ *  行上移（系统 CJK fallback 基线/光栅化差，原栈尾 Noto/PingFang
+ *  那条路退役）。字宽几何纪律：probe 量字格（term/index.ts）与
  *  壳渲染必须用同一栈——度量同源，换字体后 cell 自动从实际渲染字体取。 */
 export const TERM_FONT_STACK =
-  `'JetBrainsMonoNL NFM', ui-monospace, Menlo, Consolas, ` +
-  `'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', monospace`;
+  `'NaMain', 'NaCJK', ui-monospace, Menlo, Consolas, monospace`;
 
 /**
  * 宽字符（EAW Wide/Fullwidth + 常用 emoji 区间）——真终端纪律：宽字
@@ -138,7 +137,7 @@ export class TermShell {
   }
 
   /** 字格缓存作废（字体晚到自适应，2026-08-24 真机图A 列截断修复）：
-   *  NF 字体若在首量后才加载完（fonts.load 提前 resolve 的浏览器），
+   *  主字体若在首量后才加载完（fonts.load 提前 resolve 的浏览器），
    *  渲染字宽突变而缓存不刷 = 列算多截断。调用后下一帧重量。 */
   invalidateMetrics() {
     this.cellW = 0;
