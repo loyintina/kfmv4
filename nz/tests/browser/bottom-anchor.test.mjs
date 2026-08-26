@@ -137,25 +137,26 @@ await page.waitForTimeout(1500);
         `before=${before.scroll?.bottom?.toFixed(1)} after=${after.scroll?.bottom?.toFixed(1)}（锚布局=536 锚视觉=316）cursor.bottom=${after.cursor?.bottom?.toFixed(1)}`);
 }
 
-// ④c 几何变但 vv 事件不送达→ResizeObserver 自愈钉（2026-08-26 真机 ranger
-// rows 未缩修复的回归钉，ranger-rows-not-shrink-review）：直接改卡身高度、
-// 不派发任何 vv 事件（模拟 Via 地址栏伸缩不送 vv 事件的路径）——rows 必须
-// 经 ResizeObserver→scheduleResize 落地到新几何；无 RO 的旧实现 rows 卡
-// 旧值=必红。承接④b 末态：卡身 400、rows=19。
+// ④c vv 事件不送达→帧级自愈钉（2026-08-26 真机 ranger 瞬态错量修复的回归
+// 钉，ranger-alt-enter-rows-measure-review）：mock vv 到新值但**不派发
+// 事件**（Via 地址栏/键盘路径事件可能整组不到）——输出帧的 checkDrift
+// （钉-量同拍，直读 live vv 属性）必须把卡身钉到新 vv 且 rows 跟随落地；
+// 无帧级自愈的旧实现卡身/rows 都卡旧值=必红。承接④b 末态：vv mock=400、
+// 卡身 400、rows=19。
 {
   const before = await probe();
-  await page.evaluate(() => {
-    const cont = window.__kfmNzTermScroll?.().getContainer();
-    cont.parentElement.style.height = '500px'; // 直接改卡身高度，无 vv 事件
-  });
-  await page.waitForTimeout(900); // RO→防抖150ms→落地
+  await page.evaluate(()=>{ try {
+    Object.defineProperty(window.visualViewport,'height',{get:()=>300,configurable:true});
+  } catch(e){} }); // 不 dispatch——模拟事件不送达
+  await type('echo drift\r'); // 产出输出帧驱动 checkDrift
+  await page.waitForTimeout(1200); // 帧钉+RO+防抖150ms 落地
   const after = await probe();
   const ok = before.sc && after.sc
     && before.sc.rows === 19                                                  // ④b 末态（卡身400）
-    && Math.abs(after.sc.clientHeight - 416) <= 2                             // 500−84=416
-    && after.sc.rows === 25;                                                  // floor(416/16.25)=25
-  check('④c几何变无vv事件→ResizeObserver自愈（rows跟随落地）', ok === true,
-        `rows ${before.sc?.rows}→${after.sc?.rows}（期望19→25） ch=${after.sc?.clientHeight?.toFixed(0)}（期望416）`);
+    && Math.abs(after.scroll.bottom - 216) <= 6                               // 卡身钉到 live vv=300：300−84=216
+    && after.sc.rows === 13;                                                  // floor(216/16.25)=13
+  check('④c vv事件不送达→帧级自愈（钉到live vv+rows跟随）', ok === true,
+        `rows ${before.sc?.rows}→${after.sc?.rows}（期望19→13） scroll.bottom=${after.scroll?.bottom?.toFixed(1)}（期望216）`);
 }
 
 await browser.close();

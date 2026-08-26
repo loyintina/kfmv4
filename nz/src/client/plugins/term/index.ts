@@ -51,6 +51,7 @@ interface TermCardInstance {
   /** 帧后同步 ALT_SCREEN 模式位（TUI 整屏 ↔ 行模式：按键栏收/放 +
    *  滚动区占满/让位 + 行列重测——2026-08-24 两痛点② TUI 挤占修复） */
   syncAlt: () => void;
+  checkDrift: () => void;
 }
 
 export interface TermCardService {
@@ -113,6 +114,7 @@ export function applyTermBundle(ctx: Context): void {
         }
         inst.core.feed(new TextEncoder().encode(data));
         inst.syncAlt();
+        inst.checkDrift();
         inst.shell.renderFrame();
         inst.placeKb();
         inst.followOutput();
@@ -123,6 +125,7 @@ export function applyTermBundle(ctx: Context): void {
         if (inst.sessionId !== id) continue;
         inst.core.feed(new TextEncoder().encode(`\r\n[进程已退出 code=${code}]\r\n`));
         inst.syncAlt();
+        inst.checkDrift();
         inst.shell.renderFrame();
         inst.placeKb();
         inst.followOutput();
@@ -224,7 +227,7 @@ export function applyTermBundle(ctx: Context): void {
       const card: TermCardInstance = {
         cardId, sessionId: null, core, shell, cols: size.cols, rows: size.rows,
         placeKb: () => {}, atBottom: true, followOutput: () => {}, inputToBottom: () => {},
-        syncAlt: () => {},
+        syncAlt: () => {}, checkDrift: () => {},
       };
       instances.set(cardId, card);
 
@@ -443,6 +446,10 @@ export function applyTermBundle(ctx: Context): void {
       const scheduleResize = () => {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
+          // 钉-量同拍（2026-08-26 真机 ranger alt-enter rows=38 瞬态错量，
+          // ranger-alt-enter-rows-measure-review）：先钉到当前 vv 再量——
+          // 键盘/地址栏动画期 vv 会尖峰，pin 落在量之后会量到瞬态高。
+          pinToVv();
           // 行数对卡身量：scrollEl.clientHeight 源自 vv 锚定的卡身（已被
           // 真可见区限高 + overflow:hidden 硬裁剪），rows×cellH 恒
           // ≤ 真可见区——chrome 显隐/键盘弹收都物理画不出卡外。
@@ -470,6 +477,19 @@ export function applyTermBundle(ctx: Context): void {
       // scheduleResize 防抖块（重复触发幂等：行列没变就是 no-op）。
       const scrollRO = new ResizeObserver(() => scheduleResize());
       scrollRO.observe(scrollEl);
+      // 帧级漂移自检（同上 ranger 瞬态错量修复的最后防线）：每次输出帧
+      // 校验 rows/cols 与当前几何一致——瞬态尖峰错量若逃过所有事件路径
+      // （落定无事件/RO 净零不触发），下一两帧内必被这里纠回。幂等：
+      // 一致即 no-op；不一致走 scheduleResize 防抖块（钉-量同拍）。
+      card.checkDrift = () => {
+        if (cellW <= 0 || cellH <= 0 || !card.sessionId) return;
+        // 先钉到 live vv：vv 事件不送达时 visualViewport.height 仍是当前
+        // 真值（属性直读不依赖事件）——输出帧驱动下卡身总会收敛到真可见区
+        pinToVv();
+        const wantRows = Math.max(5, Math.floor(scrollEl.clientHeight / cellH));
+        const wantCols = Math.max(20, Math.floor(container.el.clientWidth / cellW));
+        if (wantRows !== card.rows || wantCols !== card.cols) scheduleResize();
+      };
       const onViewportResize = () => {
         dbg.viewportEvents++;
         // 卡身同拍钉 vv（transition-report①：防抖后跳=过渡闪帧真凶）；
