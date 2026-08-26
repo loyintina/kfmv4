@@ -7,7 +7,7 @@
 > 收敛判据: 评审亲跑三卷+npm85 不回退、④f 新钉落地正确；用户真机 C 档 ranger/htop 键栏在视口底可见、TUI 窗口更小、overflow=0、rows=floor(视口−键栏/cellH)
 > 回: kfmv4-9.0-tui-keybar-bottom-review.md
 > 回函通知: psh
-> 状态: 已落地待复核（2026-08-26 9.0：fix @ c9b0b011；bottom-anchor 10/10（含新 ④f）+ scrollback 5/5 + keybar-click 19/19 + npm85 全绿；待真机 C 档）
+> 状态: 已核（2026-08-26 评审：syncAlt 摘两行落地正确、三路禁滚保留、④f 新钉绿、三卷+npm85 全绿；推翻「TUI 占满」取向认可）· 见 kfmv4-9.0-tui-keybar-bottom-verify-review.md · 代际戳 gen-2026-08-26-TUI底栏-已核
 
 ## 一、落地（改动比预想还小）
 
