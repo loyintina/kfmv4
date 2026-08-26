@@ -6,7 +6,7 @@
 > 预期表态方: 评审
 > 收敛判据: 评审复核修复与规格吻合、亲跑三卷+npm85 不回退；用户真机 C 档 ranger/htop 空闲态 rows 不增、scrollTop=0、overflowBeyondVisible=0
 > 回: kfmv4-9.0-ranger-runaway-rows-growth-review.md
-> 状态: 已落地待复核（2026-08-26 9.0：fix @ 048be6f8；bottom-anchor 9/9 + scrollback 5/5 + keybar-click 19/19 + npm85 全绿；待真机 C 档：ranger/htop 空闲态 rows 不增、scrollTop=0、overflow=0）
+> 状态: 已核（2026-08-26 评审：双源错尺定性认可、反馈循环框架被正；单源+ALT 禁滚+遥测落地正确；三卷+npm85 绿；真凶实锤待真机 mCellH）· 见 kfmv4-9.0-ranger-runaway-rows-growth-verify-review.md · 代际戳 gen-2026-08-26-字格单源-已核
 
 ## 一、重定性：不是反馈循环，是两套字格度量各量各的
 
