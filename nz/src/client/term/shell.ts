@@ -50,6 +50,8 @@ export class TermShell {
   private histCount = 0;
   private cellW = 0;
   private cellH = 0;
+  /** CJK 墨迹顶对齐补偿 px（measure() 量出；宽字 span 下移量，见 measure 注释） */
+  private cjkDrop = 0;
   private enc = new TextEncoder();
   private dec = new TextDecoder();
   /** 滚动主导权归插件集中状态机（8.8.3c 纪律）：false 时（用户上滑中）
@@ -62,9 +64,7 @@ export class TermShell {
   /** 字格尺寸（评审光标漂移探针取证用；measure() 跑过后才有真值，未量为 0） */
   get metrics(): { cellW: number; cellH: number } {
     return { cellW: this.cellW, cellH: this.cellH };
-  }
-
-  constructor(
+  }  constructor(
     private core: TermCoreHandle,
     private el: HTMLElement,
     private opts: TermShellOpts,
@@ -134,14 +134,30 @@ export class TermShell {
     this.cellW = probe.getBoundingClientRect().width / 10;
     this.cellH = this.rowDivs[0].getBoundingClientRect().height;
     probe.remove();
+    // CJK 墨迹顶对齐补偿（2026-08-26 ranger-cjk-baseline-fix-review）：
+    // 中英同基线（真机 cjk-probe spanH=16.25/shift=0 已证行盒无恙），但
+    // CJK 字形按 em 方设计、ink 顶比 Latin 高 1-2px、更满格——「中文行
+    // 上移」真凶=字形墨迹几何差，换字体治不了（FusionPixel 同症）。用
+    // canvas 同栈量两侧 actualBoundingBoxAscent，差值=宽字 span 的下移
+    // 量（appendTextCells 里 position:relative;top 挪视觉、不动布局、
+    // 不碰行高亮背景）。clamp 0-3 防异常字体度量带飞。
+    const cv = document.createElement('canvas').getContext('2d');
+    if (cv) {
+      cv.font = `${this.opts.fontSize ?? 13}px ${TERM_FONT_STACK}`;
+      const ascA = cv.measureText('A').actualBoundingBoxAscent;
+      const ascC = cv.measureText('中').actualBoundingBoxAscent;
+      this.cjkDrop = Math.max(0, Math.min(3, +(ascC - ascA).toFixed(2)));
+    }
   }
 
   /** 字格缓存作废（字体晚到自适应，2026-08-24 真机图A 列截断修复）：
    *  主字体若在首量后才加载完（fonts.load 提前 resolve 的浏览器），
-   *  渲染字宽突变而缓存不刷 = 列算多截断。调用后下一帧重量。 */
+   *  渲染字宽突变而缓存不刷 = 列算多截断。调用后下一帧重量（cjkDrop
+   *  同随重量——字体落地后墨迹 ascent 才真）。 */
   invalidateMetrics() {
     this.cellW = 0;
     this.cellH = 0;
+    this.cjkDrop = 0;
   }
 
   /** 往容器里填文本：宽字符逐个裁进 2×cellW 固定格（inline-block 裁切），
@@ -162,7 +178,11 @@ export class TermShell {
       if (WIDE_CHAR.test(ch)) {
         flush();
         const w = document.createElement('span');
-        w.style.cssText = `display:inline-block;width:${2 * this.cellW}px;overflow:hidden;white-space:pre;`;
+        // position:relative+top=cjkDrop：CJK 墨迹顶比 Latin 高 1-2px
+        // （字形 em 方设计，非行盒问题），整盒下移对齐英文 ink 顶；
+        // 挪视觉不动布局，行高亮背景（外层样式 span）不受影响。
+        w.style.cssText = `display:inline-block;width:${2 * this.cellW}px;overflow:hidden;white-space:pre;`
+          + (this.cjkDrop > 0 ? `position:relative;top:${this.cjkDrop}px;` : '');
         w.textContent = ch;
         parent.appendChild(w);
       } else {
