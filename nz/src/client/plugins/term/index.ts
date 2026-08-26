@@ -351,15 +351,31 @@ export function applyTermBundle(ctx: Context): void {
       // fx/vm）与双轨校准色条（probeFx/probeVv）已随症拆除（复盘裁决①）。
       // kboff 字段随 ?kbOff 代字一并退役（2026-08-25 全屏卡身移植：容器
       // 改 fixed 锚真实可视区，不信 vv 数值后 kbOff 无作用点）。
-      // 专症字段（随症收口，button-ime-tui-overflow-review 二节排查用）：
-      // rows/cols/cellH/cellW/ch——TUI 超屏真机取证（cellH 度量竞态 vs
-      // vv 可视区差两方向定位行数是否偏多）。
+      // 自观测基建 Stage①（2026-08-26，self-observation-telemetry-review）：
+      // 几何遥测全字段——真实设备自报实际状态，agent 直读落盘日志判定
+      // 「竖溢/横溢/卡身错/vv 错/布局≠视觉」，黑盒诊断不再靠模拟/转述。
+      // 字段分组：视口（vvOffsetTop/vvHeight/innerH）、卡身（cardTop/cardH/
+      // cardBottom）、滚动区（scrollTop/scrollH/scrollClientH/scrollRectTop/
+      // Bottom）、行列（rows/cols/cellH/cellW）、派生（layoutMinusVisual=
+      // innerH−vvHeight=地址栏/键盘占位；overflowBeyondVisible=scrollH−
+      // scrollClientH=可滚余量）。原 ch 字段并入 scrollClientH（同值正名）。
       const reportViewport = (type: string) => {
-        postDebug?.({
+        if (!postDebug) return;
+        const vv = window.visualViewport;
+        const cardRect = container.el.getBoundingClientRect();
+        const scrollRect = scrollEl.getBoundingClientRect();
+        postDebug({
           type,
+          vvOffsetTop: vv?.offsetTop ?? null, vvHeight: vv?.height ?? null,
+          innerH: window.innerHeight,
+          cardTop: cardRect.top, cardH: cardRect.height, cardBottom: cardRect.bottom,
+          scrollTop: scrollEl.scrollTop, scrollH: scrollEl.scrollHeight,
+          scrollClientH: scrollEl.clientHeight,
+          scrollRectTop: scrollRect.top, scrollRectBottom: scrollRect.bottom,
           rows: card.rows, cols: card.cols,
           cellH: shell.metrics.cellH, cellW: shell.metrics.cellW,
-          ch: scrollEl.clientHeight,
+          layoutMinusVisual: vv ? window.innerHeight - vv.height : null,
+          overflowBeyondVisible: scrollEl.scrollHeight - scrollEl.clientHeight,
         });
       };
       // 必须挂在 click 而非 pointerdown/mousedown：按下事件的默认行为会
@@ -437,6 +453,9 @@ export function applyTermBundle(ctx: Context): void {
             card.shell.resize(s.rows); // 内部 renderFrame → 光标 nearest 兜底
             card.placeKb();
             if (card.sessionId) bridge.resize(card.sessionId, s.cols, s.rows);
+            // 重测落地后补报一条：让读日志的 agent 看到「事件→行列落地」的
+            // 完整闭环（viewport 记录里的 rows 是事件当拍的旧值）
+            reportViewport('resized');
           }
         }, 150);
       };
@@ -505,6 +524,7 @@ export function applyTermBundle(ctx: Context): void {
         // ALT 内容物理画不出卡外，overflow:hidden 防 TUI 溢出撑出滚动条）
         scrollEl.style.overflow = altNow ? 'hidden' : 'auto';
         scheduleResize();
+        reportViewport(altNow ? 'alt-enter' : 'alt-exit'); // TUI 翻转=超屏诊断关键事件
       };
 
       const sessionId = await bridge.open({ command: opts.command, cols: card.cols, rows: card.rows });
@@ -512,6 +532,8 @@ export function applyTermBundle(ctx: Context): void {
       card.syncAlt();
       shell.renderFrame();
       card.placeKb();
+      // 开页即报（Stage①：真实设备开 ?debug 页即自报基线几何，agent 直读）
+      reportViewport('open');
       return inst.id;
     },
   };
