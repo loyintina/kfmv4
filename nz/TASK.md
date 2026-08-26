@@ -966,3 +966,25 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   地址栏态 ranger resized rows=floor(scrollClientH/cellH)、overflow=0。
   教训（评审清测立）：「结构封死」要用干净实验证伪——④c 靠输入驱动
   输出帧，恰恰没覆盖真机落的空闲洞。
+- 2026-08-26：**ranger runaway 根治**（真机遥测 rows 32→38→58→61 持续
+  增长、scrollTop 0→72→89→137 失控，评审信
+  kfmv4-9.0-ranger-runaway-rows-growth-review）。重定性：不是反馈
+  循环，是**两套字格度量各量各的**——measure() 闭包 cellH 卡停旧值
+  ≈13.8（三跳反推 floor(534/x)=38、floor(805/x)=58、floor(853/x)=61
+  → x∈(13.76,13.88] 全中），壳渲染尺 16.25 是对的；遥测只报壳的值
+  =观测盲区。scrollTop 失控=ALT 下游标 nearest 兜底滚动与插件
+  followOutput/inputToBottom 没禁滚（overflow:hidden 挡不住程序化
+  赋值）；评审假设③（alt 内容进 scrollback）不成立——shell.ts 行
+  模式历史块 ALT 已 display:none。修法：①字格单源——measure 吃壳
+  metrics（量自真实渲染行）优先、闭包探针兜底，遥测补
+  mCellH/mCellW/rawH/src 四字段封盲区；②ALT 三路禁滚——壳
+  renderFrame 游标块加 alt 判定、插件两路早退、syncAlt ALT 进入
+  清零残留 scrollTop。④e 钉：htop ALT 缩窗 rows 38→24→24 跟随、
+  scrollTop 恒 0、空闲 1.2s 不跑飞（headless 双源本一致，绿色两可
+  回归护栏非 red-first；真凶 divergence 实锤靠新遥测字段真机取证）。
+  fix @ 048be6f8。bottom-anchor 9/9+scrollback 5/5+keybar 19/19+
+  npm85 绿。待真机：ranger/htop 地址栏+键盘两态空闲放着，rows 不
+  增、scrollTop=0、overflowBeyondVisible=0；?debug 遥测 mCellH 应
+  ≈16.25 与 cellH 一致。教训（评审立）：单帧快照会骗人，要看多帧
+  演化序列；本轮补一条——遥测只报单侧值=观测盲区，双源并存时两侧
+  都要上报。

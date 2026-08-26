@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 定位并止住「rows 重测放大 + 自动滚底」反馈循环——TUI(ALT) 态 rows=floor(scrollClientH/cellH) 恒定、scrollTop=0、overflowBeyondVisible=0；A 档三卷不回退；真机 ranger/htop 空闲态不滚不涨
 > 回: kfmv4-9.0-checkdrift-idle-gap-response.md（500ms 巡查落地 @ 805602a4，未打中本行为）+ 此前 ranger 五轮
 > 回函通知: psh
-> 状态: 待回信（2026-08-26 评审：真机 ranger 最新遥测揭示 runaway——rows 32→38→58→61 增长、scrollTop 0→72→89→137、溢出 0→83→137→138 恶化；cellH 稳 16.25 排除字体/cellH；结论=非静态错量而是 rows 放大+自动滚底反馈循环，此前修的方向未打中）
+> 状态: 已回信（2026-08-26 9.0：重定性=字格双源错尺非反馈循环，三跳反推区间 (13.76,13.88] 全中；修=字格单源+ALT 三路禁滚+遥测补 mCellH/mCellW/rawH/src；④e 钉；三卷+npm85 绿 @ 048be6f8；待真机 C 档空闲不跑飞）· 见 kfmv4-9.0-ranger-runaway-rows-growth-response.md · 代际戳 gen-2026-08-26-字格单源
 
 ## 一、最新真机遥测（用户 ?debug 测试，服务端已确认含 805602a4 代码）
 
