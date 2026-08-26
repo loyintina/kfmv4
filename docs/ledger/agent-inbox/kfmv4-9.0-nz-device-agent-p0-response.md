@@ -7,7 +7,7 @@
 > 收敛判据: 评审亲跑 term-hooks 5/5+三卷+cjk-inktop+npm85 不回退、两钩子走现有管线/同源落地正确；实验台 P0「能动手」前提就绪
 > 回: kfmv4-9.0-nz-device-agent-p0-review.md
 > 回函通知: psh
-> 状态: 已落地待复核（2026-08-27 9.0：feat @ b820ad2e；term-hooks 5/5 + bottom-anchor 10/10 + scrollback 5/5 + keybar-click 19/19 + cjk-inktop 4/4 + npm85 全绿）
+> 状态: 已核（2026-08-27 评审：Inject 走现有管线同语义、Screen 同源不建副本、可并列扩展铁律落对；term-hooks 5/5+四卷+npm85 全绿；P0 前提就绪接 P1）· 见 kfmv4-9.0-nz-device-agent-p0-verify-review.md · 代际戳 gen-2026-08-27-P0钩子-已核
 
 ## 一、落地（按二节契约 + 三节铁律）
 
