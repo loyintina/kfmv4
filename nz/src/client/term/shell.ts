@@ -359,6 +359,19 @@ export class TermShell {
     }
   }
 
+  /** 当前可视屏纯文本（实验台 P0 读屏钩子，nz-device-agent-p0-review）：
+   * 取壳实际渲染的屏幕行 div（塌尾 display:none 行不计）——与渲染态
+   * 同源、不建副本。语义=终端「屏幕格网」（行模式=塌尾后可见行、
+   * ALT=TUI 整屏），不含 scrollback 历史区；历史/格网结构后补并列
+   * 钩子（ScreenGrid/ScreenAt）覆盖。 */
+  screenText(): string {
+    const out: string[] = [];
+    for (const d of this.rowDivs) {
+      if (d.style.display !== 'none') out.push(d.textContent ?? '');
+    }
+    return out.join('\n');
+  }
+
   /** 光标格在 termEl 内的像素坐标（placeKb 诱饵钉光标格用）；
    * 光标越界/未量字格时 null。 */
   cursorOffset(): { x: number; y: number } | null {

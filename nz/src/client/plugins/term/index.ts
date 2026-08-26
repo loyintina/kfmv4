@@ -342,6 +342,27 @@ export function applyTermBundle(ctx: Context): void {
         return mapText((bits & MOD_CTRL) !== 0, (bits & MOD_ALT) !== 0, (bits & MOD_SHIFT) !== 0, text);
       };
 
+      // 实验台 P0 可编程钩子（2026-08-26 nz-device-agent-p0-review，用户
+      // 拍板最高优先；§0.5 P0「能动手」前提）：
+      //   __kfmNzTermInject(str) = 注入输入走**现有输入管线**——
+      //     takeMods（粘滞修饰同路读走）+ inputToBottom（落字才回底）
+      //     + bridge.input（\n→\r，\r=回车），与 kb/IME 上屏同一语义，
+      //     不绕过任何输入纪律；
+      //   __kfmNzTermScreen() = 读当前可视屏纯文本——壳 screenText()
+      //     取实际渲染态（塌尾行不计），与 __kfmNzTermScroll 同源不建副本。
+      // 可并列扩展铁律：后补 InjectKey({key,ctrl})/InjectRaw(bytes)/
+      // ScreenGrid()/ScreenAt(r,c) 按同款模式并列加（window.__kfmNzTerm*
+      // 命名、读同一状态/管线），不改动这版。
+      const win = window as unknown as Record<string, unknown>;
+      win.__kfmNzTermInject = (str: string) => {
+        if (!str || !card.sessionId) return;
+        const text = takeMods(str);
+        if (!text) return;
+        card.inputToBottom(); // 注入=落字：回底纪律同 kb/IME
+        bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
+      };
+      win.__kfmNzTermScreen = () => shell.screenText();
+
       // ?debug 诊断骨架（常备基建，复盘裁决①：管道+字段注册点常驻，专症
       // 字段随症收口——IME 专用 col/cv/cb 已随三症全解移除，保留通用渲染
       // 健康字段 f/rp/sc/rz；角标已移除）：URL 带 ?debug 时把 composition
