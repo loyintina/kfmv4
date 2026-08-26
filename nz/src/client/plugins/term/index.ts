@@ -215,10 +215,24 @@ export function applyTermBundle(ctx: Context): void {
       container.el.appendChild(scrollEl);
       // 实测定尺寸（写死 80×24 时代结束）：先用与壳同字体的探针量字格，
       // 再按容器可视面积算行列——手机有多宽终端就有多少列，不再裁字。
-      const measure = () => cellW > 0 && cellH > 0 ? {
-        cols: Math.max(20, Math.floor(container.el.clientWidth / cellW)),
-        rows: Math.max(5, Math.floor(scrollEl.clientHeight / cellH)),
-      } : { cols: COLS, rows: ROWS };
+      // 字格单源（2026-08-26 runaway 定位，ranger-runaway-rows-growth-review）：
+      // 行列计算必须和渲染用同一把尺——壳 metrics 量自真实渲染行（首帧后
+      // 即有真值）；闭包探针只在 open/字体事件时量，真机可卡停在字体落地
+      // 前的旧值（遥测只见壳的 16.25、不见闭包值=观测盲区，本轮遥测补
+      // mCellH/mCellW/rawH/src 四字段）。首量时壳未出生，先吃探针值。
+      let liveShell: TermShell | null = null;
+      const metricNow = () => {
+        const sm = liveShell?.metrics;
+        return sm && sm.cellH > 0 && sm.cellW > 0 ? sm : { cellW, cellH };
+      };
+      const measure = () => {
+        const m = metricNow();
+        return m.cellW > 0 && m.cellH > 0 ? {
+          cols: Math.max(20, Math.floor(container.el.clientWidth / m.cellW)),
+          rows: Math.max(5, Math.floor(scrollEl.clientHeight / m.cellH)),
+          mCellW: m.cellW, mCellH: m.cellH, rawH: scrollEl.clientHeight,
+        } : { cols: COLS, rows: ROWS, mCellW: m.cellW, mCellH: m.cellH, rawH: scrollEl.clientHeight };
+      };
       const size = measure();
       const core = new g.TermCore(size.cols, size.rows, 1000);
       // 壳必须画在内层元素上——TermShell 构造函数会重写根元素的 cssText，
@@ -227,6 +241,7 @@ export function applyTermBundle(ctx: Context): void {
       const termEl = document.createElement('div');
       scrollEl.appendChild(termEl);
       const shell = new TermShell(core, termEl, { cols: size.cols, rows: size.rows });
+      liveShell = shell; // 字格单源：此后 measure/checkDrift 吃壳渲染尺
       // 底锚定两件套（构造后补——构造函数会重写 cssText，属性级补设不冲）
       termEl.style.marginTop = 'auto';
       termEl.style.flex = 'none';
@@ -243,9 +258,11 @@ export function applyTermBundle(ctx: Context): void {
       // 字）= true + 立即回底；IME 合成中不回底（落字才走 inputToBottom）。
       // 单区模型滚动对象=scrollEl（终端本体，历史+屏幕行同一连续区）。
       card.followOutput = () => {
+        if (card.core.alt_screen()) return; // ALT 禁滚（runaway 修复：TUI 无 scrollback）
         if (card.atBottom) scrollEl.scrollTop = scrollEl.scrollHeight;
       };
       card.inputToBottom = () => {
+        if (card.core.alt_screen()) return; // ALT 禁滚：回底会推 scrollTop
         card.atBottom = true;
         shell.autoScroll = true;
         scrollEl.scrollTop = scrollEl.scrollHeight;
@@ -370,13 +387,13 @@ export function applyTermBundle(ctx: Context): void {
       // Bottom）、行列（rows/cols/cellH/cellW）、派生（layoutMinusVisual=
       // innerH−vvHeight=地址栏/键盘占位；overflowBeyondVisible=scrollH−
       // scrollClientH=可滚余量）。原 ch 字段并入 scrollClientH（同值正名）。
-      const reportViewport = (type: string) => {
+      const reportViewport = (type: string, extra: Record<string, unknown> = {}) => {
         if (!postDebug) return;
         const vv = window.visualViewport;
         const cardRect = container.el.getBoundingClientRect();
         const scrollRect = scrollEl.getBoundingClientRect();
         postDebug({
-          type,
+          type, ...extra,
           vvOffsetTop: vv?.offsetTop ?? null, vvHeight: vv?.height ?? null,
           innerH: window.innerHeight,
           cardTop: cardRect.top, cardH: cardRect.height, cardBottom: cardRect.bottom,
@@ -449,7 +466,7 @@ export function applyTermBundle(ctx: Context): void {
       // 防抖重测块（贵的部分）：视口事件与 ALT 翻转（keybar 收/放改变
       // scrollEl 高度）共用——钉 vv 在事件当拍（pinToVv），这里只跑
       // 重测+三方同步。
-      const scheduleResize = () => {
+      const scheduleResize = (src = '') => {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
           // 钉-量同拍（2026-08-26 真机 ranger alt-enter rows=38 瞬态错量，
@@ -469,8 +486,10 @@ export function applyTermBundle(ctx: Context): void {
             card.placeKb();
             if (card.sessionId) bridge.resize(card.sessionId, s.cols, s.rows);
             // 重测落地后补报一条：让读日志的 agent 看到「事件→行列落地」的
-            // 完整闭环（viewport 记录里的 rows 是事件当拍的旧值）
-            reportViewport('resized');
+            // 完整闭环（viewport 记录里的 rows 是事件当拍的旧值）。
+            // runaway 定位补：src=触发源、rawH/mCellH/mCellW=量测现场
+            // （量了什么高度、用了哪把尺）——观测盲区随症封口。
+            reportViewport('resized', { src, rawH: s.rawH, mCellH: s.mCellH, mCellW: s.mCellW });
           }
         }, 150);
       };
@@ -481,20 +500,22 @@ export function applyTermBundle(ctx: Context): void {
       // rows 卡在旧值的真机实锤。ResizeObserver 直接盯 scrollEl 几何，
       // 布局落定后必触发，事件送不达也不卡 rows；与 vv/ALT/字体三路同走
       // scheduleResize 防抖块（重复触发幂等：行列没变就是 no-op）。
-      const scrollRO = new ResizeObserver(() => scheduleResize());
+      const scrollRO = new ResizeObserver(() => scheduleResize('ro'));
       scrollRO.observe(scrollEl);
       // 帧级漂移自检（同上 ranger 瞬态错量修复的最后防线）：每次输出帧
       // 校验 rows/cols 与当前几何一致——瞬态尖峰错量若逃过所有事件路径
       // （落定无事件/RO 净零不触发），下一两帧内必被这里纠回。幂等：
       // 一致即 no-op；不一致走 scheduleResize 防抖块（钉-量同拍）。
       card.checkDrift = () => {
-        if (cellW <= 0 || cellH <= 0 || !card.sessionId) return;
+        if (!card.sessionId) return;
         // 先钉到 live vv：vv 事件不送达时 visualViewport.height 仍是当前
         // 真值（属性直读不依赖事件）——输出帧驱动下卡身总会收敛到真可见区
         pinToVv();
-        const wantRows = Math.max(5, Math.floor(scrollEl.clientHeight / cellH));
-        const wantCols = Math.max(20, Math.floor(container.el.clientWidth / cellW));
-        if (wantRows !== card.rows || wantCols !== card.cols) scheduleResize();
+        const m = metricNow(); // 字格单源：与 measure 同一把壳渲染尺
+        if (m.cellW <= 0 || m.cellH <= 0) return;
+        const wantRows = Math.max(5, Math.floor(scrollEl.clientHeight / m.cellH));
+        const wantCols = Math.max(20, Math.floor(container.el.clientWidth / m.cellW));
+        if (wantRows !== card.rows || wantCols !== card.cols) scheduleResize('drift');
       };
       // 空闲巡查（2026-08-26 checkdrift-idle-gap-review：checkDrift 原仅
       // onOutput/onExit 触发=PTY 输出门控——ranger 空闲无输出 + vv 事件不
@@ -511,8 +532,9 @@ export function applyTermBundle(ctx: Context): void {
         reportViewport('viewport');
         // 不滚！resize 时无条件滚到底是「每字抖几行」的真凶（黑匣子坐实：
         // 滚动内容存在时 resize→重滚=挤兑）。光标真被遮住时由
-        // shell.renderFrame 的 nearest 滚动兜底（能不滚就不滚）。
-        scheduleResize();
+        // shell.renderFrame 的 nearest 滚动兜底（能不滚就不滚；ALT 态
+        // 兜底在壳内禁用——TUI 无 scrollback，滚=病）。
+        scheduleResize('viewport');
       };
       window.visualViewport?.addEventListener('resize', onViewportResize);
       // 地址栏/动态工具栏伸缩走 scroll 不走 resize（offsetTop/height 变）——
@@ -522,7 +544,7 @@ export function applyTermBundle(ctx: Context): void {
       const onViewportScroll = () => {
         pinToVv();
         reportViewport('viewport-scroll');
-        scheduleResize();
+        scheduleResize('vv-scroll');
       };
       window.visualViewport?.addEventListener('scroll', onViewportScroll);
       // 字体晚到自适应（真机图A 列截断修复）：fonts.load 在个别浏览器
@@ -535,7 +557,7 @@ export function applyTermBundle(ctx: Context): void {
         measureCell();
         if (Math.abs(cellW - w0) > 0.01 || Math.abs(cellH - h0) > 0.01) {
           shell.invalidateMetrics();
-          scheduleResize();
+          scheduleResize('fonts');
         }
       };
       document.fonts?.addEventListener('loadingdone', onFontsSettled);
@@ -569,6 +591,9 @@ export function applyTermBundle(ctx: Context): void {
         const altNow = card.core.alt_screen();
         if (altNow === altMode) return;
         altMode = altNow;
+        // ALT 进入时清行模式残留的程序化滚动：行模式 scrollTop 可能>0，
+        // ALT 下禁滚后这值会残留成"超屏几帧"的起点（runaway 实锤其一）。
+        if (altNow) scrollEl.scrollTop = 0;
         barStripEl.style.display = altNow ? 'none' : '';
         scrollEl.style.bottom = altNow ? '0px' : `${KEYBAR_H}px`;
         // TUI 填满不滚、行模式可回翻（fullscreen-card-port-review 三节③：

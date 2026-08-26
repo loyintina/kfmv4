@@ -322,7 +322,10 @@ export class TermShell {
       this.cursorEl.style.width = `${this.cellW}px`;
       this.cursorEl.style.height = `${this.cellH}px`;
       const parent = this.el.parentElement;
-      if (parent && this.autoScroll) {
+      // ALT（TUI 整屏）禁滚：全屏行列恒定，TUI 自绘铺满，壳不得替它挪
+      // 视口——游标越界兜底滚动在 ALT 下就是 scrollTop 失控增长的来源
+      // （真机 runaway：0→72→89→137）。
+      if (parent && this.autoScroll && !alt) {
         const top = this.historyDiv.offsetHeight + row * this.cellH;
         if (top < parent.scrollTop) {
           parent.scrollTop = top;
