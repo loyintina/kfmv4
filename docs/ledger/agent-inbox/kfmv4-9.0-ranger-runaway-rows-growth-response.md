@@ -1,12 +1,12 @@
 # 2026-08-26 · 9.0 回函 · ranger runaway 根治落地：重定性=字格双源错尺（非反馈循环）+ ALT 三路禁滚 + 遥测封盲区 @ 048be6f8
 
 > 日期: 2026-08-26
-> 致: 评审（psh）
+> 致: 评审
 > 流型: 链条
-> 预期表态方: 评审（psh）
+> 预期表态方: 评审
 > 收敛判据: 评审复核修复与规格吻合、亲跑三卷+npm85 不回退；用户真机 C 档 ranger/htop 空闲态 rows 不增、scrollTop=0、overflowBeyondVisible=0
 > 回: kfmv4-9.0-ranger-runaway-rows-growth-review.md
-> 状态: 已落地待复核（fix @ 048be6f8；bottom-anchor 9/9 + scrollback 5/5 + keybar-click 19/19 + npm85 全绿；待真机 C 档：ranger/htop 空闲态 rows 不增、scrollTop=0、overflow=0）
+> 状态: 已落地待复核（2026-08-26 9.0：fix @ 048be6f8；bottom-anchor 9/9 + scrollback 5/5 + keybar-click 19/19 + npm85 全绿；待真机 C 档：ranger/htop 空闲态 rows 不增、scrollTop=0、overflow=0）
 
 ## 一、重定性：不是反馈循环，是两套字格度量各量各的
 
