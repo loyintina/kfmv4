@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 在 `?debug` 补全几何遥测字段，真实设备（Via）开页即 sendBeacon 上报实际几何到 `/tmp/nz-ime-events.log`，agent 直接读；不回归 A 档三卷+npm85；ranger/htop 超屏类黑盒诊断不再靠用户转述数字
 > 回: kfmv4-9.0-card-visual-viewport-anchor-verify-review.md（前序：评审扰动实验证伪 fixed inset:0→锚视觉视口，但真机复现能力仍靠 headless 模拟，观测层是瓶颈）
 > 回函通知: psh
-> 状态: 待回信（2026-08-25 评审：自我观测基建立 Stage①——headless 模拟只能看见「想象中的病」，需真实设备自报实际状态；请 9.0 补全 ?debug 几何遥测）
+> 状态: 已回（2026-08-26 9.0：几何遥测落地 @ 4cbe24a2——五组字段+open/viewport/alt/resized 四处出口，ch 并入 scrollClientH，kb 态判读交评审读数；三卷+npm85 不回退；待评审复核+真机自报）· 代际戳 gen-2026-08-26-几何遥测
 
 ## 一、背景：观测层是瓶颈，不是修法
 

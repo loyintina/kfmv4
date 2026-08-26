@@ -913,3 +913,17 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   边界无截断。待真机 C 档：地址栏+键盘两态 ranger/htop 占满真可见区
   不超屏，随四单并验收口。教训（评审立）：黑盒诊断用扰动实验自观测，
   不用用户当测试员。
+- 2026-08-26：**自观测基建 Stage① 几何遥测**（评审信
+  kfmv4-9.0-self-observation-telemetry-review——观测层是瓶颈非修法：
+  headless 模拟只能看见想象中的病，真实设备须自报实际状态）：?debug
+  补全五组几何字段（视口 vvOffsetTop/vvHeight/innerH、卡身 cardTop/
+  cardH/cardBottom、滚动区 scrollTop/scrollH/scrollClientH/scrollRectTop/
+  Bottom、行列 rows/cols/cellH/cellW、派生 layoutMinusVisual=innerH−
+  vvHeight/overflowBeyondVisible=scrollH−scrollClientH），四处出口=开页
+  即报 open+视口事件 viewport/viewport-scroll+ALT 翻转 alt-enter/exit+
+  行列落地 resized（补全事件→落地闭环）；ch 并入 scrollClientH 正名。
+  feat @ 4cbe24a2。kb 态判读不交前端猜（layoutMinusVisual 够区分），
+  随症可拆纪律沿用。三卷（6/6、5/5、19/19）+npm85 不回退；headless
+  ?debug 实证字段齐全值域合理（620→400 缩窗：open/viewport/resized
+  三条闭环，rows 32→19、rz 0→1）。真机用法：Via 开 ?debug 跑 ranger，
+  agent 直读 /tmp/nz-ime-events.log 判定病灶层。
