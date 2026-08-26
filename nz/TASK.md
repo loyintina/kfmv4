@@ -1082,3 +1082,17 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   npm85 绿。待真机：ranger 中英混排行（hermes-蔚然/ts工具/知乎-
   VibeCoding理论-images）ink 顶对齐、光标切中文行不上移、中文清
   晰不裁。cjk-probe 随症字段随本症收口可拆。
+- 2026-08-27：**实验台 P0 可编程钩子落地**（评审信
+  kfmv4-9.0-nz-device-agent-p0-review；§0.5 P0「能动手」前提，用
+  户拍板最高优先）：`__kfmNzTermInject(str)`=注入走现有输入管线
+  （takeMods 粘滞同路+inputToBottom 落字回底+bridge.input，\n→\r、
+  \r=回车，不绕过输入纪律）；`__kfmNzTermScreen()`=当前可视屏纯文
+  本（壳 screenText() 取实际渲染行、塌尾不计，与 Scroll 钩同源不
+  建副本；语义=屏幕格网，scrollback 历史区后补 ScreenGrid/ScreenAt
+  并列钩子覆盖）。可并列扩展铁律落注释：InjectKey/InjectRaw/
+  ScreenGrid/ScreenAt 后补同款并列加不改这版。考卷
+  term-hooks.test.mjs 5 断言全绿（中文 echo 双命中/Screen 行数==
+  壳可见行/回底纪律在位；一处判卷修正：可见行选择器要按结构特征
+  white-space:pre+height:1.25em 过滤，.nz-term 直属 div 含 history
+  Div/光标层）。feat @ b820ad2e。五卷 5/5+10/10+5/5+19/19+4/4+
+  npm85 绿。

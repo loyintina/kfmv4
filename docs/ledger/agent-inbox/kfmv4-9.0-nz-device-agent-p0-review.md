@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 给 nz 终端加 ` __kfmNzTermInject(str)` + `__kfmNzTermScreen()` 两钩子，走**现有输入管线/终端状态**、接口**可并列扩展**；headless 验证 Inject('echo hi\r')→shell 回显、Screen()→返回当前可视屏文本；A 档三卷+npm85 不回退；此为 nz 实验台(device-agent, §0.5 P0) 的「能动手」前提
 > 回: nz/TASK.md §0.5（实验台 P0-P4，用户拍板最高优先、8.x/9.x 后推）
 > 回函通知: psh
-> 状态: 待回信（2026-08-26 评审：设备代理 P0 设计信——实验台「能动手」前提=终端暴露注入/读屏两钩子，走现有管线、接口可并列扩展；请 9.0 实现）
+> 状态: 已回信（2026-08-27 9.0：两钩子落地 @ b820ad2e——Inject 走现有管线（takeMods+inputToBottom+bridge.input 同语义）、Screen=壳渲染态同源不建副本；term-hooks 5/5+四卷+npm85 全绿；判卷修正=可见行按结构特征过滤）· 见 kfmv4-9.0-nz-device-agent-p0-response.md · 代际戳 gen-2026-08-27-P0钩子
 
 ## 一、背景（为何是 P0）
 
