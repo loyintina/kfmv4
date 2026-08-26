@@ -1032,3 +1032,18 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   feat @ eece8681。三卷 10/10+5/5+19/19+npm85 绿。待真机：ranger
   中文行与 ASCII 同基线（收口判据）、2 cell 宽、清晰、powerline/
   符号正常。
+- 2026-08-26：**CJK 墨迹顶对齐**（评审信
+  kfmv4-9.0-ranger-cjk-baseline-fix-review，像素+读图双证：13px 中
+  inkTop13 vs A14、40px 中18 vs A20；换 FusionPixel 同症=字形墨迹
+  几何 vs 固定 cell，非字体选择——换字体轮治标）：中英同基线
+  （spanH/shift 已证行盒无恙），真凶=CJK 字形 em 方设计 ink 顶高
+  1-2px。修法=measure() canvas 同栈量 ascC−ascA=cjkDrop（clamp
+  0-3），宽字 span position:relative;top:cjkDrop 整盒下移——挪视
+  觉不动布局、不裁不压、行高亮背景（外层样式 span）不受影响；
+  invalidateMetrics 同重置。新钉 cjk-inktop.test.mjs 4 断言（补偿
+  落 DOM/残余≤1px——headless ascC11 ascA9 top2 残余 0.00/2 cell
+  宽不回退；旧实现残余 2px 必红=真 red-first）。fix @ f09e9a89。
+  cjk-inktop 4/4+bottom-anchor 10/10+scrollback 5/5+keybar 19/19+
+  npm85 绿。待真机：ranger 中英混排行（hermes-蔚然/ts工具/知乎-
+  VibeCoding理论-images）ink 顶对齐、光标切中文行不上移、中文清
+  晰不裁。cjk-probe 随症字段随本症收口可拆。

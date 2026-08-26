@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 把中英混排行里 CJK 字形 ink 顶对齐到英文（~1px 内）；真机 ranger 光标切到中文行不再「整行上移几 px」；中文仍 2 cell 宽、清晰、不裁切；A 档三卷+npm85 不回退
 > 回: kfmv4-9.0-nz-font-adapt-verify-review.md（字体切栈已核；本条为字形垂直对齐的对症修法，说明换字体治不了）
 > 回函通知: psh
-> 状态: 待回信（2026-08-26 评审：像素+读图双证——中字形 ink 顶比英文高(13px:中13 vs A14;40px:中18 vs A20),且中更高更满格;换 FusionPixel 也一样=字形 ink vs 固定 cell 几何差,非字体选择;对症修法=CJK span 基线/vertical-align 对齐英文)
+> 状态: 已回信（2026-08-26 9.0：对症修法落地 @ f09e9a89——canvas ascent 差=cjkDrop、宽字 span relative+top 整盒下移不裁不压；新钉 cjk-inktop 4/4 残余 0.00px（旧实现必红）；四卷+npm85 绿；待真机混排行 ink 顶对齐收口）· 见 kfmv4-9.0-ranger-cjk-baseline-fix-response.md · 代际戳 gen-2026-08-26-墨迹顶对齐
 
 ## 一、根因确认（像素 + 读图双证，你的理解对）
 
