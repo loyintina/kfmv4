@@ -1004,3 +1004,17 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   overflow=0、rows=floor(视口−键栏/cellH)（≈少 5 行）。悬而未决
   （评审四点④）：htop 自带 F1-F10 底栏贴在 TUI 底=键栏上方两层
   底栏并存，用户是否接受待真机观感。
+- 2026-08-26：**CJK 基线探针**（真机 ranger 中文行内容上移几 px，
+  评审信 kfmv4-9.0-ranger-cjk-baseline-review）：headless 双测复现
+  不出——canvas 墨迹盒 中 asc11/desc2 vs A asc10/desc0（1px 级正
+  常设计差），DOM 复刻宽字 span shift=0/spanH=16.25。评审机制猜
+  测=CJK fallback 字体度量差；但另有候选真凶没排除——宽字 span 的
+  inline-block+overflow:hidden 触发 CSS「baseline=盒底边」规则，
+  真机 CJK 字体（Android Noto）行盒若高于 16.25 会把整盒往上顶
+  （headless 的 CJK 字体行盒恰好同高=不发作）。纪律=别盲改：先落
+  ?debug 随症探针（cjk-probe：shift/spanH/inkA/inkZhong/nfLoaded/
+  cjkLoaded，复刻壳宽字 span 结构、字体就绪后量），真机开页即自报
+  基线，拿到 shift/spanH 真值再定修法（候选：span 高固定 1.25em+
+  vertical-align:top 消基线规则 / overflow 改 clip 轴分离 / 换基线
+  兼容 CJK 字体——各有裁剪风险，等数字）。feat @ 44d679ca。
+  headless 对照组 shift=0 已录。待真机：开 8023/?debug 一次即落盘。

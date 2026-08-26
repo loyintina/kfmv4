@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 定位并修「CJK 字形在固定 cell 高内偏离 NF 基线（中文行/高亮行内容上移几 px）」——中文与 ASCII 在同一行同基底对齐、光标罩中文行不偏移；真机 ranger 中文文件名行不动
 > 回: kfmv4-9.0-tui-keybar-bottom-verify-review.md（前序 TUI 底栏已核；本信为新问题）
 > 回函通知: psh
-> 状态: 待回信（2026-08-26 评审：用户 ranger 中光标移到中文行内容上移几 px；机制=NF 等宽无 CJK→fallback 到 CJK 字体、ascent/descent 与 NF 不同致 glyph 偏离 16.25px 格基线；headless 行盒层对齐/视觉偏移未复现，需 9.0 查证字体度量）
+> 状态: 已回信（2026-08-26 9.0：headless 双测无偏移（canvas 墨迹 1px 级/DOM shift=0）；机制候选修正=inline-block+overflow:hidden 基线规则放大 CJK 行盒差；?debug 探针 cjk-probe 落地 @ 44d679ca；待真机数字定修法）· 见 kfmv4-9.0-ranger-cjk-baseline-response.md · 代际戳 gen-2026-08-26-CJK基线
 
 ## 一、用户现象（真机 ranger）
 
