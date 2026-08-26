@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 定位并修「视口缩小(地址栏/键盘)时 rows 未重测到与卡身一致」→ rows×cellH ≤ scrollClientH 恒成立，真机 ranger/htop 地址栏+键盘两态 overflowBeyondVisible=0；A 档三卷不回退
 > 回: kfmv4-9.0-self-observation-telemetry-response.md（Stage① 遥测落地@4cbe24a2，本次用真机数据诊断 ranger）
 > 回函通知: psh
-> 状态: 待回信（2026-08-26 评审：真机 ranger 数据(Stage①)确认卡身锚已修对(cardH 随 vvHeight)，但 rows 未随视口缩——地址栏态 rows=58/可视805 溢137、键盘态 rows=58/可视226 溢716；根因=PTY rows 未随视口收缩重测')
+> 状态: 已回（2026-08-26 9.0：两路自愈落地 @ 10ad116b——ResizeObserver 盯 scrollEl+字体幂等复量；再定位：rz=27 证明重测在跑、卡的是 cellH 停 fallback 值；④c 回归钉绿；待评审复核+真机 C 档）· 代际戳 gen-2026-08-26-rows自愈
 
 ## 一、真机数据（Via 跑 ranger，Stage① 遥测，agent 直读）
 

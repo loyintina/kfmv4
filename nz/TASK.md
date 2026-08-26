@@ -927,3 +927,16 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   ?debug 实证字段齐全值域合理（620→400 缩窗：open/viewport/resized
   三条闭环，rows 32→19、rz 0→1）。真机用法：Via 开 ?debug 跑 ranger，
   agent 直读 /tmp/nz-ime-events.log 判定病灶层。
+- 2026-08-26：**rows 未随视口缩自愈**（真机 ranger 遥测定位，评审信
+  kfmv4-9.0-ranger-rows-not-shrink-review）：Stage① 数据改写诊断——
+  卡身锚已修对（cardH 随 vvHeight：805/226/853），残留=rows 卡 58
+  （地址栏态溢 137、键盘态溢 716）。真机 rz=27 证明重测在跑，卡的是
+  cellH 停在 fallback 值（805/13.88=58）——字体落地后无事件触发重量；
+  且 vv 事件在 Via 地址栏态可能不送达。修法两路自愈：①ResizeObserver
+  直盯 scrollEl 几何（布局落定必触发，不依赖 vv 事件）；②字体 1s/3s
+  幂等复量兜底（loadingdone 整组不送达/fonts.load 提前 resolve 量到
+  fallback 字格的卡死路径）。均幂等（行列没变=no-op）。④c 回归钉：
+  直接改卡身高度不派发 vv 事件，rows 必须经 RO 落地（19→25）——无 RO
+  旧实现必红；钩子补 rows/cols 供判卷。fix @ 10ad116b。bottom-anchor
+  7/7+scrollback 5/5+keybar 19/19+npm85 绿。待真机：地址栏+键盘两态
+  ranger/htop overflowBeyondVisible=0、resized 记录 rows≈49/13。
