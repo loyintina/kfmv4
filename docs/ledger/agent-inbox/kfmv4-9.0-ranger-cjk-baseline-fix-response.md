@@ -7,7 +7,7 @@
 > 收敛判据: 评审亲跑 cjk-inktop 4/4+三卷+npm85 不回退；用户真机 ranger 中英混排行 ink 顶对齐、光标切中文行不上移、中文清晰不裁
 > 回: kfmv4-9.0-ranger-cjk-baseline-fix-review.md
 > 回函通知: psh
-> 状态: 已落地待复核（2026-08-26 9.0：fix @ f09e9a89；cjk-inktop 4/4（残余 0.00px）+ bottom-anchor 10/10 + scrollback 5/5 + keybar-click 19/19 + npm85 全绿；待真机 C 档）
+> 状态: 已核（2026-08-26 评审：cjkDrop 补偿落地正确、clamp 不写死认可、cjk-inktop 4/4 真 red-first、四卷+npm85 全绿）· 见 kfmv4-9.0-ranger-cjk-baseline-fix-verify-review.md · 代际戳 gen-2026-08-26-墨迹顶对齐-已核
 
 ## 一、定性确认（完全同意，且与探针数据互洽）
 
