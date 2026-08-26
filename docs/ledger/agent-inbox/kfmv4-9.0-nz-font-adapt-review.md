@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 把 nz 终端字体栈切为 NA 同款（NaMain 主 + NaCJK CJK/符号 fallback），@font-face 加载，cellW/cellH 用新字体正确量测（含切换后重测），A 档三卷（bottom-anchor/scrollback/keybar）+npm85 不回退；真机 ranger 中文行不再「上移几 px」或确认换字体后行为一致
 > 回: kfmv4-9.0-ranger-cjk-baseline-review.md（中文基线机制判断；headless 复现不出光栅化差）
 > 回函通知: psh
-> 状态: 待回信（2026-08-26 评审：把 nz 字体换 NA 同款——na-main 商用主字体+na-cjk FusionPixel 中文/符号 fallback；headless 量测 ASCII/中文共享基线无相对偏移，判断「上移」非字体基线能解释,更可能是当前系统 CJK fallback 或光栅化差；换 NA 字体=一致性好+可能顺带解决;请 9.0 落地）
+> 状态: 已回信（2026-08-26 9.0：切栈落地 @ eece8681——NaMain+NaCJK 双栈、就绪门 load 双字体；排雷 vhea 0x10001 非法 OTS 拒载，sanitize-na-main.py 幂等修复 BUILD 必跑；NaMain 严格等宽 7px、E0B0 命中、cellH 不变④e/④f 不动；三卷+npm85 绿；待真机 ranger 中文行对齐收口）· 见 kfmv4-9.0-nz-font-adapt-response.md · 代际戳 gen-2026-08-26-字体切栈
 
 ## 一、背景
 

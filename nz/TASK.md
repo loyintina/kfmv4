@@ -1018,3 +1018,17 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   vertical-align:top 消基线规则 / overflow 改 clip 轴分离 / 换基线
   兼容 CJK 字体——各有裁剪风险，等数字）。feat @ 44d679ca。
   headless 对照组 shift=0 已录。待真机：开 8023/?debug 一次即落盘。
+- 2026-08-26：**终端字体切栈 NA 同款**（用户拍板，评审信
+  kfmv4-9.0-nz-font-adapt-review；取代 cjk-probe 等数定修法路线——
+  真机截图实锤中英混排中文更高更满，probe 裸单字 span 测不到=假
+  阴性）：@font-face NaMain（用户商业主字体，私有 gitignore）+
+  NaCJK（FusionPixelMono12-gb2312，SIL OFL，烘焙含终端符号补丁+
+  合成 powerline 实心三角）；TERM_FONT_STACK 换双栈打头；字体就绪
+  门 load 主+CJK 两个。排雷：na-main.ttf 的 vhea 表版本 0x00010001
+  非法，Chromium OTS 整字体重拒（NA 原生端不查）——
+  scripts/sanitize-na-main.py 幂等修版本+校验和，BUILD 拷字体后必
+  跑。实测：NaMain 严格等宽 7px（全 ASCII 同宽）、NaCJK E0B0/⚡ 命
+  中、cellH=16.25 不变（line-height 驱动，④e/④f rows 期望不动）。
+  feat @ eece8681。三卷 10/10+5/5+19/19+npm85 绿。待真机：ranger
+  中文行与 ASCII 同基线（收口判据）、2 cell 宽、清晰、powerline/
+  符号正常。
