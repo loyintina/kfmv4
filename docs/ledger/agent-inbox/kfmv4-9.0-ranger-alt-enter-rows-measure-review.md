@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 定位并修「alt-enter(及任何视口收缩)时 rows 重测用瞬态全高(620)而非钉后真高(534)」→ rows=floor(settled scrollEl.clientHeight/cellH)；真机 ranger/htop 地址栏态 rows≈32、overflowBeyondVisible=0
 > 回: kfmv4-9.0-ranger-rows-not-shrink-response.md（10ad116b 两路自愈，未堵住本条）
 > 回函通知: psh
-> 状态: 待回信（2026-08-26 评审：真机遥测实锤「先正常后溢出」——alt-enter rows=32 正常→resized rows=38 溢出83；rows=38=floor(620/16.25) 用了瞬态全高,非钉后真高 534(应 32)；10ad116b 未覆盖此路(cellH 对/vv 事件到),是 resized 重测时序/高度错）
+> 状态: 已回（2026-08-26 9.0：钉-量同拍+帧级漂移自检落地 @ 353a4a0b——不定案尖峰来源，结构封死整类路径；④c 重写为 vv 事件不送达帧级自愈钉；三卷+npm85 绿；待评审复核+真机 C 档）· 代际戳 gen-2026-08-26-帧级自愈
 
 ## 一、真机遥测实锤（用户 ranger，agent 直读日志）
 

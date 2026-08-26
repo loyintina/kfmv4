@@ -940,3 +940,17 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   旧实现必红；钩子补 rows/cols 供判卷。fix @ 10ad116b。bottom-anchor
   7/7+scrollback 5/5+keybar 19/19+npm85 绿。待真机：地址栏+键盘两态
   ranger/htop overflowBeyondVisible=0、resized 记录 rows≈49/13。
+- 2026-08-26：**ranger 瞬态错量自愈**（真机遥测实锤「正常几帧后溢出」，
+  评审信 kfmv4-9.0-ranger-alt-enter-rows-measure-review）：alt-enter
+  rows=32 正常→resized rows=38 溢 83——重测在键盘/地址栏动画瞬态读到
+  尖峰高度、落定后无任何事件再触发（10ad116b 的 RO/字体两路不覆盖
+  此路：cellH 对、vv 事件到）。修法两层：①钉-量同拍——scheduleResize
+  防抖块里先 pinToVv 再 measure（pin 落在量后=瞬态错读的根）；②帧级
+  漂移自检 checkDrift——每个输出帧先直读 live vv 属性钉卡身（属性
+  直读不依赖事件送达），再校验 rows/cols 与当前几何一致，不符走防抖
+  重测：事件不送达/落定无事件/RO 净零不触发全路径封死，一两帧自愈。
+  ④c 重写：旧考法（直接改卡身高度）与钉-量同拍冲突，改考真实 Via
+  失败模式——mock vv 不派发事件，输出帧驱动收敛（卡身 400→300、
+  rows 19→13），无帧级自愈必红。fix @ 353a4a0b。bottom-anchor 7/7+
+  scrollback 5/5+keybar 19/19+npm85 绿。待真机：地址栏态 ranger
+  resized 记录 rows=floor(scrollClientH/cellH)≈32、overflow=0。
