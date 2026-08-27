@@ -1191,3 +1191,17 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   支持收编 term-contract.md 共同契约。抄作业：flight-rec/--trend/
   stats 咬合闸三条接受进评估，IME 注入通道=已达意不补（composition-
   end 与 P0 钩子同入口：takeMods+inputToBottom+bridge.input 同路）。
+- 2026-08-27：**抽查权首轮行使·四单验收认可**（kfmv4-9.0-device-
+  verify-spotcheck-verdict）：评审随机挑单②独立量测——活页面滚动区
+  457=vvH−84 分毫不差、键栏钉底 541=innerH、三图人审通过。**8.x 遗
+  留真机账清零成立**。新周期登记：以后每 3-4 封自验收通报随机抽 1 单。
+  审计征集信 nz 侧核对回信同步落（kfmv4-audit-term-parity-nz-response）：
+  漂移#1 scrollback 钉 1000 三件套挂单、#2 mouse SGR 1006 实现缺失
+  登记、#3 支持收编契约。
+- 2026-08-27：**【纠正】8.8.4 未获拍板，误开工已全撤**（用户口谕）：
+  评审抽查通报里「P2/8.8.4 继续走用户请示」被我误读为 tmux 优先已
+  定，未经拍板即开工 8.8.4（服务端 tmux 分支/WS 帧/客户端标签带/
+  A 档考卷四文件）——改动全未入库，当轮 checkout 全撤+考卷删除，
+  **代码零残留**。tmux 线（8.8.4/8.8.5）维持未立项，等用户拍板。当前
+  方向按用户口谕：自观测方向议题 + 双线横向审计对比先行；P2 文件
+  信号闸门与抄作业三件（flight-rec/--trend/stats 咬合闸）在册待序。
