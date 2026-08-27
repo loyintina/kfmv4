@@ -1150,3 +1150,13 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   后定归宿（挂 kfm-nz.service 或 cron @reboot），现在不动。待用户：
   点安装+开 NZ-Agent，之后 connectOverCDP 8026 拿首张真机渲染截图
   （实验台第一次睁眼，单独落账）。
+- 2026-08-27：**实验台首睁，P1 关账**（kfmv4-9.0-nz-p1-first-vision-
+  verdict）：用户装 APK 开 NZ-Agent，评审 connectOverCDP 8026 一次
+  attach 成功，/json/list 枚举到 kfm-nz 页（visible/attached），首张
+  真机渲染截图落 docs/active/nine-zero/assets/first-device-shot.png
+  （1260×1775 物理像素，真机 Chromium 147 光栅化）；几何自上报兑现
+  =screen 384×854@dpr3.28125、vv=384×540 offsetTop=0（IQOO Neo 9S
+  Pro 无键盘全屏态）。relay status 分锅面实战验证（attach 前
+  pendingBridges=1 秒配 paired=1）。**从此真机四单并验（runaway/
+  TUI 底栏/字体/中文行）评审用实验台自验，不再等用户转述**——「只有
+  用户能看见」类问题闭环。P1→P2（文件信号闸门）可接。
