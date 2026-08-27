@@ -47,6 +47,7 @@ export function initObsHud(): void {
       <div class="obs-id-col">
         <div class="obs-provider">glm</div>
         <div class="obs-balance obs-balance-glm">¥--</div>
+        <div class="obs-quota-glm">--</div>
       </div>
       <div class="obs-sys-col"></div>
       <div class="obs-hand-slot"></div>
@@ -59,6 +60,7 @@ export function initObsHud(): void {
     ds: hud.querySelector<HTMLElement>('.obs-balance-ds')!,
     glm: hud.querySelector<HTMLElement>('.obs-balance-glm')!,
   };
+  const quotaEl = hud.querySelector<HTMLElement>('.obs-quota-glm')!;
   const sysColEl = hud.querySelector<HTMLElement>('.obs-sys-col')!;
 
   // 徽标：锚定最左槽位（40×60 最小门槛，2026-08-13 用户定稿）
@@ -159,10 +161,18 @@ export function initObsHud(): void {
       const j = await res.json() as {
         balance?: { total?: string; error?: string };
         balanceGlm?: { available?: string; error?: string };
+        quotaGlm?: { win5h?: { limit: number; used: number; remaining: number }; week?: { limit: number; used: number; remaining: number }; error?: string };
         sys?: SysData;
       };
       applyBalance('ds', j?.balance);
       applyBalance('glm', j?.balanceGlm);
+      // 套餐积分两窗口（2026-08-27）：5h 滚动窗 + 周，格式「5h 1999/2000 · 周9999/10000」
+      const q = j?.quotaGlm;
+      if (q && !q.error && q.win5h && q.week) {
+        quotaEl.textContent = `5h ${q.win5h.remaining}/${q.win5h.limit} · 周${q.week.remaining}/${q.week.limit}`;
+      } else {
+        quotaEl.textContent = '';
+      }
       const ms = j?.sys?.metrics ?? [];
       const rows = ms.filter(m => ['硬盘', '内存', '负载'].includes(m.label))
         .map(m => `<div class="obs-sys-row">${m.label} ${m.value}</div>`).join('');
@@ -170,6 +180,7 @@ export function initObsHud(): void {
     } catch {
       balanceEls.ds.textContent = '—';
       balanceEls.glm.textContent = '—';
+      quotaEl.textContent = '';
     }
   };
   refresh();

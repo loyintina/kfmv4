@@ -420,6 +420,15 @@ body {
   white-space: nowrap;
 }
 
+/* glm 套餐积分两窗口小字（2026-08-27）：贴在 glm 余额下方，样式对齐 sys-row */
+.obs-quota-glm {
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .obs-balance {
   font-size: clamp(14px, 4vw, 18px);
   font-weight: 700;

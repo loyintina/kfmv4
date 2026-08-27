@@ -93,6 +93,58 @@ export async function fetchBigmodelBalance(): Promise<BigmodelBalance> {
   }
 }
 
+// ========== glm coding 套餐积分额度（2026-08-27 用户指令：面板加积分限制三数） ==========
+// 数据源：GET /api/monitor/usage/quota/limit——GLM Coding Plan 官方用量查询接口
+// （zai-org/zai-coding-plugins 官方插件的 query-usage.mjs 反查所得，裸 key 鉴权）。
+// 返回 limits[]：CREDIT_LIMIT 两窗口——unit=3 是 5 小时滚动窗、unit=6 是周窗；
+// usage=上限、currentValue=已耗、remaining=剩余、percentage=百分比。
+const BIGMODEL_QUOTA_URL = 'https://open.bigmodel.cn/api/monitor/usage/quota/limit';
+let bigmodelQuotaCache: { data: BigmodelQuota; ts: number } | null = null;
+
+interface BigmodelQuotaOk {
+  win5h: { limit: number; used: number; remaining: number };
+  week: { limit: number; used: number; remaining: number };
+}
+type BigmodelQuota = BigmodelQuotaOk | BalanceErr;
+
+// 积分窗口毫秒数：5h 窗缓存 60s（消耗敏感），周窗同理一次拉全（同一响应里两窗口）
+const QUOTA_CACHE_MS = 60_000;
+
+export async function fetchBigmodelQuota(): Promise<BigmodelQuota> {
+  if (bigmodelQuotaCache && Date.now() - bigmodelQuotaCache.ts < QUOTA_CACHE_MS) {
+    return bigmodelQuotaCache.data;
+  }
+  try {
+    const key = resolveKey('${KFM_BIGMODEL_KEY}');
+    if (!key.value) return { error: `KFM_BIGMODEL_KEY 未解析` };
+    const res = await fetch(BIGMODEL_QUOTA_URL, {
+      headers: { Authorization: `Bearer ${key.value}` },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return { error: `quota HTTP ${res.status}` };
+    const j = await res.json() as {
+      success?: boolean;
+      msg?: string;
+      data?: { limits?: Array<{ unit?: number; usage?: number; currentValue?: number; remaining?: number }> };
+    };
+    const limits = j.data?.limits ?? [];
+    // unit 语义实测：unit=3 → 5 小时滚动窗（2000 分）、unit=6 → 周（10000 分）；
+    // 不硬编码顺序，按 usage 数值特征兜底亦可读——但直接按 unit 映射最诚实
+    const byUnit = new Map(limits.map(l => [l.unit, l]));
+    const w5 = byUnit.get(3), wk = byUnit.get(6);
+    if (!j.success || !w5 || !wk) return { error: 'quota 字段缺失' };
+    const num = (v: unknown) => Math.round(Number(v ?? 0));
+    const data: BigmodelQuota = {
+      win5h: { limit: num(w5.usage), used: num(w5.currentValue), remaining: num(w5.remaining) },
+      week: { limit: num(wk.usage), used: num(wk.currentValue), remaining: num(wk.remaining) },
+    };
+    bigmodelQuotaCache = { data, ts: Date.now() };
+    return data;
+  } catch (e) {
+    return { error: e instanceof Error ? e.message.slice(0, 80) : String(e) };
+  }
+}
+
 export async function fetchDeepseekBalance(): Promise<Balance> {
   if (balanceCache && Date.now() - balanceCache.ts < BALANCE_CACHE_MS) {
     return balanceCache.data;
@@ -126,8 +178,8 @@ export async function fetchDeepseekBalance(): Promise<Balance> {
 
 export function setupObsRoutes(router: Router): void {
   router.get('/obs/hud', async (_req, res) => {
-    const [balance, balanceGlm] = await Promise.all([fetchDeepseekBalance(), fetchBigmodelBalance()]);
-    res.json({ balance, balanceGlm, inbox: parseInbox(), stack: parseStack(), sys: collectSys(), archive: collectArchive(), pulse: collectPulse(), patrol: collectPatrol(), tokens: collectTokens(), perms: collectPerms(), roles: collectRoles(), serverTime: new Date().toISOString() });
+    const [balance, balanceGlm, quotaGlm] = await Promise.all([fetchDeepseekBalance(), fetchBigmodelBalance(), fetchBigmodelQuota()]);
+    res.json({ balance, balanceGlm, quotaGlm, inbox: parseInbox(), stack: parseStack(), sys: collectSys(), archive: collectArchive(), pulse: collectPulse(), patrol: collectPatrol(), tokens: collectTokens(), perms: collectPerms(), roles: collectRoles(), serverTime: new Date().toISOString() });
   });
 
   // 守视视口校准回传：/test 页 POST 真机实测视口 → 存 viewport.json（browser-relay 读）
