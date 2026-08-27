@@ -77,7 +77,15 @@ const allNames = new Set([
   ...collectBasenames(['src'], ['.ts']),
   ...collectBasenames(['scripts'], ['.mjs', '.cjs']),
   ...collectBasenames(['tests'], ['.mjs', '.ts']),
+  // nz 线（term-contract/two-line-audit 等跨线文档引用 nz/src 文件名）
+  ...collectBasenames(['nz/src'], ['.ts']),
+  ...collectBasenames(['nz/tests'], ['.mjs', '.ts']),
 ]);
+// na 线（Rust，跨线文档引用 keymap.rs/termview.rs——路径可 env 覆写）
+try {
+  const naSrc = process.env.KFM_NA_SRC || '/root/kfm-na/src';
+  for (const f of walk(naSrc, '.rs')) allNames.add(f.split('/').pop());
+} catch { /* na 仓不在本机时跳过（该侧引用会红，属诚实失败） */ }
 for (const f of readdirSync(ROOT)) {
   if (/\.(mjs|cjs|ts)$/.test(f)) allNames.add(f);
 }

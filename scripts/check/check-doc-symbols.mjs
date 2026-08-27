@@ -52,7 +52,14 @@ for (const f of walk(docDir, '.md')) {
 
 // ========== src/ 语料 ==========
 
-const srcBlob = walk(join(ROOT, 'src'), '.ts')
+// 主仓 + nz/na 两线（term-contract.md 等跨线契约引用两线符号——
+// app_cursor() 活在 nz/src、prefer_cjk() 活在 kfm-na/src，只扫主仓=盲区）
+const srcBlob = [
+  [join(ROOT, 'src'), '.ts'],
+  [join(ROOT, 'nz/src'), '.ts'],
+  [process.env.KFM_NA_SRC || '/root/kfm-na/src', '.rs'],
+]
+  .flatMap(([dir, ext]) => walk(dir, ext))
   .map(f => readFileSync(f, 'utf-8'))
   .join('\n');
 
