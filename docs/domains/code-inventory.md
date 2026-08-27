@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit e6ca2182 · 生成于 2026-08-27 -->
+<!-- 基准 commit 3d44a187 · 生成于 2026-08-27 -->
 
 # 代码清单（机械层）
 
@@ -187,7 +187,7 @@
 | src/server/routes/providers.ts | 78 | setupProvidersRoutes |
 | src/server/routes/compact.ts | 73 | compactRouter, computeCutIndex |
 
-## infra（186 文件 · 20759 行）
+## infra（186 文件 · 20777 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -231,11 +231,11 @@
 | scripts/check/check-doc-orphans.mjs | 149 | — |
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
+| scripts/check/check-doc-scripts.mjs | 147 | — |
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/check/check-bar-ledger.mjs | 143 | — |
 | scripts/check/check-mechanism-registry.mjs | 142 | — |
 | scripts/check/chain.mjs | 141 | STEPS |
-| scripts/check/check-doc-scripts.mjs | 139 | — |
 | scripts/check/check-doc-linerefs.mjs | 137 | — |
 | tests/viewport-visibility.test.ts | 137 | — |
 | experiments/coldstart/tools/judge-batch.mjs | 135 | — |
@@ -275,6 +275,7 @@
 | scripts/check/check-kfmv4-data.mjs | 86 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
+| scripts/check/check-doc-symbols.mjs | 85 | — |
 | scripts/check/check-fix-tests.mjs | 85 | — |
 | tests/engine.test.ts | 85 | — |
 | scripts/check/check-state-freshness.mjs | 84 | — |
@@ -288,7 +289,6 @@
 | tests/tag-advisor.test.ts | 77 | — |
 | scripts/check/check-experiment-registry.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
-| scripts/check/check-doc-symbols.mjs | 75 | — |
 | tests/token-count.test.ts | 75 | — |
 | experiments/coldstart/tools/theme-code.mjs | 75 | — |
 | scripts/check/check-code-doc-refs.mjs | 69 | — |
@@ -724,4 +724,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 342 文件 · 57859 行 · 跨域边 284 条
+合计 342 文件 · 57877 行 · 跨域边 284 条
