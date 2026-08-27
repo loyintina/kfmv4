@@ -351,10 +351,10 @@ body {
    clamp(14~18) 才放得下两个币值——渐变字样式不变） */
 .obs-card-5col {
   display: grid;
-  grid-template-columns: 56px auto auto minmax(0, 1fr) 72px;
+  grid-template-columns: 56px auto auto 1fr 72px;
   align-items: center;
   gap: 8px;
-  padding: 4px 10px;
+  padding: 2px 4px;
 }
 
 .obs-emblem-slot {
@@ -420,14 +420,24 @@ body {
   white-space: nowrap;
 }
 
-/* glm 套餐积分两窗口小字（2026-08-27）：挂 deepseek 栏下方（glm 栏会撑爆五栏宽，
-   用户实测后定），样式对齐 sys-row */
+/* 卡底通栏积分行（2026-08-27 三改定稿）：从网格列改为 stack 底行——列内放长文本
+   会把 auto 列撑宽、sys 列被挤溢出压住 glm 栏（真机截图实锤）；通栏右对齐贴 sys 侧。
+   stack 接管原 5col 的外边距，内层网格只留窄内边，总侧边≈旧值防止内容区收窄复挤 */
+.obs-card-stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 3px 8px;
+}
+
 .obs-quota-glm {
-  font-size: 10px;
+  font-size: 9px;
   letter-spacing: 0.5px;
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  text-align: right;
+  padding: 1px 4px 1px 0;
 }
 
 .obs-balance {

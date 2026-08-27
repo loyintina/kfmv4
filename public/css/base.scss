@@ -192,7 +192,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 /* 顶栏五栏式（2026-08-27 用户定稿：徽标/deepseek/glm/三数字/手，双余额并排；
    2026-08-13 原四栏：徽标/ID/三数字/手。标签字号从 12 收到 10、余额大字收到
    clamp(14~18) 才放得下两个币值——渐变字样式不变） */
-.obs-card-5col{display:grid;grid-template-columns:56px auto auto minmax(0,1fr) 72px;align-items:center;gap:8px;padding:4px 10px}
+.obs-card-5col{display:grid;grid-template-columns:56px auto auto 1fr 72px;align-items:center;gap:8px;padding:2px 4px}
 .obs-emblem-slot{width:56px;height:60px}
 .obs-id-col{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
 .obs-sys-col{display:flex;flex-direction:column;align-items:flex-start;gap:1px;justify-self:end}
@@ -202,9 +202,11 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-provider{font-size:10px;letter-spacing:1px;color:rgba(0,212,255,.75);text-transform:uppercase}
 .obs-clock{font-size:12px;letter-spacing:2px;color:var(--text-dim);font-variant-numeric:tabular-nums}
 .obs-sys-mini{font-size:10px;letter-spacing:1px;color:var(--text-dim);font-variant-numeric:tabular-nums;white-space:nowrap}
-/* glm 套餐积分两窗口小字（2026-08-27）：挂 deepseek 栏下方（glm 栏会撑爆五栏宽，
-   用户实测后定），样式对齐 sys-row */
-.obs-quota-glm{font-size:10px;letter-spacing:.5px;color:var(--text-dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* 卡底通栏积分行（2026-08-27 三改定稿）：从网格列改为 stack 底行——列内放长文本
+   会把 auto 列撑宽、sys 列被挤溢出压住 glm 栏（真机截图实锤）；通栏右对齐贴 sys 侧。
+   stack 接管原 5col 的外边距，内层网格只留窄内边，总侧边≈旧值防止内容区收窄复挤 */
+.obs-card-stack{flex-direction:column;align-items:stretch;gap:0;padding:3px 8px}
+.obs-quota-glm{font-size:9px;letter-spacing:.5px;color:var(--text-dim);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;padding:1px 4px 1px 0}
 .obs-balance{font-size:clamp(14px,4vw,18px);font-weight:700;line-height:1.1;background:linear-gradient(90deg,#e0e0e0,#00d4ff);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .obs-balance.obs-flash{animation:obsFlash .6s ease-out}
 @keyframes obsFlash{0%{opacity:.15}100%{opacity:1}}

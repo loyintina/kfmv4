@@ -37,20 +37,25 @@ export function initObsHud(): void {
 
   const hud = document.createElement('div');
   hud.className = 'obs-hud';
+  // 双层结构（2026-08-27 二改）：5col 网格只装五个活部件；积分长行做成卡底
+  // 通栏——此前塞在 deepseek 栏格内，把该列 auto 撑宽 ~200px，sys 列被挤到
+  // 向左溢出压住 glm 栏（真机截图 Screenshot_20260827_094810 实锤）
   hud.innerHTML = `
-    <div class="obs-card obs-card-5col">
-      <div class="obs-emblem-slot"></div>
-      <div class="obs-id-col">
-        <div class="obs-provider">deepseek</div>
-        <div class="obs-balance obs-balance-ds">¥--</div>
-        <div class="obs-quota-glm">--</div>
+    <div class="obs-card obs-card-stack">
+      <div class="obs-card-5col">
+        <div class="obs-emblem-slot"></div>
+        <div class="obs-id-col">
+          <div class="obs-provider">deepseek</div>
+          <div class="obs-balance obs-balance-ds">¥--</div>
+        </div>
+        <div class="obs-id-col">
+          <div class="obs-provider">glm</div>
+          <div class="obs-balance obs-balance-glm">¥--</div>
+        </div>
+        <div class="obs-sys-col"></div>
+        <div class="obs-hand-slot"></div>
       </div>
-      <div class="obs-id-col">
-        <div class="obs-provider">glm</div>
-        <div class="obs-balance obs-balance-glm">¥--</div>
-      </div>
-      <div class="obs-sys-col"></div>
-      <div class="obs-hand-slot"></div>
+      <div class="obs-quota-glm">--</div>
     </div>
   `;
   hud.style.zIndex = String(Z.CENTER_CONTENT);
@@ -166,8 +171,8 @@ export function initObsHud(): void {
       };
       applyBalance('ds', j?.balance);
       applyBalance('glm', j?.balanceGlm);
-      // 套餐积分两窗口（2026-08-27）：5h 滚动窗 + 周，格式「5h 1999/2000 · 周9999/10000」
-      // （挂 deepseek 栏下方——放 glm 栏会把五栏顶板撑爆，用户实测后定）
+      // 套餐积分两窗口（2026-08-27）：5h 滚动窗 + 周，卡底通栏行
+      // 「5h 12000/12000 · 周60000/60000」，不占网格列宽
       const q = j?.quotaGlm;
       if (q && !q.error && q.win5h && q.week) {
         quotaEl.textContent = `5h ${q.win5h.remaining}/${q.win5h.limit} · 周${q.week.remaining}/${q.week.limit}`;
