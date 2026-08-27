@@ -12,7 +12,7 @@
 
 | 语义项 | na | nz (9.0) | 判 |
 |---|---|---|---|
-| keymap 映射纯逻辑 | `keymap.rs` map_text/key_seq，keymap_spec 考卷 | `keymap.ts` 语义逐行移植自 NA keymap.rs | **一致**（nz 显式声明移植源）✅ 已趋同 |
+| keymap 映射纯逻辑 | `keymap.rs` map_text/key_seq，keymap_spec 考卷 | `nz/src/client/term/keymap.ts` 语义逐行移植自 NA keymap.rs | **一致**（nz 显式声明移植源）✅ 已趋同 |
 | APP_CURSOR (?1h) 方向键 SS3 vs CSI | 有（key_seq 分模式） | 有（核 app_cursor() 钉 ?1h/?1l 两向） | **一致** ✅ |
 | 修饰键一次性粘滞 | Java 侧粘滞（四纪律①） | keybar ModifierState 同款粘滞 | **一致** ✅ |
 | 触摸注入 | na-touch.sh 协议 tap/down/move/up/scroll/sleep | `__kfmNzTermInject` 钩子（走输入管线） | **有意分歧**：na 是闸门文件协议（可写脚本序列），nz 是页面钩子（CDP 可代调）。等价但形态不同 |
