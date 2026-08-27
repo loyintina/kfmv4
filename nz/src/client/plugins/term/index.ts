@@ -32,6 +32,15 @@ import { KEYBAR_H, MOD_ALT, MOD_CTRL, MOD_SHIFT, mountKeybar } from '../../term/
 
 const COLS = 80;
 const ROWS = 24;
+/**
+ * scrollback 历史行数（审计漂移#1 终裁 kfmv4-audit-term-parity-final-
+ * verdict：各钉各的——na 10000 长日志场景，nz 钉 1000）。理由：nz 每行
+ * 历史 = DOM div+span 节点，千行即千级节点挂在手机 WebView 渲染树，
+ * 内存/重排成本随行数线性涨；na 是 GPU 网格渲染，成本结构不同——数量级
+ * 差异是平台成本本征，非随手不同。1000 行 ≈ 33 屏翻史深度，手机单手够用。
+ * 单源：TermCore 三处实例化全引此处（grep 散写字面量 1000 应零命中）。
+ */
+const SCROLLBACK_LINES = 1000;
 
 interface TermCardInstance {
   cardId: string;
@@ -110,7 +119,7 @@ export function applyTermBundle(ctx: Context): void {
         if (replay && glueCtor) {
           // 重连 tail：先换新网格再喂（快照尾迹≠增量，喂旧网格会花屏）
           inst.core.free();
-          inst.core = new glueCtor(inst.cols, inst.rows, 1000);
+          inst.core = new glueCtor(inst.cols, inst.rows, SCROLLBACK_LINES);
           inst.shell.setCore(inst.core);
         }
         inst.core.feed(new TextEncoder().encode(data));
@@ -239,7 +248,7 @@ export function applyTermBundle(ctx: Context): void {
         } : { cols: COLS, rows: ROWS, mCellW: m.cellW, mCellH: m.cellH, rawH: scrollEl.clientHeight };
       };
       const size = measure();
-      const core = new g.TermCore(size.cols, size.rows, 1000);
+      const core = new g.TermCore(size.cols, size.rows, SCROLLBACK_LINES);
       // 壳必须画在内层元素上——TermShell 构造函数会重写根元素的 cssText，
       // 直接传 scrollEl 会把滚动区定位冲掉（半屏+无法滚动的实测教训）。
       // scrollEl=滚动视口（flex 列底锚），termEl=壳画布（历史块+屏幕行）。
@@ -288,6 +297,10 @@ export function applyTermBundle(ctx: Context): void {
         isAtBottom: card.atBottom,
         rows: card.rows, // RO 自愈钉要断言行列落地（ranger-rows-not-shrink）
         cols: card.cols,
+        // 压帽考卷字段（审计终裁漂移#1：SCROLLBACK_LINES=1000 三件套之
+        // 考题件）——历史封顶与挤出计数，断言「灌超量后历史恒=钉值」
+        histLen: core.history_len(),
+        evicted: core.lines_evicted(),
         getContainer: () => scrollEl,
       });
 

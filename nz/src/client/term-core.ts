@@ -71,7 +71,7 @@ export function loadTermCoreShared(
  * 返回一行人读结果（守视 eval / 控制台直读）。
  */
 export function probeTermCore(glue: TermCoreGlue): string {
-  const t = new glue.TermCore(80, 24, 1000);
+  const t = new glue.TermCore(80, 24, 10); // 探针只喂一行，10 行足够（钉值单源在 plugins/term）
   try {
     t.feed(new TextEncoder().encode('nz term-core probe \x1b[32mOK\x1b[0m\r\n$ '));
     const text = t.text();
