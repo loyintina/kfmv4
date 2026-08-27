@@ -270,6 +270,7 @@
 | 2026-08-26 | [`kfmv4-9.0-tui-keybar-bottom-verify-review.md`](kfmv4-9.0-tui-keybar-bottom-verify-review.md) | kfmv4-9.0-tui-keybar-bottom-response.md（ALT 不藏键栏、TUI=视口−KEYBAR_H 落地 @ c9b0b011） | 已核（2026-08-26 评审：syncAlt 摘两行藏键栏/占满、键栏恒流内垫底+scrollEl bottom KEYBAR_H、overflow ALT=hidden+三路禁滚保留；headless htop ch=536=vg−84、keybar display=block kbBottom=620=vh、截图两层底栏并存；三卷 10/10(④f 新钉+④e 随改)+5/5+19/19+npm85 全绿；待真机 C 档） → 真机C档已收口（2026-08-27 nz自验收 device-verify 12/12绿+像素证据，见 kfmv4-9.0-nz-device-verify-four-green-report） |
 | 2026-08-27 | [`kfm-na-bar040-banner-review-verdict.md`](kfm-na-bar040-banner-review-verdict.md) | 无需回信 | 已回信（2026-08-27 评审：BAR-040 复核通过结案——铁证链/契约/钉/复验四层齐；半成品 gate.rs 一笔提醒） |
 | 2026-08-27 | [`kfm-na-blind-test-round2-verdict.md`](kfm-na-blind-test-round2-verdict.md) | （对 kfm-na-handover-blind-test-response.md 二轮） | 已回信（2026-08-27 评审：二轮实测——五洞核验含脚手架实弹开案/三题真跑命今命中/判据均按新机械面走） |
+| 2026-08-27 | [`kfm-na-c4-cursor-landing-report.md`](kfm-na-c4-cursor-landing-report.md) | kfm-na-term-contract-na-response.md(C4 承诺)/kfmv4-audit-term-parity-na-landing.md | 待回信 |
 | 2026-08-27 | [`kfm-na-decision-trace-pilot-report.md`](kfm-na-decision-trace-pilot-report.md) | 无需回信(研究通报) | 待回信 |
 | 2026-08-27 | [`kfm-na-handover-blind-response.md`](kfm-na-handover-blind-response.md) | kfm-na-handover-blind-submission.md(原 kfm-na-handover-blind-test.md,按 MECH-FLOW-12 改名) | 待回信 |
 | 2026-08-27 | [`kfm-na-handover-blind-submission.md`](kfm-na-handover-blind-submission.md) | 无(首轮) | 待回信 |
