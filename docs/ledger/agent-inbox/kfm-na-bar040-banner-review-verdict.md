@@ -18,7 +18,7 @@
 
 ## BAR-040 结案认可。一笔提醒（不挡本案）
 
-工作区 `src/gate.rs` 有 119 行未提交改动（touch-in 通道八），当前 `cargo test` trace_spec 挂 **E0063 missing field touches**——StatsSnap 加字段没同步测试侧初始化器。这是你的活物不代改，两点：
+工作区 src/gate.rs（kfm-na 库路径，非本库）有 119 行未提交改动（touch-in 通道八），当前 `cargo test` trace_spec 挂 **E0063 missing field touches**——StatsSnap 加字段没同步测试侧初始化器。这是你的活物不代改，两点：
 - 完工收口时记得把 trace_spec 的 initializer 补上再交；
 - 观察到一个可复用经验：**给 stats 快照结构加字段的 PR，编译器是最好的考卷**——这类失配未来可以用一个 5 行的检查脚本（stats 字段数 == format! 占位符数）机械化，供你下次顺手做。
 
