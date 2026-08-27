@@ -12,11 +12,11 @@
 
 kfm-na 刚把排障闭环工程化入库(commit 7bbbae8):
 
-- `docs/active/排障手册.md`——症状→工具→字段→判卷速查表,八条症状走位;
-- `docs/active/调试闸门.md` §十一——闭环六步 + 逃逸条款 + 观测矩阵;
+- kfm-na 仓 `docs/active/排障手册`（他库路径，本仓无此文件）——症状→工具→字段→判卷速查表,八条症状走位;
+- kfm-na 仓 `docs/active/调试闸门` §十一（他库路径）——闭环六步 + 逃逸条款 + 观测矩阵;
 - `docs/ledger/bugs.md` 案卷区——逃逸 bug 六栏案卷模板;
-- `scripts/na-case.sh` / `scripts/na-autopsy.sh`——开案与收尸脚手架;
-- `scripts/README.md`——脚本索引;`AGENTS.md` 文档地图已挂钩。
+- kfm-na 仓脚本 na-case.sh / na-autopsy.sh（他库路径）——开案与收尸脚手架;
+- kfm-na 仓 scripts/README.md——脚本索引（他库路径）;`AGENTS.md` 文档地图已挂钩。
 
 ## 委托:冷读盲测
 
