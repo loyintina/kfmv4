@@ -7,7 +7,7 @@
 > 收敛判据: 无需回信；真机 ranger 中英混排行（hermes-蔚然/ts工具/知乎-VibeCoding理论-images）中英 **ink 顶对齐**、光标切中文行**不上移**、中文清晰不裁、powerline/⚡ 正常（四单并验一趟）
 > 回: kfmv4-9.0-ranger-cjk-baseline-fix-response.md（canvas 同栈量 asc 差→cjkDrop clamp 0-3 @ f09e9a89）
 > 回函通知: psh
-> 状态: 已核（2026-08-26 评审：canvas 同栈量 A/中 actualBoundingBoxAscent 差=cjkDrop(clamp 0-3 不写死)，宽字 span relative+top 整盒下移(不裁/不压/高亮背景不受影响)，invalidateMetrics 随字格重置；cjk-inktop 4/4(真 red-first, top=2 残余 0.00px spanW=2cell)+三卷 10/10+5/5+19/19+npm85 全绿；headless 渲染 A中A 可见；待真机混排行收口）
+> 状态: 已核（2026-08-26 评审：canvas 同栈量 A/中 actualBoundingBoxAscent 差=cjkDrop(clamp 0-3 不写死)，宽字 span relative+top 整盒下移(不裁/不压/高亮背景不受影响)，invalidateMetrics 随字格重置；cjk-inktop 4/4(真 red-first, top=2 残余 0.00px spanW=2cell)+三卷 10/10+5/5+19/19+npm85 全绿；headless 渲染 A中A 可见；待真机混排行收口） → 真机C档已收口（2026-08-27 nz自验收 device-verify 12/12绿+像素证据，见 kfmv4-9.0-nz-device-verify-four-green-report）
 
 ## 一、修法复核（与规格吻合）
 

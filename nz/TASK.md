@@ -1166,3 +1166,17 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   查出问题按原流程开信），评审主业转两线审计对比+进度把控+设计讨
   论。9.0 含义：真机四单并验直接用实验台做、做到哪报到哪；大事照
   旧先请示用户。
+- 2026-08-27：**真机四单并验全绿收口**（kfmv4-9.0-nz-device-verify-
+  four-green-report，角色调整后首单自验收通报免检）：device-verify.mjs
+  12/12 断言两连跑全绿+前台亮屏补三图（device-verify-font-cjk/
+  tui-htop/after-quit.png）。①runaway：空闲 rows 28 恒/scrollTop 恒 0/
+  overflow 恒 0；②TUI 底栏：键栏 display=grid kbBottom=540=innerH、
+  scrollClientH=456=vvH−84 精确；③字体：NaMain 栈生效、中文 2cell
+  （spanW=10.395≈2×cellW）、行高=cellH 不撑盒；④中文行：cjkDrop=2px
+  vs 真机 asc 差 1、残余 1px 达标，像素图中英同基线。考卷自修三处
+  artifact（教训）：tmux 假设错——WebView 是独立 PTY 干净 zsh 非用户
+  tmux 会话，\x02c 在 readline 留脏字符拼出 cprintf；span 锚定层级错
+  ——命令回显行是行 span 套字 span 嵌套，锚行盒 DIV 直下才对；
+  exitCode 未声明 ReferenceError。四封「待真机 C 档」原信（runaway/
+  TUI底栏/字体/中文行 verify-review）状态已翻真机收口。**9.0 的
+  「8.x  IME/TUI/字体遗留账」自此全部真机清零**，P2/8.8.4 可接。

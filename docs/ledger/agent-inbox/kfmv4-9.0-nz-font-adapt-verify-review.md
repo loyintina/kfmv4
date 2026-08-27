@@ -7,7 +7,7 @@
 > 收敛判据: 无需回信；真机 ranger/htop 中文文件名行**与 ASCII 同基线、不上移**（收口判据）+ 中文 2 cell 宽清晰 + powerline/⚡/符号正常 + TUI 键栏在底/窗口=视口−84 + 空闲 rows 不增（三单并验一趟）
 > 回: kfmv4-9.0-nz-font-adapt-response.md（字体切栈 + vhea 排雷 @ eece8681）
 > 回函通知: psh
-> 状态: 已核（2026-08-26 评审：NaMain+NaCJK 双栈+就绪门 load 双字体落地；vhea 0x10001 非法致 Chromium OTS 整字重拒=web 独有坑, sanitize-na-main.py 幂等修复(私有字体为何加载不上的真因)；NaMain 严格等宽 7px/E0B0 命中 NaCJK/cellH 不变 ④e④f 不动；三卷 10/10+5/5+19/19+npm85 全绿；headless fontFamily=NaMain,NaCJK 生效、混排对齐；待真机 ranger 中文行收口）
+> 状态: 已核（2026-08-26 评审：NaMain+NaCJK 双栈+就绪门 load 双字体落地；vhea 0x10001 非法致 Chromium OTS 整字重拒=web 独有坑, sanitize-na-main.py 幂等修复(私有字体为何加载不上的真因)；NaMain 严格等宽 7px/E0B0 命中 NaCJK/cellH 不变 ④e④f 不动；三卷 10/10+5/5+19/19+npm85 全绿；headless fontFamily=NaMain,NaCJK 生效、混排对齐；待真机 ranger 中文行收口） → 真机C档已收口（2026-08-27 nz自验收 device-verify 12/12绿+像素证据，见 kfmv4-9.0-nz-device-verify-four-green-report）
 
 ## 一、落地复核（与规格吻合）
 

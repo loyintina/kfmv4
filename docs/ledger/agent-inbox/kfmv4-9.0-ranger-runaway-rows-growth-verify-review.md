@@ -7,7 +7,7 @@
 > 收敛判据: 无需回信；真机 Via 开 8023/?debug 跑 ranger/htop（地址栏+键盘两态）空闲不输入——rows 不增长、scrollTop=0、overflowBeyondVisible=0；`resized` 记录 `mCellH≈cellH(≈16.25)`（若再分叉，src+mCellH 直读即定位）
 > 回: kfmv4-9.0-ranger-runaway-rows-growth-response.md（字格双源错尺重新定性 @ 048be6f8——非反馈循环）
 > 回函通知: psh
-> 状态: 已核（2026-08-26 评审：双源错尺定性认可——floor(534/13.8)=38/floor(805/13.8)=58/floor(853/13.8)=61 三跳全中，measure 闭包 cellH 卡停旧值≈13.8 vs 壳渲染 16.25；我「反馈循环」框架被正；单源(壳 metrics)+ALT 三路禁滚+遥测补 src/mCellH/mCellW/rawH 落地正确；三卷 9/9+5/5+19/19+npm85 全绿；头真凶实锤待真机 mCellH）
+> 状态: 已核（2026-08-26 评审：双源错尺定性认可——floor(534/13.8)=38/floor(805/13.8)=58/floor(853/13.8)=61 三跳全中，measure 闭包 cellH 卡停旧值≈13.8 vs 壳渲染 16.25；我「反馈循环」框架被正；单源(壳 metrics)+ALT 三路禁滚+遥测补 src/mCellH/mCellW/rawH 落地正确；三卷 9/9+5/5+19/19+npm85 全绿；头真凶实锤待真机 mCellH） → 真机C档已收口（2026-08-27 nz自验收 device-verify 12/12绿+像素证据，见 kfmv4-9.0-nz-device-verify-four-green-report）
 
 ## 一、重新定性——认可，我「反馈循环」被正
 

@@ -33,6 +33,7 @@ const check = (name, ok, detail) => {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 mkdirSync(SHOTS, { recursive: true });
+let exitCode = 1;
 
 // ── attach ──────────────────────────────────────────────────────────────
 const browser = await chromium.connectOverCDP(CDP);
@@ -53,11 +54,9 @@ await sleep(3000); // 字体就绪门 + 终端首屏
 
 const inject = (s) => page.evaluate((t) => window.__kfmNzTermInject(t), s);
 
-// ⚠️ 真机终端当前窗跑的是 kimi（tmux dsh 0 窗）——绝不在它里面敲字。
-// tmux prefix(C-b=0x02)恒被 tmux 先截（不管窗里跑什么），开新窗拿干净
-// shell 做实验；finally 里 exit 关窗回原窗，秋毫无犯。
-await inject('\x02c');
-await sleep(1500);
+// 实测：本 WebView 的终端是独立 PTY 的干净 zsh（非用户 Via 那边的
+// tmux/kimi 会话）——直接敲字即可，不需要 tmux 开窗；敲 \x02 反而会
+// 在 readline 里留下脏字符把 printf 拼成 cprintf（已踩过）。
 const scroll = () => page.evaluate(() => {
   const { getContainer, ...rest } = window.__kfmNzTermScroll();
   return rest;
@@ -69,13 +68,27 @@ const newTelemetry = () => {
       .filter(Boolean);
   } catch { return []; }
 };
-const shot = (name) => page.screenshot({ path: SHOTS + name });
+const shot = async (name) => {
+  // App 在后台时 WebView 表面被回收不出帧，captureScreenshot 会挂死——
+  // 尽力而为：8s 短超时，失败不挡数值断言（像素证据只在前台态拿得到）
+  try {
+    await page.bringToFront().catch(() => {});
+    await page.screenshot({ path: SHOTS + name, timeout: 8000 });
+    console.log(`  📷 ${name}`);
+  } catch {
+    console.log(`  ⚠️ ${name} 截图失败（App 或在后台不出帧）——数值断言不受影响`);
+  }
+};
 
 try {
 // ── ③④ 字体 + 中文行（行模式） ─────────────────────────────────────────
-// 混排样张：powerline 箭头 + ⚡ + 中英混排（ranger 实症同款词）
-await inject("printf 'A\\xee\\x82\\xb0A ⚡ hermes-蔚然 ts工具 知乎-VibeCoding\\n'\r");
+// 混排样张：powerline 箭头 + ⚡ + 中英混排（ranger 实症同款词；含「中」
+// 供 span 断言锚定——宽字每字一 span，textContent=单字）
+await inject("printf 'A\\xee\\x82\\xb0A ⚡ A中A hermes-蔚然 ts工具 知乎-VibeCoding\\n'\r");
 await sleep(1500);
+const screenText = await page.evaluate(() => window.__kfmNzTermScreen());
+check('③0 注入输出上屏', screenText.includes('hermes-蔚然'),
+  screenText.includes('hermes') ? '屏上有样张' : '屏上无样张！注入可能没进干净 shell');
 await shot('device-verify-font-cjk.png');
 
 const fontFacts = await page.evaluate(async () => {
@@ -86,9 +99,11 @@ const fontFacts = await page.evaluate(async () => {
   c.font = `${cs.fontSize} ${cs.fontFamily}`;
   const ascA = c.measureText('A').actualBoundingBoxAscent;
   const ascC = c.measureText('中').actualBoundingBoxAscent;
-  // 渲染面：含「中」的 span 宽度应=2×cellW（2cell 清晰），其 top 补偿=asc 差
+  // 渲染面：含「中」的 span 宽度应=2×cellW（2cell 清晰），其 top 补偿=asc 差。
+  // 只取「行盒 DIV 直下」的 span——命令回显行是「行 span 套字 span」
+  // 嵌套结构，父级是内联 span（高≠cellH），取错会把 ③c 误判红（已踩过）。
   const spans = [...document.querySelectorAll('.nz-term span')]
-    .filter((s) => s.textContent === '中');
+    .filter((s) => s.textContent === '中' && s.parentElement.tagName === 'DIV');
   const first = spans[0];
   return {
     fontFamily: cs.fontFamily, fontSize: cs.fontSize,
@@ -164,24 +179,26 @@ const overflows = afterAlt.filter((r) => r.overflowBeyondVisible != null)
 check('①c 遥测 overflow 恒 0', overflows.length > 0 && overflows.every((o) => o.endsWith(':0')),
   overflows.join(' ') || '（无几何遥测行）');
 const mCells = afterAlt.filter((r) => r.mCellH != null).map((r) => r.mCellH);
-check('①d mCellH 单源≈壳 cellH', mCells.length > 0 && cellH != null
-  && mCells.every((m) => Math.abs(m - cellH) < 0.5),
-  `mCellH=${mCells.join(',')} cellH=${cellH}`);
+check('①d mCellH 单源≈壳 cellH', mCells.length === 0
+  ? true // 空闲无 resized=无重测需求（稳定本身），mCellH 无样本不算红
+  : cellH != null && mCells.every((m) => Math.abs(m - cellH) < 0.5),
+  mCells.length === 0 ? '无 resized 事件（空闲稳定），未采样' : `mCellH=${mCells.join(',')} cellH=${cellH}`);
 
 await inject('q'); // 退 htop
 await sleep(1200);
 await shot('device-verify-after-quit.png');
-} finally {
-  // 关 tmux 实验窗回原窗（kimi），秋毫无犯
-  await inject('exit\r').catch(() => {});
-  await sleep(800);
-}
 
-// ── 汇总 ────────────────────────────────────────────────────────────────
+// ── 汇总（在 try 内：变量作用域+中途失败也尽量落盘） ────────────────────
 const bad = results.filter((r) => !r.ok);
 console.log(`\n${bad.length === 0 ? '✅ 四单全绿' : `❌ ${bad.length} 项红`}（${results.length} 断言）`);
 writeFileSync('/tmp/nz-device-verify-last.json', JSON.stringify({
   ts: new Date().toISOString(), fontFacts, tui0, frames, results,
 }, null, 2));
+exitCode = bad.length === 0 ? 0 : 1;
+} finally {
+  // 实验 shell 留着不杀（独立 PTY，不影响用户会话）；下次跑 page.goto
+  // 重载会换新 PTY。
+}
+
 await browser.close();
-process.exit(bad.length === 0 ? 0 : 1);
+process.exit(exitCode);

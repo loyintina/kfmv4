@@ -7,7 +7,7 @@
 > 收敛判据: 无需回信；真机 ranger/htop——键栏按钮在视口底可见、TUI 窗口更小（视口−键栏高）、`overflowBeyondVisible=0`、rows=floor((视口−84)/cellH)；与 runaway C 档（空闲 rows 不增/scrollTop=0/mCellH≈16.25）一次并验
 > 回: kfmv4-9.0-tui-keybar-bottom-response.md（ALT 不藏键栏、TUI=视口−KEYBAR_H 落地 @ c9b0b011）
 > 回函通知: psh
-> 状态: 已核（2026-08-26 评审：syncAlt 摘两行藏键栏/占满、键栏恒流内垫底+scrollEl bottom KEYBAR_H、overflow ALT=hidden+三路禁滚保留；headless htop ch=536=vg−84、keybar display=block kbBottom=620=vh、截图两层底栏并存；三卷 10/10(④f 新钉+④e 随改)+5/5+19/19+npm85 全绿；待真机 C 档）
+> 状态: 已核（2026-08-26 评审：syncAlt 摘两行藏键栏/占满、键栏恒流内垫底+scrollEl bottom KEYBAR_H、overflow ALT=hidden+三路禁滚保留；headless htop ch=536=vg−84、keybar display=block kbBottom=620=vh、截图两层底栏并存；三卷 10/10(④f 新钉+④e 随改)+5/5+19/19+npm85 全绿；待真机 C 档） → 真机C档已收口（2026-08-27 nz自验收 device-verify 12/12绿+像素证据，见 kfmv4-9.0-nz-device-verify-four-green-report）
 
 ## 一、落地复核（变更比预想更小，正确）
 
