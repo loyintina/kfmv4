@@ -84,17 +84,14 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
     ~/.kfmv4/ledger/sys-metrics.json 供面板历史柱状图；cron 成败判据 = 逐脚本标记表
     CRON_MARKERS 末位对比，通用关键字实测三处误判已弃用；端口 30s/cron 5min
     缓存，新增 cron 条目只需在标记表/别名表登记）
-    （2026-08-07 登记①：RSS 参照改自身 cgroup memory.high（800M 墙），按 /proc/self/cgroup 相对路径拼读——根路径是根 cgroup 的 max，直读必失效；
-    rss 历史下发前转占限额百分比，柱状图口径统一「样本值=百分比」）
+    （2026-08-27 登记：HUD 余额双源——routes/obs.ts glm 段=deepseek 外新增智谱按量钱包+GLM Coding 套餐积分（quota/limit，5h+周两窗口）；obs-hud.ts 渲染，长文本撑宽 auto 列教训见 e6ca2182）
+    （2026-08-07 登记①：RSS 参照改自身 cgroup memory.high（800M 墙），按 /proc/self/cgroup 相对路径拼读——根路径是根 cgroup 的 max，直读必失效；rss 历史下发前转占限额百分比，柱状图口径统一「样本值=百分比」）
     （2026-08-13 登记②：viewport-visibility.ts 登记 ai-chat 域——装配点 ws-channel 在 ai-chat，新增模块按装配点登记 domain-src.mjs）
     （2026-08-07 登记②：星轨数据面 collectArchive——读 ~/.kfmv4/sessions/*.json
     顶层字段（title/createdAt/updatedAt/messageCount/tokenCount），msgs≤2 测试
     残留过滤、缺 count 旧会话以 messages.length 兜底，按 tokenCount 降序 TOP8 +
     其余聚合「其他 ×N」轨，30s 缓存；sessions/script/ 分流目录不读）
-    （2026-08-08 登记③：kimi-code 长会话上轨——~/.kimi-code/sessions/*//session_*/
-    agents/main/wire.jsonl ≥1MB 入选（当前=研究臂+主线两条）；token 口径=新处理
-    token（inputOther+cacheCreation+output）**不含 cacheRead**（含它研究臂 4.77G
-    会压扁 kfm 轨道）；增量扫描 offset 只读新增尾部，轮转截断归零重扫）
+    （2026-08-08 登记③：kimi-code 长会话上轨——~/.kimi-code/sessions/*//session_*/agents/main/wire.jsonl ≥1MB 入选（当前=研究臂+主线两条）；token 口径=新处理 token（inputOther+cacheCreation+output）**不含 cacheRead**（含它研究臂 4.77G 会压扁 kfm 轨道）；增量扫描 offset 只读新增尾部，轮转截断归零重扫）
     （2026-08-08 登记④：脉搏数据面 collectPulse——agent-calls/tool-exec/
     check-failures/build-metrics 四条 jsonl 滚动 24h 聚合，尾部限扫
     （200/200/100/100KB）+ 60s 缓存；permission-audit 暂缓（87% allow 分布单一，
