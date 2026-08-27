@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit f9612049 · 生成于 2026-08-27 -->
+<!-- 基准 commit 32abf493 · 生成于 2026-08-27 -->
 
 # 代码清单（机械层）
 
@@ -73,7 +73,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（29 文件 · 4690 行）
+## client-shell（29 文件 · 4701 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -85,7 +85,7 @@
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 221 | initGestures |
-| src/client/modules/obs-hud.ts | 207 | initObsHud |
+| src/client/modules/obs-hud.ts | 218 | initObsHud |
 | src/client/modules/confirm-dialog.ts | 192 | ConfirmOptions, showConfirm |
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
@@ -171,11 +171,11 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（11 文件 · 2708 行）
+## server（11 文件 · 2760 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/server/routes/obs.ts | 943 | fetchBigmodelBalance, fetchDeepseekBalance, setupObsRoutes, setupObsPages, parseInbox, collectAuditPending, parseStack, collectSys, collectArchive, normalizeIso, collectPulse, collectPerms, buildRolesData, collectRoles |
+| src/server/routes/obs.ts | 995 | fetchBigmodelBalance, fetchBigmodelQuota, fetchDeepseekBalance, setupObsRoutes, setupObsPages, parseInbox, collectAuditPending, parseStack, collectSys, collectArchive, normalizeIso, collectPulse, collectPerms, buildRolesData, collectRoles |
 | src/server/routes/files.ts | 488 | pickWindowTokenCount, pickCompactCutIndex, FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 324 | WsServer |
 | src/server/index.ts | 188 | — |
@@ -724,4 +724,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 342 文件 · 57790 行 · 跨域边 284 条
+合计 342 文件 · 57853 行 · 跨域边 284 条
