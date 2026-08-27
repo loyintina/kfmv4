@@ -41,7 +41,7 @@
 | 活跃状态同步 | workflows/state-sync.yaml |
 <!-- /gen:route-table -->
 | 理解项目方向/为什么这么设计 · 范式包实验研究 · 两线终端对照（nz⇄na 语义矩阵/漂移裁决） | active/vision.md · active/nine-zero/nine-point-zero.md（9.0 设计地图：台账+契约索引）· ../experiments/paradigm/index.md（实验登记面）· active/two-line-terminal-audit.md（stack id 21） |
-| 评价/了解某功能（「kfmv4 有一个 X」）· 收集素材入库/查询 | domains/capability-map.md（功能总目录）· library/README.md（收集素材库：收录规则） |
+| 评价/了解某功能（「kfmv4 有一个 X」）· 收集素材入库/查询 | domains/capability-map.md（功能总目录）· /root/00-Loyintina/50-AI研究/README.md（AI研究收藏馆：收录规则；原 library/ 已于 2026-08-27 迁出本仓） |
 | 写/跑 agent 脚本（发版建议等）· UI 视觉自测/截图（守视 §四号负载） | guides/agent-runner.md |
 | **无匹配** | 完成后记录；同类操作重复 3 次 → workflows/_template.yaml 固化 |
 

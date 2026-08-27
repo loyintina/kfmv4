@@ -1,10 +1,10 @@
 ---
 name: zhihu-mht-clipping
-description: 把知乎 MHT（等网页另存为产物）剪藏进 kfmv4 library/collected/——解正文、提取并验证图片、坏图走 CDN 抓真、读图描述、产出单个 md。用于处理信箱里的知乎 .mht 文件。
+description: 把知乎 MHT（等网页另存为产物）剪藏进 vault 的 /root/00-Loyintina/50-AI研究/10-剪藏/——解正文、提取并验证图片、坏图走 CDN 抓真、读图描述、产出单个 md。用于处理信箱里的知乎 .mht 文件。
 whenToUse: 当任务涉及把知乎 MHT（或类似网页 MHT）剪藏入库、提取知乎图片、处理 .mht / page_1.html / mht_parts。也适用于"知乎 MHT 图片损坏"相关场景。
 ---
 
-# 知乎 MHT 剪藏流程（kfmv4 → library/collected/）
+# 知乎 MHT 剪藏流程（vault → /root/00-Loyintina/50-AI研究/10-剪藏/）
 
 ## 已知教训（实测，2026-08 多轮）
 
@@ -81,13 +81,14 @@ curl -s -A "Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/126.0 Mobile Safari/
 - 正文：article.txt 全文，`[[图N]]` 就地替换为 `> **【图·…】** 描述`
 
 ### 7. 存库 + 提交
-放到 `library/collected/<主题>-<作者>-<日期>.md`，`git add` 该文件 → commit
-（`docs(library): 收知乎剪藏…`）。**只 add 这一个文件**，别带并行线的改动。
+放到 `/root/00-Loyintina/50-AI研究/10-剪藏/<主题>-<作者>-<日期>.md`，
+在 vault 里 `git add` 该文件 → commit → 推送走 vault 同步管道。
+**不再动 kfmv4 仓库**（library 已迁出，2026-08-27）。
 
 ## 验收
 - 单 md，正文完整，无 `[[图N]]` 残留，图片描述内插对应位置（不堆末尾）
 - 坏图没进 agent 上下文（都被 CDN 真图/描述替代）
 
 ## 实例
-`library/collected/FunctionCalling已死-CodeMode出现-知乎-2026-08-25.md`（单 md + 内插图描述）
-`library/collected/Agent瓶颈-武子康-知乎-2026-08-23.md`（含图片文字转写）
+`50-AI研究/10-剪藏/FunctionCalling已死-CodeMode出现-知乎-2026-08-25.md`（单 md + 内插图描述）
+`50-AI研究/10-剪藏/Agent瓶颈-武子康-知乎-2026-08-23.md`（含图片文字转写）

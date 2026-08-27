@@ -11,7 +11,7 @@
  * 豁免：确需引用不存在符号时登记 WHITELIST（注释原因）。挂 npm run check，失配 = 中断。
  */
 
-import { readFileSync, readdirSync } from 'fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { DOCS_ROOT } from './docs-root-const.mjs';
@@ -53,12 +53,15 @@ for (const f of walk(docDir, '.md')) {
 // ========== src/ 语料 ==========
 
 // 主仓 + nz/na 两线（term-contract.md 等跨线契约引用两线符号——
-// app_cursor() 活在 nz/src、prefer_cjk() 活在 kfm-na/src，只扫主仓=盲区）
-const srcBlob = [
-  [join(ROOT, 'src'), '.ts'],
-  [join(ROOT, 'nz/src'), '.ts'],
-  [process.env.KFM_NA_SRC || '/root/kfm-na/src', '.rs'],
-]
+// app_cursor() 活在 nz/src、prefer_cjk() 活在 kfm-na/src，只扫主仓=盲区）。
+// nz/na 目录缺席时静默跳（探针假树/精简环境只有主仓 src/）。
+const srcDirs = [[join(ROOT, 'src'), '.ts']];
+if (existsSync(join(ROOT, 'nz/src'))) srcDirs.push([join(ROOT, 'nz/src'), '.ts']);
+const naSrc = process.env.KFM_NA_SRC || '/root/kfm-na/src';
+try {
+  if (statSync(naSrc).isDirectory()) srcDirs.push([naSrc, '.rs']);
+} catch { /* na 仓不在本机 */ }
+const srcBlob = srcDirs
   .flatMap(([dir, ext]) => walk(dir, ext))
   .map(f => readFileSync(f, 'utf-8'))
   .join('\n');
