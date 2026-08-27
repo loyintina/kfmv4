@@ -329,8 +329,15 @@ export function applyTermBundle(ctx: Context): void {
         sessionId: card.sessionId,
       });
       // C4 同串同宽判卷钩子（term-contract C4 对照题）：核光标列 x
-      // （cursor() 高 16 位=x；差分断言「串推进列数」用）
-      (window as unknown as Record<string, unknown>).__kfmNzCursorX = () => card.core.cursor() >>> 16;
+      // （cursor() 打包=(row<<16)|col，列在低 16 位）+ 直喂核入口——
+      // 判卷专用：直接 feed 绕开 shell 回显（zsh ZLE 对 PUA 字符的
+      // 转义回显会污染「串宽度」测量，实测 E0B0 被画成 4 列），
+      // 只绕 shell 不绕核管线，C4 断的正是核网格推进语义
+      (window as unknown as Record<string, unknown>).__kfmNzCursorX = () => card.core.cursor() & 0xffff;
+      (window as unknown as Record<string, unknown>).__kfmNzTermCoreFeed = (s: string) => {
+        card.core.feed(new TextEncoder().encode(s));
+        return card.core.cursor() & 0xffff;
+      };
 
       // 软键盘入口（xterm 同款隐藏 textarea 诱饵）：移动浏览器只在可编辑
       // 元素聚焦时弹软键盘，div+tabIndex 没用。点卡片 → 聚焦诱饵；桌面

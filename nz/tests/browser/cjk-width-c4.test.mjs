@@ -33,12 +33,12 @@ try {
   }, { timeout: 15000 }).catch(() => {});
 
   // ── 核层：同串 → 光标推进列数（C4 本体判据） ─────────────────────────
-  // 经真实注入管线喂串（管线语义：\r 回车），随后读核 cursor() 的 x。
-  // echo 前缀也推进列——改用「差分」：同一行内喂串前后 x 差=串推进。
-  const advance = async (s) => page.evaluate(async (str) => {
+  // 直喂核（CoreFeed 钩子）不经 shell 回显——经 PTY 的注入会混入 zsh ZLE
+  // 行编辑行为（PUA 字符被转义回显成多列，实测 E0B0 推进 4），测的不是
+  // 网格宽度语义。C4 断的是解析核网格，判据纯净。
+  const advance = (s) => page.evaluate((str) => {
     const before = window.__kfmNzCursorX();
-    window.__kfmNzTermInject(str);
-    await new Promise((r) => setTimeout(r, 300));
+    window.__kfmNzTermCoreFeed(str);
     return window.__kfmNzCursorX() - before;
   }, s);
 
@@ -47,25 +47,15 @@ try {
   if (!hasCursorHook) {
     check('钩子 __kfmNzCursorX 就绪', false, '缺失——term 插件未暴露核 cursor()');
   } else {
-    // 定位到行首：注入 \r 后 x 应=0（行首）
-    await page.evaluate(() => window.__kfmNzTermInject('\r'));
-    await new Promise((r) => setTimeout(r, 300));
-
     let x = await advance('A中A');
     check('C4① "A中A" → +4', x === 4, `推进=${x}`);
 
-    await page.evaluate(() => window.__kfmNzTermInject('\r'));
-    await new Promise((r) => setTimeout(r, 300));
     x = await advance('中中');
     check('C4② "中中" → +4', x === 4, `推进=${x}`);
 
-    await page.evaluate(() => window.__kfmNzTermInject('\r'));
-    await new Promise((r) => setTimeout(r, 300));
     x = await advance('\uE0B0');
     check('C4③ U+E0B0 → +1（powerline 窄格）', x === 1, `推进=${x}`);
 
-    await page.evaluate(() => window.__kfmNzTermInject('\r'));
-    await new Promise((r) => setTimeout(r, 300));
     x = await advance('中文A');
     check('C4④ "中文A" → +5', x === 5, `推进=${x}`);
 
