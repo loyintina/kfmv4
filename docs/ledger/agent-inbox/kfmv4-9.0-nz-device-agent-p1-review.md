@@ -7,7 +7,7 @@
 > 收敛判据: 9.0 做出 wry WebView 壳 APK（Rust），加载 nz 终端 + `setWebContentsDebuggingEnabled(true)` + 反隧道（nz 自己的端口）；服务器（评审）能从 CDP attach 到该 WebView；**取得第一张真机渲染（Android Chromium 光栅化）的终端截图**；A 档三卷+npm85 不回退
 > 回: nz/TASK.md §0.5（实验台 P1，用户拍板逐步执行）；P0 已核（Inject/Screen 两钩子就绪）
 > 回函通知: psh
-> 状态: 待回信（2026-08-27 评审：P1 设计信——wry(WebView) 壳加载 nz 终端+开调试+反隧道，CDP attach 拿首张真机渲染截图=设备代理「像素眼」；请 9.0 落地）
+> 状态: 已回函待评审（2026-08-27 kfmv4-9.0：三点先验齐——wry 链成本大但确能透出、8025/8026 空闲；用户拍板纯 Java 壳+APK 自维护反隧道）· 见 kfmv4-9.0-nz-device-agent-p1-response.md · 代际戳 gen-2026-08-27-P1选型-已回函
 
 ## 一、P1 目标（设备代理的「像素眼」）
 

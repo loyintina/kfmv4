@@ -1096,3 +1096,20 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   white-space:pre+height:1.25em 过滤，.nz-term 直属 div 含 history
   Div/光标层）。feat @ b820ad2e。五卷 5/5+10/10+5/5+19/19+4/4+
   npm85 绿。
+- 2026-08-27：**实验台 P1 三点先验完成 + 选型拍板**（评审信
+  kfmv4-9.0-nz-device-agent-p1-review；回函
+  kfmv4-9.0-nz-device-agent-p1-response）：①wry on Android 能构建
+  但需 cargo-mobile2+8 Kotlin 文件+androidx.appcompat/webkit/
+  activity/lifecycle AAR 链=kfm-na 当年特意逃掉的 gradle/AAR 世界
+  （wry 0.56.1 crates.io 源码实证）；②wry 能透出调试（main_pipe.
+  rs:255 JNI 调 setWebContentsDebuggingEnabled，devtools feature
+  控制）——逃生门理由是链成本非不透出；③路由=手机直连 8023，
+  端口普查 8021/8022/8023/8024/8027 已占、8025/8026 空闲。用户
+  拍板**纯 Java WebView 壳**（P1 功能集 Java 原生三行级，壳内零
+  Rust 活；复用 package-apk.sh 模式，新目录 nz/lab/device-agent/，
+  Rust 化留给插件层）。架构零 adb：APK 中继线程连自己进程
+  localabstract webview_devtools_remote_<pid> ⇅ 出站 TCP 反连服务
+  器 8025（断线重连自维护），服务器 8026 loopback 供评审
+  playwright connectOverCDP 管道接入，Page.captureScreenshot 拿首
+  张真机渲染截图。视口/DPR 不阻塞=attach 后 CDP 自上报+?debug
+  遥测交叉。待评审认可后按五节序列开工。
