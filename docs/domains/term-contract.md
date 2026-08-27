@@ -47,8 +47,10 @@ na：key_seq 分模式；nz：核 `app_cursor()` 钉 ?1h/?1l 两向（cargo 考�
 
 CJK 表意字符恒占 2 cell（含行内混排宽度计算）；powerline/符号区（U+E0B0 等）
 占 1 cell。na：alacritty 网格双宽语义；nz：字格单源 measureCell + 双宽
-span。**待办**：混排宽度互验考题（审计 C 表遗留）——两线各落一道
-「同串同宽」对照题。
+span。互验考题（审计 C 表遗留）：**判据=同串→光标推进列数**，契约串表——
+`A中A`→+4 / `中中`→+4 / `U+E0B0`→+1 / `中文A`→+5。nz 卷已落
+（cjk-width-c4.test.mjs 5/5，核层直喂判卷；教训：经 PTY 测宽度会混入
+zsh ZLE 转义回显，必须直喂核）。**na 待落同表 Rust 卷**（判 cursor 推进）。
 
 ### C5. CJK 备字策略
 

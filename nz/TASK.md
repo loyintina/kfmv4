@@ -1235,3 +1235,14 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   headless 6/6 证逻辑对）——真机前台 C 档待用户亮屏并验。排雷：pkill
   -f 自匹配炸自己 shell（按 pid 杀）；「会话不断」reload 后靠续命 attach
   而非 WS 重连（重连是同页面的，reload 换文档必须重 attach）。
+- 2026-08-27：**term-contract 立项 nz 三单**（kfmv4-term-contract-
+  landing-notice）：①SCROLLBACK_LINES 三件套 ✅（前条，压帽卷 4/4）；
+  ③鼠标报告 SGR 1006 正式挂单——**功能缺口（实现缺失非考卷缺失，全库
+  零命中），排期定案=tmux 线（8.8.4/8.8.5）之后**，桌面浏览器场景权重
+  上调时重议；影响面=TUI 内点击定位（htop 点列头/ranger 点选），手机
+  滚动主场景不受影响。②C4 混排宽度互验考题 ✅=cjk-width-c4.test.mjs
+  5/5 绿（判据=同串光标推进列数，核层直喂；契约串 A中A→+4/中中→+4/
+  U+E0B0→+1/中文A→+5；na 侧请落同表 Rust 卷）。**教训（artifact 入册）**：
+  经 PTY 注入测「串宽度」会混入 zsh ZLE 对 PUA 字符的转义回显（E0B0
+  实测被画成 4 列）——C4 判据必须直喂核（__kfmNzTermCoreFeed 判卷
+  钩子，只绕 shell 不绕核管线）；cursor() 打包=(row<<16)|col 列在低位。
