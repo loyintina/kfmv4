@@ -1,6 +1,7 @@
 package dev.kfm.nz.agent;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -39,6 +40,10 @@ public class MainActivity extends Activity {
         setContentView(web);
 
         web.loadUrl(TERM_URL);
+
+        // 保活前台服务（BAR-029 同款）：退后台/息屏不被 cached-app 冻结器
+        // 冻住——冻结=心跳停跳、DIAL 黑洞、实验台链路全僵（2026-08-27 实测）
+        startService(new Intent(this, KeepAliveService.class));
 
         // CDP 中继：自己进程（同 uid）连自己的 devtools socket，SELinux 无障
         CdpRelay.start();

@@ -10,8 +10,13 @@
     package="dev.kfm.nz.agent">
 
     <!-- WebView 加载 nz 终端（经 kalo 隧道 -L 8023，手机侧 127.0.0.1）+
-         CDP 中继出站 127.0.0.1:8025（同款隧道 -L 8025） -->
+         CDP 中继出站 127.0.0.1:8025/8028（同款隧道 -L） -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 保活三件套（BAR-029 同款）：前台服务 + 通知 + 息屏 CPU 保活——
+         退后台/息屏被 cached-app 冻结器冻住 = 心跳停跳、DIAL 黑洞 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:label="NZ-Agent"
@@ -35,5 +40,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".KeepAliveService"
+            android:exported="false" />
     </application>
 </manifest>
