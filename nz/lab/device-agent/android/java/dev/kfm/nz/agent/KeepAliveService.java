@@ -59,6 +59,39 @@ public class KeepAliveService extends Service {
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "nz_agent:keepalive");
         mWakeLock.acquire();
         ensureObservingWeb();
+        startGatePoll();
+    }
+
+    /** P2 闸门第一片信号（2026-08-27，na gate.rs restart-req 同语义）：
+     *  5s 轮询 server /api/gate/app-restart → {restart:true} → exit(0)，
+     *  START_STICKY 拉回=进程级冷启动复现/远程重启的执行腿。走 loopback
+     *  8023（kalo -L 隧道），服务器 touch /tmp/nz-gate/app-restart 即触发。 */
+    private void startGatePoll() {
+        Thread t = new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(5000);
+                    java.net.URL u = new java.net.URL("http://127.0.0.1:8023/api/gate/app-restart");
+                    java.net.HttpURLConnection c = (java.net.HttpURLConnection) u.openConnection();
+                    c.setConnectTimeout(3000);
+                    c.setReadTimeout(3000);
+                    java.io.BufferedReader r = new java.io.BufferedReader(
+                            new java.io.InputStreamReader(c.getInputStream()));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = r.readLine()) != null) sb.append(line);
+                    r.close();
+                    if (sb.toString().contains("\"restart\":true")) {
+                        android.util.Log.w("nz-agent", "gate: app-restart 收到，自杀等 START_STICKY 拉回");
+                        System.exit(0);
+                    }
+                } catch (Exception e) {
+                    // server 没起/隧道断——静默重试（保活服务不能被观测失败拖死）
+                }
+            }
+        }, "nz-gate-poll");
+        t.setDaemon(true);
+        t.start();
     }
 
     /** 离屏观测 WebView：不 setContentView 不 attach window，纯跑页面。

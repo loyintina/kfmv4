@@ -15,7 +15,8 @@
  *   + bootLog 同款模式，插件注册/注销/清理全链从第一天就有。
  */
 import { createServer, type Server } from 'node:http';
-import { readFile, appendFile } from 'node:fs/promises';
+import { readFile, stat, appendFile } from 'node:fs/promises';
+import { existsSync, unlinkSync } from 'node:fs';
 import { join, normalize, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Context } from 'cordis';
@@ -98,14 +99,41 @@ export function createNzServer(): Server {
       });
       return;
     }
+    // gate 查询端点（App 侧轮询）：GET /api/gate/app-restart → 查
+    // /tmp/nz-gate/app-restart，在 = {restart:true} 并摘除（P2 闸门第一片
+    // 信号：na gate.rs restart-req 同语义，App 自杀 START_STICKY 拉回）
+    if (req.method === 'GET' && (req.url ?? '').split('?')[0] === '/api/gate/app-restart') {
+      const trigger = `${GATE_DIR}/app-restart`;
+      const restart = existsSync(trigger);
+      if (restart) {
+        try { unlinkSync(trigger); } catch { /* 摘除失败下轮再摘 */ }
+        slog('gate: app-restart 信号已确认下发');
+      }
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ restart }));
+      return;
+    }
     const abs = resolveStatic(req.url ?? '/');
     if (!abs) {
       res.writeHead(403).end('forbidden');
       return;
     }
     readFile(abs)
-      .then((buf) => {
-        res.writeHead(200, { 'content-type': MIME[extname(abs)] ?? 'application/octet-stream' });
+      .then((buf) => stat(abs).then((st) => ({ buf, st })))
+      .then(({ buf, st }) => {
+        const ext = extname(abs);
+        // 缓存头（2026-08-28 冷启动探针定罪：字体 3.3MB 走隧道每次全量
+        // 重传 7.6s+5.7s=UI 15s 主因）——字体/wasm/带 hash 的 bundle 用
+        // immutable 强缓存（内容不变/URL 带 hash，变更即换 URL）；HTML 与
+        // build-info.json 用 no-cache（热更自刷腿要拿最新，协商 304）。
+        const immutable = ['.ttf', '.woff2', '.wasm', '.js', '.css', '.png', '.svg', '.map'].includes(ext);
+        res.writeHead(200, {
+          'content-type': MIME[ext] ?? 'application/octet-stream',
+          'last-modified': st.mtime.toUTCString(),
+          'cache-control': ext === '.html' || ext === '.json'
+            ? 'no-cache'
+            : 'public, max-age=31536000, immutable',
+        });
         res.end(buf);
       })
       .catch(() => {

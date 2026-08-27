@@ -1298,3 +1298,22 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   确需装包时可自动调起安装器（一次一弹用户点装，不频繁即可）。
   同包顺带：KeepAliveService 养离屏观测 WebView+BootReceiver 开机自启
   （Service 层，零 UI），APK versionCode=1787833032 已部署待装。
+- 2026-08-28：**冷启动 7-15s bug 复现+归因+第一刀修复**（用户报障，
+  第一个走自观测机制的 bug 闭环）：复现方法=①Termux sshd（kalo -R
+  8022 遗产通道）am start 冷启动打 T0；②gate 新信号 app-restart
+  （server 端点 /api/gate/app-restart 查摘 /tmp/nz-gate/app-restart+
+  KeepAliveService 5s 轮询线程查到即 exit(0)——P2 闸门第一片交付，
+  APK 1787845487 部署）；③CDP attach 读 performance 资源账+open 链
+  步进标记（__kfmNzTermBootMarks：open-start/glue/fonts/ws-open/
+  first-frame，判卷取数口常驻）。**归因账**：原始 15s=字体 3.3MB
+  （na-main 1.86MB 7.6s+na-cjk 1.46MB 5.7s）走隧道全量重传（server
+  无缓存头）+文档出生 2s（WebView 冷启固有）+wasm 编译 ~2s+WS/PTY
+  0.7s。**第一刀=静态服务缓存头**（ttf/wasm/带 hash 的 bundle=
+  immutable 强缓存；html/json=no-cache 保自刷腿）——字体零传输，
+  UI 15s→6.4s。**残余 5.6s 分解**：WebView 冷启 2s（固有）+模块链
+  wasm 编译/init 2s（open-start=文档后 2.05s，探针先行的 singleton
+  init）+WS/PTY/首帧 0.7s+渲染上屏 0.8s。待拍板方向：开屏 loading
+  骨架（等待可感知化，用户 C 档时提过此意）/wasm 编译缓存（IDB 存
+  compiled module，工程大）/字体子集化。**依赖雷顺手修**：playwright
+  原寄生 /tmp/nztest（服务器重启 /tmp 清空=考卷全瘫，今日实撞）——
+  npm i -D playwright 入 nz devDeps（1.62.1，launch 验证过）。

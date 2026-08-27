@@ -162,7 +162,14 @@ export function applyTermBundle(ctx: Context): void {
 
   const service: TermCardService = {
     async open(opts = {}) {
+      const bootMarks: Record<string, number> = {};
+      const mark = (k: string): void => {
+        bootMarks[k] = Math.round(performance.now());
+        try { (window as unknown as Record<string, unknown>).__kfmNzTermBootMarks = bootMarks; } catch { /* 判卷取数口失败不挡 */ }
+      };
+      mark('open-start');
       const g = await glue();
+      mark('glue-wasm-ready');
       glueCtor = g.TermCore; // replay 重建核用
       const cardId = `term-${++seq}`;
       const inst = ctx.cardTypes.createInstance('term');
@@ -220,6 +227,7 @@ export function applyTermBundle(ctx: Context): void {
           document.fonts.load(`13px 'NaMain'`, '0'),
           document.fonts.load(`13px 'NaCJK'`, '中'),
         ]);
+        mark('fonts-ready');
       } catch { /* 字体 404/受限 → fallback 栈，度量与渲染仍同源 */ }
       let cellW = 0;
       let cellH = 0;
@@ -708,10 +716,12 @@ export function applyTermBundle(ctx: Context): void {
         }
       }
       if (!sessionId) sessionId = await bridge.open({ command: opts.command, cols: card.cols, rows: card.rows });
+      mark('ws-open-pty');
       try { sessionStorage.setItem(SS_KEY, sessionId); } catch { /* 隐私模式等，热更退化为断线重开 */ }
       card.sessionId = sessionId;
       card.syncAlt();
       shell.renderFrame();
+      mark('first-frame');
       card.placeKb();
       // 开页即报（Stage①：真实设备开 ?debug 页即自报基线几何，agent 直读）
       reportViewport('open');
