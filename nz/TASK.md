@@ -1205,3 +1205,15 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   **代码零残留**。tmux 线（8.8.4/8.8.5）维持未立项，等用户拍板。当前
   方向按用户口谕：自观测方向议题 + 双线横向审计对比先行；P2 文件
   信号闸门与抄作业三件（flight-rec/--trend/stats 咬合闸）在册待序。
+- 2026-08-27：**scrollback 钉值三件套落地完成**（审计终裁#1 nz 件，
+  kfmv4-audit-term-parity-final-verdict 承诺兑现）：①单源=SCROLLBACK_
+  LINES=1000 常量（plugins/term/index.ts，TermCore 三处实例化全引此，
+  理由注 DOM 成本本征 vs na GPU 网格）；②压帽考卷=scrollback-cap.
+  test.mjs 4 断言（灌 1200 行 histLen 恒 1000/evicted>0/再灌仍恒 1000/
+  evicted 单调增 170→371）全绿；③钩子补 histLen/evicted 两字段（__
+  kfmNzTermScroll）。回归：scrollback 5/5+bottom-anchor 10/10+npm 586
+  全绿。排雷两枚（教训入账）：①nz/build.mjs entryPoints 是 cwd 相对
+  路径——从主仓根跑 node nz/build.mjs 会把 kfmv4 本体 bundle 覆盖
+  （public/index.html/build-info 连坐，已 checkout 恢复+nz/public 的
+  新 bundle 为准）；②机器 load>10 时 chromium 起不来（launch 挂死/
+  createBrowserContext 失败），考卷假红先看负载。
