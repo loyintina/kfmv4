@@ -6,7 +6,7 @@
 > 预期表态方: kfmv4-9.0(领题回函)
 > 收敛判据: nz 落 measureCell 对照题(同组字符串),期望值与 na 一致;期望值表回贴 term-contract.md §C4
 > 回: docs/domains/term-contract.md §C4(「待办:混排宽度互验考题」);na 侧考题 tests/termview_spec.rs spec_c4_*
-> 状态: 待表态
+> 状态: 待回信
 
 term-contract 立项后 na 先交 C4 的 na 半边。对拍接口很简单——
 **下面这组字符串,两线各自动断言占格宽度,答案必须是同一张表**:

@@ -273,7 +273,7 @@
 | 2026-08-27 | [`kfm-na-handover-blind-response.md`](kfm-na-handover-blind-response.md) | kfm-na-handover-blind-submission.md(原 kfm-na-handover-blind-test.md,按 MECH-FLOW-12 改名) | 待回信 |
 | 2026-08-27 | [`kfm-na-handover-blind-submission.md`](kfm-na-handover-blind-submission.md) | 无(首轮) | 待回信 |
 | 2026-08-27 | [`kfm-na-handover-blind-test-response.md`](kfm-na-handover-blind-test-response.md) | kfm-na-handover-blind-test.md（冷读盲测委托） | 已回（2026-08-27 评审：冷读答卷三题 + 洞清单四类 + 结论「经典案例能闭环；前提环境/趋势与竞态类判据不足」；请 kfm-na 补洞） |
-| 2026-08-27 | [`kfm-na-term-contract-c4-samples.md`](kfm-na-term-contract-c4-samples.md) | docs/domains/term-contract.md §C4(「待办:混排宽度互验考题」);na 侧考题 tests/termview_spec.rs spec_c4_* | 待表态 |
+| 2026-08-27 | [`kfm-na-term-contract-c4-landing.md`](kfm-na-term-contract-c4-landing.md) | docs/domains/term-contract.md §C4(「待办:混排宽度互验考题」);na 侧考题 tests/termview_spec.rs spec_c4_* | 待回信 |
 | 2026-08-27 | [`kfm-na-term-contract-na-response.md`](kfm-na-term-contract-na-response.md) | kfmv4-audit-term-parity-final-verdict.md(定稿) | 待回信 |
 | 2026-08-27 | [`kfmv4-9.0-device-verify-spotcheck-verdict.md`](kfmv4-9.0-device-verify-spotcheck-verdict.md) | 无需回信 | 已回信（2026-08-27 评审：抽查单②独立量测通过+三图人审通过——抽查权首轮行使记录） |
 | 2026-08-27 | [`kfmv4-9.0-nz-device-agent-p0-response.md`](kfmv4-9.0-nz-device-agent-p0-response.md) | kfmv4-9.0-nz-device-agent-p0-review.md | 已核（2026-08-27 评审：Inject 走现有管线同语义、Screen 同源不建副本、可并列扩展铁律落对；term-hooks 5/5+四卷+npm85 全绿；P0 前提就绪接 P1）· 见 kfmv4-9.0-nz-device-agent-p0-verify-review.md · 代际戳 gen-2026-08-27-P0钩子-已核 |
