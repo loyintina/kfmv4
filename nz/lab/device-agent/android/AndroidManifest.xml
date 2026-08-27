@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- nz 设备代理（device-agent）手工 manifest——复用 kfm-na package-apk.sh 同款
+     零 Gradle 手工链（javac→d8→aapt2→zipalign→apksigner），无 Rust/.so，纯 Java 皮。
+
+     选型定案（信箱 kfmv4-9.0-nz-device-agent-p1-response，2026-08-27 用户拍板）：
+     P1 功能集 = WebView 加载 URL + 开调试 + CDP 中继线程，Java 原生支持，
+     壳内零 Rust 活——不走 wry（其 Android 链要拖回 cargo-mobile2 + androidx
+     AAR 世界，kfm-na 当年特意逃离的那条）。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="dev.kfm.nz.agent">
+
+    <!-- WebView 加载 nz 终端（经 kalo 隧道 -L 8023，手机侧 127.0.0.1）+
+         CDP 中继出站 127.0.0.1:8025（同款隧道 -L 8025） -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:label="NZ-Agent"
+        android:usesCleartextTraffic="true"
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
+        <!-- usesCleartextTraffic=true：targetSdk=28 起明文 HTTP 默认被禁，
+             而 nz 终端是 http://127.0.0.1:8023/ 回环明文——不开这个 WebView
+             直接拒载（net::ERR_CLEARTEXT_NOT_PERMITTED）。回环+隧道语境
+             无真实明文暴露面。 -->
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density|fontScale">
+            <!-- configChanges 全集=国产 ROM 实锤坑对策（kfm-na 2026-08-13
+                 android-activity#196：MIUI/OriginOS 启动注入 density/fontScale
+                 变化触发 relaunch），一个都不许删。 -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

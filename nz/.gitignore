@@ -4,3 +4,4 @@ public/term-core/
 # 私有商业字体（NA 用户自己的授权字体，BUILD 时从 kfm-na assets 拷入，勿提交）
 public/fonts/na-main.ttf
 public/fonts/na-cjk.ttf
+lab/device-agent/build/

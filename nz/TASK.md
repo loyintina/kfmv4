@@ -1113,3 +1113,22 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   playwright connectOverCDP 管道接入，Page.captureScreenshot 拿首
   张真机渲染截图。视口/DPR 不阻塞=attach 后 CDP 自上报+?debug
   遥测交叉。待评审认可后按五节序列开工。
+- 2026-08-27：**实验台 P1 服务器侧+APK 落地**（评审信
+  kfmv4-9.0-nz-device-agent-p1-review，回函 p1-response 后用户拍板
+  直接开工）：`nz/lab/device-agent/`（AndroidManifest.xml +
+  MainActivity.java + CdpRelay.java + scripts/package.sh/deploy.sh）=
+  纯 Java WebView 壳（dev.kfm.nz.agent），WebView 加载
+  http://127.0.0.1:8023/（kalo 隧道 -L 8023，与 Via 同姿势）+
+  setWebContentsDebuggingEnabled(true) + 中继线程连自己进程
+  localabstract webview_devtools_remote_<pid> ⇄ 出站 127.0.0.1:8025
+  （kalo -L 8025）；干净桥断开立刻补新（CDP 多次顺序连接每连配新
+  桥）、连不上才指数退避（1s→15s）；usesCleartextTraffic=true
+  （targetSdk28 起明文默认禁，回环+隧道无暴露面）；打包复用
+  package-apk.sh 链去 cargo/.so/res（javac→d8→aapt2→zipalign→
+  apksigner；服务器分支补 JDK PATH——d8 内部 exec java）；APK 13K
+  纯 Java 皮。服务器侧 `nz/scripts/cdp-relay.ts`：8025 桥口 FIFO 待
+  命+8026 客户端口配对管道（纯字节不解协议，任一头关另一头陪葬），
+  两端口绑 loopback 零公网面，setsid 常驻（/tmp/nz-cdp-relay.log）。
+  考卷 cdp-relay.test.ts 4 断言（桥先/客先两序配对/客断桥陪葬/顺序
+  三连各配新桥——模拟 connectOverCDP 的 /json/version→list→WS）。
+  npm 85→89 绿。待真机：装 APK+kalo 加 -L 8025+CDP attach 首截图。
