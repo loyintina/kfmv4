@@ -308,19 +308,16 @@ export function applyTermBundle(ctx: Context): void {
       // cardId 分键。两区模型的 __kfmNzTermInputRow 随单区回退退役
       // （2026-08-24 拍板：无独立输入行，光标格 rect 走 .nz-term-cursor）。
       //
-      // 前台观测闸（2026-08-27 用户拍板）：用户前台使用时判卷钩子一律
-      // 拒绝——前台使用权归用户，观测/注入只允许 App 后台，或取证会话
-      // 显式授权（URL ?observe=1，用户知情才带）。自愈 reload 不闸
-      // （保命路径非观测）；?debug 遥测不闸（被动、用户显式开）。诚实
-      // 边界：CDP 引擎级 evaluate/截图闸不住（debug 口本质，保留给
-      // 实验台+评审抽查权），本闸挡的是「经钩子的观测/操作」。
-      const observeAllowed = (): boolean => /[?&]observe=1/.test(location.search);
-      const foregroundGate = (): string | null => {
-        if (document.visibilityState !== 'visible') return null; // 后台=观测自由
-        if (observeAllowed()) return null;                       // 取证会话显式授权
-        if (navigator.webdriver === true) return null;           // headless 考卷
-        return 'REJECTED-FOREGROUND（用户前台，观测被闸；取证请带 ?observe=1）';
-      };
+      // 【历史注记】前台观测闸（REJECTED-FOREGROUND）加了又撤（同日）：
+      // 初版把用户口谕「拒绝前台行为」落成了钩子级硬闸，用户质疑「限制
+      // 前台有什么好处」后复盘确认=过度矫正——读钩零打扰闸它纯损失
+      // （误伤用户围观 agent 跑测试的真场景），写钩与用户输入流本就是
+      // 各自独立 PTY 无串扰，CDP 引擎级又闸不住=连安全价值都没有。
+      // 「不打扰」的真实保障在架构层（①Service 离屏 WebView 观测，
+      //   永不 startActivity 抢前台；②安装器只在 deploy 时弹、装包必
+      //   用户手点；③开机自启只拉 Service）——三条已在壳层落地，钩子
+      // 层不需要任何闸。（复盘教训：听需求先问语义，「拒绝前台行为」
+      //   的主语是 App 抢前台，不是 agent 读终端。）
       (window as unknown as Record<string, unknown>).__kfmNzTermScroll = () => ({
         scrollTop: scrollEl.scrollTop,
         scrollHeight: scrollEl.scrollHeight,
@@ -340,18 +337,15 @@ export function applyTermBundle(ctx: Context): void {
       // 会话续命判卷钩子（热更闭环考卷用，并列扩展不碰既有语义）：
       // sessionId 本体 + 是否续命attach（screen 钩同源，无副本）
       (window as unknown as Record<string, unknown>).__kfmNzTermSession = () => ({
-        sessionId: foregroundGate() ?? card.sessionId,
+        sessionId: card.sessionId,
       });
       // C4 同串同宽判卷钩子（term-contract C4 对照题）：核光标列 x
       // （cursor() 打包=(row<<16)|col，列在低 16 位）+ 直喂核入口——
       // 判卷专用：直接 feed 绕开 shell 回显（zsh ZLE 对 PUA 字符的
       // 转义回显会污染「串宽度」测量，实测 E0B0 被画成 4 列），
       // 只绕 shell 不绕核管线，C4 断的正是核网格推进语义
-      (window as unknown as Record<string, unknown>).__kfmNzCursorX = () =>
-        foregroundGate() ?? (card.core.cursor() & 0xffff);
+      (window as unknown as Record<string, unknown>).__kfmNzCursorX = () => card.core.cursor() & 0xffff;
       (window as unknown as Record<string, unknown>).__kfmNzTermCoreFeed = (s: string) => {
-        const rej = foregroundGate();
-        if (rej) return rej;
         card.core.feed(new TextEncoder().encode(s));
         return card.core.cursor() & 0xffff;
       };
@@ -420,15 +414,13 @@ export function applyTermBundle(ctx: Context): void {
       // 命名、读同一状态/管线），不改动这版。
       const win = window as unknown as Record<string, unknown>;
       win.__kfmNzTermInject = (str: string) => {
-        const rej = foregroundGate();
-        if (rej) return rej;
         if (!str || !card.sessionId) return;
         const text = takeMods(str);
         if (!text) return;
         card.inputToBottom(); // 注入=落字：回底纪律同 kb/IME
         bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
       };
-      win.__kfmNzTermScreen = () => foregroundGate() ?? shell.screenText();
+      win.__kfmNzTermScreen = () => shell.screenText();
 
       // ?debug 诊断骨架（常备基建，复盘裁决①：管道+字段注册点常驻，专症
       // 字段随症收口——IME 专用 col/cv/cb 已随三症全解移除，保留通用渲染

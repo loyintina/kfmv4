@@ -1286,3 +1286,15 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   加**——CDP attach 场景 console 经 Runtime 域本就可见；未来实验台需
   要页面 console 落盘给 agent 离线读时再加 onConsoleMessage 转发（此
   条为裁决记录，防重复提案）。热更+重启闭环（§0.5 P3 切片）正式闭账。
+- 2026-08-27：**【设计反转】前台观测闸整层撤除**（用户质疑「限制前
+  台有什么好处」后复盘=过度矫正）：①读钩（Screen/CursorX/数值）零打
+  扰，闸它纯损失——误伤用户围观 agent 跑测试的真场景；②写钩（Inject）
+  与用户输入流是各自独立 PTY 无串扰；③CDP 引擎级闸不住=连安全价值都
+  没有。**「不打扰」的真保障在架构层且已全落地**：Service 离屏
+  WebView 观测永不抢前台 + 安装器只在 deploy 时弹装包必手点 + 开机
+  自启只拉 Service 零 UI。钩子恢复直通，原 REJECTED-FOREGROUND 机制
+  删除（历史注记留码内）。复盘教训入注记：听需求先问语义——「拒绝
+  前台行为」的主语是 App 抢前台，不是 agent 读终端。自动安装获准：
+  确需装包时可自动调起安装器（一次一弹用户点装，不频繁即可）。
+  同包顺带：KeepAliveService 养离屏观测 WebView+BootReceiver 开机自启
+  （Service 层，零 UI），APK versionCode=1787833032 已部署待装。
