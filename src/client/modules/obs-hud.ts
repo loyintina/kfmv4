@@ -1,7 +1,7 @@
 /**
  * obs-hud.ts — 观测台顶栏（2026-08-13 重构：中央九格删除，回归网格线）
  *
- * 顶栏：deepseek + 系统三格（硬盘/内存/负载）+ 余额；徽标缩小锚定顶栏下方。
+ * 顶栏：deepseek + glm 双余额 + 系统三格（硬盘/内存/负载）；徽标缩小锚定顶栏下方。
  * 刷新：余额 + 系统 30s 低频轮询（2026-08-13 用户定稿：信息不需要秒级新鲜，
  * 从 5s 提到 30s——移动端发热治理；时钟/翻页/端口滚动等定时器全部删除）。
  *
@@ -38,11 +38,15 @@ export function initObsHud(): void {
   const hud = document.createElement('div');
   hud.className = 'obs-hud';
   hud.innerHTML = `
-    <div class="obs-card obs-card-4col">
+    <div class="obs-card obs-card-5col">
       <div class="obs-emblem-slot"></div>
       <div class="obs-id-col">
         <div class="obs-provider">deepseek</div>
-        <div class="obs-balance">¥--</div>
+        <div class="obs-balance obs-balance-ds">¥--</div>
+      </div>
+      <div class="obs-id-col">
+        <div class="obs-provider">glm</div>
+        <div class="obs-balance obs-balance-glm">¥--</div>
       </div>
       <div class="obs-sys-col"></div>
       <div class="obs-hand-slot"></div>
@@ -51,7 +55,10 @@ export function initObsHud(): void {
   hud.style.zIndex = String(Z.CENTER_CONTENT);
   document.body.appendChild(hud);
 
-  const balanceEl = hud.querySelector<HTMLElement>('.obs-balance')!;
+  const balanceEls: Record<'ds' | 'glm', HTMLElement> = {
+    ds: hud.querySelector<HTMLElement>('.obs-balance-ds')!,
+    glm: hud.querySelector<HTMLElement>('.obs-balance-glm')!,
+  };
   const sysColEl = hud.querySelector<HTMLElement>('.obs-sys-col')!;
 
   // 徽标：锚定最左槽位（40×60 最小门槛，2026-08-13 用户定稿）
@@ -125,30 +132,44 @@ export function initObsHud(): void {
   window.addEventListener('resize', () => { emblems.relayout(); hand.relayout(); });
 
   // 余额 + 系统三格刷新（30s 低频；2026-08-13 用户定稿：信息不需要秒级新鲜）
-  let lastTotal = '';
+  // 双余额（2026-08-27）：balance=deepseek、balanceGlm=智谱按量计费钱包，各自闪动
+  const lastTotals: Record<'ds' | 'glm', string> = { ds: '', glm: '' };
+  const applyBalance = (
+    which: 'ds' | 'glm',
+    b?: { total?: string; available?: string; error?: string },
+  ) => {
+    const el = balanceEls[which];
+    const v = which === 'glm' ? b?.available : b?.total;
+    if (b && !b.error && v != null) {
+      el.textContent = fmtBalance(v);
+      if (v !== lastTotals[which]) {
+        lastTotals[which] = v;
+        el.classList.remove('obs-flash');
+        void el.offsetWidth;
+        el.classList.add('obs-flash');
+      }
+    } else {
+      el.textContent = '—';
+    }
+  };
   const refresh = async () => {
     try {
       const res = await fetch(`${API}/obs/hud`, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const j = await res.json() as { balance?: { total?: string; error?: string }; sys?: SysData };
-      const b = j?.balance;
-      if (b && !b.error && b.total != null) {
-        balanceEl.textContent = fmtBalance(b.total);
-        if (b.total !== lastTotal) {
-          lastTotal = b.total;
-          balanceEl.classList.remove('obs-flash');
-          void balanceEl.offsetWidth;
-          balanceEl.classList.add('obs-flash');
-        }
-      } else {
-        balanceEl.textContent = '—';
-      }
+      const j = await res.json() as {
+        balance?: { total?: string; error?: string };
+        balanceGlm?: { available?: string; error?: string };
+        sys?: SysData;
+      };
+      applyBalance('ds', j?.balance);
+      applyBalance('glm', j?.balanceGlm);
       const ms = j?.sys?.metrics ?? [];
       const rows = ms.filter(m => ['硬盘', '内存', '负载'].includes(m.label))
         .map(m => `<div class="obs-sys-row">${m.label} ${m.value}</div>`).join('');
       sysColEl.innerHTML = rows;
     } catch {
-      balanceEl.textContent = '—';
+      balanceEls.ds.textContent = '—';
+      balanceEls.glm.textContent = '—';
     }
   };
   refresh();

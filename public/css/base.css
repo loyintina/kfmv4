@@ -346,13 +346,15 @@ body {
   box-shadow: 0 4px 30px rgba(124, 58, 237, 0.08);
 }
 
-/* 顶栏四栏式（2026-08-13 用户定稿：徽标/ID/三数字/手 四栏，左右大致对称） */
-.obs-card-4col {
+/* 顶栏五栏式（2026-08-27 用户定稿：徽标/deepseek/glm/三数字/手，双余额并排；
+   2026-08-13 原四栏：徽标/ID/三数字/手。标签字号从 12 收到 10、余额大字收到
+   clamp(14~18) 才放得下两个币值——渐变字样式不变） */
+.obs-card-5col {
   display: grid;
-  grid-template-columns: 64px 1fr 1fr 72px;
+  grid-template-columns: 56px auto auto minmax(0, 1fr) 72px;
   align-items: center;
   gap: 8px;
-  padding: 4px 12px;
+  padding: 4px 10px;
 }
 
 .obs-emblem-slot {
@@ -397,8 +399,8 @@ body {
 }
 
 .obs-provider {
-  font-size: 12px;
-  letter-spacing: 3px;
+  font-size: 10px;
+  letter-spacing: 1px;
   color: rgba(0, 212, 255, 0.75);
   text-transform: uppercase;
 }
@@ -419,15 +421,16 @@ body {
 }
 
 .obs-balance {
-  font-size: clamp(24px, 6.5vw, 32px);
+  font-size: clamp(14px, 4vw, 18px);
   font-weight: 700;
   line-height: 1.1;
   background: linear-gradient(90deg, #e0e0e0, #00d4ff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .obs-balance.obs-flash {

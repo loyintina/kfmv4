@@ -189,18 +189,20 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
    左列两行（deepseek 标签 + 秒级时间）· 右列余额大字单独放（重点）。
    禁全宽横贯：双 backdrop-filter 垂直叠加移动端合成异常会致按钮视觉消失。 */
 .obs-card{display:flex;flex-direction:row;align-items:center;justify-content:space-between;width:372px;box-sizing:border-box;padding:8px 12px;border-radius:20px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.5),rgba(0,212,255,.3)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 4px 30px rgba(124,58,237,.08)}
-/* 顶栏四栏式（2026-08-13 用户定稿：徽标/ID/三数字/手 四栏，左右大致对称） */
-.obs-card-4col{display:grid;grid-template-columns:64px 1fr 1fr 72px;align-items:center;gap:8px;padding:4px 12px}
+/* 顶栏五栏式（2026-08-27 用户定稿：徽标/deepseek/glm/三数字/手，双余额并排；
+   2026-08-13 原四栏：徽标/ID/三数字/手。标签字号从 12 收到 10、余额大字收到
+   clamp(14~18) 才放得下两个币值——渐变字样式不变） */
+.obs-card-5col{display:grid;grid-template-columns:56px auto auto minmax(0,1fr) 72px;align-items:center;gap:8px;padding:4px 10px}
 .obs-emblem-slot{width:56px;height:60px}
 .obs-id-col{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
 .obs-sys-col{display:flex;flex-direction:column;align-items:flex-start;gap:1px;justify-self:end}
 .obs-sys-row{font-size:10px;letter-spacing:1px;color:var(--text-dim);font-variant-numeric:tabular-nums;white-space:nowrap}
 .obs-hand-slot{width:72px;height:60px;justify-self:end}
 .obs-left{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
-.obs-provider{font-size:12px;letter-spacing:3px;color:rgba(0,212,255,.75);text-transform:uppercase}
+.obs-provider{font-size:10px;letter-spacing:1px;color:rgba(0,212,255,.75);text-transform:uppercase}
 .obs-clock{font-size:12px;letter-spacing:2px;color:var(--text-dim);font-variant-numeric:tabular-nums}
 .obs-sys-mini{font-size:10px;letter-spacing:1px;color:var(--text-dim);font-variant-numeric:tabular-nums;white-space:nowrap}
-.obs-balance{font-size:clamp(24px,6.5vw,32px);font-weight:700;line-height:1.1;background:linear-gradient(90deg,#e0e0e0,#00d4ff);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:1px;font-variant-numeric:tabular-nums}
+.obs-balance{font-size:clamp(14px,4vw,18px);font-weight:700;line-height:1.1;background:linear-gradient(90deg,#e0e0e0,#00d4ff);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .obs-balance.obs-flash{animation:obsFlash .6s ease-out}
 @keyframes obsFlash{0%{opacity:.15}100%{opacity:1}}
 

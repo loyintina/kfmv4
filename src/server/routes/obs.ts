@@ -1,11 +1,15 @@
 /**
  * routes/obs.ts — 观测台数据端点（8.5 史官制度 · HUD，2026-08-05 立项）
  *
- * /api/obs/hud：聚合 HUD 面板数据。骨架版：deepseek 官方余额（实时拉取）+ 服务器时间；
+ * /api/obs/hud：聚合 HUD 面板数据。deepseek + glm 双余额（实时拉取）+ 服务器时间；
  * 其余数据面（调用统计/运行任务/信箱/cron/系统状态等）按设计分框预留，后续逐栏填充。
  *
- * 余额数据源：GET https://api.deepseek.com/user/balance（官方开放平台唯一账户接口，
- * 返回 is_available + balance_infos[]：total/granted/topped_up 分解）。
+ * 余额数据源：
+ *  - deepseek：GET https://api.deepseek.com/user/balance（官方开放平台唯一账户接口，
+ *    返回 is_available + balance_infos[]：total/granted/topped_up 分解）。
+ *  - glm：GET open.bigmodel.cn/api/biz/account/query-customer-account-report
+ *   （控制台前端同款接口；key 走 .env KFM_BIGMODEL_KEY，与 providers.json 智谱条目
+ *    的 coding 端点 key 是两把不同的钥匙——后者实测查不了钱包）。
  * 「实时更新」= 每次请求直接拉官方（不缓存）——余额接口免费且轻量，30s 级轮询无压力。
  *
  * /test 校准页 + /api/obs/viewport 回传（2026-08-06，守视基建）：手机浏览器开
@@ -43,6 +47,52 @@ type Balance = BalanceOk | BalanceErr;
 
 let balanceCache: { data: Balance; ts: number } | null = null;
 
+// ========== glm（智谱按量计费钱包）余额（2026-08-27 用户指令：与 deepseek 同样式上顶栏） ==========
+// 数据源：GET /api/biz/account/query-customer-account-report——控制台前端同款内部接口
+// （从 wd-paas-front app.js 反查所得），裸 Authorization key 即可。返回 availableBalance
+// （可用余额）+ rechargeAmount/topSpendAmount 分解。key 存 .env KFM_BIGMODEL_KEY——
+// providers.json「智谱」条目的 KFM_PROVIDER_KEY 是 coding 端点的另一把 key，
+// 实测 401 不能查余额，不得混用。
+const BIGMODEL_BALANCE_URL = 'https://open.bigmodel.cn/api/biz/account/query-customer-account-report';
+let bigmodelCache: { data: BigmodelBalance; ts: number } | null = null;
+// 同 deepseek 口径：接口免费轻量，5s 缓存挡重复轮询即可
+
+interface BigmodelOk {
+  available: string;
+  rechargeAmount: string;
+  totalSpend: string;
+  fetchedAt: string;
+}
+type BigmodelBalance = BigmodelOk | BalanceErr;
+
+export async function fetchBigmodelBalance(): Promise<BigmodelBalance> {
+  if (bigmodelCache && Date.now() - bigmodelCache.ts < BALANCE_CACHE_MS) {
+    return bigmodelCache.data;
+  }
+  try {
+    const key = resolveKey('${KFM_BIGMODEL_KEY}');
+    if (!key.value) return { error: `KFM_BIGMODEL_KEY 未解析` };
+    const res = await fetch(BIGMODEL_BALANCE_URL, {
+      headers: { Authorization: `Bearer ${key.value}` },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return { error: `balance HTTP ${res.status}` };
+    const j = await res.json() as { success?: boolean; msg?: string; data?: Record<string, unknown> };
+    const d = j.data ?? {};
+    if (!j.success || d.availableBalance == null) return { error: String(j.msg ?? '无余额字段').slice(0, 60) };
+    const data: BigmodelBalance = {
+      available: String(d.availableBalance),
+      rechargeAmount: String(d.rechargeAmount ?? '?'),
+      totalSpend: String(d.totalSpendAmount ?? '?'),
+      fetchedAt: new Date().toISOString(),
+    };
+    bigmodelCache = { data, ts: Date.now() };
+    return data;
+  } catch (e) {
+    return { error: e instanceof Error ? e.message.slice(0, 80) : String(e) };
+  }
+}
+
 export async function fetchDeepseekBalance(): Promise<Balance> {
   if (balanceCache && Date.now() - balanceCache.ts < BALANCE_CACHE_MS) {
     return balanceCache.data;
@@ -76,8 +126,8 @@ export async function fetchDeepseekBalance(): Promise<Balance> {
 
 export function setupObsRoutes(router: Router): void {
   router.get('/obs/hud', async (_req, res) => {
-    const balance = await fetchDeepseekBalance();
-    res.json({ balance, inbox: parseInbox(), stack: parseStack(), sys: collectSys(), archive: collectArchive(), pulse: collectPulse(), patrol: collectPatrol(), tokens: collectTokens(), perms: collectPerms(), roles: collectRoles(), serverTime: new Date().toISOString() });
+    const [balance, balanceGlm] = await Promise.all([fetchDeepseekBalance(), fetchBigmodelBalance()]);
+    res.json({ balance, balanceGlm, inbox: parseInbox(), stack: parseStack(), sys: collectSys(), archive: collectArchive(), pulse: collectPulse(), patrol: collectPatrol(), tokens: collectTokens(), perms: collectPerms(), roles: collectRoles(), serverTime: new Date().toISOString() });
   });
 
   // 守视视口校准回传：/test 页 POST 真机实测视口 → 存 viewport.json（browser-relay 读）
