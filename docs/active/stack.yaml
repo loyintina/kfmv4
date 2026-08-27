@@ -383,6 +383,18 @@ entries:
       — 现状数据（信箱周报 2026-08-09）：LLM 调用 738 次 · 成功 273 · 失败 465 · 平均 97s/次
       — 候选方向：agent-runner 日调用预算/失败率熔断降频、成本进 obs-aggregate 周报
       （史官制度「落盘→上屏」同族）
+  - id: 21
+    title: 两线终端横向审计（nz⇄na）
+    status: todo
+    created: '2026-08-27'
+    note: 2026-08-27 评审（psh）立——六层语义对照矩阵初稿+抄作业清单+趋同路线，征集信发双线核对中（补登记：orphan 门拦获）
+    detail: |-
+      两线终端横向审计——`docs/active/two-line-terminal-audit.md`：nz⇄na 六层
+      语义对照（keymap/CJK/配色已趋同；视口防御=合理分歧；无意漂移候选 3 条：
+      scrollback 容量/鼠标报告 SGR/蓝系例外知识载体）+抄作业清单（flight-rec→nz
+      最高价值）+趋同路线建议（共同契约 term-contract.md 拟建/各奔东西层/登记
+      待办）。出处信 kfmv4-audit-term-parity-*（agent-inbox），na 线已回落地通报
+      （漂移#1 各线显式钉值）。
 research:
   - id: R1
     title: 错误码总表（2026-08-03 落地）
