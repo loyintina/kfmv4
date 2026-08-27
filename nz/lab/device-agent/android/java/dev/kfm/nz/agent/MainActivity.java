@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 /**
  * nz 设备代理壳：全屏 WebView 加载 nz 终端 + 开 CDP 调试口 + 起中继线程。
@@ -37,6 +38,11 @@ public class MainActivity extends Activity {
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);   // nz 终端是 TS web 页
         s.setDomStorageEnabled(true);   // 终端本地态
+        // 缺它=JS 发起的导航（热更自愈的 location.reload/重定向）不走
+        // WebView 而被 ActionView 外部化到系统浏览器（2026-08-27 C 档实测：
+        // 用户看见「跳浏览器开 8023」×3，WebView 内页面纹丝不动=reload
+        // 「被吞」假象真凶）。空 Client=全部导航自持。
+        web.setWebViewClient(new WebViewClient());
         setContentView(web);
 
         web.loadUrl(TERM_URL);

@@ -1256,3 +1256,14 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   一轮闭环绿（遗言 pid=17210+拉回+ping 200）。**C 档可安全约用户亮屏**。
   联动：cdp-relay 守护归宿挂单现成先例——照 kfm-nz.service 模式挂
   systemd 即可（待办不急）。
+- 2026-08-27：**热更前台 C 档收口（真根因=壳缺 WebViewClient）**：
+  无观测判卷轮用户读数「NZ-Agent 前台但 3 次跳浏览器开 8023」——
+  自愈链一直在跑，reload 导航被 ActionView **外部化到系统浏览器**，
+  WebView 内页面纹丝不动=「被吞」假象真凶。壳修一行：MainActivity
+  补 setWebViewClient(new WebViewClient())（空 Client=导航自持），
+  重打 APK 用户覆盖安装。终验全绿：restart 自愈=timeOrigin 变+新会话
+  可用+注入通；build 自刷=页面自动换血+**续命同会话+屏幕内容不空
+  （tail 回放）**。诚实修正：此前「CDP 观测扰动致 reload 被吞」推测
+  被证伪——headless 绿/CDP 直刷绿/页面内刷被外部化，三读数合指
+  WebViewClient 缺失，观测扰动论废弃。热更+重启闭环（§0.5 P3 切片）
+  全链收口：进程腿 8/8+前端腿 6/6+真机 C 档两幕。
