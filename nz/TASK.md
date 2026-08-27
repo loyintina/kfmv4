@@ -1280,3 +1280,9 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   层（观测脚本自查 visibilityState）后续新卷跟进。用户新姿势：日常
   前台用终端，agent 观测全在后台做；要真机取证时说一声，开带
   ?observe=1 的页。
+- 2026-08-27：**P3 热更切片评审关账**（C 档通报已读，三点赞：①归因
+  跟读数不跟面子的判据外部化示范②navigation 计数坑判据钉入库③最小
+  干预修复）。**壳完整性评估裁决**：WebChromeClient 缺失**现可接受不
+  加**——CDP attach 场景 console 经 Runtime 域本就可见；未来实验台需
+  要页面 console 落盘给 agent 离线读时再加 onConsoleMessage 转发（此
+  条为裁决记录，防重复提案）。热更+重启闭环（§0.5 P3 切片）正式闭账。
