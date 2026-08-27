@@ -318,6 +318,9 @@ export function applyTermBundle(ctx: Context): void {
         // 考题件）——历史封顶与挤出计数，断言「灌超量后历史恒=钉值」
         histLen: core.history_len(),
         evicted: core.lines_evicted(),
+        // C4 对照题取数口：壳渲染尺（宽 span 断言用）
+        cellW: shell.metrics.cellW,
+        cellH: shell.metrics.cellH,
         getContainer: () => scrollEl,
       });
       // 会话续命判卷钩子（热更闭环考卷用，并列扩展不碰既有语义）：
@@ -325,6 +328,9 @@ export function applyTermBundle(ctx: Context): void {
       (window as unknown as Record<string, unknown>).__kfmNzTermSession = () => ({
         sessionId: card.sessionId,
       });
+      // C4 同串同宽判卷钩子（term-contract C4 对照题）：核光标列 x
+      // （cursor() 高 16 位=x；差分断言「串推进列数」用）
+      (window as unknown as Record<string, unknown>).__kfmNzCursorX = () => card.core.cursor() >>> 16;
 
       // 软键盘入口（xterm 同款隐藏 textarea 诱饵）：移动浏览器只在可编辑
       // 元素聚焦时弹软键盘，div+tabIndex 没用。点卡片 → 聚焦诱饵；桌面
