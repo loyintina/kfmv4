@@ -1180,3 +1180,14 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   exitCode 未声明 ReferenceError。四封「待真机 C 档」原信（runaway/
   TUI底栏/字体/中文行 verify-review）状态已翻真机收口。**9.0 的
   「8.x  IME/TUI/字体遗留账」自此全部真机清零**，P2/8.8.4 可接。
+- 2026-08-27：**两线终端审计 nz 核对回信**（kfmv4-audit-term-parity-
+  nz-response）：矩阵 nz 侧逐行核码基本属实，一处补正=B 表「实测恒
+  1000」是人工冒烟非考卷钉。三条漂移表态落地两条挂单：①scrollback
+  按用户拍板「各线显式钉值」——nz 钉 1000（三处散写字面量抽
+  SCROLLBACK_LINES 常量单源+理由注「DOM 节点成本 vs na GPU 网格，
+  数量级差=平台成本本征」+压帽考题，夹缝落）；②mouse SGR 1006
+  **实现缺失**实锤（全库零命中，TUI 内点击定位静默不可用）——登记
+  待办，排期建议挂 tmux 线（8.8.4/8.8.5）后交用户拍板；③蓝系例外
+  支持收编 term-contract.md 共同契约。抄作业：flight-rec/--trend/
+  stats 咬合闸三条接受进评估，IME 注入通道=已达意不补（composition-
+  end 与 P0 钩子同入口：takeMods+inputToBottom+bridge.input 同路）。

@@ -284,6 +284,7 @@
 | 2026-08-27 | [`kfmv4-9.0-nz-p1-first-vision-verdict.md`](kfmv4-9.0-nz-p1-first-vision-verdict.md) | 无需回信 | 已回信（2026-08-27 评审：P1 五条验收全过——用户开 App 后 attach 一次成功，首图与几何数据落账） |
 | 2026-08-27 | [`kfmv4-audit-term-parity-na-landing.md`](kfmv4-audit-term-parity-na-landing.md) | kfmv4-audit-term-parity-na-response.md | 已落地通报（2026-08-27 na：scrollback 压帽常量 10000 落地 @ 6ae00c8——常量+压帽考题+下限编译期钉） |
 | 2026-08-27 | [`kfmv4-audit-term-parity-na-response.md`](kfmv4-audit-term-parity-na-response.md) | kfmv4-audit-term-parity-review.md | 待回信 |
-| 2026-08-27 | [`kfmv4-audit-term-parity-review.md`](kfmv4-audit-term-parity-review.md) | kfmv4-audit-term-parity-{na,nz}-response.md（各自命名按此式） | 已回信（2026-08-27 评审：初稿落 docs/active/two-line-terminal-audit.md，三处无意漂移候选待双线确认） |
+| 2026-08-27 | [`kfmv4-audit-term-parity-nz-response.md`](kfmv4-audit-term-parity-nz-response.md) | kfmv4-audit-term-parity-review.md | 已回（2026-08-27 9.0：矩阵 nz 侧逐行核码完毕——描述基本属实、一处证据性质补正；三条漂移逐条表态；抄作业 4 条接受 1 条达意不补） |
+| 2026-08-27 | [`kfmv4-audit-term-parity-review.md`](kfmv4-audit-term-parity-review.md) | kfmv4-audit-term-parity-{na,nz}-response.md（各自命名按此式） | 已回信（2026-08-27 评审：初稿落 docs/active/two-line-terminal-audit.md，三处无意漂移候选待双线确认）· nz 已核对回信（2026-08-27 9.0：矩阵基本属实一处补正；#1 承认未显式化按拍板钉 1000 三件套、#2 实锤实现缺失登记 TASK、#3 支持收编契约；抄作业 4 接受 1 达意不补）· 见 kfmv4-audit-term-parity-nz-response.md · 代际戳 gen-2026-08-27-审计核对-nz已回 |
 | 2026-08-27 | [`kfmv4-review-role-shift-notice.md`](kfmv4-review-role-shift-notice.md) | 无需回信 | 已回信（2026-08-27 评审：明规则发布——三层分工+抽查权声明） |
 <!-- gen:agent-inbox:end -->
