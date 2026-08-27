@@ -13,6 +13,7 @@
  *   ②客户端断开不毁桥 → ③钉红。
  */
 import net from 'node:net';
+import { readFileSync, rmSync } from 'node:fs';
 import { test, group, assert } from './runner.ts';
 import { createCdpRelay, type CdpRelay } from '../scripts/cdp-relay.ts';
 
@@ -43,7 +44,8 @@ function fakeBridge(port: number): Promise<net.Socket> {
 }
 
 async function openRelay(): Promise<CdpRelay> {
-  return createCdpRelay({ bridgePort: 0, clientPort: 0, log: () => {} });
+  // statusFile: null——考卷不落真状态盘，那是常驻守护的面
+  return createCdpRelay({ bridgePort: 0, clientPort: 0, log: () => {}, statusFile: null });
 }
 
 group('cdp-relay 实验台 P1');
@@ -126,5 +128,36 @@ test('④多次顺序连接：每条客户端连配到一条新桥（CDP 顺序�
     assert(relay.stats().paired === 3, '三连应配 3 次');
   } finally {
     await relay.close();
+  }
+});
+
+test('⑤状态落盘：attach 状态可见性（评审验收补充要求）', async () => {
+  const statusFile = `/tmp/nz-cdp-relay-test-${process.pid}.json`;
+  const relay = await createCdpRelay({
+    bridgePort: 0,
+    clientPort: 0,
+    log: () => {},
+    statusFile,
+  });
+  try {
+    // 起服务即落盘（attach 失败时先读它分锅）
+    let s = JSON.parse(readFileSync(statusFile, 'utf8'));
+    assert(s.pendingBridges === 0 && s.paired === 0, '初始应零桥零配对');
+
+    const bridge = await fakeBridge(relay.bridgePort);
+    await new Promise((r) => setTimeout(r, 50));
+    s = JSON.parse(readFileSync(statusFile, 'utf8'));
+    assert(s.pendingBridges === 1 && s.lastEvent === 'bridge-up',
+      '桥到场应落盘 pendingBridges=1/lastEvent=bridge-up');
+
+    const echoed = await roundTrip(relay.clientPort, 'ping');
+    assert(echoed.includes('B:ping'), '配对后字节应通');
+    await new Promise((r) => setTimeout(r, 50));
+    s = JSON.parse(readFileSync(statusFile, 'utf8'));
+    assert(s.paired === 1, '配对应落盘 paired=1（lastEvent 可能已被陪葬覆盖，不锚）');
+    bridge.destroy();
+  } finally {
+    await relay.close();
+    rmSync(statusFile, { force: true });
   }
 });

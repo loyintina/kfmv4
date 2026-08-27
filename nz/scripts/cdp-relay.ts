@@ -19,12 +19,16 @@
  * 端口覆盖：NZ_CDP_BRIDGE_PORT / NZ_CDP_CLIENT_PORT（默认 8025/8026）。
  */
 import net from 'node:net';
+import { writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 export interface CdpRelayOpts {
   bridgePort?: number;
   clientPort?: number;
   host?: string;
+  /** 状态落盘路径（attach 状态可见性，默认 /tmp/nz-cdp-relay.status.json；
+   *  评审验收补充要求：attach 失败时要分得清「APK 未连」还是「CDP 协议不通」） */
+  statusFile?: string | null;
   log?: (msg: string) => void;
 }
 
@@ -39,10 +43,32 @@ export interface CdpRelay {
 export async function createCdpRelay(opts: CdpRelayOpts = {}): Promise<CdpRelay> {
   const host = opts.host ?? '127.0.0.1';
   const log = opts.log ?? ((m: string) => console.log(`[cdp-relay] ${m}`));
+  const statusFile =
+    opts.statusFile === undefined ? '/tmp/nz-cdp-relay.status.json' : opts.statusFile;
 
   const pendingBridges: net.Socket[] = [];
   const waitingClients: net.Socket[] = [];
   let paired = 0;
+  let lastEvent = 'init';
+
+  // attach 状态可见性：每次状态变化落一小坨 JSON——排障时先读它：
+  // pendingBridges=0 恒 = APK 未连（查手机侧隧道/APK）；有桥但 attach
+  // 失败 = CDP 协议层问题（查客户端）
+  function writeStatus(): void {
+    if (!statusFile) return;
+    const s = {
+      ts: new Date().toISOString(),
+      pendingBridges: pendingBridges.length,
+      waitingClients: waitingClients.length,
+      paired,
+      lastEvent,
+    };
+    try {
+      writeFileSync(statusFile, JSON.stringify(s, null, 2));
+    } catch {
+      // 状态落盘不挡路
+    }
+  }
 
   function drop(list: net.Socket[], s: net.Socket): void {
     const i = list.indexOf(s);
@@ -54,7 +80,9 @@ export async function createCdpRelay(opts: CdpRelayOpts = {}): Promise<CdpRelay>
       const bridge = pendingBridges.shift()!;
       const client = waitingClients.shift()!;
       paired++;
+      lastEvent = `paired#${paired}`;
       log(`paired #${paired}（client ⇄ bridge）`);
+      writeStatus();
       bridge.pipe(client);
       client.pipe(bridge);
       // 任一头关=这对管道报废，另一头陪葬——APK 会补新桥，
@@ -69,8 +97,14 @@ export async function createCdpRelay(opts: CdpRelayOpts = {}): Promise<CdpRelay>
   const bridgeServer = net.createServer((s) => {
     s.setNoDelay(true);
     pendingBridges.push(s);
+    lastEvent = 'bridge-up';
     log(`bridge up（pending=${pendingBridges.length}）`);
-    s.once('close', () => drop(pendingBridges, s));
+    writeStatus();
+    s.once('close', () => {
+      drop(pendingBridges, s);
+      lastEvent = 'bridge-close';
+      writeStatus();
+    });
     s.once('error', () => drop(pendingBridges, s));
     pair();
   });
@@ -78,7 +112,9 @@ export async function createCdpRelay(opts: CdpRelayOpts = {}): Promise<CdpRelay>
   const clientServer = net.createServer((s) => {
     s.setNoDelay(true);
     waitingClients.push(s);
+    lastEvent = 'client-waiting';
     log(`client waiting（waiting=${waitingClients.length}）`);
+    writeStatus();
     s.once('close', () => drop(waitingClients, s));
     s.once('error', () => drop(waitingClients, s));
     pair();
@@ -92,6 +128,7 @@ export async function createCdpRelay(opts: CdpRelayOpts = {}): Promise<CdpRelay>
   const bridgePort = (bridgeServer.address() as net.AddressInfo).port;
   const clientPort = (clientServer.address() as net.AddressInfo).port;
   log(`listening: bridge=${host}:${bridgePort} client=${host}:${clientPort}`);
+  writeStatus();
 
   return {
     bridgePort,

@@ -1132,3 +1132,11 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   考卷 cdp-relay.test.ts 4 断言（桥先/客先两序配对/客断桥陪葬/顺序
   三连各配新桥——模拟 connectOverCDP 的 /json/version→list→WS）。
   npm 85→89 绿。待真机：装 APK+kalo 加 -L 8025+CDP attach 首截图。
+- 2026-08-27：**P1 验收补充要求落地**（评审 verdict 信：8025 桥加
+  attach 状态可见性——attach 失败时要分得清 APK 未连还是 CDP 协议
+  不通）：cdp-relay.ts 加 statusFile（默认 /tmp/nz-cdp-relay.status.
+  json），桥起/桥关/客等/配对每次状态变化落 JSON（pendingBridges/
+  waitingClients/paired/lastEvent）；考卷加第⑤钉（起服务即落盘/
+  桥到场 pending=1/配对 paired=1；openRelay 传 statusFile:null 防
+  考卷污染真守护状态盘——考卷教训：共享默认路径会被并行实例踩）。
+  npm 90 绿；守护已重启装载（status 文件实证 init 态落盘）。
