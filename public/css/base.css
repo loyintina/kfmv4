@@ -420,7 +420,8 @@ body {
   white-space: nowrap;
 }
 
-/* glm 套餐积分两窗口小字（2026-08-27）：贴在 glm 余额下方，样式对齐 sys-row */
+/* glm 套餐积分两窗口小字（2026-08-27）：挂 deepseek 栏下方（glm 栏会撑爆五栏宽，
+   用户实测后定），样式对齐 sys-row */
 .obs-quota-glm {
   font-size: 10px;
   letter-spacing: 0.5px;

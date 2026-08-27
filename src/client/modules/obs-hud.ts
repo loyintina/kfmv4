@@ -43,11 +43,11 @@ export function initObsHud(): void {
       <div class="obs-id-col">
         <div class="obs-provider">deepseek</div>
         <div class="obs-balance obs-balance-ds">¥--</div>
+        <div class="obs-quota-glm">--</div>
       </div>
       <div class="obs-id-col">
         <div class="obs-provider">glm</div>
         <div class="obs-balance obs-balance-glm">¥--</div>
-        <div class="obs-quota-glm">--</div>
       </div>
       <div class="obs-sys-col"></div>
       <div class="obs-hand-slot"></div>
@@ -167,6 +167,7 @@ export function initObsHud(): void {
       applyBalance('ds', j?.balance);
       applyBalance('glm', j?.balanceGlm);
       // 套餐积分两窗口（2026-08-27）：5h 滚动窗 + 周，格式「5h 1999/2000 · 周9999/10000」
+      // （挂 deepseek 栏下方——放 glm 栏会把五栏顶板撑爆，用户实测后定）
       const q = j?.quotaGlm;
       if (q && !q.error && q.win5h && q.week) {
         quotaEl.textContent = `5h ${q.win5h.remaining}/${q.win5h.limit} · 周${q.week.remaining}/${q.week.limit}`;
