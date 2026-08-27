@@ -1140,3 +1140,13 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   桥到场 pending=1/配对 paired=1；openRelay 传 statusFile:null 防
   考卷污染真守护状态盘——考卷教训：共享默认路径会被并行实例踩）。
   npm 90 绿；守护已重启装载（status 文件实证 init 态落盘）。
+- 2026-08-27：**P1 评审验收通过**（kfmv4-9.0-nz-device-agent-p1-accept-
+  verdict：五条独立复核全过——APK badging/签名实测、manifest 清晰、
+  中继架构与 FIFO 配对咬合、考卷 5/5+npm90 本机复核、双口监听+status
+  落盘活）。kalo 隧道 -L 8025 已由 9.0 经 8022 上手机自加（~/bin/kalo
+  autossh 行，备份 kalo.bak-20260827，kr8025.sh  detached 重启，8025/
+  8023/8021 实测全通）；APK 已 deploy.sh 推送+安装器调起。**记账**
+  （不挡收口）：cdp-relay 是 setsid 游离进程，服务器重启会丢——跑顺
+  后定归宿（挂 kfm-nz.service 或 cron @reboot），现在不动。待用户：
+  点安装+开 NZ-Agent，之后 connectOverCDP 8026 拿首张真机渲染截图
+  （实验台第一次睁眼，单独落账）。
