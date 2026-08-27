@@ -1267,3 +1267,16 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   被证伪——headless 绿/CDP 直刷绿/页面内刷被外部化，三读数合指
   WebViewClient 缺失，观测扰动论废弃。热更+重启闭环（§0.5 P3 切片）
   全链收口：进程腿 8/8+前端腿 6/6+真机 C 档两幕。
+- 2026-08-27：**前台观测闸落地**（用户拍板「观测只在后台，拒绝前台
+  行为」）：判卷钩子家族（Inject/Screen/CoreFeed/CursorX/Session）页面
+  级硬闸——前台态（visibilityState=visible）一律返回 REJECTED-
+  FOREGROUND，放行三口=后台 / URL ?observe=1（取证会话显式授权）/ 
+  navigator.webdriver=true（headless 考卷）。真机实弹：前台+CDP 下
+  Inject/Screen 全拒 ✓；headless 考卷全绿不破（term-hooks 5/5+hot-
+  update 6/6，webdriver 放行生效）。不闸项与理由：自愈 reload（保命
+  非观测）/ ?debug 遥测（被动、用户显式开）/ CDP attach 本身（无行为
+  链路）。诚实边界：CDP 引擎级 evaluate/截图闸不住（debug 口本质，
+  保留给实验台+评审抽查权），本闸挡「经钩子的观测/操作」，agent 纪律
+  层（观测脚本自查 visibilityState）后续新卷跟进。用户新姿势：日常
+  前台用终端，agent 观测全在后台做；要真机取证时说一声，开带
+  ?observe=1 的页。
