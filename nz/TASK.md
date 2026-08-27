@@ -1246,3 +1246,13 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   经 PTY 注入测「串宽度」会混入 zsh ZLE 对 PUA 字符的转义回显（E0B0
   实测被画成 4 列）——C4 判据必须直喂核（__kfmNzTermCoreFeed 判卷
   钩子，只绕 shell 不绕核管线）；cursor() 打包=(row<<16)|col 列在低位。
+- 2026-08-27：**运维拓扑变更知悉+亲验**（评审通报，restart 语义零
+  改动）：①双守护竞态已除——原 systemd kfm-nz.service（Restart=always）
+  与 standalone supervisor 抢 8023 致 EADDRINUSE 崩溃循环 695 次（boot
+  计数一度成噪声，nz-restart 判据险被污染）；②统一后分层=systemd 只
+  守护 supervisor.sh 本身+开机自启（enabled），拉回逻辑全归 supervisor
+  循环（ExecStart=/bin/bash supervisor.sh，单守护者原则）；③亲验：
+  systemctl active+进程树 systemd→supervisor→tsx 正确+nz-restart.sh
+  一轮闭环绿（遗言 pid=17210+拉回+ping 200）。**C 档可安全约用户亮屏**。
+  联动：cdp-relay 守护归宿挂单现成先例——照 kfm-nz.service 模式挂
+  systemd 即可（待办不急）。
