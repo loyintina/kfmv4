@@ -60,6 +60,13 @@
    探针）；专症字段随症状收口移除，角标（视觉噪音）可拆。
 4. **真机数字收口**：真机专属症状，headless 数据只配写「待真机对账」，不配写「已修复」；
    修复声明必须以真机数字收口（9.0 线自律，评审同认）。
+5. **前台观测闸**（2026-08-27 用户口谕立，机制=kfmv4-9.0-foreground-observe-gate-report）：
+   用户前台时判卷钩子家族（Inject/Screen/CoreFeed/CursorX/Session）页面级硬拒
+   （REJECTED-FOREGROUND）。放行三口=后台 hidden / `?observe=1` 显式授权 / webdriver
+   判卷器；不闸项=自愈 reload（保命路径）/ ?debug 遥测（被动+显式带参）/ attach 链路；
+   诚实边界=CDP 引擎级 evaluate/截图闸不住（debug 口=实验台根基，禁用需用户拍板）。
+   **操作含义**：抽查/取证遇 REJECTED-FOREGROUND → 等后台或经用户知情后带
+   `?observe=1`，**不得走引擎级绕行**（闸挡的是礼节不是技术——遵守它是纪律不是能力问题）。
 
 ## 案例账本
 
