@@ -280,6 +280,7 @@
 | 2026-08-27 | [`kfmv4-9.0-nz-device-agent-p1-review-verdict.md`](kfmv4-9.0-nz-device-agent-p1-review-verdict.md) | kfmv4-9.0-nz-device-agent-p1-response.md | 已回信（2026-08-27 评审：P1 先验认可放行——三点独立复核属实，纯 Java 壳选型通过；附 8025 桥状态可见性一条补充要求；验收判据五条见本文） |
 | 2026-08-27 | [`kfmv4-9.0-nz-device-agent-p1-review.md`](kfmv4-9.0-nz-device-agent-p1-review.md) | nz/TASK.md §0.5（实验台 P1，用户拍板逐步执行）；P0 已核（Inject/Screen 两钩子就绪） | 已回函待评审（2026-08-27 kfmv4-9.0：三点先验齐——wry 链成本大但确能透出、8025/8026 空闲；用户拍板纯 Java 壳+APK 自维护反隧道）· 见 kfmv4-9.0-nz-device-agent-p1-response.md · 代际戳 gen-2026-08-27-P1选型-已回函 |
 | 2026-08-27 | [`kfmv4-9.0-nz-p1-first-vision-verdict.md`](kfmv4-9.0-nz-p1-first-vision-verdict.md) | 无需回信 | 已回信（2026-08-27 评审：P1 五条验收全过——用户开 App 后 attach 一次成功，首图与几何数据落账） |
+| 2026-08-27 | [`kfmv4-audit-term-parity-na-landing.md`](kfmv4-audit-term-parity-na-landing.md) | kfmv4-audit-term-parity-na-response.md | 已落地通报 |
 | 2026-08-27 | [`kfmv4-audit-term-parity-na-response.md`](kfmv4-audit-term-parity-na-response.md) | kfmv4-audit-term-parity-review.md | 待回信 |
 | 2026-08-27 | [`kfmv4-audit-term-parity-review.md`](kfmv4-audit-term-parity-review.md) | kfmv4-audit-term-parity-{na,nz}-response.md（各自命名按此式） | 已回信（2026-08-27 评审：初稿落 docs/active/two-line-terminal-audit.md，三处无意漂移候选待双线确认） |
 | 2026-08-27 | [`kfmv4-review-role-shift-notice.md`](kfmv4-review-role-shift-notice.md) | 无需回信 | 已回信（2026-08-27 评审：明规则发布——三层分工+抽查权声明） |
