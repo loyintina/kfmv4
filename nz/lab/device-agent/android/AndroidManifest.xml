@@ -15,6 +15,7 @@
 
     <application
         android:label="NZ-Agent"
+        android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
         <!-- usesCleartextTraffic=true：targetSdk=28 起明文 HTTP 默认被禁，

@@ -52,6 +52,12 @@ await page.waitForFunction(() => typeof window.__kfmNzTermInject === 'function',
 await sleep(3000); // 字体就绪门 + 终端首屏
 
 const inject = (s) => page.evaluate((t) => window.__kfmNzTermInject(t), s);
+
+// ⚠️ 真机终端当前窗跑的是 kimi（tmux dsh 0 窗）——绝不在它里面敲字。
+// tmux prefix(C-b=0x02)恒被 tmux 先截（不管窗里跑什么），开新窗拿干净
+// shell 做实验；finally 里 exit 关窗回原窗，秋毫无犯。
+await inject('\x02c');
+await sleep(1500);
 const scroll = () => page.evaluate(() => {
   const { getContainer, ...rest } = window.__kfmNzTermScroll();
   return rest;
@@ -65,6 +71,7 @@ const newTelemetry = () => {
 };
 const shot = (name) => page.screenshot({ path: SHOTS + name });
 
+try {
 // ── ③④ 字体 + 中文行（行模式） ─────────────────────────────────────────
 // 混排样张：powerline 箭头 + ⚡ + 中英混排（ranger 实症同款词）
 await inject("printf 'A\\xee\\x82\\xb0A ⚡ hermes-蔚然 ts工具 知乎-VibeCoding\\n'\r");
@@ -73,7 +80,6 @@ await shot('device-verify-font-cjk.png');
 
 const fontFacts = await page.evaluate(async () => {
   await document.fonts.ready;
-  const scroll0 = window.__kfmNzTermScroll();
   // 真机字体栈 canvas 量：A 与 中 的 actualBoundingBoxAscent 差 = 应有 cjkDrop
   const cs = getComputedStyle(document.querySelector('.nz-term'));
   const c = document.createElement('canvas').getContext('2d');
@@ -165,6 +171,11 @@ check('①d mCellH 单源≈壳 cellH', mCells.length > 0 && cellH != null
 await inject('q'); // 退 htop
 await sleep(1200);
 await shot('device-verify-after-quit.png');
+} finally {
+  // 关 tmux 实验窗回原窗（kimi），秋毫无犯
+  await inject('exit\r').catch(() => {});
+  await sleep(800);
+}
 
 // ── 汇总 ────────────────────────────────────────────────────────────────
 const bad = results.filter((r) => !r.ok);

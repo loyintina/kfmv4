@@ -58,10 +58,13 @@ echo "=== [2/5] d8（class → dex） ==="
 "$D8" --min-api "$MIN_API" --lib "$AJAR" --output "$BUILD/dex" \
     $(find "$BUILD/classes" -name '*.class')
 
-echo "=== [3/5] aapt2 link + 装 dex ==="
-# 无 res（无图标无布局），跳过 aapt2 compile/-R；manifest 内无 @ 资源引用
+echo "=== [3/5] aapt2 compile+link + 装 dex ==="
+# res 先 compile 成 .flat 再 -R 喂 link（图标入包正路；不编 R.java——
+# Java 皮不引用资源，manifest 的 @mipmap 引用由 aapt2 解析）
+"$AAPT2" compile --dir android/res -o "$BUILD/res.zip"
 "$AAPT2" link -o "$BUILD/unsigned.apk" -I "$AJAR" \
     --manifest android/AndroidManifest.xml \
+    -R "$BUILD/res.zip" \
     --min-sdk-version "$MIN_API" --target-sdk-version "$TARGET_SDK" \
     --version-code "$VERSION_CODE" --version-name "$VERSION_NAME"
 cp "$BUILD/dex/classes.dex" "$BUILD/stage/"
