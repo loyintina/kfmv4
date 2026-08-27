@@ -14,6 +14,9 @@ export interface BridgeEvents {
   onExit(id: string, code: number): void;
   /** 链路状态（UI 亮灯用） */
   onLink?(up: boolean): void;
+  /** 会话死透（重连后服务端报「会话不存在」=服务端重启过，旧会话全灭）——
+   *  消费方自愈（摘账+reload/重开），bridge 只清簿不决策 */
+  onSessionDead?(reason: string): void;
 }
 
 export class TermWsBridge {
@@ -26,6 +29,9 @@ export class TermWsBridge {
   private _pending: Array<() => void> = [];
   /** opened 帧的等待队列（FIFO 配对 open 调用） */
   private _openWaiters: Array<(id: string) => void> = [];
+  /** attach 等待表（id → resolver）：attachSession/热更续命用；
+   *  error 帧无关联 id，pending 非空时统一判失败（boot 期单请求，够用） */
+  private _attachWaiters = new Map<string, (ok: boolean) => void>();
 
   constructor(
     private _url: string,
@@ -59,6 +65,8 @@ export class TermWsBridge {
           this._sessions.add(id);
           const tail = String(m.tail ?? '');
           if (tail) this._ev.onOutput(id, tail, true);
+          this._attachWaiters.get(id)?.(true);
+          this._attachWaiters.delete(id);
           break;
         }
         case 'output':
@@ -67,9 +75,22 @@ export class TermWsBridge {
         case 'exit':
           this._ev.onExit(String(m.id), Number(m.code));
           break;
-        case 'error':
+        case 'error': {
           console.warn('[term-bridge] 服务端报错帧：', m.message);
+          // attach 失败（会话不存在等）：pending 统一判负（error 帧不带 id）；
+          // 簿上还有会话却被告知不存在 = 服务端重启过（重连 attach 全灭）→
+          // 通报消费方自愈（reload），bridge 清簿不决策
+          if (this._attachWaiters.size) {
+            for (const resolve of this._attachWaiters.values()) resolve(false);
+            this._attachWaiters.clear();
+          }
+          const msg = String(m.message ?? '');
+          if (msg.includes('会话不存在') && this._sessions.size > 0) {
+            this._sessions.clear();
+            this._ev.onSessionDead?.(msg);
+          }
           break;
+        }
       }
     };
     ws.onclose = () => {
@@ -98,6 +119,19 @@ export class TermWsBridge {
     return new Promise((resolve) => {
       this._openWaiters.push(resolve);
       this._send({ t: 'open', ...opts });
+    });
+  }
+
+  /** 续命 attach（热更/重载后会话不断的关键件）：显式 attach 指定会话，
+   *  成功=true（tail 已回放给 onOutput replay）；失败/超时=false。
+   *  与重连路径的隐式 attach 区别：这里等回执判成败（boot 决策用）。 */
+  attachSession(id: string, timeoutMs = 5000): Promise<boolean> {
+    return new Promise((resolve) => {
+      this._attachWaiters.set(id, resolve);
+      this._send({ t: 'attach', id });
+      setTimeout(() => {
+        if (this._attachWaiters.delete(id)) resolve(false);
+      }, timeoutMs);
     });
   }
 

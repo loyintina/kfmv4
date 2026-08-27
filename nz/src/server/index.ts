@@ -116,6 +116,11 @@ export function createNzServer(): Server {
 
 // ========== 入口（直接运行时） ==========
 
+/** gate 信号目录（镜 na gate.rs：文件即信号）：restart-req 在 → 体面退出，
+ *  守护（supervisor.sh）拉回——热更新闭环的重启腿（2026-08-27 用户拍板
+ *  重走 na 路子）。/tmp 易失正合适：服务器重启 gate 目录消失=无残留信号。 */
+const GATE_DIR = process.env.NZ_GATE_DIR ?? '/tmp/nz-gate';
+
 const isMain = !!process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const port = Number(process.env.NZ_PORT ?? 8023);
@@ -132,6 +137,27 @@ if (isMain) {
   server.listen(port, host, () => {
     slog(`HTTP 静态服务已起：http://${host}:${port}/（public/，越界 fail-closed）`);
   });
-  process.on('SIGTERM', () => { server.close(); process.exit(0); });
-  process.on('SIGINT', () => { server.close(); process.exit(0); });
+  // gate 值守（镜 na gate.rs restart_check）：restart-req 在 → 摘触发 +
+  // 同步遗言（exit(0) 不给异步入队留活路，BAR-022 教训同款）→ exit(0)。
+  // 守护见死拉回。1s 轮询与 na 值守线程 300ms 同精神：单消费者无竞态。
+  const { existsSync, unlinkSync, appendFileSync, mkdirSync } = await import('node:fs');
+  mkdirSync(GATE_DIR, { recursive: true });
+  const gateWill = (msg: string): void => {
+    try {
+      appendFileSync(`${GATE_DIR}/last-will.log`, `[${new Date().toISOString()}] pid=${process.pid} ${msg}\n`);
+    } catch { /* 遗言写不进也要退 */ }
+  };
+  const gateTimer = setInterval(() => {
+    const trigger = `${GATE_DIR}/restart-req`;
+    if (!existsSync(trigger)) return;
+    try { unlinkSync(trigger); } catch { /* 摘不掉也退（防重复消费靠遗言） */ }
+    gateWill('restart-req 收到，体面退出（等 supervisor 拉回）');
+    slog('gate: restart-req 收到，体面退出');
+    clearInterval(gateTimer);
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 1500).unref(); // close 卡死兜底
+  }, 1000);
+  gateTimer.unref();
+  process.on('SIGTERM', () => { gateWill('SIGTERM'); server.close(); process.exit(0); });
+  process.on('SIGINT', () => { gateWill('SIGINT'); server.close(); process.exit(0); });
 }

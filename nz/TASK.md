@@ -1217,3 +1217,21 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   （public/index.html/build-info 连坐，已 checkout 恢复+nz/public 的
   新 bundle 为准）；②机器 load>10 时 chromium 起不来（launch 挂死/
   createBrowserContext 失败），考卷假红先看负载。
+- 2026-08-27：**热更新+重启闭环跑通**（用户拍板「自观测重走 na 路子，
+  先热更+重启」；§0.5 P3 切片，镜 na gate.rs/na-restart.sh/na-push-so）：
+  ①重启腿=server 值守 /tmp/nz-gate/restart-req（1s 轮询，见文件→摘触发+
+  同步遗言 last-will.log+exit(0)，镜 restart_check「exit 不给异步入队留
+  活路」）+supervisor.sh 守护（boot 行日志=拉回判据，镜 Termux am start
+  腿）+nz-restart.sh 一键五步判卷；考卷 hot-restart.test.mjs 8 断言全绿
+  （两轮真进程闭环：死透/拉回/遗言/摘除/循环稳定）。②前端腿=热更自刷
+  （main.ts 轮询 build-info.json，builtAt 变→reload）+会话续命（
+  sessionStorage nzTermLastSession→reload 后 attachSession 回旧会话，
+  tail 回放补屏=「热重载而会话不断」）+服务端重启自愈（重连 attach 撞
+  「会话不存在」→onSessionDead→摘账+防循环 reload）；考卷 hot-update.
+  test.mjs 6 断言全绿（续命同会话/标记回放/账本一致/假 build-info 触发
+  自刷/死账自愈）。③现役 8023 已迁 supervisor 托管（setsid，log=/tmp/
+  nz-server.log）；真机端到端两轮：restart 闭环✅、error 帧到+摘账✅、
+  **reload 执行被后台 WebView 推迟**（App 回前台补执行，CDP 强刷等效；
+  headless 6/6 证逻辑对）——真机前台 C 档待用户亮屏并验。排雷：pkill
+  -f 自匹配炸自己 shell（按 pid 杀）；「会话不断」reload 后靠续命 attach
+  而非 WS 重连（重连是同页面的，reload 换文档必须重 attach）。

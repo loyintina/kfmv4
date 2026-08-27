@@ -85,3 +85,20 @@ if (termCards) {
 
 // 供守视 eval 直读
 (window as unknown as Record<string, unknown>).__kfmNz = { rootCtx, bootLog, isHelloCleaned, host, gestures, cardTypes, permissions, plugtest };
+
+// ========== 热更自刷（前端腿：build → 页面自动换血，会话靠续命 attach 不断） ==========
+// boot 记当前 builtAt，10s 轮询 /build-info.json（build.mjs 每次构建重写），
+// 变了 = 新 bundle 已就位 → location.reload()。服务端代码热更走另一腿
+// （gate restart-req → supervisor 拉回），两腿解耦。
+const BUILD_INFO = '/build-info.json';
+void fetch(BUILD_INFO).then((r) => r.json() as Promise<{ builtAt?: string }>).then((info) => {
+  const bornAt = info.builtAt ?? '';
+  if (!bornAt) return;
+  setInterval(() => {
+    void fetch(BUILD_INFO, { cache: 'no-store' }).then((r) => r.json() as Promise<{ builtAt?: string }>)
+      .then((now) => {
+        if (now.builtAt && now.builtAt !== bornAt) location.reload();
+      })
+      .catch(() => { /* 服务端重启间隙取不到——WS 自愈腿管，这里静默 */ });
+  }, 10000);
+}).catch(() => { /* build-info 缺失（裸静态服务）→ 不自刷 */ });

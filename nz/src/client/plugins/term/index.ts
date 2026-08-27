@@ -107,6 +107,22 @@ export function applyTermBundle(ctx: Context): void {
   let gluePromise: Promise<TermCoreGlue> | null = null;
   const glue = () => (gluePromise ??= loadTermCoreShared());
 
+  /** 热更续命账（sessionStorage 键）：页面 reload 后 attach 回上一世会话 */
+  const SS_KEY = 'nzTermLastSession';
+  /** onSessionDead 自愈（服务端重启→重连 attach 全灭）：摘账 + 防循环
+   *  reload 一次。5s 内已自愈过则只摘账不刷（防服务端反复横跳转圈）。 */
+  const onSessionDead = (reason: string): void => {
+    try {
+      sessionStorage.removeItem(SS_KEY);
+      const last = Number(sessionStorage.getItem('nzTermDeadReload') ?? 0);
+      if (Date.now() - last > 5000) {
+        sessionStorage.setItem('nzTermDeadReload', String(Date.now()));
+        console.warn('[term] 会话死透（' + reason + '），自愈 reload');
+        location.reload();
+      }
+    } catch { /* sessionStorage 不可用就 nothing */ }
+  };
+
   // 渲染健康计数（?debug 骨架常驻字段的源头，平时零上报）：vp=可视区事件
   // rz=落地的行列变更。f/rp/sc 在 shell.stats。诊断角标已随 IME 收口移除
   // （2026-08-23 复盘裁决①：骨架常驻、专症字段随症收口、角标移除）。
@@ -141,6 +157,7 @@ export function applyTermBundle(ctx: Context): void {
         inst.followOutput();
       }
     },
+    onSessionDead,
   });
 
   const service: TermCardService = {
@@ -302,6 +319,11 @@ export function applyTermBundle(ctx: Context): void {
         histLen: core.history_len(),
         evicted: core.lines_evicted(),
         getContainer: () => scrollEl,
+      });
+      // 会话续命判卷钩子（热更闭环考卷用，并列扩展不碰既有语义）：
+      // sessionId 本体 + 是否续命attach（screen 钩同源，无副本）
+      (window as unknown as Record<string, unknown>).__kfmNzTermSession = () => ({
+        sessionId: card.sessionId,
       });
 
       // 软键盘入口（xterm 同款隐藏 textarea 诱饵）：移动浏览器只在可编辑
@@ -643,7 +665,26 @@ export function applyTermBundle(ctx: Context): void {
         reportViewport(altNow ? 'alt-enter' : 'alt-exit'); // TUI 翻转=超屏诊断关键事件
       };
 
-      const sessionId = await bridge.open({ command: opts.command, cols: card.cols, rows: card.rows });
+      // 热更续命（2026-08-27 用户拍板重走 na 热更路子）：页面 reload 后
+      // sessionStorage 里有上一世会话 id → attach 回去（tail 回放补屏，
+      // 「增加功能热重载而会话不断」的关键件）；attach 失败（服务端重启
+      // 过，会话已死）→ 摘账重开新会话（自愈，不 reload 防循环）。
+      let sessionId: string | null = null;
+      const saved = opts.command ? null : sessionStorage.getItem(SS_KEY);
+      if (saved) {
+        sessionStorage.removeItem(SS_KEY); // 先摘：成败都不留旧账（成功会重写）
+        // 预置 sessionId：attach 的 tail 回放按 inst.sessionId 匹配实例，
+        // 不预置则回放帧找不到主人（时序坑）
+        card.sessionId = saved;
+        if (await bridge.attachSession(saved)) {
+          sessionId = saved;
+        } else {
+          card.sessionId = null;
+          console.warn('[term] 续命 attach 失败（服务端重启过？），开新会话');
+        }
+      }
+      if (!sessionId) sessionId = await bridge.open({ command: opts.command, cols: card.cols, rows: card.rows });
+      try { sessionStorage.setItem(SS_KEY, sessionId); } catch { /* 隐私模式等，热更退化为断线重开 */ }
       card.sessionId = sessionId;
       card.syncAlt();
       shell.renderFrame();
