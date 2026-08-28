@@ -82,8 +82,8 @@ export interface TerminalCardMeta {
   _settleFlushTimer?: ReturnType<typeof setTimeout>; // settle buffer idle flush 定时器
   _settleFlushMaxTimer?: ReturnType<typeof setTimeout>; // settle buffer 硬上限 flush 定时器
   _settleScrollLoop?: number; // settle 期 rAF 循环 ID，每帧强制贴底
-  _lastResizeAt?: number; // 最近一次容器 resize 事件时间戳（用于延长循环覆盖 quiet 期）
-  _lastOutputAt?: number; // 最近一次 terminal-output 到达时间戳
+  _vvHandler?: () => void; // visualViewport resize/scroll 回调
+  _vvRaf?: number; // visualViewport 应用请求的 rAF id（节流）
 }
 
 /** 窄化守卫：将通用 CardInstance 窄化为 TerminalCardMeta 特化。全文件唯一 as 逃逸。 */
@@ -117,16 +117,11 @@ function startSelfHeal(tc: CardInstance<TerminalCardMeta>, fit: FitAddon) {
   }, 60_000);
 }
 
-/** settle 期 rAF 循环：每帧强制贴底，覆盖 settle 窗口 + resize/output 活动后 quiet 期 */
+/** settle 期 rAF 循环：每帧强制贴底，封死 xterm 异步渲染中间帧漂移 */
 function startSettleScrollLoop(tc: CardInstance<TerminalCardMeta>, term: Terminal) {
   if (tc.meta._settleScrollLoop) return; // 已在跑
-  const QUIET_MS = 500; // 无 resize/output 500ms 才认为真正安静
   const loop = () => {
-    const now = Date.now();
-    const settleExpired = !tc.meta._tmuxSettling || now >= tc.meta._tmuxSettling;
-    const recentResize = tc.meta._lastResizeAt && now - tc.meta._lastResizeAt < QUIET_MS;
-    const recentOutput = tc.meta._lastOutputAt && now - tc.meta._lastOutputAt < QUIET_MS;
-    if (settleExpired && !recentResize && !recentOutput) {
+    if (!tc.meta._tmuxSettling || Date.now() >= tc.meta._tmuxSettling) {
       tc.meta._settleScrollLoop = undefined;
       return;
     }
@@ -140,6 +135,56 @@ function stopSettleScrollLoop(tc: CardInstance<TerminalCardMeta>) {
   if (tc.meta._settleScrollLoop) {
     cancelAnimationFrame(tc.meta._settleScrollLoop);
     tc.meta._settleScrollLoop = undefined;
+  }
+}
+
+/**
+ * 按 visual viewport 钉终端容器：解决 Via 等浏览器 IME 弹起时 layout viewport
+ * 不缩、只缩 visual viewport 导致的底部被键盘遮住/慢滚问题。
+ * 仅对 fullscreen 卡生效；非 fullscreen 或 vv 与 layout 重合时不改动。
+ */
+function applyVisualViewport(tc: CardInstance<TerminalCardMeta>, term: Terminal, terminalName: string) {
+  if (!window.visualViewport) return;
+  if (tc.meta._vvRaf) return; // 已调度，跳过
+  tc.meta._vvRaf = requestAnimationFrame(() => {
+    tc.meta._vvRaf = undefined;
+    _applyVisualViewportNow(tc, term, terminalName);
+  });
+}
+
+function _applyVisualViewportNow(tc: CardInstance<TerminalCardMeta>, term: Terminal, terminalName: string) {
+  if (!window.visualViewport) return;
+  const vv = window.visualViewport;
+  const termEl = tc.meta._termEl;
+  if (!termEl) return;
+
+  const card = termEl.closest('.floating-card') as HTMLElement | null;
+  if (!card?.classList.contains('fullscreen')) return;
+
+  const layoutH = window.innerHeight;
+  const vvH = vv.height;
+  const imeOpen = vvH < layoutH - 10;
+
+  if (imeOpen) {
+    termEl.style.position = 'fixed';
+    termEl.style.left = vv.offsetLeft + 'px';
+    termEl.style.top = vv.offsetTop + 'px';
+    termEl.style.width = vv.width + 'px';
+    termEl.style.height = vvH + 'px';
+    termEl.style.zIndex = String(Z.FULLSCREEN);
+  } else {
+    termEl.style.position = '';
+    termEl.style.left = '';
+    termEl.style.top = '';
+    termEl.style.width = '';
+    termEl.style.height = '';
+    termEl.style.zIndex = '';
+  }
+
+  try { tc.meta._fit?.fit(); } catch { /* noop */ }
+  if (terminalName === 'tmux') {
+    enterTmuxSettle(tc, term, 1500);
+    try { term.scrollToBottom(); } catch { /* noop */ }
   }
 }
 
@@ -487,10 +532,11 @@ export function initTerminalCore(
       enterTmuxSettle(tc, term!, 1500);
       try { term!.scrollToBottom(); } catch { /* noop */ }
     }
+    // 重插 DOM 后按当前 visual viewport 重新钉高（fullscreen 且 IME 开时生效）
+    applyVisualViewport(tc, term!, terminalName);
     tc.meta._xtermEl = xtermEl;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     const observer = new ResizeObserver(() => {
-      tc.meta._lastResizeAt = Date.now(); // 记录原始 resize 事件，让循环覆盖 debounce 空窗
       try { fit!.fit(); } catch {}
       if (resizeTimer) clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
@@ -599,6 +645,17 @@ export function initTerminalCore(
   tc.meta._xtermEl = xtermEl;
   tc.meta._termEl = termEl;
 
+  // 监听 visual viewport：Via 等浏览器 IME 弹起只缩 vv 不缩 layout viewport，
+  // 必须主动把终端容器钉到 vv 范围内，否则底部被键盘盖住出现慢滚。
+  if (window.visualViewport && !tc.meta._vvHandler) {
+    const vv = window.visualViewport;
+    const vvHandler = () => applyVisualViewport(tc, term, terminalName);
+    vv.addEventListener('resize', vvHandler);
+    vv.addEventListener('scroll', vvHandler);
+    tc.meta._vvHandler = vvHandler;
+    applyVisualViewport(tc, term, terminalName); // 初始态
+  }
+
   term.onData((data: string) => {
     if (tc.meta.sessionId) {
       wsChannel.sendMessage('terminal-input', {
@@ -609,7 +666,6 @@ export function initTerminalCore(
 
   let resizeTimer: ReturnType<typeof setTimeout> | null = null;
   const observer = new ResizeObserver(() => {
-    tc.meta._lastResizeAt = Date.now(); // 记录原始 resize 事件，让循环覆盖 debounce 空窗
     try { fit.fit(); } catch {}
     if (resizeTimer) clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
@@ -638,7 +694,6 @@ export function initTerminalCore(
   const onOutput = (p: unknown) => {
     const d = p as { sessionId: string; data: string };
     if (d.sessionId !== tc.meta.sessionId) return;
-    tc.meta._lastOutputAt = Date.now();
 
     const inSettle = terminalName === 'tmux' && tc.meta._tmuxSettling && Date.now() < tc.meta._tmuxSettling;
 
@@ -768,6 +823,15 @@ export function disposeTerminalCore(card: CardInstance, poolName: string): void 
   }
   clearSettleTimers(tc);
   stopSettleScrollLoop(tc);
+  if (tc.meta._vvRaf) {
+    cancelAnimationFrame(tc.meta._vvRaf);
+    tc.meta._vvRaf = undefined;
+  }
+  if (tc.meta._vvHandler && window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', tc.meta._vvHandler);
+    window.visualViewport.removeEventListener('scroll', tc.meta._vvHandler);
+    tc.meta._vvHandler = undefined;
+  }
   delete tc.meta._settleBuffer;
   if (tc.meta._term) {
     tc.meta._term.dispose();
@@ -797,6 +861,10 @@ export function compactTerminalCore(card: CardInstance): void {
   if (tc.meta._term) flushTmuxSettleBuffer(tc, tc.meta._term);
   clearSettleTimers(tc);
   stopSettleScrollLoop(tc);
+  if (tc.meta._vvRaf) {
+    cancelAnimationFrame(tc.meta._vvRaf);
+    tc.meta._vvRaf = undefined;
+  }
   if (tc.meta._xtermEl) {
     _termMap.delete(tc.meta._xtermEl);
     _sidMap.delete(tc.meta._xtermEl);
