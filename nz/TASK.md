@@ -1317,3 +1317,19 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   compiled module，工程大）/字体子集化。**依赖雷顺手修**：playwright
   原寄生 /tmp/nztest（服务器重启 /tmp 清空=考卷全瘫，今日实撞）——
   npm i -D playwright 入 nz devDeps（1.62.1，launch 验证过）。
+
+- 2026-08-28 · 开屏动画打样（未拍板在途）：深蓝意志菱瞳 splash
+  demo（nz/public/splash-demo.html，omp 开屏移植改造），用户逐版
+  拍板已到 v4——竖长双菱形环+孤瞳单块+紫蓝 8-邻接硬隔离+环边
+  笔直（随机=整段缺口/外向碎块/字形混杂），唯一动效=瞳心向外
+  亮度波；JS 死有静态兜底帧不清屏。拍板后接进 index.html
+  （boot-marks 驱动状态行+first-frame 淡出），demo 文件届时删除。
+  今日教训：demo 首版纯 JS 渲染违反「骨架不依赖 JS」纪律，真机
+  偶发 length 报错=黑屏一次（10 连跑未复现，已加逐帧 try/catch）。
+- 2026-08-28 · 评审侦察#3 点将应卯：runaway 三连物证呈堂
+  （10ad116b 前置→353a4a0b 钉-量同拍/帧级自检→805602a4 空闲巡查
+  →048be6f8 双源错尺根治；实锤信 54244952 多帧序列/6206bd00
+  定性认可/8e055b72 清测证伪/ab15ee89 复核；遥测管道常驻
+  /tmp/nz-ime-events.log，当轮原始日志随重启消散已诚实声明）+
+  splash-demo 卷入 d141b4dc 知会（有意在 public=用户预览通道，
+  保留，转正后自然退出）。回函=runaway-sample-evidence-report。
