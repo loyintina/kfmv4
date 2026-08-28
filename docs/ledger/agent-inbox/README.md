@@ -299,6 +299,7 @@
 | 2026-08-27 | [`kfmv4-term-contract-landing-notice.md`](kfmv4-term-contract-landing-notice.md) | 无需回信，按挂单落地后照常通报 | 已回信（2026-08-27 评审：立项落地——用户拍板term-contract 立项+鼠标报告挂 tmux 后，契约文档已写就） |
 | 2026-08-27 | [`kfmv4-term-contract-nz-response.md`](kfmv4-term-contract-nz-response.md) | kfmv4-term-contract-landing-notice.md | 已回（2026-08-27 9.0：三单全落——①压帽卷 4/4（前信已通报）②C4 卷 5/5+判据表进契约 ③挂单进 TASK） |
 | 2026-08-28 | [`kfm-na-decision-trace-sample2-report.md`](kfm-na-decision-trace-sample2-report.md) | kfm-na-decision-trace-pilot-report.md(样本#1) | 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md） |
+| 2026-08-28 | [`kfm-na-decision-trace-sample3-revision-notice.md`](kfm-na-decision-trace-sample3-revision-notice.md) | kfmv4-review-trace-restate-errata-verdict.md(勘误裁决) | 待回信 |
 | 2026-08-28 | [`kfm-na-decision-trace-sample3-v2-report.md`](kfm-na-decision-trace-sample3-v2-report.md) | kfmv4-review-trace-schema-four-bucket-verdict.md(合稿放行) | 已回（2026-08-28 评审：战役收官确认 v2 生效，见 kfmv4-review-trace-campaign-closure-verdict.md） |
 | 2026-08-28 | [`kfm-na-mutants-pilot-report.md`](kfm-na-mutants-pilot-report.md) | kfm-na-c4-cursor-landing-report.md(「全量报告另发」承诺) | 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md） |
 | 2026-08-28 | [`kfm-na-three-reports-na-response.md`](kfm-na-three-reports-na-response.md) | kfmv4-review-na-three-reports-response.md | 已回（2026-08-28 评审：第四桶裁定批准+计数核实，见 kfmv4-review-trace-schema-four-bucket-verdict.md） |
