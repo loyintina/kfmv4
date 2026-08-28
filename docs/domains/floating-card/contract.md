@@ -83,6 +83,15 @@
     挂那张卡的钉底（最坏只是某卡保持贴底），已知边界不深究。** IME 滚焦靠 xterm 自身 + 移动端
     `focus({preventScroll:true})`/诱饵钉光标格（见 terminal-card-04）；8.x 曾因无诱饵而修不动
     IME 滚焦，nz(9.0) 自带 `kb.focus({preventScroll:true})` + 诱饵钉光标格已规避。
+17. **tmux 卡慢滚 settle 机制（2026-08-28/29 连环修，最终版=a0a7143f）**：症状=
+    attach/切卡（compact→active 重插 DOM）/IME 弹收 resize 后从顶慢滚永不贴底。
+    机制=xterm 异步解析渲染，逐 chunk 写入的中间帧漂移，单次 scrollToBottom 追不上。
+    现行解（`enterTmuxSettle`，terminal-card-04）：settle 窗口 1500ms 内输出进
+    `_settleBuffer` 批量写入（write 回调里贴底，避免中间帧被看到）+ rAF 循环每帧
+    强制贴底（`startSettleScrollLoop`，进 settle 必重启）+ 旧缓冲先落盘。
+    **失败路径记录**：vv 钉高方案（276707bd→65c86b90 四连）导致切卡/关 IME 页面
+    不更新，全量回退（8361e9a7，曾黑屏卡顿）后按用户拍板恢复第 3 版（19494539）。
+    教训：xterm 滚动问题用「缓冲批量写 + 贴底循环」覆盖活动期，别动容器几何。
 
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 
@@ -120,6 +129,10 @@
   生成 churn 必然触发本门——已知噪声源）；1 次实质改动 = fbc927a7
   session.card.ts 精确尺（API usage 实测落盘替代估算，卡片展示层两行）。
   复核结论：架构/硬规则/#陷阱 与现状一致，契约无需修订。
+- 2026-08-29（contract-freshness 门触发，11 提交后复核）：1 次 08-23 终端卡智能
+  贴底（已录 #陷阱 16）；9 次 08-28/29 tmux 慢滚连环修（含 vv 钉高失败→全量回退→
+  恢复第 3 版），现行机制录入 #陷阱 17；1 次 docs 提交（agent-bus 技能修正，无代码）。
+  架构/硬规则复核与现状一致。
 
 ## 文件清单
 
