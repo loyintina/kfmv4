@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>深蓝意志 · splash demo v3</title>
+<title>深蓝意志 · splash demo v8</title>
 <style>
   html, body { margin: 0; height: 100%; background: #05070f; overflow: hidden; }
   #nz-splash {
@@ -33,7 +33,7 @@
     █</span></pre></div>
 <script>
 (function () {
-  // ============ 深蓝意志开屏 v3（用户拍板 2026-08-28）============
+  // ============ 深蓝意志开屏 v8（逐行精确菱形+重心钉线）============
   // 只要一个图标：竖长菱瞳，无文字。三环——竖瞳蓝块/内圈紫环/外圈蓝环。
   // 环块大小、数量、位置刻意不对称（定种子随机：缺块/抖动/步距/字形混杂），
   // 环间距 > 环宽（环 1 格线宽，间距 2 格以上）。唯一动效=瞳心向外亮度波。
@@ -55,9 +55,9 @@
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
-  // 字形池：宽度随机（用户拍板 v6——一行最多一块，无邻居可对比，
-  // 宽度随机就不生锯齿；宽块为主，细块稀有保线形可读）
+  // 字形池+墨迹宽度（v8 重心钉线要用：窄字墨迹靠左贴格，重心不在格心）
   var GLYPHS = ['█', '█', '█', '█', '▉', '▉', '▊', '▊', '▋', '▌', '▍'];
+  var GLYPH_W = { '█': 1, '▉': 0.875, '▊': 0.75, '▋': 0.625, '▌': 0.5, '▍': 0.375 };
   function pickGlyph() { return GLYPHS[Math.floor(R() * GLYPHS.length)]; }
 
   // ---- 竖长网格：19×27（v5 加宽横向），瞳心居中 ----
@@ -74,43 +74,36 @@
     }
     return false;
   }
-  function mark(x, y, zone, glyph) {
+  function mark(x, y, zone, glyph, nudge, fxDist) {
     if (x < 0 || x >= EW || y < 0 || y >= EH) return;
     if (touchesOtherZone(x, y, zone)) return;
-    emblem[y][x] = { zone: zone, glyph: glyph || '█',
-      dist: Math.sqrt((x - ECX) * (x - ECX) + (y - ECY) * (y - ECY)) };
+    // v8：nudge=墨迹重心到理想线的亚格补偿（渲染 left:Xch）；
+    // dist 按理想位置算，亮度波相位与视觉几何一致。
+    var fx = (typeof fxDist === 'number') ? fxDist : x;
+    emblem[y][x] = { zone: zone, glyph: glyph || '█', nudge: nudge || 0,
+      dist: Math.sqrt((fx - ECX) * (fx - ECX) + (y - ECY) * (y - ECY)) };
   }
 
-  // ---- 随机菱形环 v6：单行单块的细线 ----
-  // 用户拍板 v6：环太宽的根源=断阶补格/顺线双块/桥接造成的 2 格厚，
-  // 全部砍掉——同一行最多落一块（相邻同行即跳过），直线感靠块心钉线，
-  // 随机感交给方块宽度。保留整段缺口+外向卫星碎块 ----
+  // ---- 逐行精确菱形环 v8（2026-08-28 用户三症拍板）----
+  // v6/v7 参数步进流的三宗罪：①同行双块（顶点附近折返）②整段缺失
+  // （随机缺口+同行跳过叠乘）③窄字重心离线（墨迹靠左贴格，重心
+  // 偏左 (1-w)/2）。v8 改按菱形方程逐行精确落块：|X/rx|+|Y/ry|=1，
+  // 每行左右缘各一块（尖顶两侧合一），每行都有块、每侧每行至多一块；
+  // 重心钉线：墨迹重心=x+nudge+w/2，目标=fx+0.5 → nudge=(fx-x)+(1-w)/2。
+  // 随机感只剩宽度随机；卫星碎块/偶发缺行均已除（用户拍板 v8 定稿）——
+  // 每行每侧必有一块，满覆盖。
+  function placeEdge(fx, y, zone) {
+    var glyph = pickGlyph();
+    var w = GLYPH_W[glyph];
+    var x = Math.round(fx);
+    mark(x, y, zone, glyph, (fx - x) + (1 - w) / 2, fx);
+  }
   function drawRing(cx, cy, rx, ry, zone) {
-    var gaps = [];
-    var ng = 1 + Math.floor(R() * 2);
-    for (var g = 0; g < ng; g++) gaps.push([R(), 0.04 + R() * 0.07]);
-    var V = [[0, -ry], [rx, 0], [0, ry], [-rx, 0]];
-    var steps = Math.ceil(2 * (rx + ry)) * 2;
-    var px = null, py = null;
-    for (var i = 0; i <= steps; i++) {
-      var t = (i / steps) % 1;
-      var inGap = false;
-      for (var gi = 0; gi < gaps.length; gi++) {
-        if (t >= gaps[gi][0] && t <= gaps[gi][0] + gaps[gi][1]) { inGap = true; break; }
-      }
-      if (inGap) { px = null; continue; }              // 缺口处断连
-      var e = Math.floor(t * 4), et = t * 4 - e;
-      var vx = V[e][0] + (V[(e + 1) % 4][0] - V[e][0]) * et;
-      var vy = V[e][1] + (V[(e + 1) % 4][1] - V[e][1]) * et;
-      var x = Math.round(cx + vx), y = Math.round(cy + vy);
-      if (px !== null && y === py && Math.abs(x - px) < 2) continue; // 同行相邻=环变厚，跳过
-      mark(x, y, zone, pickGlyph());
-      if (R() < 0.04) {                                // 卫星碎块：只朝远离瞳心方向漂
-        var sx = x === cx ? 0 : (x > cx ? 1 : -1);
-        var sy = y === cy ? 0 : (y > cy ? 1 : -1);
-        mark(x + sx * (1 + Math.floor(R() * 2)), y + sy * (1 + Math.floor(R() * 2)), zone, pickGlyph());
-      }
-      px = x; py = y;
+    for (var dy = -ry; dy <= ry; dy++) {
+      var ex = rx * (1 - Math.abs(dy) / ry);        // 该行边缘距中线（精确解）
+      if (ex < 0.5) { placeEdge(cx, cy + dy, zone); continue; } // 尖顶合一
+      placeEdge(cx - ex, cy + dy, zone);            // 左缘
+      placeEdge(cx + ex, cy + dy, zone);            // 右缘
     }
   }
 
@@ -151,6 +144,15 @@
       }
       for (var x = 0; x < EW; x++) {
         var cell = emblem[y][x];
+        if (cell && cell.nudge) {
+          // v7 钉线块：独立 span 亚格平移，不进同行合并 run
+          flush(); runCls = undefined;
+          var nb = 0.5 + 0.5 * Math.sin(phase - cell.dist * 0.45);
+          html += '<span class="z-' + cell.zone + '-' + Math.round(nb * (STEPS - 1)) +
+                  '" style="position:relative;left:' + cell.nudge.toFixed(2) + 'ch">' +
+                  cell.glyph + '</span>';
+          continue;
+        }
         var cls = '', ch = ' ';
         if (cell) {
           // 唯一动效：亮度波从瞳心(dist=0)向外环传播

@@ -6,7 +6,7 @@
 > 预期表态方: 无(素材就绪知会;第二单开张即用)
 > 收敛判据: 第二单开张时 na 侧材料零准备成本
 > 回: kfmv4-review-trace-campaign-closure-verdict.md §四(第二单候选视用户意愿)
-> 状态: 待回信
+> 状态: 已回（2026-08-28 评审：第二单素材包收讫，开张待拍板，见 kfmv4-review-audit2-readiness-verdict.md）
 
 两线观测面对照若开第二单,na 侧材料已备齐:
 `experiments/dsh-na/na/observation-surface-inventory.md`——

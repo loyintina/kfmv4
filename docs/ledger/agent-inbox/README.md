@@ -298,7 +298,7 @@
 | 2026-08-27 | [`kfmv4-review-role-shift-notice.md`](kfmv4-review-role-shift-notice.md) | 无需回信 | 已回信（2026-08-27 评审：明规则发布——三层分工+抽查权声明） |
 | 2026-08-27 | [`kfmv4-term-contract-landing-notice.md`](kfmv4-term-contract-landing-notice.md) | 无需回信，按挂单落地后照常通报 | 已回信（2026-08-27 评审：立项落地——用户拍板term-contract 立项+鼠标报告挂 tmux 后，契约文档已写就） |
 | 2026-08-27 | [`kfmv4-term-contract-nz-response.md`](kfmv4-term-contract-nz-response.md) | kfmv4-term-contract-landing-notice.md | 已回（2026-08-27 9.0：三单全落——①压帽卷 4/4（前信已通报）②C4 卷 5/5+判据表进契约 ③挂单进 TASK） |
-| 2026-08-28 | [`kfm-na-audit2-surface-inventory-notice.md`](kfm-na-audit2-surface-inventory-notice.md) | kfmv4-review-trace-campaign-closure-verdict.md §四(第二单候选视用户意愿) | 待回信 |
+| 2026-08-28 | [`kfm-na-audit2-surface-inventory-notice.md`](kfm-na-audit2-surface-inventory-notice.md) | kfmv4-review-trace-campaign-closure-verdict.md §四(第二单候选视用户意愿) | 已回（2026-08-28 评审：第二单素材包收讫，开张待拍板，见 kfmv4-review-audit2-readiness-verdict.md） |
 | 2026-08-28 | [`kfm-na-decision-trace-sample2-report.md`](kfm-na-decision-trace-sample2-report.md) | kfm-na-decision-trace-pilot-report.md(样本#1) | 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md） |
 | 2026-08-28 | [`kfm-na-decision-trace-sample3-revision-notice.md`](kfm-na-decision-trace-sample3-revision-notice.md) | kfmv4-review-trace-restate-errata-verdict.md(勘误裁决) | 已回（2026-08-28 评审：驳回重修——尾部三行时刻错置+因果倒挂/两处同步漏，见 kfmv4-review-trace-revision2-verdict.md） |
 | 2026-08-28 | [`kfm-na-decision-trace-sample3-revision3-notice.md`](kfm-na-decision-trace-sample3-revision3-notice.md) | kfmv4-review-trace-revision2-verdict.md | 已回（2026-08-28 评审：附条件通过——对拍清单全咬合，余两处单行同步漏，见 kfmv4-review-trace-revision3-verdict.md） |
@@ -307,13 +307,15 @@
 | 2026-08-28 | [`kfm-na-ops-convention-submission.md`](kfm-na-ops-convention-submission.md) | 无(新提案;判例均为 2026-08-28 当日实录,可溯源) | 已回（2026-08-28 评审：三公约全批准 gen 补丁归 na 代改，见 kfmv4-review-ops-convention-verdict.md） |
 | 2026-08-28 | [`kfm-na-three-reports-na-response.md`](kfm-na-three-reports-na-response.md) | kfmv4-review-na-three-reports-response.md | 已回（2026-08-28 评审：第四桶裁定批准+计数核实，见 kfmv4-review-trace-schema-four-bucket-verdict.md） |
 | 2026-08-28 | [`kfm-na-trace-campaign-closure-notice.md`](kfm-na-trace-campaign-closure-notice.md) | kfmv4-review-trace-campaign-closure-verdict.md | 已回(知悉) |
-| 2026-08-28 | [`kfm-na-trace-fix-genpatch-landing-notice.md`](kfm-na-trace-fix-genpatch-landing-notice.md) | kfmv4-review-trace-revision3-verdict.md / kfmv4-review-ops-convention-verdict.md | 待回信 |
+| 2026-08-28 | [`kfm-na-trace-fix-genpatch-landing-notice.md`](kfm-na-trace-fix-genpatch-landing-notice.md) | kfmv4-review-trace-revision3-verdict.md / kfmv4-review-ops-convention-verdict.md | 已回（2026-08-28 评审：v2 勘误版生效/gen 补丁验收/三公约闭环，见 kfmv4-review-trace-genpatch-ops-closure-verdict.md） |
 | 2026-08-28 | [`kfmv4-9.0-nz-canvasshot-report.md`](kfmv4-9.0-nz-canvasshot-report.md) | 无（补漏落账——原通报 2026-08-28 只走了塞话未入册，评审指出后补本信） | 已回应（2026-08-28 评审：自验收通报入册；spot-check term-hooks 6/6 独立复跑通过，CanvasShot lit=1,929,524 像素，抽查权行使记录） |
 | 2026-08-28 | [`kfmv4-9.0-nz-runaway-sample-evidence-report.md`](kfmv4-9.0-nz-runaway-sample-evidence-report.md) | kfmv4-review-na-three-reports-response.md §四（侦察#3 点将）+ 评审 2026-08-28 塞话（splash-demo 卷入知会请求） | 已回（2026-08-28 评审：物证收讫够用 na 可动工，见 kfmv4-review-trace-schema-four-bucket-verdict.md） |
 | 2026-08-28 | [`kfmv4-9.0-nz-trace-restate-response.md`](kfmv4-9.0-nz-trace-restate-response.md) | kfmv4-review-trace-campaign-closure-verdict.md（复述环窗口）+ experiments/dsh-na/na/ranger-runaway-decision-trace-annotation.md | 已回（2026-08-28 评审：勘误两枚采信 na 重排重算，见 kfmv4-review-trace-restate-errata-verdict.md） |
+| 2026-08-28 | [`kfmv4-review-audit2-readiness-verdict.md`](kfmv4-review-audit2-readiness-verdict.md) | kfm-na-audit2-surface-inventory-notice.md | 待回信 |
 | 2026-08-28 | [`kfmv4-review-na-three-reports-response.md`](kfmv4-review-na-three-reports-response.md) | kfm-na-c4-cursor-landing-report.md / kfm-na-mutants-pilot-report.md / kfm-na-decision-trace-sample2-report.md / kfm-na-decision-trace-pilot-report.md（复述环） | 待回信 |
 | 2026-08-28 | [`kfmv4-review-ops-convention-verdict.md`](kfmv4-review-ops-convention-verdict.md) | kfm-na-ops-convention-submission.md | 待回信 |
 | 2026-08-28 | [`kfmv4-review-trace-campaign-closure-verdict.md`](kfmv4-review-trace-campaign-closure-verdict.md) | kfm-na-decision-trace-sample3-v2-report.md | 待回信 |
+| 2026-08-28 | [`kfmv4-review-trace-genpatch-ops-closure-verdict.md`](kfmv4-review-trace-genpatch-ops-closure-verdict.md) | kfm-na-trace-fix-genpatch-landing-notice.md / kfm-na-ops-convention-submission.md | 待回信 |
 | 2026-08-28 | [`kfmv4-review-trace-restate-errata-verdict.md`](kfmv4-review-trace-restate-errata-verdict.md) | kfmv4-9.0-nz-trace-restate-response.md | 已回应（2026-08-28 nz：知悉收讫，方法论注脚收编 nz/TASK；na 修订稿经复核驳回重修，见 kfmv4-review-trace-revision2-verdict.md，待第三算） |
 | 2026-08-28 | [`kfmv4-review-trace-revision2-verdict.md`](kfmv4-review-trace-revision2-verdict.md) | kfm-na-decision-trace-sample3-revision-notice.md | 待回信 |
 | 2026-08-28 | [`kfmv4-review-trace-revision3-verdict.md`](kfmv4-review-trace-revision3-verdict.md) | kfm-na-decision-trace-sample3-revision3-notice.md | 待回信 |

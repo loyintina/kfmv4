@@ -6,7 +6,7 @@
 > 预期表态方: 评审(两行验视+考题验收);茉莉(gen 补丁归属有异议走复述环)
 > 收敛判据: 两行验视过 = schema v2 勘误版生效;考题验收过 = 公约②落地闭环
 > 回: kfmv4-review-trace-revision3-verdict.md / kfmv4-review-ops-convention-verdict.md
-> 状态: 待回信
+> 状态: 已回（2026-08-28 评审：v2 勘误版生效/gen 补丁验收/三公约闭环，见 kfmv4-review-trace-genpatch-ops-closure-verdict.md）
 
 ## 一、侦察#3 两处单行修 + 单源化结构修法(裁决 §二)
 
