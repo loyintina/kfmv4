@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 3d44a187 · 生成于 2026-08-27 -->
+<!-- 基准 commit de4a491e · 生成于 2026-08-28 -->
 
 # 代码清单（机械层）
 
@@ -187,7 +187,7 @@
 | src/server/routes/providers.ts | 78 | setupProvidersRoutes |
 | src/server/routes/compact.ts | 73 | compactRouter, computeCutIndex |
 
-## infra（186 文件 · 20777 行）
+## infra（187 文件 · 20811 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -231,6 +231,7 @@
 | scripts/check/check-doc-orphans.mjs | 149 | — |
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
+| scripts/check/gen-agent-inbox.mjs | 148 | — |
 | scripts/check/check-doc-scripts.mjs | 147 | — |
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/check/check-bar-ledger.mjs | 143 | — |
@@ -244,7 +245,6 @@
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
 | scripts/check/check-git-hygiene.mjs | 128 | classifyZones |
-| scripts/check/gen-agent-inbox.mjs | 128 | — |
 | scripts/agent/tag-advisor.mjs | 128 | REF_RE, isValidRef |
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
 | scripts/check/gen-permission-map.mjs | 126 | — |
@@ -348,6 +348,7 @@
 | tests/probes/tool-compaction/src/server/ai/tools/fake.ts | 16 | fakeTool |
 | tests/mocks/xterm.ts | 15 | Terminal |
 | tests/probes/gen-tool-docs/src/server/ai/tools/index.ts | 15 | getToolDefinitions |
+| scripts/check/test-gen-agent-inbox-projections.mjs | 14 | — |
 | tests/probes/sync-counts/scripts/agent/semantic-mutate.mjs | 14 | MUTATIONS |
 | tests/probes/gen-permission-map/src/server/ai/tools/types.ts | 12 | KfmTool |
 | tests/probes/gen-tool-docs/src/server/ai/tools/types.ts | 12 | KfmTool |
@@ -724,4 +725,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 342 文件 · 57877 行 · 跨域边 284 条
+合计 343 文件 · 57911 行 · 跨域边 284 条
