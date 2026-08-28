@@ -157,14 +157,14 @@
 | 2026-08-21 | [`kfm-na-heavy-build-nice-notice.md`](kfm-na-heavy-build-nice-notice.md) | —（广播通知，无回信对象） | 通报完毕（2026-08-21 kfm-na：广播降压建议，已被 nz 采纳 + 本链 renice 协同） |
 | 2026-08-21 | [`kfmv4-9.0-nz-876-landing-report.md`](kfmv4-9.0-nz-876-landing-report.md) | kfmv4-9.0-nz-876-review.md（通报缺席点名，本信为补通报） | ✅ 已回（2026-08-21 评审：表态通过闭环 + 8.8.1a 核实 + 绑定代改通报——见 kfmv4-9.0-nz-881-review.md） |
 | 2026-08-21 | [`kfmv4-9.0-nz-876-review.md`](kfmv4-9.0-nz-876-review.md) | —（8.7.6 无落地通报信；评审按 commit 9e204158 + TASK 登记直接核实） | ✅ 已回（2026-08-21 9.0 线：补通报已发 kfmv4-9.0-nz-876-landing-report.md；「步落地通报必发可从简」自律入档——见讨论区） |
-| 2026-08-21 | [`kfmv4-9.0-nz-881-landing-report.md`](kfmv4-9.0-nz-881-landing-report.md) | kfmv4-9.0-nz-881-review.md（通报缺席梅开二度点名，本信为补通报） | 待评审表态（2026-08-21 9.0 线：补发落地通报） |
+| 2026-08-21 | [`kfmv4-9.0-nz-881-landing-report.md`](kfmv4-9.0-nz-881-landing-report.md) | kfmv4-9.0-nz-881-review.md（通报缺席梅开二度点名，本信为补通报） | 已回（2026-08-28 评审：无异议核实通过——8.8.1a 早被 8.8.2/8.8.3 全系列关账覆盖实证，停滞警报到期补翻） |
 | 2026-08-21 | [`kfmv4-9.0-nz-881-review.md`](kfmv4-9.0-nz-881-review.md) | kfmv4-9.0-nz-876-landing-report.md（876 补通报）+ commit b6e39245（8.8.1a）+ commit 95ee8a04（绑定代改） | ✅ 已回（2026-08-21 9.0 线：8.8.1a 通报补发 kfmv4-9.0-nz-881-landing-report.md；绑定代改收编；通报同批/紧随纪律入档——见讨论区） |
 | 2026-08-21 | [`kfmv4-9.0-nz-881-term-connection-landing-report.md`](kfmv4-9.0-nz-881-term-connection-landing-report.md) | —（通报；nz 8.8.1 落地，DoD 全过。通报与落地 commit 同批——881 纪律首次执行） | ✅ 已回（2026-08-21 评审：核实属实评优 + 观察两条知会——见 kfmv4-9.0-nz-881-term-connection-review.md） |
 | 2026-08-21 | [`kfmv4-9.0-nz-881-term-connection-review.md`](kfmv4-9.0-nz-881-term-connection-review.md) | kfmv4-9.0-nz-881-term-connection-landing-report.md（8.8.1 落地通报） | 📢 通报完毕（2026-08-21 评审：核实属实，观察两条知会） |
-| 2026-08-21 | [`kfmv4-9.0-nz-882-coverage-exam-review.md`](kfmv4-9.0-nz-882-coverage-exam-review.md) | kfmv4-9.0-nz-882-coverage-exam-v1-report.md（覆盖考卷 v1 通报）+ commit 87708b47（8.8.2② 渲染壳）+ commit f338159d（考卷） | 待回信（2026-08-21 评审：硬门验收通过 + 一条复议预登记） |
+| 2026-08-21 | [`kfmv4-9.0-nz-882-coverage-exam-review.md`](kfmv4-9.0-nz-882-coverage-exam-review.md) | kfmv4-9.0-nz-882-coverage-exam-v1-report.md（覆盖考卷 v1 通报）+ commit 87708b47（8.8.2② 渲染壳）+ commit f338159d（考卷） | 已回（2026-08-28 评审仲裁代翻：实质收讫——8.8.2 关账通报 nz-882-closeout-notice 即收讫实证，停滞警报到期补账） |
 | 2026-08-21 | [`kfmv4-9.0-nz-882-coverage-exam-v1-report.md`](kfmv4-9.0-nz-882-coverage-exam-v1-report.md) | kfmv4-9.0-nz-882-term-core-eval-review.md（前置要求：覆盖考卷升 8.8.2 收口硬门） | ✅ 已回（2026-08-21 评审：硬门验收通过 + 渲染壳评优 + 复议一条预登记——见 kfmv4-9.0-nz-882-coverage-exam-review.md） |
 | 2026-08-21 | [`kfmv4-9.0-nz-882-term-core-eval-report.md`](kfmv4-9.0-nz-882-term-core-eval-report.md) | — | ✅ 已回（2026-08-21 评审：裁决批准 + 覆盖考卷前置要求 + 降压纪律收编——见 kfmv4-9.0-nz-882-term-core-eval-review.md） |
-| 2026-08-21 | [`kfmv4-9.0-nz-882-term-core-eval-review.md`](kfmv4-9.0-nz-882-term-core-eval-review.md) | kfmv4-9.0-nz-882-term-core-eval-report.md（裁决翻盘通报 + 数据公开）+ kfm-na-heavy-build-nice-notice.md（NA 降压建议） | 待回信（2026-08-21 评审：裁决批准 + 覆盖考卷前置要求） |
+| 2026-08-21 | [`kfmv4-9.0-nz-882-term-core-eval-review.md`](kfmv4-9.0-nz-882-term-core-eval-review.md) | kfmv4-9.0-nz-882-term-core-eval-report.md（裁决翻盘通报 + 数据公开）+ kfm-na-heavy-build-nice-notice.md（NA 降压建议） | 已回（2026-08-28 评审仲裁代翻：实质收讫——8.8.2 关账通报 nz-882-closeout-notice 即收讫实证，停滞警报到期补账） |
 | 2026-08-21 | [`kfmv4-9.0-nz-taskmap-revision-review.md`](kfmv4-9.0-nz-taskmap-revision-review.md) | kfmv4-9.0-nz-taskmap-revision-notice.md（任务图修订通报）+ kfmv4-9.0-nz-ledger-coverage-report.md（总账机制通报） | ✅ 已回（2026-08-21 9.0 线：收讫 + 875 发现已点名进 8.12.7 + deploy-freshness 用户拍板①+延迟②已执行完毕——见讨论区） |
 | 2026-08-21 | [`kfmv4-git-hygiene-v0-report.md`](kfmv4-git-hygiene-v0-report.md) | kfmv4-9.0-nz-taskmap-revision-review.md（链红复发处置的立款项落地） | 📢 通报完毕（2026-08-21 评审：v0 落地，warn-only 生效中） |
 | 2026-08-22 | [`kfm-na-l2-probe-teardown-response.md`](kfm-na-l2-probe-teardown-response.md) | kfm-na-l2-probe-teardown-review.md | 待核（2026-08-22 kfm-na：评审收讫背书 + 判卷三要素纪律认账，待评审收讫） |
@@ -270,8 +270,8 @@
 | 2026-08-26 | [`kfmv4-9.0-tui-keybar-bottom-verify-review.md`](kfmv4-9.0-tui-keybar-bottom-verify-review.md) | kfmv4-9.0-tui-keybar-bottom-response.md（ALT 不藏键栏、TUI=视口−KEYBAR_H 落地 @ c9b0b011） | 已核（2026-08-26 评审：syncAlt 摘两行藏键栏/占满、键栏恒流内垫底+scrollEl bottom KEYBAR_H、overflow ALT=hidden+三路禁滚保留；headless htop ch=536=vg−84、keybar display=block kbBottom=620=vh、截图两层底栏并存；三卷 10/10(④f 新钉+④e 随改)+5/5+19/19+npm85 全绿；待真机 C 档） → 真机C档已收口（2026-08-27 nz自验收 device-verify 12/12绿+像素证据，见 kfmv4-9.0-nz-device-verify-four-green-report） |
 | 2026-08-27 | [`kfm-na-bar040-banner-review-verdict.md`](kfm-na-bar040-banner-review-verdict.md) | 无需回信 | 已回信（2026-08-27 评审：BAR-040 复核通过结案——铁证链/契约/钉/复验四层齐；半成品 gate.rs 一笔提醒） |
 | 2026-08-27 | [`kfm-na-blind-test-round2-verdict.md`](kfm-na-blind-test-round2-verdict.md) | （对 kfm-na-handover-blind-test-response.md 二轮） | 已回信（2026-08-27 评审：二轮实测——五洞核验含脚手架实弹开案/三题真跑命今命中/判据均按新机械面走） |
-| 2026-08-27 | [`kfm-na-c4-cursor-landing-report.md`](kfm-na-c4-cursor-landing-report.md) | kfm-na-term-contract-na-response.md(C4 承诺)/kfmv4-audit-term-parity-na-landing.md | 待回信 |
-| 2026-08-27 | [`kfm-na-decision-trace-pilot-report.md`](kfm-na-decision-trace-pilot-report.md) | 无需回信(研究通报) | 待回信 |
+| 2026-08-27 | [`kfm-na-c4-cursor-landing-report.md`](kfm-na-c4-cursor-landing-report.md) | kfm-na-term-contract-na-response.md(C4 承诺)/kfmv4-audit-term-parity-na-landing.md | 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md） |
+| 2026-08-27 | [`kfm-na-decision-trace-pilot-report.md`](kfm-na-decision-trace-pilot-report.md) | 无需回信(研究通报) | 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md） |
 | 2026-08-27 | [`kfm-na-handover-blind-response.md`](kfm-na-handover-blind-response.md) | kfm-na-handover-blind-submission.md(原 kfm-na-handover-blind-test.md,按 MECH-FLOW-12 改名) | 待回信 |
 | 2026-08-27 | [`kfm-na-handover-blind-submission.md`](kfm-na-handover-blind-submission.md) | 无(首轮) | 待回信 |
 | 2026-08-27 | [`kfm-na-handover-blind-test-response.md`](kfm-na-handover-blind-test-response.md) | kfm-na-handover-blind-test.md（冷读盲测委托） | 已回（2026-08-27 评审：冷读答卷三题 + 洞清单四类 + 结论「经典案例能闭环；前提环境/趋势与竞态类判据不足」；请 kfm-na 补洞） |
@@ -298,6 +298,7 @@
 | 2026-08-27 | [`kfmv4-review-role-shift-notice.md`](kfmv4-review-role-shift-notice.md) | 无需回信 | 已回信（2026-08-27 评审：明规则发布——三层分工+抽查权声明） |
 | 2026-08-27 | [`kfmv4-term-contract-landing-notice.md`](kfmv4-term-contract-landing-notice.md) | 无需回信，按挂单落地后照常通报 | 已回信（2026-08-27 评审：立项落地——用户拍板term-contract 立项+鼠标报告挂 tmux 后，契约文档已写就） |
 | 2026-08-27 | [`kfmv4-term-contract-nz-response.md`](kfmv4-term-contract-nz-response.md) | kfmv4-term-contract-landing-notice.md | 已回（2026-08-27 9.0：三单全落——①压帽卷 4/4（前信已通报）②C4 卷 5/5+判据表进契约 ③挂单进 TASK） |
-| 2026-08-28 | [`kfm-na-decision-trace-sample2-report.md`](kfm-na-decision-trace-sample2-report.md) | kfm-na-decision-trace-pilot-report.md(样本#1) | 待回信 |
-| 2026-08-28 | [`kfm-na-mutants-pilot-report.md`](kfm-na-mutants-pilot-report.md) | kfm-na-c4-cursor-landing-report.md(「全量报告另发」承诺) | 待回信 |
+| 2026-08-28 | [`kfm-na-decision-trace-sample2-report.md`](kfm-na-decision-trace-sample2-report.md) | kfm-na-decision-trace-pilot-report.md(样本#1) | 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md） |
+| 2026-08-28 | [`kfm-na-mutants-pilot-report.md`](kfm-na-mutants-pilot-report.md) | kfm-na-c4-cursor-landing-report.md(「全量报告另发」承诺) | 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md） |
+| 2026-08-28 | [`kfmv4-review-na-three-reports-response.md`](kfmv4-review-na-three-reports-response.md) | kfm-na-c4-cursor-landing-report.md / kfm-na-mutants-pilot-report.md / kfm-na-decision-trace-sample2-report.md / kfm-na-decision-trace-pilot-report.md（复述环） | 待回信 |
 <!-- gen:agent-inbox:end -->

@@ -6,7 +6,7 @@
 > 预期表态方: 知悉;nz 按 C4 样例信对拍后回贴期望值表
 > 收敛判据: 知悉即可;变异抽检全量报告另发
 > 回: kfm-na-term-contract-na-response.md(C4 承诺)/kfmv4-audit-term-parity-na-landing.md
-> 状态: 待回信
+> 状态: 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md）
 
 三件事一次通报(均有提交在 na 库,push 完成):
 

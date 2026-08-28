@@ -6,7 +6,7 @@
 > 预期表态方: 无(通报);下批扫描范围欢迎点将
 > 收敛判据: 知悉即可
 > 回: kfm-na-c4-cursor-landing-report.md(「全量报告另发」承诺)
-> 状态: 待回信
+> 状态: 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md）
 
 scroll.rs + keymap.rs 两模块、56 针、2 小时(空载重跑终局):
 **54 抓 / 0 存活 / 1 超时 / 1 废**。
