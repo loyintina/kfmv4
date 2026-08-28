@@ -415,6 +415,11 @@
       "permission": "tmux send-keys 向指定会话窗口注入消息（不改其内容、不动文件、不联网）；仅注入已存在会话，否则拒绝",
       "prompt": "无（机械）",
       "effect": "「塞对话」通用原语：任意 agent 向任意 agent 会话窗口注入一条消息并唤醒，N×N 网格通信的投递/唤醒动作（内容正本走信箱，本原语只管时序投递）"
+    },
+    "scripts/check/test-gen-agent-inbox-projections.mjs": {
+      "permission": "仅 KFM_PROBE_ROOT 临时夹具内读写（mkdtemp 自动清理），不碰仓库真实文件",
+      "prompt": "无业务提示词——投影回写考题：断言 gen 回写只替换「N 封信」数字（字节安全/计数统一/漂移检出/表生成四断言）",
+      "effect": "公约②考题：gen-agent-inbox 投影回写的字节安全与计数咬合机械验证"
     }
   }
 }

@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit de4a491e · 生成于 2026-08-28 -->
+<!-- 基准 commit 438823f2 · 生成于 2026-08-28 -->
 
 # 代码清单（机械层）
 
@@ -36,11 +36,11 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（32 文件 · 8523 行）
+## floating-card（32 文件 · 8532 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/generated/scripts-catalog.ts | 1436 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
+| src/client/generated/scripts-catalog.ts | 1445 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | src/client/modules/terminal-card-04.ts | 832 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/cards/plugins/role.card.ts | 793 | — |
@@ -187,7 +187,7 @@
 | src/server/routes/providers.ts | 78 | setupProvidersRoutes |
 | src/server/routes/compact.ts | 73 | compactRouter, computeCutIndex |
 
-## infra（187 文件 · 20811 行）
+## infra（187 文件 · 20874 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -286,6 +286,7 @@
 | scripts/check/check-as-any.mjs | 79 | — |
 | scripts/check/check-console.mjs | 79 | — |
 | scripts/check/gen-contract-lists.mjs | 77 | — |
+| scripts/check/test-gen-agent-inbox-projections.mjs | 77 | — |
 | tests/tag-advisor.test.ts | 77 | — |
 | scripts/check/check-experiment-registry.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
@@ -348,7 +349,6 @@
 | tests/probes/tool-compaction/src/server/ai/tools/fake.ts | 16 | fakeTool |
 | tests/mocks/xterm.ts | 15 | Terminal |
 | tests/probes/gen-tool-docs/src/server/ai/tools/index.ts | 15 | getToolDefinitions |
-| scripts/check/test-gen-agent-inbox-projections.mjs | 14 | — |
 | tests/probes/sync-counts/scripts/agent/semantic-mutate.mjs | 14 | MUTATIONS |
 | tests/probes/gen-permission-map/src/server/ai/tools/types.ts | 12 | KfmTool |
 | tests/probes/gen-tool-docs/src/server/ai/tools/types.ts | 12 | KfmTool |
@@ -725,4 +725,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 343 文件 · 57911 行 · 跨域边 284 条
+合计 343 文件 · 57983 行 · 跨域边 284 条

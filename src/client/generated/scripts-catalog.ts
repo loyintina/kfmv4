@@ -1377,6 +1377,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "文档计数单一来源化：check 数/测试数从文件系统派生并回写各文档"
   },
   {
+    "name": "test-gen-agent-inbox-projections.mjs",
+    "file": "scripts/check/test-gen-agent-inbox-projections.mjs",
+    "category": "构建链基建",
+    "description": "gen 投影回写考题（公约②配套,",
+    "permission": "仅 KFM_PROBE_ROOT 临时夹具内读写（mkdtemp 自动清理），不碰仓库真实文件",
+    "prompt": "无业务提示词——投影回写考题：断言 gen 回写只替换「N 封信」数字（字节安全/计数统一/漂移检出/表生成四断言）",
+    "effect": "公约②考题：gen-agent-inbox 投影回写的字节安全与计数咬合机械验证"
+  },
+  {
     "name": "clean-npm-temp.cjs",
     "file": "scripts/clean-npm-temp.cjs",
     "category": "运维",
