@@ -77,6 +77,10 @@ export interface TerminalCardMeta {
   _selfHeal?: ReturnType<typeof setInterval>;
   _onVisible?: () => void; // 锁屏恢复：强制重绘+fit
   _pinTimer?: ReturnType<typeof setTimeout>; // 贴底 debounce timer（onOutput 防抖用）
+  _tmuxSettling?: number; // tmux 卡 attach/重入/IME resize 后强制贴底 settle 截止时间戳
+  _settleBuffer?: string; // tmux settle 期间输出缓存（批量写入，避免逐 chunk 慢滚）
+  _settleFlushTimer?: ReturnType<typeof setTimeout>; // settle buffer idle flush 定时器
+  _settleFlushMaxTimer?: ReturnType<typeof setTimeout>; // settle buffer 硬上限 flush 定时器
 }
 
 /** 窄化守卫：将通用 CardInstance 窄化为 TerminalCardMeta 特化。全文件唯一 as 逃逸。 */
@@ -108,6 +112,44 @@ function startSelfHeal(tc: CardInstance<TerminalCardMeta>, fit: FitAddon) {
       }
     } catch {}
   }, 60_000);
+}
+
+/** tmux settle 缓冲 flush：把缓存的输出一次性写入 xterm 并立即贴底 */
+function flushTmuxSettleBuffer(tc: CardInstance<TerminalCardMeta>, term: Terminal) {
+  if (!tc.meta._settleBuffer) return;
+  const buf = tc.meta._settleBuffer;
+  tc.meta._settleBuffer = '';
+  try {
+    term.write(buf);
+    term.scrollToBottom();
+  } catch { /* noop */ }
+}
+
+/** 清理 settle 相关定时器 */
+function clearSettleTimers(tc: CardInstance<TerminalCardMeta>) {
+  if (tc.meta._settleFlushTimer) {
+    clearTimeout(tc.meta._settleFlushTimer);
+    tc.meta._settleFlushTimer = undefined;
+  }
+  if (tc.meta._settleFlushMaxTimer) {
+    clearTimeout(tc.meta._settleFlushMaxTimer);
+    tc.meta._settleFlushMaxTimer = undefined;
+  }
+}
+
+/** settle 期输出缓存调度：idle 80ms 刷新，硬上限 150ms，防止 xterm 逐 chunk 渲染导致慢滚 */
+function scheduleSettleFlush(tc: CardInstance<TerminalCardMeta>, term: Terminal) {
+  if (tc.meta._settleFlushTimer) clearTimeout(tc.meta._settleFlushTimer);
+  tc.meta._settleFlushTimer = setTimeout(() => {
+    flushTmuxSettleBuffer(tc, term);
+    clearSettleTimers(tc);
+  }, 80);
+  if (!tc.meta._settleFlushMaxTimer) {
+    tc.meta._settleFlushMaxTimer = setTimeout(() => {
+      flushTmuxSettleBuffer(tc, term);
+      clearSettleTimers(tc);
+    }, 150);
+  }
 }
 
 function tcard(card: CardInstance): CardInstance<TerminalCardMeta> {
@@ -416,6 +458,12 @@ export function initTerminalCore(
     container.appendChild(termEl!);
     if (xtermEl) { xtermEl.style.touchAction = 'none'; _termMap.set(xtermEl, term!); }
     robustFit(fit!);
+    // 2026-08-28 tmux 卡 compact→active 重插 DOM 后长缓冲会从顶开始滚：强制贴底 settle。
+    if (terminalName === 'tmux') {
+      flushTmuxSettleBuffer(tc, term!); // 旧 settle 残留先冲掉，避免新 settle 期混写
+      try { term!.scrollToBottom(); } catch { /* noop */ }
+      tc.meta._tmuxSettling = Date.now() + 1500;
+    }
     tc.meta._xtermEl = xtermEl;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     const observer = new ResizeObserver(() => {
@@ -426,6 +474,12 @@ export function initTerminalCore(
           wsChannel.sendMessage('terminal-resize', {
             sessionId: tc.meta.sessionId, cols: term!.cols, rows: term!.rows,
           });
+        }
+        // 2026-08-28 tmux 卡容器 resize（IME 弹/收/键盘浮条）后强制贴底 settle。
+        if (terminalName === 'tmux') {
+          flushTmuxSettleBuffer(tc, term!); // 旧缓冲先落盘，再钉新位置
+          try { term!.scrollToBottom(); } catch { /* noop */ }
+          tc.meta._tmuxSettling = Date.now() + 1000;
         }
         resizeTimer = null;
       }, 200);
@@ -474,7 +528,17 @@ export function initTerminalCore(
   };
   // xterm 自身内部 ResizeObserver（IME 弹/收让容器变矮 → term 内部 resize → 重锚定滚动）
   // 也接上智能贴底（视口在底部才钉）——补上 robustFit 之外的 IME 内部 resize 路径。
-  term.onResize(() => { try { _pinBottomIfFollowing?.(); } catch { /* noop */ } });
+  // 2026-08-28 追加：tmux 卡 IME 弹/收时用户需要立即回到输入行，故 tmux 强制贴底，
+  // 其他终端保持智能贴底（避免上滚看历史时被输入法拉回底）。
+  term.onResize(() => {
+    try {
+      if (terminalName === 'tmux') {
+        flushTmuxSettleBuffer(tc, term); // resize 前把缓存冲掉，避免 resize 后错位
+        term.scrollToBottom();
+        tc.meta._tmuxSettling = Date.now() + 1000;
+      } else { _pinBottomIfFollowing?.(); }
+    } catch { /* noop */ }
+  });
 
 
   initAuxBar(container, term);
@@ -531,6 +595,12 @@ export function initTerminalCore(
           sessionId: tc.meta.sessionId, cols: term.cols, rows: term.rows,
         });
       }
+      // 2026-08-28 tmux 卡容器 resize（IME 弹/收/键盘浮条）后强制贴底 settle。
+      if (terminalName === 'tmux') {
+        flushTmuxSettleBuffer(tc, term); // 旧缓冲先落盘，再钉新位置
+        try { term.scrollToBottom(); } catch { /* noop */ }
+        tc.meta._tmuxSettling = Date.now() + 1000;
+      }
       resizeTimer = null;
     }, 200);
   });
@@ -545,14 +615,26 @@ export function initTerminalCore(
 
   const onOutput = (p: unknown) => {
     const d = p as { sessionId: string; data: string };
-    if (d.sessionId === tc.meta.sessionId) {
-      term.write(d.data);
-      // 内容灌入后贴底（防抖）：跟随底部才钉，避免中途大量内容滚回顶（慢滚/永不 settle）
-      if (tc.meta._pinTimer) clearTimeout(tc.meta._pinTimer);
-      tc.meta._pinTimer = setTimeout(() => {
-        try { _pinBottomIfFollowing?.(); } catch { /* noop */ }
-      }, 250);
+    if (d.sessionId !== tc.meta.sessionId) return;
+
+    const inSettle = terminalName === 'tmux' && tc.meta._tmuxSettling && Date.now() < tc.meta._tmuxSettling;
+
+    if (inSettle) {
+      // tmux 卡 settle 期间缓存输出，批量写入，避免 xterm 逐 chunk 渲染导致从顶部慢滚。
+      tc.meta._settleBuffer = (tc.meta._settleBuffer || '') + d.data;
+      scheduleSettleFlush(tc, term);
+      return;
     }
+
+    // 退出 settle 前先把残留 buffer 冲掉，保证顺序和落点正确。
+    flushTmuxSettleBuffer(tc, term);
+
+    term.write(d.data);
+    // 内容灌入后贴底（防抖）：跟随底部才钉，避免中途大量内容滚回顶（慢滚/永不 settle）
+    if (tc.meta._pinTimer) clearTimeout(tc.meta._pinTimer);
+    tc.meta._pinTimer = setTimeout(() => {
+      try { _pinBottomIfFollowing?.(); } catch { /* noop */ }
+    }, 250);
   };
   wsChannel.onMessage('terminal-output', onOutput);
   tc.meta._onOutput = onOutput;
@@ -605,11 +687,25 @@ export function initTerminalCore(
       // xterm 可视（ResizeObserver 不触发：xterm DOM 尺寸没变）——否则内容只填
       // 上半屏（PTY 行数 < 可视行数 = 半屏病灶）
       robustFit(fit);
+      // tmux 卡 attach/重开后直接贴底：长缓冲会话若从顶开始滚，要滚很久才能输入。
+      // 2026-08-28 用户报：切换 tmux 卡时内容从顶部慢滚到底。此处无条件贴底，
+      // 与 _pinBottomIfFollowing 的智能贴底不冲突（那个管运行中输出，这个管打开瞬间）。
+      if (terminalName === 'tmux') {
+        flushTmuxSettleBuffer(tc, term); // 旧 settle 残留先冲掉
+        try { term.scrollToBottom(); } catch { /* noop */ }
+        tc.meta._tmuxSettling = Date.now() + 2000;
+      }
       setTimeout(() => {
         if (tc.meta.sessionId) {
           wsChannel.sendMessage('terminal-resize', {
             sessionId: tc.meta.sessionId, cols: term.cols, rows: term.rows,
           });
+        }
+        // 延迟再贴一次底：xterm fit/resize 是异步的，首次 open 后 buffer 位置可能又漂回顶。
+        if (terminalName === 'tmux') {
+          flushTmuxSettleBuffer(tc, term); // 异步窗口期缓冲先冲掉
+          try { term.scrollToBottom(); } catch { /* noop */ }
+          tc.meta._tmuxSettling = Date.now() + 1500;
         }
       }, 200);
     };
@@ -649,6 +745,8 @@ export function disposeTerminalCore(card: CardInstance, poolName: string): void 
     _termMap.delete(tc.meta._xtermEl);
     _sidMap.delete(tc.meta._xtermEl);
   }
+  clearSettleTimers(tc);
+  delete tc.meta._settleBuffer;
   if (tc.meta._term) {
     tc.meta._term.dispose();
   }
@@ -673,6 +771,9 @@ export function compactTerminalCore(card: CardInstance): void {
   if (tc.meta._observer) {
     tc.meta._observer.disconnect();
   }
+  // compact 前把 settle 缓冲落盘，保证拔 DOM 时 term 状态一致；清理定时器防泄漏。
+  if (tc.meta._term) flushTmuxSettleBuffer(tc, tc.meta._term);
+  clearSettleTimers(tc);
   if (tc.meta._xtermEl) {
     _termMap.delete(tc.meta._xtermEl);
     _sidMap.delete(tc.meta._xtermEl);
