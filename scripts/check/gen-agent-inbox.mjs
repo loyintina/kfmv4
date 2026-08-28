@@ -114,9 +114,29 @@ if (s !== -1) {
 }
 
 if (checkOnly) {
-  if (next !== doc) errors.push('信件清单漂移（机读头与 README 台账表格不一致）');
+  if (next !== doc) errors.push('信件清单漂移（机读头与 README 台账不一致）');
 } else if (next !== doc) {
   writeFileSync(README, next, 'utf-8');
+}
+
+// ---------- 投影回写：9.0 计数（公约②,2026-08-28 裁决归 na 代改） ----------
+// 只准替换「N 封信」的数字,不动文件其他任何字节（防 gen 与人手编辑打架,
+// 考题 test-gen-agent-inbox-projections.mjs 咬这一条）。check-only 模式下
+// 投影漂移报错（与 README 台账漂移同待遇）。
+const PROJECTIONS = [
+  join(BASE, 'docs', 'active', 'nine-zero', '00-index.md'),
+  join(BASE, 'docs', 'active', 'nine-zero', 'nine-zero-decision-index.md'),
+];
+for (const pj of PROJECTIONS) {
+  if (!existsSync(pj)) continue;
+  const orig = readFileSync(pj, 'utf-8');
+  const nextP = orig.replace(/([0-9]+) 封信/g, `${rows.length} 封信`);
+  if (nextP === orig) continue;
+  if (checkOnly) {
+    errors.push(`投影计数漂移:${pj.replace(BASE + '/', '')}——跑 node scripts/check/gen-agent-inbox.mjs 回写`);
+  } else {
+    writeFileSync(pj, nextP, 'utf-8');
+  }
 }
 
 if (errors.length) {
