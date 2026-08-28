@@ -55,12 +55,13 @@
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
-  // 字形池：全块为主，混窄块/小方块/粗点——大小随机
-  var GLYPHS = ['█', '█', '█', '█', '█', '▉', '▊', '▋', '■', '▪', '▓'];
+  // 字形池：宽度随机（用户拍板 v6——一行最多一块，无邻居可对比，
+  // 宽度随机就不生锯齿；宽块为主，细块稀有保线形可读）
+  var GLYPHS = ['█', '█', '█', '█', '▉', '▉', '▊', '▊', '▋', '▌', '▍'];
   function pickGlyph() { return GLYPHS[Math.floor(R() * GLYPHS.length)]; }
 
-  // ---- 竖长网格：15×27，瞳心居中 ----
-  var EW = 15, EH = 27, ECX = 7, ECY = 13;
+  // ---- 竖长网格：19×27（v5 加宽横向），瞳心居中 ----
+  var EW = 19, EH = 27, ECX = 9, ECY = 13;
   var emblem = [];
   for (var ey0 = 0; ey0 < EH; ey0++) emblem.push(new Array(EW).fill(null));
   // 硬隔离（用户拍板 v4）：任何块不得与异色块 8-邻接——紫蓝永不相触
@@ -80,10 +81,10 @@
       dist: Math.sqrt((x - ECX) * (x - ECX) + (y - ECY) * (y - ECY)) };
   }
 
-  // ---- 随机菱形环：笔直环边 + 有节制的随机 ----
-  // 用户拍板 v4：环边观感必须是直线（不要游走弯曲）；随机只来自
-  // ①整段缺口（1-2 段连续弧缺失）②卫星碎块（只许向外侧漂，不许跨区）
-  // ③方块字形大小混杂。环线恒 4-连通，缺口处真断 ----
+  // ---- 随机菱形环 v6：单行单块的细线 ----
+  // 用户拍板 v6：环太宽的根源=断阶补格/顺线双块/桥接造成的 2 格厚，
+  // 全部砍掉——同一行最多落一块（相邻同行即跳过），直线感靠块心钉线，
+  // 随机感交给方块宽度。保留整段缺口+外向卫星碎块 ----
   function drawRing(cx, cy, rx, ry, zone) {
     var gaps = [];
     var ng = 1 + Math.floor(R() * 2);
@@ -97,19 +98,17 @@
       for (var gi = 0; gi < gaps.length; gi++) {
         if (t >= gaps[gi][0] && t <= gaps[gi][0] + gaps[gi][1]) { inGap = true; break; }
       }
-      if (inGap) { px = null; continue; }              // 缺口处断连，不补桥
+      if (inGap) { px = null; continue; }              // 缺口处断连
       var e = Math.floor(t * 4), et = t * 4 - e;
-      var bx = V[e][0] + (V[(e + 1) % 4][0] - V[e][0]) * et;
-      var by = V[e][1] + (V[(e + 1) % 4][1] - V[e][1]) * et;
-      var x = Math.round(cx + bx), y = Math.round(cy + by);
-      if (px !== null && x !== px && y !== py) mark(px, y, zone, pickGlyph()); // 4-连通桥
+      var vx = V[e][0] + (V[(e + 1) % 4][0] - V[e][0]) * et;
+      var vy = V[e][1] + (V[(e + 1) % 4][1] - V[e][1]) * et;
+      var x = Math.round(cx + vx), y = Math.round(cy + vy);
+      if (px !== null && y === py && Math.abs(x - px) < 2) continue; // 同行相邻=环变厚，跳过
       mark(x, y, zone, pickGlyph());
-      if (R() < 0.05) {                                // 卫星碎块：只朝远离瞳心方向漂
+      if (R() < 0.04) {                                // 卫星碎块：只朝远离瞳心方向漂
         var sx = x === cx ? 0 : (x > cx ? 1 : -1);
         var sy = y === cy ? 0 : (y > cy ? 1 : -1);
-        var ox = x + sx * (1 + Math.floor(R() * 2));
-        var oy = y + sy * (1 + Math.floor(R() * 2));
-        mark(ox, oy, zone, pickGlyph());
+        mark(x + sx * (1 + Math.floor(R() * 2)), y + sy * (1 + Math.floor(R() * 2)), zone, pickGlyph());
       }
       px = x; py = y;
     }
@@ -117,8 +116,8 @@
 
   // 竖瞳：孤单一格（用户拍板 v4：中央眼睛只一个方块）
   mark(ECX, ECY, 'pupil');
-  drawRing(ECX, ECY, 3, 7, 'inner');    // 内圈紫环：与瞳隔 2+ 格、与外环隔 3 格
-  drawRing(ECX, ECY, 6, 13, 'outer');   // 外圈蓝环：触边竖长菱形
+  drawRing(ECX, ECY, 3, 7, 'inner');    // 内圈紫环：与瞳隔 2+ 格
+  drawRing(ECX, ECY, 8, 13, 'outer');   // 外圈蓝环：v5 加宽，与紫环隔 5 格
 
   // ---- 调色：每区 STEPS 档亮度（暗→本色→带白尖），注入 <style> ----
   function shade(base, b) {

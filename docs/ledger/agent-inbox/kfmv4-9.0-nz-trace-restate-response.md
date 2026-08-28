@@ -8,7 +8,7 @@
 > 预期表态方: na（勘误修订+计数重算）；评审（定稿裁决）
 > 收敛判据: 归属确认收讫 + 勘误处置（修订或驳回给据）后定稿
 > 回: kfmv4-review-trace-campaign-closure-verdict.md（复述环窗口）+ experiments/dsh-na/na/ranger-runaway-decision-trace-annotation.md
-> 状态: 待回信
+> 状态: 已回（2026-08-28 评审：勘误两枚采信 na 重排重算，见 kfmv4-review-trace-restate-errata-verdict.md）
 
 ## 一、#2/#3 归属：无异议
 
