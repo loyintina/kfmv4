@@ -136,6 +136,13 @@ function stopSettleScrollLoop(tc: CardInstance<TerminalCardMeta>) {
   }
 }
 
+/** 进入 tmux settle：旧缓冲落盘 + 重置截止时间 + 确保 rAF 循环在跑 */
+function enterTmuxSettle(tc: CardInstance<TerminalCardMeta>, term: Terminal, ms: number) {
+  flushTmuxSettleBuffer(tc, term);
+  tc.meta._tmuxSettling = Date.now() + ms;
+  startSettleScrollLoop(tc, term);
+}
+
 /** tmux settle 缓冲 flush：一次性写入 xterm，在 write 回调里贴底，并启动 rAF 循环追底 */
 function flushTmuxSettleBuffer(tc: CardInstance<TerminalCardMeta>, term: Terminal) {
   if (!tc.meta._settleBuffer) return;
@@ -470,9 +477,8 @@ export function initTerminalCore(
     robustFit(fit!);
     // 2026-08-28 tmux 卡 compact→active 重插 DOM 后长缓冲会从顶开始滚：强制贴底 settle。
     if (terminalName === 'tmux') {
-      flushTmuxSettleBuffer(tc, term!); // 旧 settle 残留先冲掉，避免新 settle 期混写
+      enterTmuxSettle(tc, term!, 1500);
       try { term!.scrollToBottom(); } catch { /* noop */ }
-      tc.meta._tmuxSettling = Date.now() + 1500;
     }
     tc.meta._xtermEl = xtermEl;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -487,9 +493,8 @@ export function initTerminalCore(
         }
         // 2026-08-28 tmux 卡容器 resize（IME 弹/收/键盘浮条）后强制贴底 settle。
         if (terminalName === 'tmux') {
-          flushTmuxSettleBuffer(tc, term!); // 旧缓冲先落盘，再钉新位置
+          enterTmuxSettle(tc, term!, 1500); // 旧缓冲落盘 + 循环重启，覆盖键盘动画全段
           try { term!.scrollToBottom(); } catch { /* noop */ }
-          tc.meta._tmuxSettling = Date.now() + 1000;
         }
         resizeTimer = null;
       }, 200);
@@ -543,9 +548,8 @@ export function initTerminalCore(
   term.onResize(() => {
     try {
       if (terminalName === 'tmux') {
-        flushTmuxSettleBuffer(tc, term); // resize 前把缓存冲掉，避免 resize 后错位
+        enterTmuxSettle(tc, term, 1500); // resize 前旧缓冲落盘，循环覆盖后续渲染
         term.scrollToBottom();
-        tc.meta._tmuxSettling = Date.now() + 1000;
       } else { _pinBottomIfFollowing?.(); }
     } catch { /* noop */ }
   });
@@ -607,9 +611,8 @@ export function initTerminalCore(
       }
       // 2026-08-28 tmux 卡容器 resize（IME 弹/收/键盘浮条）后强制贴底 settle。
       if (terminalName === 'tmux') {
-        flushTmuxSettleBuffer(tc, term); // 旧缓冲先落盘，再钉新位置
+        enterTmuxSettle(tc, term, 1500); // 旧缓冲落盘 + 循环重启，覆盖键盘动画全段
         try { term.scrollToBottom(); } catch { /* noop */ }
-        tc.meta._tmuxSettling = Date.now() + 1000;
       }
       resizeTimer = null;
     }, 200);
@@ -701,9 +704,8 @@ export function initTerminalCore(
       // 2026-08-28 用户报：切换 tmux 卡时内容从顶部慢滚到底。此处无条件贴底，
       // 与 _pinBottomIfFollowing 的智能贴底不冲突（那个管运行中输出，这个管打开瞬间）。
       if (terminalName === 'tmux') {
-        flushTmuxSettleBuffer(tc, term); // 旧 settle 残留先冲掉
+        enterTmuxSettle(tc, term, 2000); // attach 初开缓冲最大
         try { term.scrollToBottom(); } catch { /* noop */ }
-        tc.meta._tmuxSettling = Date.now() + 2000;
       }
       setTimeout(() => {
         if (tc.meta.sessionId) {
@@ -713,9 +715,8 @@ export function initTerminalCore(
         }
         // 延迟再贴一次底：xterm fit/resize 是异步的，首次 open 后 buffer 位置可能又漂回顶。
         if (terminalName === 'tmux') {
-          flushTmuxSettleBuffer(tc, term); // 异步窗口期缓冲先冲掉
+          enterTmuxSettle(tc, term, 1500); // fit/resize 异步窗口继续 settle
           try { term.scrollToBottom(); } catch { /* noop */ }
-          tc.meta._tmuxSettling = Date.now() + 1500;
         }
       }, 200);
     };
