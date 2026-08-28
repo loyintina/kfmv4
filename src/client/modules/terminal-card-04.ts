@@ -82,6 +82,8 @@ export interface TerminalCardMeta {
   _settleFlushTimer?: ReturnType<typeof setTimeout>; // settle buffer idle flush 定时器
   _settleFlushMaxTimer?: ReturnType<typeof setTimeout>; // settle buffer 硬上限 flush 定时器
   _settleScrollLoop?: number; // settle 期 rAF 循环 ID，每帧强制贴底
+  _lastResizeAt?: number; // 最近一次容器 resize 事件时间戳（用于延长循环覆盖 quiet 期）
+  _lastOutputAt?: number; // 最近一次 terminal-output 到达时间戳
 }
 
 /** 窄化守卫：将通用 CardInstance 窄化为 TerminalCardMeta 特化。全文件唯一 as 逃逸。 */
@@ -115,11 +117,16 @@ function startSelfHeal(tc: CardInstance<TerminalCardMeta>, fit: FitAddon) {
   }, 60_000);
 }
 
-/** settle 期 rAF 循环：每帧强制贴底，封死 xterm 异步渲染中间帧漂移 */
+/** settle 期 rAF 循环：每帧强制贴底，覆盖 settle 窗口 + resize/output 活动后 quiet 期 */
 function startSettleScrollLoop(tc: CardInstance<TerminalCardMeta>, term: Terminal) {
   if (tc.meta._settleScrollLoop) return; // 已在跑
+  const QUIET_MS = 500; // 无 resize/output 500ms 才认为真正安静
   const loop = () => {
-    if (!tc.meta._tmuxSettling || Date.now() >= tc.meta._tmuxSettling) {
+    const now = Date.now();
+    const settleExpired = !tc.meta._tmuxSettling || now >= tc.meta._tmuxSettling;
+    const recentResize = tc.meta._lastResizeAt && now - tc.meta._lastResizeAt < QUIET_MS;
+    const recentOutput = tc.meta._lastOutputAt && now - tc.meta._lastOutputAt < QUIET_MS;
+    if (settleExpired && !recentResize && !recentOutput) {
       tc.meta._settleScrollLoop = undefined;
       return;
     }
@@ -483,6 +490,7 @@ export function initTerminalCore(
     tc.meta._xtermEl = xtermEl;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     const observer = new ResizeObserver(() => {
+      tc.meta._lastResizeAt = Date.now(); // 记录原始 resize 事件，让循环覆盖 debounce 空窗
       try { fit!.fit(); } catch {}
       if (resizeTimer) clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
@@ -601,6 +609,7 @@ export function initTerminalCore(
 
   let resizeTimer: ReturnType<typeof setTimeout> | null = null;
   const observer = new ResizeObserver(() => {
+    tc.meta._lastResizeAt = Date.now(); // 记录原始 resize 事件，让循环覆盖 debounce 空窗
     try { fit.fit(); } catch {}
     if (resizeTimer) clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
@@ -629,6 +638,7 @@ export function initTerminalCore(
   const onOutput = (p: unknown) => {
     const d = p as { sessionId: string; data: string };
     if (d.sessionId !== tc.meta.sessionId) return;
+    tc.meta._lastOutputAt = Date.now();
 
     const inSettle = terminalName === 'tmux' && tc.meta._tmuxSettling && Date.now() < tc.meta._tmuxSettling;
 
