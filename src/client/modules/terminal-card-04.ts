@@ -81,6 +81,7 @@ export interface TerminalCardMeta {
   _settleBuffer?: string; // tmux settle 期间输出缓存（批量写入，避免逐 chunk 慢滚）
   _settleFlushTimer?: ReturnType<typeof setTimeout>; // settle buffer idle flush 定时器
   _settleFlushMaxTimer?: ReturnType<typeof setTimeout>; // settle buffer 硬上限 flush 定时器
+  _settleScrollLoop?: number; // settle 期 rAF 循环 ID，每帧强制贴底
 }
 
 /** 窄化守卫：将通用 CardInstance 窄化为 TerminalCardMeta 特化。全文件唯一 as 逃逸。 */
@@ -114,14 +115,38 @@ function startSelfHeal(tc: CardInstance<TerminalCardMeta>, fit: FitAddon) {
   }, 60_000);
 }
 
-/** tmux settle 缓冲 flush：把缓存的输出一次性写入 xterm 并立即贴底 */
+/** settle 期 rAF 循环：每帧强制贴底，封死 xterm 异步渲染中间帧漂移 */
+function startSettleScrollLoop(tc: CardInstance<TerminalCardMeta>, term: Terminal) {
+  if (tc.meta._settleScrollLoop) return; // 已在跑
+  const loop = () => {
+    if (!tc.meta._tmuxSettling || Date.now() >= tc.meta._tmuxSettling) {
+      tc.meta._settleScrollLoop = undefined;
+      return;
+    }
+    try { term.scrollToBottom(); } catch { /* noop */ }
+    tc.meta._settleScrollLoop = requestAnimationFrame(loop);
+  };
+  tc.meta._settleScrollLoop = requestAnimationFrame(loop);
+}
+
+function stopSettleScrollLoop(tc: CardInstance<TerminalCardMeta>) {
+  if (tc.meta._settleScrollLoop) {
+    cancelAnimationFrame(tc.meta._settleScrollLoop);
+    tc.meta._settleScrollLoop = undefined;
+  }
+}
+
+/** tmux settle 缓冲 flush：一次性写入 xterm，在 write 回调里贴底，并启动 rAF 循环追底 */
 function flushTmuxSettleBuffer(tc: CardInstance<TerminalCardMeta>, term: Terminal) {
   if (!tc.meta._settleBuffer) return;
   const buf = tc.meta._settleBuffer;
   tc.meta._settleBuffer = '';
   try {
-    term.write(buf);
-    term.scrollToBottom();
+    term.write(buf, () => {
+      // xterm 解析渲染完成后才贴底，避免中间帧被看到
+      try { term.scrollToBottom(); } catch { /* noop */ }
+    });
+    startSettleScrollLoop(tc, term);
   } catch { /* noop */ }
 }
 
@@ -134,21 +159,6 @@ function clearSettleTimers(tc: CardInstance<TerminalCardMeta>) {
   if (tc.meta._settleFlushMaxTimer) {
     clearTimeout(tc.meta._settleFlushMaxTimer);
     tc.meta._settleFlushMaxTimer = undefined;
-  }
-}
-
-/** settle 期输出缓存调度：idle 80ms 刷新，硬上限 150ms，防止 xterm 逐 chunk 渲染导致慢滚 */
-function scheduleSettleFlush(tc: CardInstance<TerminalCardMeta>, term: Terminal) {
-  if (tc.meta._settleFlushTimer) clearTimeout(tc.meta._settleFlushTimer);
-  tc.meta._settleFlushTimer = setTimeout(() => {
-    flushTmuxSettleBuffer(tc, term);
-    clearSettleTimers(tc);
-  }, 80);
-  if (!tc.meta._settleFlushMaxTimer) {
-    tc.meta._settleFlushMaxTimer = setTimeout(() => {
-      flushTmuxSettleBuffer(tc, term);
-      clearSettleTimers(tc);
-    }, 150);
   }
 }
 
@@ -746,6 +756,7 @@ export function disposeTerminalCore(card: CardInstance, poolName: string): void 
     _sidMap.delete(tc.meta._xtermEl);
   }
   clearSettleTimers(tc);
+  stopSettleScrollLoop(tc);
   delete tc.meta._settleBuffer;
   if (tc.meta._term) {
     tc.meta._term.dispose();
@@ -771,9 +782,10 @@ export function compactTerminalCore(card: CardInstance): void {
   if (tc.meta._observer) {
     tc.meta._observer.disconnect();
   }
-  // compact 前把 settle 缓冲落盘，保证拔 DOM 时 term 状态一致；清理定时器防泄漏。
+  // compact 前把 settle 缓冲落盘，保证拔 DOM 时 term 状态一致；清理定时器与 rAF 循环防泄漏。
   if (tc.meta._term) flushTmuxSettleBuffer(tc, tc.meta._term);
   clearSettleTimers(tc);
+  stopSettleScrollLoop(tc);
   if (tc.meta._xtermEl) {
     _termMap.delete(tc.meta._xtermEl);
     _sidMap.delete(tc.meta._xtermEl);
