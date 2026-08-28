@@ -15,8 +15,8 @@
       "attempts": 1
     },
     "guides-testing-vs-infra": {
-      "hash": "58bc10dd1745f87d1cbf2063574389317f33da6e",
-      "lastRun": "2026-08-22",
+      "hash": "30bcc88681f14198ac7eacbfe48e22d6222bcacb",
+      "lastRun": "2026-08-27",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -29,8 +29,8 @@
       "attempts": 1
     },
     "stack-vs-ledger": {
-      "hash": "d76b45e91232ec96c154997eef5d2d7098030243",
-      "lastRun": "2026-08-21",
+      "hash": "5a66eaa5153c78f7fa8542802a086fdcdbd10339",
+      "lastRun": "2026-08-27",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -57,8 +57,8 @@
       "attempts": 1
     },
     "inter-readme-codemap": {
-      "hash": "9626178cf80648caa3a54d27438a0c4d45c6ecdd",
-      "lastRun": "2026-08-26",
+      "hash": "775b417f28b9e398ef0edd2bcb2110c8da1d9c2f",
+      "lastRun": "2026-08-27",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -71,8 +71,8 @@
       "attempts": 1
     },
     "inter-agentrunner-infra": {
-      "hash": "335862bceddfb446f9fae0e1061a2adde9ff444d",
-      "lastRun": "2026-08-22",
+      "hash": "80bb4fd9fef704aca4c0238f137ceffefc12bfa2",
+      "lastRun": "2026-08-27",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -85,8 +85,8 @@
       "attempts": 1
     },
     "vision-vs-maps": {
-      "hash": "925180c8efef1a782c9669badc47b7940522d4f3",
-      "lastRun": "2026-08-23",
+      "hash": "15606d28cd107f5f4de9a4983dffcbdf3fc7e188",
+      "lastRun": "2026-08-27",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -113,8 +113,8 @@
       "attempts": 1
     },
     "readme-vs-maps": {
-      "hash": "f525f35638be81978c7d69aed664934bc9ed8102",
-      "lastRun": "2026-08-26",
+      "hash": "8cb0b5c8a5f361e3042331091828219af056fa0a",
+      "lastRun": "2026-08-27",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -127,22 +127,30 @@
       "attempts": 1
     },
     "claude-vs-docs": {
-      "hash": "37fec8d5075fb2413099663ca05526b157ec49b3",
-      "lastRun": "2026-08-23",
+      "hash": "935fe050cbdb91b53352032b452ad5af5fa39546",
+      "lastRun": "2026-08-27",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 0,
+      "reported": 1,
       "kept": 0,
-      "dropped": 0,
+      "dropped": 1,
       "keptFindings": [],
-      "droppedFindings": [],
+      "droppedFindings": [
+        {
+          "type": "SEM001",
+          "claim": "CLAUDE.md:42",
+          "against": "onboarding.md:180",
+          "quote": "原 library/ 已于 2026-08-27 迁出本仓",
+          "note": "CLAUDE.md 声明 library/ 已迁出本仓，但 onboarding.md 术语表仍将 library 列为收集库并指向其 README，两者矛盾（"
+        }
+      ],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
     "workflows-vs-guides": {
-      "hash": "7855cfed3b55de2076dcd0ec372c2fa5a7d7cfbe",
-      "lastRun": "2026-08-22",
+      "hash": "b06c3e70309b489e7a20f2c5d7347fb9339d37a9",
+      "lastRun": "2026-08-27",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -227,8 +235,8 @@
       "attempts": 1
     },
     "contract-vs-map-client-shell": {
-      "hash": "9cf6f89a66020190bc522fa071b695ec0be277da",
-      "lastRun": "2026-08-18",
+      "hash": "3ff5a35f810fcf3cc690197284898a6c9ef08b2f",
+      "lastRun": "2026-08-27",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -277,8 +285,8 @@
       "attempts": 1
     },
     "contract-vs-map-infra": {
-      "hash": "ce3eeeb17c1ebb6982020418c0534dfd1215207e",
-      "lastRun": "2026-08-22",
+      "hash": "368cd987b116e50eb1850073e62ed55cec0854e4",
+      "lastRun": "2026-08-27",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -291,30 +299,22 @@
       "attempts": 1
     },
     "crossdomain-vs-inventory": {
-      "hash": "28f2c782a58d7c50f56803edce1ea4c09d460d48",
-      "lastRun": "2026-08-23",
+      "hash": "9240b3a094dcf553e95428a3b0c44f4ca9e0a261",
+      "lastRun": "2026-08-27",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 1,
+      "reported": 0,
       "kept": 0,
-      "dropped": 1,
+      "dropped": 0,
       "keptFindings": [],
-      "droppedFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/cross-domain.md:68",
-          "against": "docs/domains/code-inventory.md:197",
-          "quote": "canvas-tree → ai-chat 仅 1 边",
-          "note": "语义层断言 canvas-tree→ai-chat 仅 1 边(tree-render→ws-channel)，机械层枚举 3 边(chat-dom→color"
-        }
-      ],
+      "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
     "inter-workflows-infra": {
-      "hash": "28ee6b89b9566ec6fa31c141e62795fca2838743",
-      "lastRun": "2026-08-22",
+      "hash": "65530c5448ed9b504e9e7a0ed9151ded8084c8d2",
+      "lastRun": "2026-08-27",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -1219,6 +1219,13 @@
       "skipped": 28,
       "kept": 0,
       "dropped": 0
+    },
+    {
+      "date": "2026-08-27",
+      "ran": 12,
+      "skipped": 18,
+      "kept": 0,
+      "dropped": 1
     }
   ]
 }
