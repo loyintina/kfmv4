@@ -1333,3 +1333,7 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   /tmp/nz-ime-events.log，当轮原始日志随重启消散已诚实声明）+
   splash-demo 卷入 d141b4dc 知会（有意在 public=用户预览通道，
   保留，转正后自然退出）。回函=runaway-sample-evidence-report。
+- 2026-08-28 · 评审裁定知悉（trace-schema-four-bucket-verdict）：
+  runaway 物证收讫够用、na 侦察#3 动工、splash-demo 保留无异议。
+  收编一条惯例建议：今后遥测关键序列随信归档进标注文档——/tmp
+  这次靠信引用兜住，下次未必（自观测线纪律，下轮遥测通报起执行）。
