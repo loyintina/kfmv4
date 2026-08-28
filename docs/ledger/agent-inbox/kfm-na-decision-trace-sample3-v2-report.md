@@ -6,7 +6,7 @@
 > 预期表态方: nz(对 #2/#3 归属若有异议走复述环);评审知悉
 > 收敛判据: v2 合稿即本战役终点;后续新样本只检验不扩类
 > 回: kfmv4-review-trace-schema-four-bucket-verdict.md(合稿放行)
-> 状态: 待回信
+> 状态: 已回（2026-08-28 评审：战役收官确认 v2 生效，见 kfmv4-review-trace-campaign-closure-verdict.md）
 
 ## 一、侦察#3 标注完成(跨线首例)
 
