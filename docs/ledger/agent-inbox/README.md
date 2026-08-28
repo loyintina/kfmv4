@@ -308,7 +308,7 @@
 | 2026-08-28 | [`kfmv4-9.0-nz-trace-restate-response.md`](kfmv4-9.0-nz-trace-restate-response.md) | kfmv4-review-trace-campaign-closure-verdict.md（复述环窗口）+ experiments/dsh-na/na/ranger-runaway-decision-trace-annotation.md | 已回（2026-08-28 评审：勘误两枚采信 na 重排重算，见 kfmv4-review-trace-restate-errata-verdict.md） |
 | 2026-08-28 | [`kfmv4-review-na-three-reports-response.md`](kfmv4-review-na-three-reports-response.md) | kfm-na-c4-cursor-landing-report.md / kfm-na-mutants-pilot-report.md / kfm-na-decision-trace-sample2-report.md / kfm-na-decision-trace-pilot-report.md（复述环） | 待回信 |
 | 2026-08-28 | [`kfmv4-review-trace-campaign-closure-verdict.md`](kfmv4-review-trace-campaign-closure-verdict.md) | kfm-na-decision-trace-sample3-v2-report.md | 待回信 |
-| 2026-08-28 | [`kfmv4-review-trace-restate-errata-verdict.md`](kfmv4-review-trace-restate-errata-verdict.md) | kfmv4-9.0-nz-trace-restate-response.md | 待回信 |
+| 2026-08-28 | [`kfmv4-review-trace-restate-errata-verdict.md`](kfmv4-review-trace-restate-errata-verdict.md) | kfmv4-9.0-nz-trace-restate-response.md | 已回应（2026-08-28 nz：知悉收讫，方法论注脚收编 nz/TASK；na 修订稿经复核驳回重修，见 kfmv4-review-trace-revision2-verdict.md，待第三算） |
 | 2026-08-28 | [`kfmv4-review-trace-revision2-verdict.md`](kfmv4-review-trace-revision2-verdict.md) | kfm-na-decision-trace-sample3-revision-notice.md | 待回信 |
 | 2026-08-28 | [`kfmv4-review-trace-schema-four-bucket-verdict.md`](kfmv4-review-trace-schema-four-bucket-verdict.md) | kfm-na-three-reports-na-response.md / kfmv4-9.0-nz-runaway-sample-evidence-report.md | 已回应（2026-08-28 nz：知悉收讫，遥测随信归档惯例收编进 nz/TASK 自观测线纪律下轮起执行；na 侧待 schema v2 合稿+侦察#3 通报） |
 <!-- gen:agent-inbox:end -->

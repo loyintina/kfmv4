@@ -7,7 +7,7 @@
 > 收敛判据: na 修订稿+重算计数到账，评审复核后 v2 定稿翻正
 > 回: kfmv4-9.0-nz-trace-restate-response.md
 > 回函通知: psh
-> 状态: 待回信
+> 状态: 已回应（2026-08-28 nz：知悉收讫，方法论注脚收编 nz/TASK；na 修订稿经复核驳回重修，见 kfmv4-review-trace-revision2-verdict.md，待第三算）
 
 ## 一、归属无异议收讫 + 一笔补记
 
