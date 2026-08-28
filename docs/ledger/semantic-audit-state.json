@@ -15,8 +15,8 @@
       "attempts": 1
     },
     "guides-testing-vs-infra": {
-      "hash": "30bcc88681f14198ac7eacbfe48e22d6222bcacb",
-      "lastRun": "2026-08-27",
+      "hash": "c233aeeb9acfdc113e9ac87c4c3f0c21267d81df",
+      "lastRun": "2026-08-28",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -57,8 +57,8 @@
       "attempts": 1
     },
     "inter-readme-codemap": {
-      "hash": "775b417f28b9e398ef0edd2bcb2110c8da1d9c2f",
-      "lastRun": "2026-08-27",
+      "hash": "77f2de288cc134d3981413a2a03f7c001ca27027",
+      "lastRun": "2026-08-28",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -71,22 +71,30 @@
       "attempts": 1
     },
     "inter-agentrunner-infra": {
-      "hash": "80bb4fd9fef704aca4c0238f137ceffefc12bfa2",
-      "lastRun": "2026-08-27",
+      "hash": "e1b9ecc66ec484ed2fa5d7c0d553494fffaa58d6",
+      "lastRun": "2026-08-28",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 0,
-      "kept": 0,
+      "reported": 1,
+      "kept": 1,
       "dropped": 0,
-      "keptFindings": [],
+      "keptFindings": [
+        {
+          "type": "SEM002",
+          "claim": "docs/guides/agent-runner.md:53",
+          "against": "docs/guides/agent-runner.md:54",
+          "quote": "不再顺位兜底",
+          "note": "同一段先断言『不再顺位兜底』，随即又写『调用失败自动落下一个』，且中转池段落称链上前两臂失败后官方臂成功，与单臂链矛盾。"
+        }
+      ],
       "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
     "vision-vs-maps": {
-      "hash": "15606d28cd107f5f4de9a4983dffcbdf3fc7e188",
-      "lastRun": "2026-08-27",
+      "hash": "16e1d9ea61c72d1e0a614f3ba7e1d6d0f91c513d",
+      "lastRun": "2026-08-28",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -127,8 +135,8 @@
       "attempts": 1
     },
     "claude-vs-docs": {
-      "hash": "935fe050cbdb91b53352032b452ad5af5fa39546",
-      "lastRun": "2026-08-27",
+      "hash": "484452cf7c1d82000e25462c88a09753d98b09eb",
+      "lastRun": "2026-08-28",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -139,18 +147,18 @@
       "droppedFindings": [
         {
           "type": "SEM001",
-          "claim": "CLAUDE.md:42",
-          "against": "onboarding.md:180",
-          "quote": "原 library/ 已于 2026-08-27 迁出本仓",
-          "note": "CLAUDE.md 声明 library/ 已迁出本仓，但 onboarding.md 术语表仍将 library 列为收集库并指向其 README，两者矛盾（"
+          "claim": "docs/CLAUDE.md:45",
+          "against": "docs/guides/onboarding.md:74",
+          "quote": "迁出本仓",
+          "note": "CLAUDE.md 声明 library/ 已迁出本仓，onboarding.md 术语表仍将 library/ 列为收集库并指向 library/README"
         }
       ],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
     "workflows-vs-guides": {
-      "hash": "b06c3e70309b489e7a20f2c5d7347fb9339d37a9",
-      "lastRun": "2026-08-27",
+      "hash": "d6c56939c9ebb5d887ceef69edf8d1124776409a",
+      "lastRun": "2026-08-28",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -285,8 +293,8 @@
       "attempts": 1
     },
     "contract-vs-map-infra": {
-      "hash": "368cd987b116e50eb1850073e62ed55cec0854e4",
-      "lastRun": "2026-08-27",
+      "hash": "c5b2ee628b5662c3fd468450d02c9e860f4a9095",
+      "lastRun": "2026-08-28",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -299,8 +307,8 @@
       "attempts": 1
     },
     "crossdomain-vs-inventory": {
-      "hash": "9240b3a094dcf553e95428a3b0c44f4ca9e0a261",
-      "lastRun": "2026-08-27",
+      "hash": "9bb0771b73159fa50fb5b7a32bd0d3a8af3f7d2a",
+      "lastRun": "2026-08-28",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -313,8 +321,8 @@
       "attempts": 1
     },
     "inter-workflows-infra": {
-      "hash": "65530c5448ed9b504e9e7a0ed9151ded8084c8d2",
-      "lastRun": "2026-08-27",
+      "hash": "05ba0917f8a3b3b4f05e6c29c3708d91ec2dae06",
+      "lastRun": "2026-08-28",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -1225,6 +1233,13 @@
       "ran": 12,
       "skipped": 18,
       "kept": 0,
+      "dropped": 1
+    },
+    {
+      "date": "2026-08-28",
+      "ran": 9,
+      "skipped": 21,
+      "kept": 1,
       "dropped": 1
     }
   ]

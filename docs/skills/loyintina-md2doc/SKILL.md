@@ -1,6 +1,6 @@
 ---
 name: loyintina-md2doc
-description: 把原始 Markdown 文字审计、补全公文层级符号后，调用 Loyintina 的 md2doc 工具转成符合中国大陆党政机关公文格式的 DOCX。输出默认落到 `/root/箱子/落灰的termux/md2doc公文格式转换/成品/`。
+description: 把原始 Markdown 文字审计、补全公文层级符号后，调用 Loyintina 的 md2doc 工具转成符合中国大陆党政机关公文格式的 DOCX。输出默认落到 `/root/00-Loyintina/30-工作/公文格式转换/`。
 whenToUse: 当用户说「转成公文」「转 docx」「生成 word」「排版成公文格式」或接到处理原始文字并输出 DOCX 的任务时触发。
 ---
 
@@ -9,9 +9,9 @@ whenToUse: 当用户说「转成公文」「转 docx」「生成 word」「排�
 ## 工具与路径
 
 - **转换工具**：`/root/.local/bin/md2doc`
-- **默认输出目录**：`/root/箱子/落灰的termux/md2doc公文格式转换/成品/`
+- **默认输出目录**：`/root/00-Loyintina/30-工作/公文格式转换/`
 - **源码与历史归档**：`/root/00-Loyintina/40-库/06-技术与工程/50-办公自动化/md转公文格式docx/`
-- **中转站说明**：`/root/箱子/落灰的termux/md2doc公文格式转换/README.md`
+- **历史中转站说明**：`/root/箱子/落灰的termux/md2doc公文格式转换/README.md`
 
 ## 公文层级符号规则
 
@@ -66,7 +66,7 @@ md2doc 只认 `###` / `####` / `#####` 三级符号，其余按正文处理：
 md2doc /tmp/审计后.md
 ```
 
-如未指定输出，自动落到 `/root/箱子/落灰的termux/md2doc公文格式转换/成品/<标题>.docx`。
+如未指定输出，自动落到 `/root/00-Loyintina/30-工作/公文格式转换/<标题>.docx`。
 
 #### 方式 B：管道输入
 
@@ -101,7 +101,7 @@ md2doc /tmp/审计后.md /root/00-Loyintina/40-库/40-语言与传播/10-写作/
 ### 4. 验证输出
 
 - 检查 `✅ 转换成功:` 后面的路径；
-- `ls -lh /root/箱子/落灰的termux/md2doc公文格式转换/成品/` 确认文件存在；
+- `ls -lh /root/00-Loyintina/30-工作/公文格式转换/` 确认文件存在；
 - 如可用，用 `file` 或 `unzip -l` 简单验证 DOCX 结构。
 
 ## 典型调用示例
@@ -112,17 +112,17 @@ md2doc /tmp/审计后.md /root/00-Loyintina/40-库/40-语言与传播/10-写作/
 md2doc /tmp/待转.md
 
 # 预期输出：
-# ✅ 转换成功: /root/箱子/落灰的termux/md2doc公文格式转换/成品/关于某某工作的通知.docx
+# ✅ 转换成功: /root/00-Loyintina/30-工作/公文格式转换/关于某某工作的通知.docx
 ```
 
 ## 与 vault 同步的关系
 
-`/root/箱子/` **不在 vault / git 同步范围内**。默认落点的 DOCX 不会自动回到手机或 Git。
+`/root/00-Loyintina/30-工作/公文格式转换/` 在 vault 同步范围内，成品 DOCX 会随 vault 同步到手机和 Git/Gitee。
 
-如果需要回手机/Git，转换完成后**主动移动**到 `/root/00-Loyintina/` 下的合适位置，例如：
+它现在是服务器本地工作目录。如需回手机或进版本库，转换完成后**主动移动**到 `/root/00-Loyintina/` 下的合适位置，例如：
 
 ```bash
-mv /root/箱子/落灰的termux/md2doc公文格式转换/成品/某文件.docx \
+mv /root/00-Loyintina/30-工作/公文格式转换/某文件.docx \
    /root/00-Loyintina/40-库/40-语言与传播/10-写作/99-归档项目/50-docx原稿库/
 ```
 
@@ -136,5 +136,5 @@ mv /root/箱子/落灰的termux/md2doc公文格式转换/成品/某文件.docx \
 
 - 输出单一 DOCX 文件；
 - 内容层级符号与原文语义一致；
-- 文件落到默认中转站或用户指定的 vault 路径；
+- 文件落到默认输出目录或用户指定的 vault 路径；
 - 转换命令返回 0 并打印成功信息。
