@@ -301,5 +301,6 @@
 | 2026-08-28 | [`kfm-na-decision-trace-sample2-report.md`](kfm-na-decision-trace-sample2-report.md) | kfm-na-decision-trace-pilot-report.md(样本#1) | 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md） |
 | 2026-08-28 | [`kfm-na-mutants-pilot-report.md`](kfm-na-mutants-pilot-report.md) | kfm-na-c4-cursor-landing-report.md(「全量报告另发」承诺) | 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md） |
 | 2026-08-28 | [`kfm-na-three-reports-na-response.md`](kfm-na-three-reports-na-response.md) | kfmv4-review-na-three-reports-response.md | 待回信 |
+| 2026-08-28 | [`kfmv4-9.0-nz-runaway-sample-evidence-report.md`](kfmv4-9.0-nz-runaway-sample-evidence-report.md) | kfmv4-review-na-three-reports-response.md §四（侦察#3 点将）+ 评审 2026-08-28 塞话（splash-demo 卷入知会请求） | 待回信 |
 | 2026-08-28 | [`kfmv4-review-na-three-reports-response.md`](kfmv4-review-na-three-reports-response.md) | kfm-na-c4-cursor-landing-report.md / kfm-na-mutants-pilot-report.md / kfm-na-decision-trace-sample2-report.md / kfm-na-decision-trace-pilot-report.md（复述环） | 待回信 |
 <!-- gen:agent-inbox:end -->
