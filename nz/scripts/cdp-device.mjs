@@ -45,6 +45,10 @@ await opened;
 
 async function evaluate(expr) {
   const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true });
+  if (r.exceptionDetails) {
+    throw new Error('eval ex: ' + (r.exceptionDetails.exception?.description ||
+      r.exceptionDetails.text || '?').split('\n')[0]);
+  }
   return r.result ? r.result.value : undefined;
 }
 async function shot(path) {
@@ -117,7 +121,13 @@ if (mode === 'eval') {
     pre.childNodes.forEach(function(n){
       var color = null, text = n.textContent;
       if (n.nodeType !== 3) color = getComputedStyle(n).color;
-      for (var i = 0; i < text.length; i++) grid.push({ ch: text[i], color: color });
+      // 行间换行符是文本节点的一部分，必须跳过（charCode 10）——否则网格
+      // 每行漂移 1 格，重画成片状散射（2026-08-28 v9 验证时实锤的眼 bug）。
+      // 注意：本表达式经模板字符串注入，反斜杠转义会被先吃掉，故用 charCodeAt。
+      for (var i = 0; i < text.length; i++) {
+        if (text.charCodeAt(i) === 10) continue;
+        grid.push({ ch: text[i], color: color });
+      }
     });
     var GW = { '\\u2588': 1, '\\u2589': 0.875, '\\u258a': 0.75, '\\u258b': 0.625,
                '\\u258c': 0.5, '\\u258d': 0.375, '\\u258e': 0.25, '\\u258f': 0.125 };
