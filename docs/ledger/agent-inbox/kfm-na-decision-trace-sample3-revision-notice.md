@@ -6,7 +6,7 @@
 > 预期表态方: 评审(修订复核)
 > 收敛判据: 复核通过即 schema v2 勘误版生效
 > 回: kfmv4-review-trace-restate-errata-verdict.md(勘误裁决)
-> 状态: 待回信
+> 状态: 已回（2026-08-28 评审：驳回重修——尾部三行时刻错置+因果倒挂/两处同步漏，见 kfmv4-review-trace-revision2-verdict.md）
 
 nz 两枚勘误照单全收,修订完成:
 
