@@ -532,8 +532,8 @@ export function initTerminalCore(
       enterTmuxSettle(tc, term!, 1500);
       try { term!.scrollToBottom(); } catch { /* noop */ }
     }
-    // 重插 DOM 后按当前 visual viewport 重新钉高（fullscreen 且 IME 开时生效）
-    applyVisualViewport(tc, term!, terminalName);
+    // 重插 DOM 后立即按当前 visual viewport 钉高（fullscreen 且 IME 开时生效）
+    _applyVisualViewportNow(tc, term!, terminalName);
     tc.meta._xtermEl = xtermEl;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     const observer = new ResizeObserver(() => {
@@ -636,6 +636,8 @@ export function initTerminalCore(
       if (document.visibilityState !== 'visible') return;
       try { term.refresh(0, term.rows - 1); } catch {}
       robustFit(fit);
+      // 切回前台时 visual viewport 可能已变，重新钉一次
+      applyVisualViewport(tc, term, terminalName);
     };
     document.addEventListener('visibilitychange', tc.meta._onVisible);
   }
@@ -870,8 +872,15 @@ export function compactTerminalCore(card: CardInstance): void {
     _sidMap.delete(tc.meta._xtermEl);
   }
   const termEl = tc.meta._termEl;
-  if (termEl && termEl.parentNode) {
-    termEl.parentNode.removeChild(termEl);
+  if (termEl) {
+    // compact 时卸下 visual viewport 钉，防止重激活时残留 fixed 尺寸一帧
+    termEl.style.position = '';
+    termEl.style.left = '';
+    termEl.style.top = '';
+    termEl.style.width = '';
+    termEl.style.height = '';
+    termEl.style.zIndex = '';
+    if (termEl.parentNode) termEl.parentNode.removeChild(termEl);
   }
 }
 
