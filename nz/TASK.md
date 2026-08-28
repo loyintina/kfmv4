@@ -159,6 +159,40 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 - **公约③push 遇阻分流**：未提交闸→留本地等闸；链超时→错峰重试；
   机械红→当场修。③a「知会当事线」统一走信箱 notice 或塞话，不留口头。
 
+### 2.7 观测与自验收手段总表（2026-08-28 用户拍板统一登记）
+
+> 新 agent 接手读这一节就够：每个手段=入口/能看什么/保真边界/前后台
+> 限制。**任何新观测手段落地必须登记进本表**（不登记=不存在）。
+
+**CDP 真机通道纪律（所有真机手段共用，血泪换来）**：
+①按 target id 前缀精确选目标，禁按下标猜（live=description 含
+`"attached":true` 是用户活会话，**勿导航勿 reload**；spare=
+empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1，
+必须 `localhost` 连（127.0.0.1 挂死）③spare 用完导航回 about:blank
+收尸（导航 8023 会起 PTY）④App 后台时 Android 合成器不产帧，
+`captureScreenshot` 必超时——像素需求走后台路径（画布重画/帧序列）。
+
+| 手段 | 入口 | 能看什么 | 保真边界 | 前后台 |
+|---|---|---|---|---|
+| DOM 眼 | `scripts/cdp-device.mjs eval "<js>"` | 真机页面任意 JS 读数（rect/computedStyle/textContent） | 精确（读的是真 DOM） | 后台可用 |
+| 画布重画眼 | `cshot <id> <png> [url]`；页内钩子 `__kfmNzCanvasShot(scale?)` | 终端可视区像素图（行>段>宽字叶段+光标块逐元素重画） | 颜色/几何同源真渲染态；抗锯齿/下划线不保真 | **后台可用**（CPU 侧光栅化不过合成器） |
+| 动效帧序列眼 | `seq <id> <url含{t}> <png前缀> <t1,t2,..>` | 动效逐帧形态（配合页面 ?t= 冻结帧，块字符 fillRect 同源重画） | 每帧「画什么」全对；实时掉帧测不了（要前台 screencast） | **后台可用**（rAF 后台不跑，合成时间驱动是正道） |
+| 合成器实拍 | `shot` / `evshot` / `navshot` | 真机实际屏幕帧（含原生渲染一切细节） | 全保真 | **App 前台限定**（后台不产帧必超时） |
+| 读屏 | 页内钩子 `__kfmNzTermScreen()` | 当前可视屏纯文本（塌尾行不计） | 与渲染态同源 | 后台可用 |
+| 注入动手 | 页内钩子 `__kfmNzTermInject(str)`（`\r`=回车） | 走现有输入管线（粘滞/回底纪律同 kb/IME） | 不绕过任何输入纪律 | 后台可用 |
+| 滚动状态 | 页内钩子 `__kfmNzTermScroll()` | scrollTop/clientHeight/isAtBottom/cellW/cellH | 精确 | 后台可用 |
+| ?debug 遥测 | URL 加 `?debug` → `/tmp/nz-ime-events.log` | 渲染健康字段 f/rp/sc/rz + 专症字段随症注册 | 真实设备自报，agent 直读日志 | 后台可用（页面需开着） |
+| 开屏覆层 | URL 加 `?splash` 或 `__kfmNzSplash(true/false)` | 休眠覆层唤醒/收起（CDP evaluate 可玩，不导航不杀会话） | — | 后台可用 |
+| A/B 档考卷 | `tests/browser/*.test.mjs`（headless playwright） | 终端行为回归（bottom-anchor/scrollback/keybar/term-hooks/cjk-width-c4…） | headless 合成环境 | 服务器本地 |
+| Rust 层判卷 | `cd term-core && cargo test` | 核层语义（宽度/换行/模式位） | 纯净无竞态 | 服务器本地 |
+| 真机四单自验收 | `scripts/device-verify.mjs` | 真机行为清单（评审抽查节奏收录） | 真机实证 | 后台可用 |
+
+**判卷层选择纪律**（C4 对拍换来）：可打印串/文本类断言浏览器层可判；
+**定位类序列（CUP/CHA）必须 Rust 层判**——CoreFeed 与活体 PTY 共享
+核，zsh 重绘竞态会污染定位读数（x86→88 假红实例）。真机专属症状遵守
+方法库「真机取证纪律」（先埋探针/探针过备/数字收口），评审线方法库
+`docs/ledger/test-methods/index.md` 是上位文件。
+
 ---
 
 ## 3. 总时间线（一页总表）
@@ -1400,3 +1434,16 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   回显不净化会话竞态——可打印串表浏览器可判，定位类序列必须
   Rust 层判。侦察#3 归属（翻案发起=nz e5a0bbaf/公开自正=评审）
   无异议定稿。回函 kfmv4-9.0-term-contract-c4-response。
+- 2026-08-28 · 观测手段统一登记（用户拍板）+ 开屏 v8 port：
+  ①TASK 新增 §2.7「观测与自验收手段总表」——11 手段各带入口/
+  能看什么/保真边界/前后台限制，CDP 四纪律（target id/localhost/
+  spare 收尸/后台不产帧）+判卷层选择纪律（定位类必 Rust 层）入册，
+  新规：任何新观测手段落地必须登记进表（不登记=不存在）。
+  ②动效帧序列眼固化 cdp-device.mjs seq 模式（真机后台拍 ?t= 冻结
+  帧，fillRect 同源重画），/tmp 8 个脚手架清零（能力全并正式脚本）。
+  ③开屏 v8 port index.html 休眠覆层（逐行精确菱形+重心钉线+定种子
+  满覆盖，与 splash-demo.html 同源）——顺手修 z-index：覆层 90 被
+  Cordis 层根（host.ts LAYER_Z layout 100/persistent 200/overlay
+  300）压住，底部漏出按键栏/终端，提至 400 遮挡一切（注释记因）。
+  考卷：term-hooks 6/6+bottom-anchor 10/10+scrollback 5/5+keybar
+  19/19+cjk-width-c4 10/10 全绿。

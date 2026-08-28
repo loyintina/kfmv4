@@ -8,13 +8,14 @@
 //       node scripts/cdp-device.mjs evshot "expr" /tmp/o.png [holdMs]
 //       node scripts/cdp-device.mjs navshot <id前缀> <url> <png> [holdMs]  # spare 导航+截图+回 blank
 //       node scripts/cdp-device.mjs cshot <id前缀> <png> [url]  # 画布重画眼（后台可用），带 url 先导航拍完回 blank
+//       node scripts/cdp-device.mjs seq <id前缀> <url含{t}> <png前缀> <t1,t2,..>  # 动效帧序列眼
 const mode = process.argv[2];
 
 const list = await (await fetch('http://localhost:8026/json/list')).json();
-// 目标选择：navshot/cshot 用 id 前缀指定（spare=empty/never_attached），
+// 目标选择：navshot/cshot/seq 用 id 前缀指定（spare=empty/never_attached），
 // 其余默认 live（attached）
 let live;
-if (mode === 'navshot' || mode === 'cshot') {
+if (mode === 'navshot' || mode === 'cshot' || mode === 'seq') {
   live = list.find(t => t.id.startsWith(process.argv[3]));
   if (!live) { console.error('no target with id prefix', process.argv[3]); process.exit(1); }
 } else {
@@ -96,6 +97,58 @@ if (mode === 'eval') {
   writeFileSync(png, Buffer.from(u.split(',')[1], 'base64'));
   console.log('cshot ->', png);
   if (url) await send('Page.navigate', { url: 'about:blank' });
+} else if (mode === 'seq') {
+  // seq <id前缀> <url含{t}占位> <png前缀> <t1,t2,...>：动效帧序列眼（后台可用）。
+  // 逐 t 导航到 url（{t} 替换为毫秒值，配合页面 ?t= 冻结帧），画布重画出图
+  // <png前缀><t>.png，最后回 about:blank。原理：后台 rAF 不跑，合成时间
+  // 驱动是正道；块字符按墨迹宽度表 fillRect，几何与真机 DOM 同源。
+  // 验证「每帧画什么」（波序/相位/几何）；测不了实时掉帧（那要前台 screencast）。
+  const urlTpl = process.argv[4], pngPrefix = process.argv[5];
+  const times = (process.argv[6] || '0').split(',').map(Number);
+  const eyeExpr = `(function(){
+    var s = document.getElementById('nz-splash');
+    var pre = s && s.querySelector('pre');
+    if (!pre) return 'NO-PRE';
+    var pr = pre.getBoundingClientRect();
+    var lines = pre.textContent.split('\\n');
+    var rows = lines.length, cols = Math.max.apply(null, lines.map(function(l){return l.length}));
+    var cw = pr.width / cols, ch = pr.height / rows;
+    var grid = [];
+    pre.childNodes.forEach(function(n){
+      var color = null, text = n.textContent;
+      if (n.nodeType !== 3) color = getComputedStyle(n).color;
+      for (var i = 0; i < text.length; i++) grid.push({ ch: text[i], color: color });
+    });
+    var GW = { '\\u2588': 1, '\\u2589': 0.875, '\\u258a': 0.75, '\\u258b': 0.625,
+               '\\u258c': 0.5, '\\u258d': 0.375, '\\u258e': 0.25, '\\u258f': 0.125 };
+    var scale = 3;
+    var c = document.createElement('canvas');
+    c.width = Math.round(pr.width * scale); c.height = Math.round(pr.height * scale);
+    var g = c.getContext('2d');
+    g.fillStyle = '#05070f'; g.fillRect(0, 0, c.width, c.height);
+    var k = 0;
+    for (var y = 0; y < rows; y++) for (var x = 0; x < lines[y].length; x++) {
+      var cell = grid[k++] || { ch: ' ', color: null };
+      var w = GW[cell.ch];
+      if (!w) continue;
+      g.fillStyle = cell.color || '#1a2030';
+      g.fillRect(x * cw * scale, y * ch * scale, w * cw * scale, ch * scale);
+    }
+    return c.toDataURL('image/png');
+  })()`;
+  await send('Page.enable');
+  const { writeFileSync } = await import('fs');
+  for (const ms of times) {
+    await send('Page.navigate', { url: urlTpl.replace('{t}', String(ms)) });
+    await new Promise(r => setTimeout(r, 2500));
+    const u = await evaluate(eyeExpr);
+    if (typeof u === 'string' && u.startsWith('data:image/png')) {
+      const p = `${pngPrefix}${ms}.png`;
+      writeFileSync(p, Buffer.from(u.split(',')[1], 'base64'));
+      console.log(`t=${ms} -> ${p}`);
+    } else console.error(`t=${ms} FAIL:`, String(u).slice(0, 60));
+  }
+  await send('Page.navigate', { url: 'about:blank' });
 }
 ws.close();
 // ws.close 不保证进程即退（socket  draining），显式退出防悬挂
