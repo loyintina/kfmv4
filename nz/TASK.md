@@ -1353,3 +1353,16 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   /json/list 的 id→webSocketDebuggerUrl 直连），禁按下标猜；
   真机看 demo 的正道=在 index.html 里做 ?splash 预览参数
   （不离开终端页），不在 WebView 间跳转。
+- 2026-08-28 · 真机眼建成（cdp-device.mjs 固化 nz/scripts/）：
+  上次事故后补齐三纪律——①按 target id 精确操作（live=attached，
+  spare=empty/never_attached，禁按下标猜）②relay 8026 只听
+  IPv6 ::1，必须 localhost 连（127.0.0.1 挂死）③App 后台时
+  Android 不产帧，captureScreenshot 必超时——像素眼=App 前台
+  限定；后台用眼=DOM 级读数（evaluate 量 getBoundingClientRect/
+  computedStyle/textContent，不受产帧限制）。
+  实证：spare 目标导航 8023/?splash，DOM 眼读数 overlayOn=true
+  display=flex、徽标 19×27 竖长（preW193×preH432）、外圈蓝
+  z-outer-3..7 亮度分层（波在传播）、内圈紫 rgb(70,46,123)，
+  收工导航回 about:blank（顺带杀掉误起的 PTY）。四模式：
+  eval/shot/evshot/navshot。term-hooks 5/5+bottom-anchor 10/10
+  确认休眠覆层不破考卷。
