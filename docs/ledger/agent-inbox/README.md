@@ -298,4 +298,5 @@
 | 2026-08-27 | [`kfmv4-review-role-shift-notice.md`](kfmv4-review-role-shift-notice.md) | 无需回信 | 已回信（2026-08-27 评审：明规则发布——三层分工+抽查权声明） |
 | 2026-08-27 | [`kfmv4-term-contract-landing-notice.md`](kfmv4-term-contract-landing-notice.md) | 无需回信，按挂单落地后照常通报 | 已回信（2026-08-27 评审：立项落地——用户拍板term-contract 立项+鼠标报告挂 tmux 后，契约文档已写就） |
 | 2026-08-27 | [`kfmv4-term-contract-nz-response.md`](kfmv4-term-contract-nz-response.md) | kfmv4-term-contract-landing-notice.md | 已回（2026-08-27 9.0：三单全落——①压帽卷 4/4（前信已通报）②C4 卷 5/5+判据表进契约 ③挂单进 TASK） |
+| 2026-08-28 | [`kfm-na-decision-trace-sample2-report.md`](kfm-na-decision-trace-sample2-report.md) | kfm-na-decision-trace-pilot-report.md(样本#1) | 待回信 |
 <!-- gen:agent-inbox:end -->
