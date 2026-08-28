@@ -7,12 +7,14 @@
 //       node scripts/cdp-device.mjs shot /tmp/out.png           # live 截图（App 需前台，后台不产帧必超时）
 //       node scripts/cdp-device.mjs evshot "expr" /tmp/o.png [holdMs]
 //       node scripts/cdp-device.mjs navshot <id前缀> <url> <png> [holdMs]  # spare 导航+截图+回 blank
+//       node scripts/cdp-device.mjs cshot <id前缀> <png> [url]  # 画布重画眼（后台可用），带 url 先导航拍完回 blank
 const mode = process.argv[2];
 
 const list = await (await fetch('http://localhost:8026/json/list')).json();
-// 目标选择：navshot 用备用目标（empty/never_attached），其余默认 live（attached）
+// 目标选择：navshot/cshot 用 id 前缀指定（spare=empty/never_attached），
+// 其余默认 live（attached）
 let live;
-if (mode === 'navshot') {
+if (mode === 'navshot' || mode === 'cshot') {
   live = list.find(t => t.id.startsWith(process.argv[3]));
   if (!live) { console.error('no target with id prefix', process.argv[3]); process.exit(1); }
 } else {
@@ -75,6 +77,25 @@ if (mode === 'eval') {
   await shot(png);
   console.log('shot ->', png);
   await send('Page.navigate', { url: 'about:blank' });
+} else if (mode === 'cshot') {
+  // cshot <id前缀> <png路径> [url]：画布重画眼（后台可用，不依赖合成器产帧）。
+  // 目标页需已加载含 __kfmNzCanvasShot 的 bundle；带 url 则先导航、拍完回 blank。
+  const png = process.argv[4], url = process.argv[5];
+  if (url) {
+    // 目标已在连接里（live=按 id 选的 spare），导航→等加载
+    await send('Page.enable');
+    await send('Page.navigate', { url });
+    await new Promise(r => setTimeout(r, 5000));
+  }
+  const u = await evaluate(`window.__kfmNzCanvasShot ? window.__kfmNzCanvasShot() : ''`);
+  if (typeof u !== 'string' || !u.startsWith('data:image/png;base64,')) {
+    console.error('canvasShot fail:', typeof u === 'string' ? u.slice(0, 80) : u);
+    process.exit(1);
+  }
+  const { writeFileSync } = await import('fs');
+  writeFileSync(png, Buffer.from(u.split(',')[1], 'base64'));
+  console.log('cshot ->', png);
+  if (url) await send('Page.navigate', { url: 'about:blank' });
 }
 ws.close();
 // ws.close 不保证进程即退（socket  draining），显式退出防悬挂

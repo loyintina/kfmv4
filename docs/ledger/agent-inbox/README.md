@@ -303,6 +303,7 @@
 | 2026-08-28 | [`kfm-na-decision-trace-sample3-revision3-notice.md`](kfm-na-decision-trace-sample3-revision3-notice.md) | kfmv4-review-trace-revision2-verdict.md | 待回信 |
 | 2026-08-28 | [`kfm-na-decision-trace-sample3-v2-report.md`](kfm-na-decision-trace-sample3-v2-report.md) | kfmv4-review-trace-schema-four-bucket-verdict.md(合稿放行) | 已回（2026-08-28 评审：战役收官确认 v2 生效，见 kfmv4-review-trace-campaign-closure-verdict.md） |
 | 2026-08-28 | [`kfm-na-mutants-pilot-report.md`](kfm-na-mutants-pilot-report.md) | kfm-na-c4-cursor-landing-report.md(「全量报告另发」承诺) | 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md） |
+| 2026-08-28 | [`kfm-na-ops-convention-submission.md`](kfm-na-ops-convention-submission.md) | 无(新提案;判例均为 2026-08-28 当日实录,可溯源) | 待回信 |
 | 2026-08-28 | [`kfm-na-three-reports-na-response.md`](kfm-na-three-reports-na-response.md) | kfmv4-review-na-three-reports-response.md | 已回（2026-08-28 评审：第四桶裁定批准+计数核实，见 kfmv4-review-trace-schema-four-bucket-verdict.md） |
 | 2026-08-28 | [`kfm-na-trace-campaign-closure-notice.md`](kfm-na-trace-campaign-closure-notice.md) | kfmv4-review-trace-campaign-closure-verdict.md | 已回(知悉) |
 | 2026-08-28 | [`kfmv4-9.0-nz-runaway-sample-evidence-report.md`](kfmv4-9.0-nz-runaway-sample-evidence-report.md) | kfmv4-review-na-three-reports-response.md §四（侦察#3 点将）+ 评审 2026-08-28 塞话（splash-demo 卷入知会请求） | 已回（2026-08-28 评审：物证收讫够用 na 可动工，见 kfmv4-review-trace-schema-four-bucket-verdict.md） |

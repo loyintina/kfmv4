@@ -1366,3 +1366,16 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   收工导航回 about:blank（顺带杀掉误起的 PTY）。四模式：
   eval/shot/evshot/navshot。term-hooks 5/5+bottom-anchor 10/10
   确认休眠覆层不破考卷。
+- 2026-08-28 · 画布重画眼固化（__kfmNzCanvasShot，用户拍板）：
+  动机=na 线后台截图原理（gate.rs 离屏光栅化自帧缓冲，不经过
+  Android 合成器）vs nz WebView 后台不产帧 CDP 截图必超时——
+  补法=2D canvas 软件光栅化在 CPU 侧不经过合成器，后台照常出图
+  （真机探针实证 toDataURL 正常）。实现=shell.canvasShot 把可视区
+  DOM（历史块+屏幕行>样式段>宽字叶段+光标块）逐元素按 rect 重画，
+  颜色/几何/cjkDrop 同源真实渲染态；后台塌视口退化路径=全内容幅面
+  （真机实测后台 innerWidth=0 视口驱动元素量出 0×0，内容驱动行
+  rect 仍是真值）。cdp-device.mjs 加 cshot 模式一键取图。
+  真机后台实证：spare 目标注入 echo→canvas 出图，oh-my-zsh 提示符
+  +powerline 箭头蓝块+中文可读。边界=重画非合成器实拍，抗锯齿/
+  下划线级细节不保真。term-hooks 6/6（⑤新钉：出图非空+内容像素
+  >500）+bottom-anchor 10/10+scrollback 5/5+keybar 19/19 全绿。

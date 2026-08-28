@@ -372,6 +372,78 @@ export class TermShell {
     return out.join('\n');
   }
 
+  /** 画布重画眼（2026-08-28 用户拍板，仿 na shot 离屏光栅化思路）：
+   * Android 后台 WebView 合成器不产帧，CDP captureScreenshot 必超时；
+   * 但 2D canvas 软件光栅化在 CPU 侧、不经过合成器，后台照常出图。
+   * 把当前可视区 DOM（历史块+屏幕行>样式段>宽字叶段、光标块）逐元素
+   * 按 getBoundingClientRect 重画进 canvas 返 dataURL——颜色/几何/
+   * cjkDrop 位移与真实渲染态同源。重画非合成器实拍：抗锯齿级细节、
+   * 下划线等装饰不保真，够定位「画了什么/在哪/什么色」。 */
+  canvasShot(viewport: HTMLElement, scale = 2): string {
+    let vp = viewport.getBoundingClientRect();
+    if (vp.width < 10 || vp.height < 10) {
+      // 后台塌视口退化路径（真机实测：App 后台 innerWidth/innerHeight=0，
+      // 视口驱动的 scrollEl 量出 0×0，但内容驱动的行 rect 仍是真值）。
+      // 退化为全内容幅面：原点=壳容器左上，宽=列数×字格，高=历史块+可见行。
+      const er = this.el.getBoundingClientRect();
+      const vis = this.rowDivs.filter((d) => d.style.display !== 'none').length;
+      const w = Math.max(1, Math.round(this.opts.cols * (this.cellW || 8)));
+      const h = Math.max(1, Math.round(this.historyDiv.offsetHeight + vis * (this.cellH || 16)));
+      vp = { left: er.left, top: er.top, right: er.left + w, bottom: er.top + h, width: w, height: h } as DOMRect;
+    }
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(vp.width * scale));
+    c.height = Math.max(1, Math.round(vp.height * scale));
+    const g = c.getContext('2d');
+    if (!g) return '';
+    g.scale(scale, scale);
+    g.fillStyle = TERM_BG;
+    g.fillRect(0, 0, vp.width, vp.height);
+    g.textBaseline = 'middle';
+    const paint = (text: string, r: DOMRect, css: CSSStyleDeclaration) => {
+      const bg = css.backgroundColor;
+      if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+        g.fillStyle = bg;
+        g.fillRect(r.left - vp.left, r.top - vp.top, r.width, r.height);
+      }
+      if (!text.trim()) return;
+      g.font = css.font;
+      g.fillStyle = css.color;
+      g.fillText(text, r.left - vp.left, r.top - vp.top + r.height / 2);
+    };
+    const range = document.createRange();
+    const walk = (node: Node, css: CSSStyleDeclaration) => {
+      if (node.nodeType === 3) {
+        range.selectNodeContents(node);
+        paint(node.textContent ?? '', range.getBoundingClientRect(), css);
+        return;
+      }
+      const elN = node as HTMLElement;
+      const elCss = getComputedStyle(elN);
+      if (elN.children.length === 0) {
+        paint(elN.textContent ?? '', elN.getBoundingClientRect(), elCss);
+        return;
+      }
+      for (const ch of elN.childNodes) walk(ch, elCss);
+    };
+    const rows: HTMLElement[] = [
+      ...(Array.from(this.historyDiv.children) as HTMLElement[]),
+      ...this.rowDivs,
+    ];
+    for (const row of rows) {
+      if (row.style.display === 'none') continue;
+      const rr = row.getBoundingClientRect();
+      if (rr.height === 0 || rr.bottom < vp.top || rr.top > vp.bottom) continue;
+      for (const n of row.childNodes) walk(n, getComputedStyle(row));
+    }
+    // 光标块（display:none 时 rect 全 0 自动跳过）
+    const cr = this.cursorEl.getBoundingClientRect();
+    if (cr.height > 0 && cr.bottom >= vp.top && cr.top <= vp.bottom) {
+      paint('', cr, getComputedStyle(this.cursorEl));
+    }
+    return c.toDataURL('image/png');
+  }
+
   /** 光标格在 termEl 内的像素坐标（placeKb 诱饵钉光标格用）；
    * 光标越界/未量字格时 null。 */
   cursorOffset(): { x: number; y: number } | null {

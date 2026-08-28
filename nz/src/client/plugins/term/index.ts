@@ -416,7 +416,8 @@ export function applyTermBundle(ctx: Context): void {
       //     + bridge.input（\n→\r，\r=回车），与 kb/IME 上屏同一语义，
       //     不绕过任何输入纪律；
       //   __kfmNzTermScreen() = 读当前可视屏纯文本——壳 screenText()
-      //     取实际渲染态（塌尾行不计），与 __kfmNzTermScroll 同源不建副本。
+      //     取实际渲染态（塌尾行不计），与 __kfmNzTermScroll 同源不建副本；
+      //   __kfmNzCanvasShot(scale?) = 后台像素眼（画布重画，见下）。
       // 可并列扩展铁律：后补 InjectKey({key,ctrl})/InjectRaw(bytes)/
       // ScreenGrid()/ScreenAt(r,c) 按同款模式并列加（window.__kfmNzTerm*
       // 命名、读同一状态/管线），不改动这版。
@@ -429,6 +430,9 @@ export function applyTermBundle(ctx: Context): void {
         bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
       };
       win.__kfmNzTermScreen = () => shell.screenText();
+      // 画布重画眼（2026-08-28 用户拍板）：后台不产帧时的像素眼，
+      // 原理/保真边界见 shell.canvasShot 注释。返 dataURL（空串=失败）。
+      win.__kfmNzCanvasShot = (scale?: number) => shell.canvasShot(scrollEl, scale);
 
       // ?debug 诊断骨架（常备基建，复盘裁决①：管道+字段注册点常驻，专症
       // 字段随症收口——IME 专用 col/cv/cb 已随三症全解移除，保留通用渲染

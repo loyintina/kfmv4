@@ -69,6 +69,34 @@ await page.waitForTimeout(1500); // 注入→PTTY→回显 RTT
   check('④注入后回底纪律在位（isAtBottom=true）', at === true, `isAtBottom=${at}`);
 }
 
+// ⑤CanvasShot 后台像素眼：dataURL 非空+解码后真有内容像素（非全背景）
+{
+  const r = await page.evaluate(() => {
+    const url = window.__kfmNzCanvasShot ? window.__kfmNzCanvasShot() : '';
+    if (!url.startsWith('data:image/png;base64,')) return { ok: false, why: 'bad-prefix', len: url.length };
+    // 解码回 canvas 数非背景像素（提示符/回显文字必然上屏）
+    const img = new Image();
+    return new Promise((res) => {
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.width; c.height = img.height;
+        const g = c.getContext('2d');
+        g.drawImage(img, 0, 0);
+        const d = g.getImageData(0, 0, c.width, c.height).data;
+        let lit = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          // 背景 #101014 附近视为未点亮
+          if (Math.abs(d[i] - 16) + Math.abs(d[i + 1] - 16) + Math.abs(d[i + 2] - 20) > 30) lit++;
+        }
+        res({ ok: lit > 500, lit, w: img.width, h: img.height, len: url.length });
+      };
+      img.onerror = () => res({ ok: false, why: 'decode-fail' });
+      img.src = url;
+    });
+  });
+  check('⑤CanvasShot 出图非空且有内容像素', r.ok === true, JSON.stringify(r));
+}
+
 await browser.close();
 const allOk = results.every(r=>r.ok);
 console.log(`\n=== term-hooks A 档：${results.filter(r=>r.ok).length}/${results.length} 通过（Inject/Screen 可编程钩子）===`);
