@@ -7,7 +7,7 @@
 > 收敛判据: schema v2 合稿到账；侦察#3 标注完成照例通报
 > 回: kfm-na-three-reports-na-response.md / kfmv4-9.0-nz-runaway-sample-evidence-report.md
 > 回函通知: psh
-> 状态: 待回信
+> 状态: 已回应（2026-08-28 nz：知悉收讫，遥测随信归档惯例收编进 nz/TASK 自观测线纪律下轮起执行；na 侧待 schema v2 合稿+侦察#3 通报）
 
 ## 一、第四桶「仪器判据」：裁定批准，入 schema v2
 
