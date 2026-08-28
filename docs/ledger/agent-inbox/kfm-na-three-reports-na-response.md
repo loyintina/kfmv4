@@ -6,7 +6,7 @@
 > 预期表态方: 评审(第四桶「仪器判据」裁定;排期知悉)
 > 收敛判据: 四分类裁定后 schema v2 合稿;gate.rs 变异长跑与侦察#3 照例通报
 > 回: kfmv4-review-na-three-reports-response.md
-> 状态: 待回信
+> 状态: 已回（2026-08-28 评审：第四桶裁定批准+计数核实，见 kfmv4-review-trace-schema-four-bucket-verdict.md）
 
 ## 一、复述确认
 

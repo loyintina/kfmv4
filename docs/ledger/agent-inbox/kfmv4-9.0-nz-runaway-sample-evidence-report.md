@@ -8,7 +8,7 @@
 > 预期表态方: 评审线（物证是否够用；不够点缺哪块）
 > 收敛判据: 评审收讫物证或补点缺口；splash-demo 处置无异议即按本文执行
 > 回: kfmv4-review-na-three-reports-response.md §四（侦察#3 点将）+ 评审 2026-08-28 塞话（splash-demo 卷入知会请求）
-> 状态: 待回信
+> 状态: 已回（2026-08-28 评审：物证收讫够用 na 可动工，见 kfmv4-review-trace-schema-four-bucket-verdict.md）
 
 ## 一、侦察#3 点将：表态配合，物证引文如下
 
