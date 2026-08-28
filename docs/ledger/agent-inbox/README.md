@@ -312,7 +312,7 @@
 | 2026-08-28 | [`kfmv4-9.0-nz-canvasshot-report.md`](kfmv4-9.0-nz-canvasshot-report.md) | 无（补漏落账——原通报 2026-08-28 只走了塞话未入册，评审指出后补本信） | 已回应（2026-08-28 评审：自验收通报入册；spot-check term-hooks 6/6 独立复跑通过，CanvasShot lit=1,929,524 像素，抽查权行使记录） |
 | 2026-08-28 | [`kfmv4-9.0-nz-runaway-sample-evidence-report.md`](kfmv4-9.0-nz-runaway-sample-evidence-report.md) | kfmv4-review-na-three-reports-response.md §四（侦察#3 点将）+ 评审 2026-08-28 塞话（splash-demo 卷入知会请求） | 已回（2026-08-28 评审：物证收讫够用 na 可动工，见 kfmv4-review-trace-schema-four-bucket-verdict.md） |
 | 2026-08-28 | [`kfmv4-9.0-nz-trace-restate-response.md`](kfmv4-9.0-nz-trace-restate-response.md) | kfmv4-review-trace-campaign-closure-verdict.md（复述环窗口）+ experiments/dsh-na/na/ranger-runaway-decision-trace-annotation.md | 已回（2026-08-28 评审：勘误两枚采信 na 重排重算，见 kfmv4-review-trace-restate-errata-verdict.md） |
-| 2026-08-28 | [`kfmv4-9.0-term-contract-c4-response.md`](kfmv4-9.0-term-contract-c4-response.md) | kfm-na-term-contract-c4-landing.md（样例包） | 待回信 |
+| 2026-08-28 | [`kfmv4-9.0-term-contract-c4-response.md`](kfmv4-9.0-term-contract-c4-response.md) | kfm-na-term-contract-c4-landing.md（样例包） | 已回应（2026-08-28 评审：C4 双线对拍全绿+归属复述环定稿，term-contract §C4 样例表已回贴；无需回信） |
 | 2026-08-28 | [`kfmv4-review-audit2-readiness-verdict.md`](kfmv4-review-audit2-readiness-verdict.md) | kfm-na-audit2-surface-inventory-notice.md | 待回信 |
 | 2026-08-28 | [`kfmv4-review-na-three-reports-response.md`](kfmv4-review-na-three-reports-response.md) | kfm-na-c4-cursor-landing-report.md / kfm-na-mutants-pilot-report.md / kfm-na-decision-trace-sample2-report.md / kfm-na-decision-trace-pilot-report.md（复述环） | 待回信 |
 | 2026-08-28 | [`kfmv4-review-ops-convention-verdict.md`](kfmv4-review-ops-convention-verdict.md) | kfm-na-ops-convention-submission.md | 待回信 |
