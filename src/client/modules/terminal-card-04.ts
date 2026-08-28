@@ -83,6 +83,7 @@ export interface TerminalCardMeta {
   _settleFlushMaxTimer?: ReturnType<typeof setTimeout>; // settle buffer 硬上限 flush 定时器
   _settleScrollLoop?: number; // settle 期 rAF 循环 ID，每帧强制贴底
   _vvHandler?: () => void; // visualViewport resize/scroll 回调
+  _winResizeHandler?: () => void; // window resize 兜底回调
   _vvRaf?: number; // visualViewport 应用请求的 rAF id（节流）
 }
 
@@ -657,6 +658,12 @@ export function initTerminalCore(
     tc.meta._vvHandler = vvHandler;
     applyVisualViewport(tc, term, terminalName); // 初始态
   }
+  // window resize 兜底：部分浏览器关 IME 时 vv resize 漏发，靠 layout viewport 变化重置
+  if (!tc.meta._winResizeHandler) {
+    const winHandler = () => applyVisualViewport(tc, term, terminalName);
+    window.addEventListener('resize', winHandler);
+    tc.meta._winResizeHandler = winHandler;
+  }
 
   term.onData((data: string) => {
     if (tc.meta.sessionId) {
@@ -833,6 +840,10 @@ export function disposeTerminalCore(card: CardInstance, poolName: string): void 
     window.visualViewport.removeEventListener('resize', tc.meta._vvHandler);
     window.visualViewport.removeEventListener('scroll', tc.meta._vvHandler);
     tc.meta._vvHandler = undefined;
+  }
+  if (tc.meta._winResizeHandler) {
+    window.removeEventListener('resize', tc.meta._winResizeHandler);
+    tc.meta._winResizeHandler = undefined;
   }
   delete tc.meta._settleBuffer;
   if (tc.meta._term) {
