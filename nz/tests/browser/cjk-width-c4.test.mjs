@@ -59,6 +59,29 @@ try {
     x = await advance('中文A');
     check('C4④ "中文A" → +5', x === 5, `推进=${x}`);
 
+    // ── na 对拍样例包（kfm-na-term-contract-c4-landing，2026-08-28 领）──
+    // 同组串、同判据（核 cursor 推进），期望值必须与 na 逐行相等：
+    // 这张表对拍通过后回贴 term-contract.md §C4，成为 C4 契约机械载体。
+    const naTable = [
+      ['中文AB', 6, '汉×2+文×2+A+B'],
+      ['English', 7, '全 ASCII'],
+      ['あいui', 6, '平假名 2+2+1+1'],
+      ['中A中B', 6, '2+1+2+1'],
+      ['┌─┐', 3, '制表符 U+2500 区单宽（BAR-028 家族边界）'],
+    ];
+    for (let i = 0; i < naTable.length; i++) {
+      const [s, want, note] = naTable[i];
+      x = await advance(s);
+      check(`C4-na${i + 1} "中文AB" 家族 "${s}" → +${want}（${note}）`, x === want, `推进=${x}`);
+    }
+
+    // ── 原子性小样（na spec_c4_宽字符劈格防御 对拍）判卷归 Rust 层 ──
+    // term-core cargo test c4_wide_char_at_row_end_wraps_whole（绿）：
+    // 行尾剩 1 格灌「中」整字换行、上行不留孤儿半格。浏览器层不钉此题——
+    // CoreFeed 虽直喂核，但核与活体 PTY 共享，zsh 重绘会插进定位序列
+    // （实测 CHA 行尾定位被竞态污染：x 86→88 假红），宽度串表是可打印
+    // 字符不受影响，定位类序列必须到 Rust 层判。
+
     // ── 渲染层：宽 span 忠实 2×cellW（核推进对，画歪了也是病） ─────────
     await page.evaluate(() => window.__kfmNzTermInject('printf "X中Y\\n"\r'));
     await new Promise((r) => setTimeout(r, 1200));

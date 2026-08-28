@@ -49,8 +49,26 @@ CJK 表意字符恒占 2 cell（含行内混排宽度计算）；powerline/符�
 占 1 cell。na：alacritty 网格双宽语义；nz：字格单源 measureCell + 双宽
 span。互验考题（审计 C 表遗留）：**判据=同串→光标推进列数**，契约串表——
 `A中A`→+4 / `中中`→+4 / `U+E0B0`→+1 / `中文A`→+5。nz 卷已落
-（cjk-width-c4.test.mjs 5/5，核层直喂判卷；教训：经 PTY 测宽度会混入
-zsh ZLE 转义回显，必须直喂核）。**na 待落同表 Rust 卷**（判 cursor 推进）。
+（cjk-width-c4.test.mjs，核层直喂判卷；教训：经 PTY 测宽度会混入
+zsh ZLE 转义回显，必须直喂核）。
+
+**对拍样例表（2026-08-28 双线对拍通过，C4 契约机械载体）**：
+
+| 输入串 | 占格（双线一致） | 拆账 |
+|---|---|---|
+| `中文AB` | **6** | 汉×2 + 文×2 + A×1 + B×1 |
+|  English | **7** | 全 ASCII ×1 |
+| `あいui` | **6** | 平假名 WideChar 2+2+1+1 |
+| `中A中B` | **6** | 2+1+2+1 |
+| `┌─┐` | **3** | 制表符 U+2500 区单宽（BAR-028 家族边界） |
+
+na 判卷尺：`dump_text()` 跳 WIDE_CHAR_SPACER（spec_c4_*）；nz 判卷尺：
+核 cursor 推进直喂（cjk-width-c4.test.mjs C4-na1..5）。
+**原子性附约**：行尾剩 1 格灌宽字→整字换行，上行不留孤儿半格——
+na spec_c4_宽字符劈格防御；nz 判卷归 Rust 层（term-core cargo test
+c4_wide_char_at_row_end_wraps_whole（nz/term-core） 绿；浏览器层不钉——CoreFeed 与
+活体 PTY 共享核，zsh 重绘竞态会污染定位类序列，可打印宽度串表不受
+影响，定位类必须 Rust 层判）。
 
 ### C5. CJK 备字策略
 

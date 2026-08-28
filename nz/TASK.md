@@ -1389,3 +1389,14 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   +powerline 箭头蓝块+中文可读。边界=重画非合成器实拍，抗锯齿/
   下划线级细节不保真。term-hooks 6/6（⑤新钉：出图非空+内容像素
   >500）+bottom-anchor 10/10+scrollback 5/5+keybar 19/19 全绿。
+- 2026-08-28 · C4 宽字符对拍（na 样例包 kfm-na-term-contract-c4-landing）：
+  5 串（中文AB=6/English=7/あいui=6/中A中B=6/┌─┐=3）nz 核层直喂复测
+  逐行同表，cjk-width-c4 扩至 10 断言全绿；期望值表回贴
+  term-contract §C4 成契约机械载体。原子样（行尾剩1格灌中→整字
+  换行）判卷归 Rust 层（term-core cargo test
+  c4_wide_char_at_row_end_wraps_whole 绿，cargo 8/8）——浏览器层
+  假红一次实锤：CoreFeed 与活体 PTY 共享核，zsh 重绘竞态污染
+  定位类序列（CHA 行尾 x86→88 假象）。新教训：直喂核只净化 ZLE
+  回显不净化会话竞态——可打印串表浏览器可判，定位类序列必须
+  Rust 层判。侦察#3 归属（翻案发起=nz e5a0bbaf/公开自正=评审）
+  无异议定稿。回函 kfmv4-9.0-term-contract-c4-response。

@@ -349,6 +349,23 @@ mod tests {
     }
 
     #[test]
+    fn c4_wide_char_at_row_end_wraps_whole() {
+        // C4 原子性小样（na spec_c4_宽字符劈格防御 对拍，term-contract §C4）：
+        // 行尾只剩 1 格时灌宽字，必须整字换行——不劈格、不在上行留孤儿半格。
+        let mut t = TermCore::new(5, 24, 1000);
+        t.feed(b"ABCD");            // 光标 x=4 = 最后一格
+        assert_eq!(t.cursor() & 0xffff, 4);
+        t.feed("中".as_bytes());
+        // 整字换行：光标应在下一行 x=2（宽字+spacer），行 0 尾部不留半格
+        assert_eq!(t.cursor() >> 16, 1, "宽字应整字换到下一行，cursor={:#x}", t.cursor());
+        assert_eq!(t.cursor() & 0xffff, 2, "换行后宽字占 2 格，光标 x=2");
+        let text = t.text();
+        let l0 = text.split('\n').next().unwrap();
+        assert!(!l0.contains('中'), "上行不得含劈出的半格，l0={l0:?}");
+        assert!(text.split('\n').nth(1).unwrap().contains('中'), "宽字应在下行，text={text:?}");
+    }
+
+    #[test]
     fn history_frame_appends_and_truncates() {
         // 8.8.3c 钉：超屏行滚入历史区；超 scrollback 上限丢最旧行（截断）。
         let mut t = TermCore::new(80, 5, 10);
