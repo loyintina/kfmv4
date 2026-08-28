@@ -82,9 +82,6 @@ export interface TerminalCardMeta {
   _settleFlushTimer?: ReturnType<typeof setTimeout>; // settle buffer idle flush 定时器
   _settleFlushMaxTimer?: ReturnType<typeof setTimeout>; // settle buffer 硬上限 flush 定时器
   _settleScrollLoop?: number; // settle 期 rAF 循环 ID，每帧强制贴底
-  _vvHandler?: () => void; // visualViewport resize/scroll 回调
-  _winResizeHandler?: () => void; // window resize 兜底回调
-  _vvRaf?: number; // visualViewport 应用请求的 rAF id（节流）
 }
 
 /** 窄化守卫：将通用 CardInstance 窄化为 TerminalCardMeta 特化。全文件唯一 as 逃逸。 */
@@ -118,7 +115,7 @@ function startSelfHeal(tc: CardInstance<TerminalCardMeta>, fit: FitAddon) {
   }, 60_000);
 }
 
-/** settle 期 rAF 循环：每帧强制贴底，封死 xterm 异步渲染中间帧漂移 */
+/** settle 期节流循环：每 50ms 强制贴底，封死 xterm 异步渲染中间帧漂移 */
 function startSettleScrollLoop(tc: CardInstance<TerminalCardMeta>, term: Terminal) {
   if (tc.meta._settleScrollLoop) return; // 已在跑
   const loop = () => {
@@ -127,65 +124,15 @@ function startSettleScrollLoop(tc: CardInstance<TerminalCardMeta>, term: Termina
       return;
     }
     try { term.scrollToBottom(); } catch { /* noop */ }
-    tc.meta._settleScrollLoop = requestAnimationFrame(loop);
+    tc.meta._settleScrollLoop = setTimeout(loop, 50) as unknown as number;
   };
-  tc.meta._settleScrollLoop = requestAnimationFrame(loop);
+  tc.meta._settleScrollLoop = setTimeout(loop, 0) as unknown as number;
 }
 
 function stopSettleScrollLoop(tc: CardInstance<TerminalCardMeta>) {
   if (tc.meta._settleScrollLoop) {
-    cancelAnimationFrame(tc.meta._settleScrollLoop);
+    clearTimeout(tc.meta._settleScrollLoop);
     tc.meta._settleScrollLoop = undefined;
-  }
-}
-
-/**
- * 按 visual viewport 钉终端容器：解决 Via 等浏览器 IME 弹起时 layout viewport
- * 不缩、只缩 visual viewport 导致的底部被键盘遮住/慢滚问题。
- * 仅对 fullscreen 卡生效；非 fullscreen 或 vv 与 layout 重合时不改动。
- */
-function applyVisualViewport(tc: CardInstance<TerminalCardMeta>, term: Terminal, terminalName: string) {
-  if (!window.visualViewport) return;
-  if (tc.meta._vvRaf) return; // 已调度，跳过
-  tc.meta._vvRaf = requestAnimationFrame(() => {
-    tc.meta._vvRaf = undefined;
-    _applyVisualViewportNow(tc, term, terminalName);
-  });
-}
-
-function _applyVisualViewportNow(tc: CardInstance<TerminalCardMeta>, term: Terminal, terminalName: string) {
-  if (!window.visualViewport) return;
-  const vv = window.visualViewport;
-  const termEl = tc.meta._termEl;
-  if (!termEl) return;
-
-  const card = termEl.closest('.floating-card') as HTMLElement | null;
-  if (!card?.classList.contains('fullscreen')) return;
-
-  const layoutH = window.innerHeight;
-  const vvH = vv.height;
-  const imeOpen = vvH < layoutH - 10;
-
-  if (imeOpen) {
-    termEl.style.position = 'fixed';
-    termEl.style.left = vv.offsetLeft + 'px';
-    termEl.style.top = vv.offsetTop + 'px';
-    termEl.style.width = vv.width + 'px';
-    termEl.style.height = vvH + 'px';
-    termEl.style.zIndex = String(Z.FULLSCREEN);
-  } else {
-    termEl.style.position = '';
-    termEl.style.left = '';
-    termEl.style.top = '';
-    termEl.style.width = '';
-    termEl.style.height = '';
-    termEl.style.zIndex = '';
-  }
-
-  try { tc.meta._fit?.fit(); } catch { /* noop */ }
-  if (terminalName === 'tmux') {
-    enterTmuxSettle(tc, term, 1500);
-    try { term.scrollToBottom(); } catch { /* noop */ }
   }
 }
 
@@ -530,11 +477,9 @@ export function initTerminalCore(
     robustFit(fit!);
     // 2026-08-28 tmux 卡 compact→active 重插 DOM 后长缓冲会从顶开始滚：强制贴底 settle。
     if (terminalName === 'tmux') {
-      enterTmuxSettle(tc, term!, 1500);
+      enterTmuxSettle(tc, term!, 2000);
       try { term!.scrollToBottom(); } catch { /* noop */ }
     }
-    // 重插 DOM 后立即按当前 visual viewport 钉高（fullscreen 且 IME 开时生效）
-    _applyVisualViewportNow(tc, term!, terminalName);
     tc.meta._xtermEl = xtermEl;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     const observer = new ResizeObserver(() => {
@@ -548,7 +493,7 @@ export function initTerminalCore(
         }
         // 2026-08-28 tmux 卡容器 resize（IME 弹/收/键盘浮条）后强制贴底 settle。
         if (terminalName === 'tmux') {
-          enterTmuxSettle(tc, term!, 1500); // 旧缓冲落盘 + 循环重启，覆盖键盘动画全段
+          enterTmuxSettle(tc, term!, 2500); // 旧缓冲落盘 + 循环重启，覆盖键盘动画全段
           try { term!.scrollToBottom(); } catch { /* noop */ }
         }
         resizeTimer = null;
@@ -603,7 +548,7 @@ export function initTerminalCore(
   term.onResize(() => {
     try {
       if (terminalName === 'tmux') {
-        enterTmuxSettle(tc, term, 1500); // resize 前旧缓冲落盘，循环覆盖后续渲染
+        enterTmuxSettle(tc, term, 2500); // resize 前旧缓冲落盘，循环覆盖后续渲染
         term.scrollToBottom();
       } else { _pinBottomIfFollowing?.(); }
     } catch { /* noop */ }
@@ -637,8 +582,6 @@ export function initTerminalCore(
       if (document.visibilityState !== 'visible') return;
       try { term.refresh(0, term.rows - 1); } catch {}
       robustFit(fit);
-      // 切回前台时 visual viewport 可能已变，重新钉一次
-      applyVisualViewport(tc, term, terminalName);
     };
     document.addEventListener('visibilitychange', tc.meta._onVisible);
   }
@@ -647,23 +590,6 @@ export function initTerminalCore(
   tc.meta._fit = fit;
   tc.meta._xtermEl = xtermEl;
   tc.meta._termEl = termEl;
-
-  // 监听 visual viewport：Via 等浏览器 IME 弹起只缩 vv 不缩 layout viewport，
-  // 必须主动把终端容器钉到 vv 范围内，否则底部被键盘盖住出现慢滚。
-  if (window.visualViewport && !tc.meta._vvHandler) {
-    const vv = window.visualViewport;
-    const vvHandler = () => applyVisualViewport(tc, term, terminalName);
-    vv.addEventListener('resize', vvHandler);
-    vv.addEventListener('scroll', vvHandler);
-    tc.meta._vvHandler = vvHandler;
-    applyVisualViewport(tc, term, terminalName); // 初始态
-  }
-  // window resize 兜底：部分浏览器关 IME 时 vv resize 漏发，靠 layout viewport 变化重置
-  if (!tc.meta._winResizeHandler) {
-    const winHandler = () => applyVisualViewport(tc, term, terminalName);
-    window.addEventListener('resize', winHandler);
-    tc.meta._winResizeHandler = winHandler;
-  }
 
   term.onData((data: string) => {
     if (tc.meta.sessionId) {
@@ -685,7 +611,7 @@ export function initTerminalCore(
       }
       // 2026-08-28 tmux 卡容器 resize（IME 弹/收/键盘浮条）后强制贴底 settle。
       if (terminalName === 'tmux') {
-        enterTmuxSettle(tc, term, 1500); // 旧缓冲落盘 + 循环重启，覆盖键盘动画全段
+        enterTmuxSettle(tc, term, 2500); // 旧缓冲落盘 + 循环重启，覆盖键盘动画全段
         try { term.scrollToBottom(); } catch { /* noop */ }
       }
       resizeTimer = null;
@@ -778,7 +704,7 @@ export function initTerminalCore(
       // 2026-08-28 用户报：切换 tmux 卡时内容从顶部慢滚到底。此处无条件贴底，
       // 与 _pinBottomIfFollowing 的智能贴底不冲突（那个管运行中输出，这个管打开瞬间）。
       if (terminalName === 'tmux') {
-        enterTmuxSettle(tc, term, 2000); // attach 初开缓冲最大
+        enterTmuxSettle(tc, term, 3000); // attach 初开缓冲最大
         try { term.scrollToBottom(); } catch { /* noop */ }
       }
       setTimeout(() => {
@@ -789,7 +715,7 @@ export function initTerminalCore(
         }
         // 延迟再贴一次底：xterm fit/resize 是异步的，首次 open 后 buffer 位置可能又漂回顶。
         if (terminalName === 'tmux') {
-          enterTmuxSettle(tc, term, 1500); // fit/resize 异步窗口继续 settle
+          enterTmuxSettle(tc, term, 2500); // fit/resize 异步窗口继续 settle
           try { term.scrollToBottom(); } catch { /* noop */ }
         }
       }, 200);
@@ -832,19 +758,6 @@ export function disposeTerminalCore(card: CardInstance, poolName: string): void 
   }
   clearSettleTimers(tc);
   stopSettleScrollLoop(tc);
-  if (tc.meta._vvRaf) {
-    cancelAnimationFrame(tc.meta._vvRaf);
-    tc.meta._vvRaf = undefined;
-  }
-  if (tc.meta._vvHandler && window.visualViewport) {
-    window.visualViewport.removeEventListener('resize', tc.meta._vvHandler);
-    window.visualViewport.removeEventListener('scroll', tc.meta._vvHandler);
-    tc.meta._vvHandler = undefined;
-  }
-  if (tc.meta._winResizeHandler) {
-    window.removeEventListener('resize', tc.meta._winResizeHandler);
-    tc.meta._winResizeHandler = undefined;
-  }
   delete tc.meta._settleBuffer;
   if (tc.meta._term) {
     tc.meta._term.dispose();
@@ -874,24 +787,13 @@ export function compactTerminalCore(card: CardInstance): void {
   if (tc.meta._term) flushTmuxSettleBuffer(tc, tc.meta._term);
   clearSettleTimers(tc);
   stopSettleScrollLoop(tc);
-  if (tc.meta._vvRaf) {
-    cancelAnimationFrame(tc.meta._vvRaf);
-    tc.meta._vvRaf = undefined;
-  }
   if (tc.meta._xtermEl) {
     _termMap.delete(tc.meta._xtermEl);
     _sidMap.delete(tc.meta._xtermEl);
   }
   const termEl = tc.meta._termEl;
-  if (termEl) {
-    // compact 时卸下 visual viewport 钉，防止重激活时残留 fixed 尺寸一帧
-    termEl.style.position = '';
-    termEl.style.left = '';
-    termEl.style.top = '';
-    termEl.style.width = '';
-    termEl.style.height = '';
-    termEl.style.zIndex = '';
-    if (termEl.parentNode) termEl.parentNode.removeChild(termEl);
+  if (termEl && termEl.parentNode) {
+    termEl.parentNode.removeChild(termEl);
   }
 }
 
