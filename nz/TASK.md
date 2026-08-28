@@ -1346,3 +1346,10 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   我线 e5a0bbaf（「nz 发起、评审被正」）；「仪器居首」暂准以
   重算为准。复述环首实战记功，并实例方法论注脚=v2 §五：
   跨线标注必须过当事人复述环+关键事件 git 时间戳对齐。
+- 2026-08-28 · 真机看 demo 事故：CDP relay 不能 /json/new 开新页，
+  playwright contexts().pages() 顺序与 /json/list 相反——误把 live
+  终端页导航到 splash-demo（终端会话被杀一次，已导航回 8023/
+  恢复）。纪律：借备用目标必须按 target id 精确选择（先读
+  /json/list 的 id→webSocketDebuggerUrl 直连），禁按下标猜；
+  真机看 demo 的正道=在 index.html 里做 ?splash 预览参数
+  （不离开终端页），不在 WebView 间跳转。
