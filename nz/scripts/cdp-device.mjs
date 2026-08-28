@@ -77,3 +77,5 @@ if (mode === 'eval') {
   await send('Page.navigate', { url: 'about:blank' });
 }
 ws.close();
+// ws.close 不保证进程即退（socket  draining），显式退出防悬挂
+process.exit(0);
