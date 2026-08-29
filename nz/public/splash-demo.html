@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>深蓝意志 · splash demo v12</title>
+<title>深蓝意志 · splash demo v14</title>
 <style>
   html, body { margin: 0; height: 100%; background: #05070f; overflow: hidden; }
   #nz-splash {
@@ -19,7 +19,7 @@
   /* 静态兜底（JS 未跑/挂掉时也有一帧徽标+呼吸动画） */
   #nz-splash .st-cyan { color: #56b6f0; animation: nzPulse 1.6s ease-in-out infinite; }
   @keyframes nzPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
-  /* v9b：全屏扫描光束（横贯屏宽，与环上扫线同位置同步移动） */
+  /* 全屏扫描光束（横贯屏宽，与环上扫线同位置同步移动） */
   #nz-splash .beam {
     position: absolute; left: 0; right: 0; height: 2px;
     opacity: 0; pointer-events: none; will-change: top, opacity;
@@ -35,7 +35,7 @@
 </style>
 </head>
 <body>
-<div id="nz-splash"><div class="beam beam-outer" id="beamO"></div><div class="beam beam-inner" id="beamI"></div><pre id="art"><span class="st-cyan">    █
+<div id="nz-splash"><div class="beam beam-outer" id="beamO"></div><div class="beam beam-outer" id="beamO2"></div><div class="beam beam-inner" id="beamI"></div><pre id="art"><span class="st-cyan">    █
    █ █
   █   █
  █     █
@@ -46,58 +46,50 @@
     █</span></pre></div>
 <script>
 (function () {
-  // ============ 深蓝意志开屏 v10（点火仪式：双扫描线·全屏光束·随机稳定亮度）============
-  // 只要一个图标：竖长菱瞳，无文字。三环——竖瞳蓝块/内圈紫环/外圈蓝环。
-  // 环块大小、数量、位置刻意不对称（定种子随机：缺块/抖动/步距/字形混杂），
-  // 环间距 > 环宽（环 1 格线宽，间距 2 格以上）。
-  // 动效（2026-08-28 用户拍板 v9c，测试期循环/正式定格）：
-  //   暗场 → 蓝光束从【屏底缘】滑入上爬，扫过外环处点亮回落中亮 → 蓝线恰好
-  //   扫到瞳孔行瞬间：孤瞳跳中亮 + 紫光束从【屏顶缘】滑入下压（两线并行）
-  //   → 紫线恰好扫到瞳孔行时孤瞳再提亮 → 紫线滑出屏底缘=一轮结束，定格循环。
-  //   纪律：编排点钉【光束位置】（按几何反解时刻），不钉屏幕出现时机；
-  //   屏高变化时点火点永远跟着光束走。
+  // ============ 深蓝意志开屏 v14（HSL 色环 + 自转 + 反向变速亮波）============
+  // v12 基线：纯黑开场→双扫线探照灯显形（前方幽影标准件/线后固化随机块）。
+  // v13：固化后接入环流呼吸（亮度波沿环流动，omp 调色板旋转的落地方）。
+  // v14b（2026-08-29 用户拍板修正）：
+  //   色相收敛蓝紫/青紫主题：只做淡偏移（外环 212°→192° 青蓝微渐变，
+  //         内环 258°→282° 紫罗兰微渐变，各 ±5° 抖动）——每块是
+  //         「稍偏某色的青/纯粹的青」，不是大花环；
+  //   自转=只有颜色转：形状（字形/位置）钉死槽位，色相/饱和度层
+  //         沿槽位循环移位，色带绕环迁移而形状不转；
+  //   demo 不循环：扫描放一遍后永久停在活跃动画，刷新重播（正式版
+  //         本来就是定格，测试循环反而碍事）。
+  //   饱和度：冷侧（孤瞳+外环）中低饱和清透，暖侧（内环）高饱和灼热；
+  //   亮度：孤瞳最亮 > 外环次亮 > 内环再次（层级只钉均值，个体允许交叉）；
+  //   动效：①双环亮波一顺一逆 ②色带自转且与自身亮波反向
+  //         ③亮波速度时快时慢不可预测（双正弦叠加的解析积分，相位连续）。
+  // 渲染：8 档 class 色阶体系退役，每块内联 hsl() 连续色值。
   var TICK = 42;
-
-  // ---- 点火仪式时序（ms，一轮 3200）----
-  // v9c：IN_START/PUPIL_HI/ROUND_END 不再是定数，改为按几何反解的函数
-  // （inStart/pupilHi/roundEnd，见下方「全屏扫掠几何」）——编排点钉位置。
-  // v9d（2026-08-29 用户拍板）：两束同速，全程各 1.5s（紫光束 900ms 太快）。
-  // v9f（2026-08-29 用户拍板）：线速再放慢 → 全程各 2s。
   var T_OUT = 2000;   // 蓝光束扫全程（屏底缘→屏顶缘）
   var T_IN = 2000;    // 紫光束扫全程（屏顶缘→屏底缘）
-  var LOOP = 3200;    // roundEnd(≈2400) + 定格保持
-  // 三档亮度（shade 的 b 值）
-  var B_DIM = 0.05, B_MED = 0.55, B_HI = 1.0;
-  var SCAN_W = 1.5;                // 扫线亮斑半宽（行，线后回落段）
-  var AHEAD_W = 0.6, AHEAD_MAX = 0.22; // 迎头微晕：窄而暗（v9f 砍预亮，见下）
-  var REVEAL = 2;                  // v12 探照灯半径（行）：线前方 2 行照出标准件幽影
-  var GHOST_MAX = 0.30;            // 幽影峰值亮度（到线跟前时的暗色上限：可见但明确是「未活」）
-  var STEPS = 8;
-
-  var ZONES = {
-    pupil: [96, 165, 250],
-    inner: [139, 92, 246],
-    outer: [59, 130, 246]
-  };
+  var SCAN_W = 1.5;                // 扫线冲顶亮斑半宽（行）
+  var AHEAD_W = 0.6, AHEAD_MAX = 0.22; // 迎头微晕
+  var REVEAL = 2;                  // 探照灯半径（行）
+  var GHOST_L = 0.24;              // 幽影峰值 L（到线跟前：可见但明确「未活」）
+  var L_BLACK = 0.04;
+  var FLOW_AMP = 0.22;             // 亮波振幅（相对）
 
   // ---- 定种子随机（mulberry32：重绘不跳变，乱而确定）----
-  var seed = 20260828 >>> 0;
+  var seed = 20260829 >>> 0;
   function R() {
     seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
     var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
-  // 字形池+墨迹宽度（v8 重心钉线要用：窄字墨迹靠左贴格，重心不在格心）
+  // 字形池+墨迹宽度（重心钉线要用：窄字墨迹靠左贴格，重心不在格心）
   var GLYPHS = ['█', '█', '█', '█', '▉', '▉', '▊', '▊', '▋', '▌', '▍'];
   var GLYPH_W = { '█': 1, '▉': 0.875, '▊': 0.75, '▋': 0.625, '▌': 0.5, '▍': 0.375 };
   function pickGlyph() { return GLYPHS[Math.floor(R() * GLYPHS.length)]; }
 
-  // ---- 竖长网格：19×27（v5 加宽横向），瞳心居中 ----
+  // ---- 竖长网格：19×27，瞳心居中 ----
   var EW = 19, EH = 27, ECX = 9, ECY = 13;
   var emblem = [];
   for (var ey0 = 0; ey0 < EH; ey0++) emblem.push(new Array(EW).fill(null));
-  // 硬隔离（用户拍板 v4）：任何块不得与异色块 8-邻接——紫蓝永不相触
+  // 硬隔离（v4 拍板）：任何块不得与异色块 8-邻接——紫蓝永不相触
   function touchesOtherZone(x, y, zone) {
     for (var dy = -1; dy <= 1; dy++) {
       for (var dx = -1; dx <= 1; dx++) {
@@ -107,215 +99,254 @@
     }
     return false;
   }
-  function mark(x, y, zone, glyph, nudge, fxDist) {
-    if (x < 0 || x >= EW || y < 0 || y >= EH) return;
-    if (touchesOtherZone(x, y, zone)) return;
-    // v8：nudge=墨迹重心到理想线的亚格补偿（渲染 left:Xch）；
-    // dist 按理想位置算，亮度波相位与视觉几何一致。
-    var fx = (typeof fxDist === 'number') ? fxDist : x;
-    emblem[y][x] = { zone: zone, glyph: glyph || '█', nudge: nudge || 0,
-      dist: Math.sqrt((fx - ECX) * (fx - ECX) + (y - ECY) * (y - ECY)) };
-  }
 
-  // ---- 逐行精确菱形环 v8（2026-08-28 用户三症拍板）----
-  // v6/v7 参数步进流的三宗罪：①同行双块（顶点附近折返）②整段缺失
-  // （随机缺口+同行跳过叠乘）③窄字重心离线（墨迹靠左贴格，重心
-  // 偏左 (1-w)/2）。v8 改按菱形方程逐行精确落块：|X/rx|+|Y/ry|=1，
-  // 每行左右缘各一块（尖顶两侧合一），每行都有块、每侧每行至多一块；
-  // 重心钉线：墨迹重心=x+nudge+w/2，目标=fx+0.5 → nudge=(fx-x)+(1-w)/2。
-  // 随机感只剩宽度随机；卫星碎块/偶发缺行均已除（用户拍板 v8 定稿）——
-  // 每行每侧必有一块，满覆盖。
-  function placeEdge(fx, y, zone) {
-    var glyph = pickGlyph();
-    var w = GLYPH_W[glyph];
-    var x = Math.round(fx);
-    mark(x, y, zone, glyph, (fx - x) + (1 - w) / 2, fx);
-  }
-  function drawRing(cx, cy, rx, ry, zone) {
-    for (var dy = -ry; dy <= ry; dy++) {
-      var ex = rx * (1 - Math.abs(dy) / ry);        // 该行边缘距中线（精确解）
-      if (ex < 0.5) { placeEdge(cx, cy + dy, zone); continue; } // 尖顶合一
-      placeEdge(cx - ex, cy + dy, zone);            // 左缘
-      placeEdge(cx + ex, cy + dy, zone);            // 右缘
+  // ---- 环 = 槽位序列（v14 自转的基础）----
+  // 槽位=环上几何位置（x/y/fx 理想缘位），沿环周有序排列：
+  // 顶尖 → 右缘下行 → 底尖 → 左缘上行。块（字形/色相/亮度）挂在槽位上，
+  // 自转=块沿槽位序列循环移位。每行每侧至多一块、无缺行无卫星（v8 纪律）。
+  function buildRing(cx, cy, rx, ry, zone) {
+    var slots = [];
+    function trySlot(fx, y) {
+      var x = Math.round(fx);
+      if (x < 0 || x >= EW || y < 0 || y >= EH) return;
+      if (emblem[y][x]) return;                    // 已占（顶/底尖与邻行缘位重合）
+      if (touchesOtherZone(x, y, zone)) return;    // 异色硬隔离
+      emblem[y][x] = { zone: zone, slot: slots.length };
+      slots.push({ x: x, y: y, fx: fx });
     }
-  }
-
-  // 竖瞳：孤单一格（用户拍板 v4：中央眼睛只一个方块）
-  mark(ECX, ECY, 'pupil');
-  drawRing(ECX, ECY, 3, 7, 'inner');    // 内圈紫环：与瞳隔 2+ 格
-  drawRing(ECX, ECY, 8, 13, 'outer');   // 外圈蓝环：v5 加宽，与紫环隔 5 格
-
-  // ---- v10 随机稳定亮度（2026-08-29 用户拍板）----
-  // 点亮后的稳定亮度逐块随机（定种子，重绘不跳变），只钉三条：
-  //   孤瞳全场最亮（1.0）；外环均值次亮；内环均值再次——
-  //   允许个别外环块比内环块暗（随机本意）。
-  // 外环 U(0.45,0.90) 均值≈0.675；内环 U(0.20,0.70) 均值≈0.45。
-  for (var by = 0; by < EH; by++) for (var bx = 0; bx < EW; bx++) {
-    var bc = emblem[by][bx];
-    if (!bc) continue;
-    if (bc.zone === 'pupil') { bc.base = B_HI; continue; }
-    bc.base = bc.zone === 'outer' ? 0.45 + R() * 0.45 : 0.20 + R() * 0.50;
-  }
-
-  // ---- 调色：每区 STEPS 档亮度（暗→本色→带白尖），注入 <style> ----
-  function shade(base, b) {
-    var k = 0.30 + 0.70 * b;
-    var w = b > 0.8 ? (b - 0.8) * 2.2 : 0;
-    var c = [base[0] * k, base[1] * k, base[2] * k];
-    return 'rgb(' + Math.round(c[0] + (255 - c[0]) * w) + ',' +
-           Math.round(c[1] + (255 - c[1]) * w) + ',' + Math.round(c[2] + (255 - c[2]) * w) + ')';
-  }
-  var css = [];
-  ['pupil', 'inner', 'outer'].forEach(function (zn) {
-    for (var s = 0; s < STEPS; s++) {
-      css.push('#nz-splash .z-' + zn + '-' + s + '{color:' + shade(ZONES[zn], s / (STEPS - 1)) + '}');
+    trySlot(cx, cy - ry);                          // 顶尖
+    for (var dy = -ry + 1; dy <= ry; dy++) {       // 右缘（含底尖）
+      trySlot(cx + rx * (1 - Math.abs(dy) / ry), cy + dy);
     }
-  });
-  var st = document.createElement('style');
-  st.textContent = css.join('\n');
-  document.head.appendChild(st);
+    for (var dy2 = ry - 1; dy2 >= -ry + 1; dy2--) { // 左缘
+      trySlot(cx - rx * (1 - Math.abs(dy2) / ry), cy + dy2);
+    }
+    return slots;
+  }
 
+  // 孤瞳：单一块（中央眼睛只一个方块，v4 拍板）
+  emblem[ECY][ECX] = { zone: 'pupil' };
+
+  var slotsIn = buildRing(ECX, ECY, 3, 7, 'inner');
+  var slotsOut = buildRing(ECX, ECY, 8, 13, 'outer');
+
+  // ---- 块参数（v14b：形状/颜色两层分离，用户拍板）----
+  // 形状（字形/宽度/基础亮度）钉死在槽位上，永不移动；
+  // 颜色（色相/饱和度）是独立一层，沿槽位序列循环移位——
+  // 自转=色带绕环迁移而形状不转。色相收敛蓝紫/青紫主题：
+  // 只做淡偏移（微渐变+±5° 抖动），每块是「稍偏某色的青/纯粹的青」，
+  // 不是大花环（v14 初版 225→160/265→390 跨度过大被拍回）。
+  function buildShapes(n, lLo, lHi) {
+    var bs = [];
+    for (var i = 0; i < n; i++) {
+      var glyph = pickGlyph();
+      bs.push({ glyph: glyph, w: GLYPH_W[glyph], L: lLo + R() * (lHi - lLo) });
+    }
+    return bs;
+  }
+  function buildColors(n, h0, h1, sLo, sHi) {
+    var cs = [];
+    for (var i = 0; i < n; i++) {
+      var u = i / n;                               // 沿环参数 0→1
+      cs.push({ H: h0 + (h1 - h0) * u + (R() * 8 - 4),
+                S: sLo + R() * (sHi - sLo) });
+    }
+    return cs;
+  }
+  var shapesOut = buildShapes(slotsOut.length, 0.42, 0.68);
+  var colorsOut = buildColors(slotsOut.length, 210, 196, 45, 65);  // 青蓝微渐变，冷
+  var shapesIn = buildShapes(slotsIn.length, 0.30, 0.50);
+  var colorsIn = buildColors(slotsIn.length, 262, 278, 75, 95);    // 紫罗兰微渐变，暖
+  var PUPIL = { H: 210, S: 55 };
+
+  function hsl(h, s, l) {
+    h = ((h % 360) + 360) % 360;
+    return 'hsl(' + Math.round(h) + ',' + Math.round(s) + '%,' +
+           (Math.round(l * 1000) / 10) + '%)';
+  }
+
+  // ---- v9f 同步修复：先换 27×19 真空格网格再让 geom() 量 pre（勿回退）----
   var pre = document.getElementById('art');
-  // v9f 同步修复（2026-08-29 用户实拍实锤「亮得比线快」）：先把静态兜底帧
-  // （9 行）替换成 27×19 真空格网格，再让 geom() 量 pre。否则首帧 geom 量到
-  // 兜底帧：行高 20→6.67、全屏折合行数 40→120，亮度场按错误虚拟单位推进，
-  // 换算回真实像素后亮度场速度=光束 3 倍，只有屏幕正中附近碰巧重合——
-  // 冻结帧挑中点看着像同步，连续动画就露馅。真空格网格保证 geom 永远量真值。
   var blankLine = new Array(EW + 1).join(' ');
   pre.textContent = new Array(EH).fill(blankLine).join('\n');
 
-  // ---- v10 亮度场：某块在某时刻的亮度 b ∈ [0,1] ----
-  // 扫线亮度剖面：d = 块到扫线的距离（已扫侧为正）。
-  // 已扫远→该块的随机稳定亮度 base（v10）；线压在身上(0≤d≤SCAN_W)→
-  // 冲顶 B_HI 再回落 base；迎头(-AHEAD_W<d<0)→只留一丝微晕（AHEAD_MAX=0.22，
-  // v9f 用户拍板：砍掉旧版 1.5 行迎头预亮——预亮让块在线到达前就先亮，
-  // 慢线速下看起来「点亮速度超过线速」；块在线到达那一刻才点亮）。
-  // dir=+1：扫线上爬（已扫侧在扫线下方，外环）；dir=-1：下压（已扫侧在上方，内环）。
-  function scanB(y, ys, prog, dir, base) {
-    if (prog >= 1) return base;
-    var d = dir > 0 ? (y - ys) : (ys - y);
-    if (d > SCAN_W) return base;
-    if (d >= 0) return base + (B_HI - base) * (1 - d / SCAN_W);
-    if (d > -AHEAD_W) return B_DIM + (AHEAD_MAX - B_DIM) * (1 + d / AHEAD_W);
-    return B_DIM;
-  }
-  // ---- v9c 全屏扫掠几何（2026-08-28 用户拍板）----
-  // 光束从屏幕边缘滑入滑出（蓝：底→顶；紫：顶→底），不再只在徽标范围现身。
-  // 纪律（用户拍板）：编排除点【钉位置不钉屏幕】——
-  //   IN_START=蓝光束恰好扫到瞳孔行的时刻；
-  //   同一时刻紫光束恰好压到内环顶尖（v9e 用户拍板：紫线提前从顶缘滑入，
-  //   入场时刻按速度反推，不是点火时才出现在屏顶）；
-  //   PUPIL_HI=紫光束恰好扫到瞳孔行。全部按几何反解，屏高变化永同步。
-  var preRect = null;  // 懒算+resize 失效（pre 居中、字号固定，rect 稳定）
+  // ---- 全屏扫掠几何（v9c 拍板：编排点钉光束位置，不钉屏幕出现时机）----
+  var preRect = null;
   addEventListener('resize', function () { preRect = null; });
   function geom() {
     if (!preRect) preRect = pre.getBoundingClientRect();
-    var vh = window.innerHeight || preRect.height;   // 后台 WebView innerHeight=0 → 退化为徽标范围
-    var sr = vh / (preRect.height / EH);             // 全屏高度折合成行数
-    return { sr: sr, off: Math.max(0, (sr - EH) / 2) }; // off=徽标上方空行数
+    var vh = window.innerHeight || preRect.height;
+    var sr = vh / (preRect.height / EH);
+    return { sr: sr, off: Math.max(0, (sr - EH) / 2) };
   }
-  function inStart() { var g = geom(); return T_OUT * (EH + g.off - ECY) / g.sr; }   // 蓝线=瞳孔行
-  function beamV() { var g = geom(); return g.sr / T_IN; }                          // 束速（行/ms，两束同速）
-  function outerYs(ms) { var g = geom(); return (EH + g.off) - (ms / T_OUT) * g.sr; } // 屏底缘→屏顶缘
-  // 紫线锚点（v9e）：inStart 时刻 ys=内环顶尖(ECY-7)，同速下压
+  function inStart() { var g = geom(); return T_OUT * (EH + g.off - ECY) / g.sr; }
+  function beamV() { var g = geom(); return g.sr / T_IN; }
+  function outerYs(ms) { var g = geom(); return (EH + g.off) - (ms / T_OUT) * g.sr; }
   function innerYs(ms) { return (ECY - 7) + (ms - inStart()) * beamV(); }
-  function pupilHi() { return inStart() + 7 / beamV(); }                 // 紫线=瞳孔行（顶尖下 7 行）
-  function purpleIn() { var g = geom(); return inStart() - (ECY - 7 + g.off) / beamV(); } // 紫线滑入屏顶缘
-  function purpleOut() { var g = geom(); return inStart() + (EH + g.off - ECY + 7) / beamV(); } // 紫线滑出屏底缘
-  function roundEnd() { return purpleOut(); }                            // 一轮结束=紫线出屏
-  // v12：cellState = {亮度 b, 是否已固化 scanned, 是否可见 visible}。
-  // 探照灯模型（2026-08-29 用户拍板）：开场纯黑，徽标被扫线带出来——
-  //   线前方 ≤REVEAL(2) 行：标准件幽影（统一 █ 无钉线，0→GHOST_MAX 渐显）；
-  //   线的身上：冲顶一闪；线的后方：固化成随机字形+随机亮度，永久留下；
-  //   幽影窗之外：不渲染（纯黑）。固化块永不隐回（否则徽标无法「出现」）。
-  // d 约定同 scanB：已扫侧为正。
-  function ghost(d) {
-    if (d < -REVEAL) return { b: 0, scanned: false, visible: false };
-    return { b: GHOST_MAX * (1 + d / REVEAL), scanned: false, visible: true };
+  function pupilHi() { return inStart() + 7 / beamV(); }
+  function purpleIn() { var g = geom(); return inStart() - (ECY - 7 + g.off) / beamV(); }
+  function purpleOut() { var g = geom(); return inStart() + (EH + g.off - ECY + 7) / beamV(); }
+  function roundEnd() { return purpleOut(); }
+  // ---- v14f 蓝2 改版 + 延迟启动（2026-08-29 用户拍板）----
+  // ①刷新后整体延迟 T0=1s 再动线（纯黑开场，治「线在半空出现」——
+  //   页面未稳定时光线已爬了一半的观感）；
+  // ②蓝1 蓝2 同时从屏底缘出发，蓝2 慢速：速度按几何反解=
+  //   (屏底→瞳孔行距离) / pupilHi，保证蓝2 爬到瞳孔行的瞬间恰好=
+  //   紫线压到瞳孔行的瞬间——双线在眼睛上会师，孤瞳此刻点火。
+  var T0 = 1000;
+  function blue2V() { var g = geom(); return (EH + g.off - ECY) / pupilHi(); }
+  function blue2Ys(ms) { var g = geom(); return (EH + g.off) - blue2V() * ms; }
+  function blue2Out() { var g = geom(); return (EH + 2 * g.off) / blue2V(); } // 蓝2 滑出屏顶缘
+
+  // ---- v14 变速亮波：相位=速度的解析积分（纯函数，冻结帧可复现）----
+  // 瞬时速度 = w0·(1 + a1·sin(w1·t+p1) + a2·sin(w2·t+p2))，双正弦叠加
+  // 时快时慢不可预测；系数和 <1 保证恒正向（慢到近停不倒转）。
+  // 外环波逆时针（dir −）、内环波顺时针（dir +）：双波一顺一逆。
+  function makeFlow(w0, a1, p1, w1, a2, p2, w2, dir) {
+    return function (ms) {
+      var W = ms - a1 / w1 * (Math.cos(w1 * ms + p1) - Math.cos(p1))
+                 - a2 / w2 * (Math.cos(w2 * ms + p2) - Math.cos(p2));
+      return dir * w0 * W;
+    };
   }
-  function cellState(cell, y, ms) {
-    if (cell.zone === 'pupil') {
-      // 孤瞳：蓝线幽影窗里显形 →（蓝线扫到瞳孔行）中亮 →（紫线扫到）更亮
-      if (ms < inStart()) return ghost(y - outerYs(ms));
-      return { b: ms < pupilHi() ? B_MED : B_HI, scanned: true, visible: true };
-    }
-    if (cell.zone === 'outer') {
-      var ys = outerYs(ms), prog = ms / T_OUT, d = y - ys;
-      if (prog < 1 && d < 0) return ghost(d);
-      return { b: scanB(y, ys, prog, +1, cell.base), scanned: true, visible: true };
-    }
-    // inner：紫线（顶→底）探照灯同理；蓝线过瞳孔=紫线压内环顶尖=点火
-    var yi = innerYs(ms), progi = (yi - (ECY - 7)) / 14, di = yi - y;
-    if (progi < 1 && di < 0) return ghost(di);
-    return { b: scanB(y, yi, progi, -1, cell.base), scanned: true, visible: true };
+  var flowOut = makeFlow(2 * Math.PI / 1400, 0.55, 1.3, 2 * Math.PI / 660,
+                         0.35, 4.1, 2 * Math.PI / 1090, -1);
+  var flowIn = makeFlow(2 * Math.PI / 950, 0.50, 2.6, 2 * Math.PI / 720,
+                        0.38, 0.7, 2 * Math.PI / 1230, +1);
+  var K_OUT = 2, K_IN = 3;                 // 环上波峰数（内外不同更活）
+
+  // ---- v14 环体自转：roundEnd 后启动（扫描期静止，否则探照灯对不上），
+  // 缓入提速（解析式，纯函数）。外环顺时针(+) 内环逆时针(−)——
+  // 各环自转方向与自身亮波方向相反（用户拍板）。
+  function rotOff(ms, v) {
+    var tau = ms - roundEnd();
+    if (tau <= 0) return 0;
+    var Tr = 250;
+    return v * (tau - Tr * (1 - Math.exp(-tau / Tr)));
   }
 
-  // ---- v9b 全屏光束：与环上扫线同 y，横贯屏宽 ----
+  // ---- 单元状态：{visible, scanned, L}（H/S 由块参数给，L 由扫掠/波给）----
+  function ghostL(d) {
+    // 只在线前方 ≤REVEAL 行显形；d>0（线已过）绝不显形——v14e 孤瞳把
+    // ghostL 用于任意 d 后暴露此洞：线过后 1+d/REVEAL>1 反而更亮
+    if (d < -REVEAL || d > 0) return { visible: false, scanned: false, L: 0 };
+    return { visible: true, scanned: false, L: GHOST_L * (1 + d / REVEAL) };
+  }
+  function scanL(d, prog, baseL) {
+    if (prog >= 1) return { visible: true, scanned: true, L: baseL, flow: true };
+    if (d > SCAN_W) return { visible: true, scanned: true, L: baseL, flow: true };
+    if (d >= 0) return { visible: true, scanned: true,
+      L: baseL + (0.85 - baseL) * (1 - d / SCAN_W) };                 // 冲顶（v14d：天花板 0.95→0.85，白太亮拍回）
+    if (d > -AHEAD_W) return { visible: true, scanned: false,
+      L: L_BLACK + (AHEAD_MAX - L_BLACK) * (1 + d / AHEAD_W) };       // 迎头微晕
+    return { visible: false, scanned: false, L: 0 };
+  }
+
+  // ---- 全屏光束 ----
   var beamO = document.getElementById('beamO');
+  var beamO2 = document.getElementById('beamO2');   // v14e 蓝2
   var beamI = document.getElementById('beamI');
   function setBeam(el, ys) {
     if (ys === null) { el.style.opacity = '0'; return; }
-    var g = geom();
     el.style.opacity = '1';
     el.style.top = (preRect.top + (ys + 0.5) * (preRect.height / EH) - 1) + 'px';
   }
 
   function frame(ms) {
-    ms = ms % LOOP;
+    // v14b：不取模不循环——扫描放一遍后永久停在活跃动画，刷新重播
+    var rOut = Math.round(rotOff(ms, 1 / 180));    // 外环色带自转（槽位步，顺时针）
+    var rIn = Math.round(rotOff(ms, -1 / 230));    // 内环色带自转（逆时针）
     var lines = [];
     for (var y = 0; y < EH; y++) {
-      var html = '', runCls = null, run = '';
-      function flush() {
-        if (!run) return;
-        html += runCls ? '<span class="' + runCls + '">' + run + '</span>' : run;
-        run = '';
-      }
+      var html = '', run = '';
+      function flush() { if (run) { html += run; run = ''; } }
       for (var x = 0; x < EW; x++) {
         var cell = emblem[y][x];
-        if (cell) {
-          var st = cellState(cell, y, ms);
-          if (st.visible && st.scanned && cell.nudge) {
-            // 已固化活块 + 钉线：独立 span 亚格平移，不进同行合并 run
-            flush(); runCls = undefined;
-            html += '<span class="z-' + cell.zone + '-' +
-                    Math.round(st.b * (STEPS - 1)) +
-                    '" style="position:relative;left:' + cell.nudge.toFixed(2) + 'ch">' +
-                    cell.glyph + '</span>';
-            continue;
+        if (!cell) { run += ' '; continue; }
+        var span = null;
+        if (cell.zone === 'pupil') {
+          var st;
+          if (ms < pupilHi()) {
+            // v14e：点火前中央无亮点——只在蓝1/蓝2 贴近时有幽影，否则黑洞
+            var g1 = ghostL(y - outerYs(ms));
+            var g2 = (ms >= 0) ? ghostL(y - blue2Ys(ms)) : { visible: false, L: 0 };
+            st = g1.visible ? g1 : g2;
+          } else {
+            // 双线会师点火：300ms 内从 0.85 缓入常规脉冲 0.62–0.82（v14d 压白）
+            var pulse = 0.72 + 0.10 * Math.sin(2 * Math.PI * ms / 1600);
+            var dtp = ms - pupilHi();
+            st = { visible: true, scanned: true,
+                   L: dtp < 300 ? 0.85 + (pulse - 0.85) * (dtp / 300) : pulse };
           }
           if (st.visible) {
-            // v12：幽影=标准件（统一 █ 无钉线）；已固化=随机字形+随机亮度
-            var cls = 'z-' + cell.zone + '-' + Math.round(st.b * (STEPS - 1));
-            var ch = st.scanned ? cell.glyph : '█';
-            if (cls !== runCls) { flush(); runCls = cls; }
-            run += ch;
-            continue;
+            span = '<span style="color:' + hsl(PUPIL.H, PUPIL.S, st.L) + '">█</span>';
           }
-          // 幽影窗之外=不可见，落进空格 run（v12 纯黑）
+        } else {
+          var isOut = cell.zone === 'outer';
+          var slots = isOut ? slotsOut : slotsIn;
+          var shapes = isOut ? shapesOut : shapesIn;
+          var colors = isOut ? colorsOut : colorsIn;
+          var n = slots.length, j = cell.slot;
+          var sh = shapes[j];                       // 形状钉槽位
+          var co = colors[((j - (isOut ? rOut : rIn)) % n + n) % n]; // 颜色绕环转
+          var st2;
+          if (isOut) {
+            var ys = outerYs(ms), prog = ms / T_OUT, d = y - ys;
+            st2 = (prog < 1 && d < 0) ? ghostL(d) : scanL(d, prog, sh.L);
+          } else {
+            var yi = innerYs(ms), progi = (yi - (ECY - 7)) / 14, di = yi - y;
+            st2 = (progi < 1 && di < 0) ? ghostL(di) : scanL(di, progi, sh.L);
+          }
+          if (st2.visible) {
+            if (!st2.scanned) {
+              // 幽影/迎头：标准件 █ 无钉线，本块色相的低亮度暗结构
+              span = '<span style="color:' + hsl(co.H, co.S, st2.L) + '">█</span>';
+            } else {
+              var L = st2.L;
+              if (st2.flow) {
+                var psi = (isOut ? K_OUT : K_IN) * (2 * Math.PI * j / n) +
+                          (isOut ? flowOut(ms) : flowIn(ms));
+                L = L * (1 + FLOW_AMP * Math.sin(psi));
+                if (L > 0.85) L = 0.85;
+              }
+              // v14e：蓝2 过境在已固化外环上再擦一次冲顶闪光
+              if (isOut && ms >= 0 && ms < blue2Out()) {
+                var d2 = y - blue2Ys(ms);
+                if (d2 >= 0 && d2 <= SCAN_W) {
+                  var fl = sh.L + (0.85 - sh.L) * (1 - d2 / SCAN_W);
+                  if (fl > L) L = fl;
+                }
+              }
+              var nudge = (slots[j].fx - slots[j].x) + (1 - sh.w) / 2;
+              span = '<span style="color:' + hsl(co.H, co.S, L) +
+                     (nudge ? ';position:relative;left:' + nudge.toFixed(2) + 'ch' : '') +
+                     '">' + sh.glyph + '</span>';
+            }
+          }
         }
-        if ('' !== runCls) { flush(); runCls = ''; }
-        run += ' ';
+        if (span) { flush(); html += span; }
+        else run += ' ';
       }
       flush();
       lines.push(html);
     }
     pre.innerHTML = lines.join('\n');
-    // 光束：只在各自扫描进行中出现（外 0–1200 / 内 600–1500），定格与暗场不挂线
-    setBeam(beamO, ms < T_OUT ? outerYs(ms) : null);
+    setBeam(beamO, (ms >= 0 && ms < T_OUT) ? outerYs(ms) : null);
+    setBeam(beamO2, (ms >= 0 && ms < blue2Out()) ? blue2Ys(ms) : null);
     setBeam(beamI, (ms >= purpleIn() && ms < purpleOut()) ? innerYs(ms) : null);
   }
 
   // ---- 驱动：?t=ms 冻结单帧（截图用）；否则循环到点按。
   // 纪律：任何一帧渲染抛错都不得清屏——停表保留静态兜底帧 ----
   var qs = /[?&]t=(\d+)/.exec(location.search);
-  if (qs) { frame(+qs[1]); return; }
+  if (qs) { frame(+qs[1] - T0); return; }   // ?t= 绝对毫秒（含 1s 延迟），内部减 T0
   var t0 = performance.now(), last = 0, dead = false;
   var splash = document.getElementById('nz-splash');
   function tick(now) {
     if (dead) return;
     if (now - last >= TICK) {
       last = now;
-      try { frame(now - t0); } catch (e) { dead = true; return; }
+      try { frame(now - t0 - T0); } catch (e) { dead = true; return; }  // v14f 延迟 1s 动线
     }
     if (!splash.classList.contains('out')) requestAnimationFrame(tick);
   }
