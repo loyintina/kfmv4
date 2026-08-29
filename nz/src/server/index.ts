@@ -17,7 +17,7 @@
 import { createServer, type Server } from 'node:http';
 import { readFile, stat, appendFile } from 'node:fs/promises';
 import { existsSync, unlinkSync } from 'node:fs';
-import { join, normalize, extname, resolve, sep } from 'node:path';
+import { join, normalize, extname, resolve, sep, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Context } from 'cordis';
 
@@ -126,7 +126,11 @@ export function createNzServer(): Server {
         // 重传 7.6s+5.7s=UI 15s 主因）——字体/wasm/带 hash 的 bundle 用
         // immutable 强缓存（内容不变/URL 带 hash，变更即换 URL）；HTML 与
         // build-info.json 用 no-cache（热更自刷腿要拿最新，协商 304）。
-        const immutable = ['.ttf', '.woff2', '.wasm', '.js', '.css', '.png', '.svg', '.map'].includes(ext);
+        // splash-core.js 额外 no-cache（2026-08-30 用户拍板「改开屏直接
+        // 覆盖」）：它是唯一真源动画本体，覆盖后刷新即新版，不动 bundle。
+        const NO_CACHE_BASE = new Set(['splash-core.js']);
+        const immutable = !NO_CACHE_BASE.has(basename(abs)) &&
+          ['.ttf', '.woff2', '.wasm', '.js', '.css', '.png', '.svg', '.map'].includes(ext);
         res.writeHead(200, {
           'content-type': MIME[ext] ?? 'application/octet-stream',
           'last-modified': st.mtime.toUTCString(),

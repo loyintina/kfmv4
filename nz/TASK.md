@@ -1482,3 +1482,23 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   重播；?t= 冻结帧为含延迟绝对毫秒）。全程冻结帧机器断言验证
   （形状钉死/颜色在动/会师同像素/瞳孔格状态），零 JS 报错。
   未来方向（用户设想）：渲染 UI 层做高清版开屏，字符版保留为兜底。
+- 2026-08-30 · 开屏落地 + 插件化（8.8.5，用户拍板「落地吧，做成插件，
+  未来改这个可以直接覆盖」）：「静态资源动画本体 + Cordis 生命周期壳」
+  分层首例——①public/splash-core.js=动画唯一真源（v14f 工厂
+  NzSplashCore.create(refs)→show/hide/render(t)，CSS 也内聚其中
+  ensureStyle 注入），服务器对它单独 no-cache（其余 .js immutable）——
+  覆盖本文件刷新即新版，不动 bundle.js；②splash-demo.html 改薄壳
+  共用同一文件（?t= 冻结帧走 handle.render，数值与 v14f 逐值一致）；
+  ③src/client/plugins/splash：壳管 DOM 挂载（host overlay 容器，
+  owner 死自动摘）/本体脚本注入/唤醒通道（?splash、__kfmNzSplash
+  CDP 口、click 关闭）/ctx.provide('splash') 服务/降级（本体加载失败
+  →兜底 CSS+静态徽标帧）；④index.html 内联 v8 全拆（CSS+DOM+script
+  清零），覆层 DOM 由插件挂。plugtest 实钉出「主/影分流」纪律：
+  root 直挂后 provide 必撞（registered at <root>）+同 slot 建容器触发
+  host 防重下沉摘真覆层——非主挂载换 slot=splash-shadow 全生命周期
+  照跑但不抢全局口不抢户口（eyes 绿=inject 吞冲突的假绿，term 同样
+  未过，登记在案）。验收：plugtest PLUGTEST_OK 零泄漏（降级有意/
+  装卸/残留/重载四轮）+主挂载 ?splash 唤醒（瞳孔 rgb(157,192,227)
+  version=v14f CDP 口在）+影子折腾完主挂载存活+五卷（bottom-anchor
+  10/10、scrollback 5/5、keybar 19/19、term-hooks 6/6、cjk-inktop
+  4/4）+npm 90 全绿+typecheck+build 过。

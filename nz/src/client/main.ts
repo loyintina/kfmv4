@@ -15,6 +15,7 @@ import { PermissionEngine } from './permission.js';
 import { PlugtestRunner } from './plugtest.js';
 import { mountDynamicPromptFiles } from './plugins/core/dynamic-prompt-files.js';
 import { applyEyesBundle } from './plugins/eyes/index.js';
+import { applySplashBundle } from './plugins/splash/index.js';
 import { loadTermCoreShared, probeTermCore } from './term-core.js';
 import { applyTermBundle } from './plugins/term/index.js';
 
@@ -46,6 +47,12 @@ rootCtx.provide('plugtest', plugtest);
 mountDynamicPromptFiles(rootCtx);
 applyEyesBundle(rootCtx);
 plugtest.register('eyes', (ctx) => applyEyesBundle(ctx));
+
+// 8.8.5 开屏插件（2026-08-30 用户拍板落地）：动画本体=public/splash-core.js
+// 静态资源（唯一真源，demo 同源，服务器 no-cache——覆盖即生效不动 bundle）；
+// 壳管 DOM 挂载/唤醒通道/服务。休眠默认，?splash 或 __kfmNzSplash 唤醒。
+applySplashBundle(rootCtx);
+plugtest.register('splash', (ctx) => applySplashBundle(ctx));
 
 // 8.8.3：开屏面板只在 ?debug 时存在意义——无 ?debug 不启轮询渲染
 // （bootLog 照常异步填充，守视走 __kfmNz.bootLog eval 直读，不受影响）
