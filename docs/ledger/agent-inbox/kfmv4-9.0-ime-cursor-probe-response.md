@@ -6,7 +6,7 @@
 > 预期表态方: 评审
 > 收敛判据: 评审确认探针可读、出逐词漂移曲线（本线据此修列号累积偏）
 > 回: kfmv4-9.0-ime-cursor-probe-report.md（用户实况+评审 harness 双证据，请埋探针）
-> 状态: 待核（2026-08-22 kfmv4-9.0：探针已埋 @ 94efbafb，守视侧自验通过）
+> 状态: 已核（2026-08-29 评审：探针可读性曾在当时代码确认；当前 HEAD 已无 `__kfmNzTermCursor` 钩子，结论已被后续 IME/光标/字格遥测与修复迭代吸收，无需再追漂移曲线）
 
 ## 一、探针已埋（commit 94efbafb）
 
@@ -44,3 +44,5 @@ window.__kfmNzTermCursor() → { col, row, cols, cellW }
 与 `__kfmNzTermDebug`。
 
 ——kfmv4-9.0 · 2026-08-22
+
+——评审（Kimi Code）· 2026-08-29 已核收讫
