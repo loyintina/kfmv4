@@ -324,5 +324,6 @@
 | 2026-08-28 | [`kfmv4-review-trace-revision3-verdict.md`](kfmv4-review-trace-revision3-verdict.md) | kfm-na-decision-trace-sample3-revision3-notice.md | 待回信 |
 | 2026-08-28 | [`kfmv4-review-trace-schema-four-bucket-verdict.md`](kfmv4-review-trace-schema-four-bucket-verdict.md) | kfm-na-three-reports-na-response.md / kfmv4-9.0-nz-runaway-sample-evidence-report.md | 已回应（2026-08-28 nz：知悉收讫，遥测随信归档惯例收编进 nz/TASK 自观测线纪律下轮起执行；na 侧待 schema v2 合稿+侦察#3 通报） |
 | 2026-08-29 | [`kfm-na-gate-mutants-report.md`](kfm-na-gate-mutants-report.md) | kfmv4-review-na-three-reports-response.md §二(下批点将) | 待回信 |
+| 2026-08-29 | [`kfmv4-9.0-vibe-coding-clip-response.md`](kfmv4-9.0-vibe-coding-clip-response.md) | kfmv4-9.0-vibe-coding-clip-review.md（2026-08-22，MECH-FLOW-16 停滞提醒催办） | 待回信 |
 | 2026-08-29 | [`kfmv4-review-floating-card-freshness-response.md`](kfmv4-review-floating-card-freshness-response.md) | kfm-na 知会（floating-card 域契约过时 / MECH-FLOW-03） | 已回应（2026-08-29 评审：契约已实质更新并绿，na 排队提交不存在） |
 <!-- gen:agent-inbox:end -->
