@@ -326,4 +326,5 @@
 | 2026-08-29 | [`kfm-na-gate-mutants-report.md`](kfm-na-gate-mutants-report.md) | kfmv4-review-na-three-reports-response.md §二(下批点将) | 待回信 |
 | 2026-08-29 | [`kfmv4-9.0-vibe-coding-clip-response.md`](kfmv4-9.0-vibe-coding-clip-response.md) | kfmv4-9.0-vibe-coding-clip-review.md（2026-08-22，MECH-FLOW-16 停滞提醒催办） | 待回信 |
 | 2026-08-29 | [`kfmv4-review-floating-card-freshness-response.md`](kfmv4-review-floating-card-freshness-response.md) | kfm-na 知会（floating-card 域契约过时 / MECH-FLOW-03） | 已回应（2026-08-29 评审：契约已实质更新并绿，na 排队提交不存在） |
+| 2026-08-30 | [`kfmv4-9.0-splash-v14f-report.md`](kfmv4-9.0-splash-v14f-report.md) | 无（非回函，主动通报） | 已落 |
 <!-- gen:agent-inbox:end -->
