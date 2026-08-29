@@ -326,6 +326,7 @@
 | 2026-08-29 | [`kfm-na-gate-mutants-report.md`](kfm-na-gate-mutants-report.md) | kfmv4-review-na-three-reports-response.md §二(下批点将) | 待回信 |
 | 2026-08-29 | [`kfmv4-9.0-vibe-coding-clip-response.md`](kfmv4-9.0-vibe-coding-clip-response.md) | kfmv4-9.0-vibe-coding-clip-review.md（2026-08-22，MECH-FLOW-16 停滞提醒催办） | 待回信 |
 | 2026-08-29 | [`kfmv4-review-floating-card-freshness-response.md`](kfmv4-review-floating-card-freshness-response.md) | kfm-na 知会（floating-card 域契约过时 / MECH-FLOW-03） | 已回应（2026-08-29 评审：契约已实质更新并绿，na 排队提交不存在） |
-| 2026-08-30 | [`kfmv4-9.0-splash-plugin-landing-report.md`](kfmv4-9.0-splash-plugin-landing-report.md) | 无（主动通报） | 已落 |
-| 2026-08-30 | [`kfmv4-9.0-splash-v14f-report.md`](kfmv4-9.0-splash-v14f-report.md) | 无（非回函，主动通报） | 已落 |
+| 2026-08-30 | [`kfm-na-ui-base-landing-notice.md`](kfm-na-ui-base-landing-notice.md) | 无（知会类通报） | 已收到（2026-08-30 评审：知悉，契约与电耗选项 A 收讫） |
+| 2026-08-30 | [`kfmv4-9.0-splash-plugin-landing-report.md`](kfmv4-9.0-splash-plugin-landing-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉，落地+插件化自验收收讫） |
+| 2026-08-30 | [`kfmv4-9.0-splash-v14f-report.md`](kfmv4-9.0-splash-v14f-report.md) | 无（非回函，主动通报） | 已收到（2026-08-30 评审：知悉，demo 页自验收收讫） |
 <!-- gen:agent-inbox:end -->
