@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>深蓝意志 · splash demo v8</title>
+<title>深蓝意志 · splash demo v12</title>
 <style>
   html, body { margin: 0; height: 100%; background: #05070f; overflow: hidden; }
   #nz-splash {
@@ -19,10 +19,23 @@
   /* 静态兜底（JS 未跑/挂掉时也有一帧徽标+呼吸动画） */
   #nz-splash .st-cyan { color: #56b6f0; animation: nzPulse 1.6s ease-in-out infinite; }
   @keyframes nzPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+  /* v9b：全屏扫描光束（横贯屏宽，与环上扫线同位置同步移动） */
+  #nz-splash .beam {
+    position: absolute; left: 0; right: 0; height: 2px;
+    opacity: 0; pointer-events: none; will-change: top, opacity;
+  }
+  #nz-splash .beam-outer {
+    background: #60a5fa;
+    box-shadow: 0 0 12px 3px rgba(59,130,246,.8), 0 0 42px 10px rgba(59,130,246,.32);
+  }
+  #nz-splash .beam-inner {
+    background: #a78bfa;
+    box-shadow: 0 0 12px 3px rgba(139,92,246,.8), 0 0 42px 10px rgba(139,92,246,.32);
+  }
 </style>
 </head>
 <body>
-<div id="nz-splash"><pre id="art"><span class="st-cyan">    █
+<div id="nz-splash"><div class="beam beam-outer" id="beamO"></div><div class="beam beam-inner" id="beamI"></div><pre id="art"><span class="st-cyan">    █
    █ █
   █   █
  █     █
@@ -33,12 +46,32 @@
     █</span></pre></div>
 <script>
 (function () {
-  // ============ 深蓝意志开屏 v8（逐行精确菱形+重心钉线）============
+  // ============ 深蓝意志开屏 v10（点火仪式：双扫描线·全屏光束·随机稳定亮度）============
   // 只要一个图标：竖长菱瞳，无文字。三环——竖瞳蓝块/内圈紫环/外圈蓝环。
   // 环块大小、数量、位置刻意不对称（定种子随机：缺块/抖动/步距/字形混杂），
-  // 环间距 > 环宽（环 1 格线宽，间距 2 格以上）。唯一动效=瞳心向外亮度波。
+  // 环间距 > 环宽（环 1 格线宽，间距 2 格以上）。
+  // 动效（2026-08-28 用户拍板 v9c，测试期循环/正式定格）：
+  //   暗场 → 蓝光束从【屏底缘】滑入上爬，扫过外环处点亮回落中亮 → 蓝线恰好
+  //   扫到瞳孔行瞬间：孤瞳跳中亮 + 紫光束从【屏顶缘】滑入下压（两线并行）
+  //   → 紫线恰好扫到瞳孔行时孤瞳再提亮 → 紫线滑出屏底缘=一轮结束，定格循环。
+  //   纪律：编排点钉【光束位置】（按几何反解时刻），不钉屏幕出现时机；
+  //   屏高变化时点火点永远跟着光束走。
   var TICK = 42;
-  var WAVE_MS = 2400;
+
+  // ---- 点火仪式时序（ms，一轮 3200）----
+  // v9c：IN_START/PUPIL_HI/ROUND_END 不再是定数，改为按几何反解的函数
+  // （inStart/pupilHi/roundEnd，见下方「全屏扫掠几何」）——编排点钉位置。
+  // v9d（2026-08-29 用户拍板）：两束同速，全程各 1.5s（紫光束 900ms 太快）。
+  // v9f（2026-08-29 用户拍板）：线速再放慢 → 全程各 2s。
+  var T_OUT = 2000;   // 蓝光束扫全程（屏底缘→屏顶缘）
+  var T_IN = 2000;    // 紫光束扫全程（屏顶缘→屏底缘）
+  var LOOP = 3200;    // roundEnd(≈2400) + 定格保持
+  // 三档亮度（shade 的 b 值）
+  var B_DIM = 0.05, B_MED = 0.55, B_HI = 1.0;
+  var SCAN_W = 1.5;                // 扫线亮斑半宽（行，线后回落段）
+  var AHEAD_W = 0.6, AHEAD_MAX = 0.22; // 迎头微晕：窄而暗（v9f 砍预亮，见下）
+  var REVEAL = 2;                  // v12 探照灯半径（行）：线前方 2 行照出标准件幽影
+  var GHOST_MAX = 0.30;            // 幽影峰值亮度（到线跟前时的暗色上限：可见但明确是「未活」）
   var STEPS = 8;
 
   var ZONES = {
@@ -112,6 +145,18 @@
   drawRing(ECX, ECY, 3, 7, 'inner');    // 内圈紫环：与瞳隔 2+ 格
   drawRing(ECX, ECY, 8, 13, 'outer');   // 外圈蓝环：v5 加宽，与紫环隔 5 格
 
+  // ---- v10 随机稳定亮度（2026-08-29 用户拍板）----
+  // 点亮后的稳定亮度逐块随机（定种子，重绘不跳变），只钉三条：
+  //   孤瞳全场最亮（1.0）；外环均值次亮；内环均值再次——
+  //   允许个别外环块比内环块暗（随机本意）。
+  // 外环 U(0.45,0.90) 均值≈0.675；内环 U(0.20,0.70) 均值≈0.45。
+  for (var by = 0; by < EH; by++) for (var bx = 0; bx < EW; bx++) {
+    var bc = emblem[by][bx];
+    if (!bc) continue;
+    if (bc.zone === 'pupil') { bc.base = B_HI; continue; }
+    bc.base = bc.zone === 'outer' ? 0.45 + R() * 0.45 : 0.20 + R() * 0.50;
+  }
+
   // ---- 调色：每区 STEPS 档亮度（暗→本色→带白尖），注入 <style> ----
   function shade(base, b) {
     var k = 0.30 + 0.70 * b;
@@ -131,12 +176,95 @@
   document.head.appendChild(st);
 
   var pre = document.getElementById('art');
+  // v9f 同步修复（2026-08-29 用户实拍实锤「亮得比线快」）：先把静态兜底帧
+  // （9 行）替换成 27×19 真空格网格，再让 geom() 量 pre。否则首帧 geom 量到
+  // 兜底帧：行高 20→6.67、全屏折合行数 40→120，亮度场按错误虚拟单位推进，
+  // 换算回真实像素后亮度场速度=光束 3 倍，只有屏幕正中附近碰巧重合——
+  // 冻结帧挑中点看着像同步，连续动画就露馅。真空格网格保证 geom 永远量真值。
+  var blankLine = new Array(EW + 1).join(' ');
+  pre.textContent = new Array(EH).fill(blankLine).join('\n');
+
+  // ---- v10 亮度场：某块在某时刻的亮度 b ∈ [0,1] ----
+  // 扫线亮度剖面：d = 块到扫线的距离（已扫侧为正）。
+  // 已扫远→该块的随机稳定亮度 base（v10）；线压在身上(0≤d≤SCAN_W)→
+  // 冲顶 B_HI 再回落 base；迎头(-AHEAD_W<d<0)→只留一丝微晕（AHEAD_MAX=0.22，
+  // v9f 用户拍板：砍掉旧版 1.5 行迎头预亮——预亮让块在线到达前就先亮，
+  // 慢线速下看起来「点亮速度超过线速」；块在线到达那一刻才点亮）。
+  // dir=+1：扫线上爬（已扫侧在扫线下方，外环）；dir=-1：下压（已扫侧在上方，内环）。
+  function scanB(y, ys, prog, dir, base) {
+    if (prog >= 1) return base;
+    var d = dir > 0 ? (y - ys) : (ys - y);
+    if (d > SCAN_W) return base;
+    if (d >= 0) return base + (B_HI - base) * (1 - d / SCAN_W);
+    if (d > -AHEAD_W) return B_DIM + (AHEAD_MAX - B_DIM) * (1 + d / AHEAD_W);
+    return B_DIM;
+  }
+  // ---- v9c 全屏扫掠几何（2026-08-28 用户拍板）----
+  // 光束从屏幕边缘滑入滑出（蓝：底→顶；紫：顶→底），不再只在徽标范围现身。
+  // 纪律（用户拍板）：编排除点【钉位置不钉屏幕】——
+  //   IN_START=蓝光束恰好扫到瞳孔行的时刻；
+  //   同一时刻紫光束恰好压到内环顶尖（v9e 用户拍板：紫线提前从顶缘滑入，
+  //   入场时刻按速度反推，不是点火时才出现在屏顶）；
+  //   PUPIL_HI=紫光束恰好扫到瞳孔行。全部按几何反解，屏高变化永同步。
+  var preRect = null;  // 懒算+resize 失效（pre 居中、字号固定，rect 稳定）
+  addEventListener('resize', function () { preRect = null; });
+  function geom() {
+    if (!preRect) preRect = pre.getBoundingClientRect();
+    var vh = window.innerHeight || preRect.height;   // 后台 WebView innerHeight=0 → 退化为徽标范围
+    var sr = vh / (preRect.height / EH);             // 全屏高度折合成行数
+    return { sr: sr, off: Math.max(0, (sr - EH) / 2) }; // off=徽标上方空行数
+  }
+  function inStart() { var g = geom(); return T_OUT * (EH + g.off - ECY) / g.sr; }   // 蓝线=瞳孔行
+  function beamV() { var g = geom(); return g.sr / T_IN; }                          // 束速（行/ms，两束同速）
+  function outerYs(ms) { var g = geom(); return (EH + g.off) - (ms / T_OUT) * g.sr; } // 屏底缘→屏顶缘
+  // 紫线锚点（v9e）：inStart 时刻 ys=内环顶尖(ECY-7)，同速下压
+  function innerYs(ms) { return (ECY - 7) + (ms - inStart()) * beamV(); }
+  function pupilHi() { return inStart() + 7 / beamV(); }                 // 紫线=瞳孔行（顶尖下 7 行）
+  function purpleIn() { var g = geom(); return inStart() - (ECY - 7 + g.off) / beamV(); } // 紫线滑入屏顶缘
+  function purpleOut() { var g = geom(); return inStart() + (EH + g.off - ECY + 7) / beamV(); } // 紫线滑出屏底缘
+  function roundEnd() { return purpleOut(); }                            // 一轮结束=紫线出屏
+  // v12：cellState = {亮度 b, 是否已固化 scanned, 是否可见 visible}。
+  // 探照灯模型（2026-08-29 用户拍板）：开场纯黑，徽标被扫线带出来——
+  //   线前方 ≤REVEAL(2) 行：标准件幽影（统一 █ 无钉线，0→GHOST_MAX 渐显）；
+  //   线的身上：冲顶一闪；线的后方：固化成随机字形+随机亮度，永久留下；
+  //   幽影窗之外：不渲染（纯黑）。固化块永不隐回（否则徽标无法「出现」）。
+  // d 约定同 scanB：已扫侧为正。
+  function ghost(d) {
+    if (d < -REVEAL) return { b: 0, scanned: false, visible: false };
+    return { b: GHOST_MAX * (1 + d / REVEAL), scanned: false, visible: true };
+  }
+  function cellState(cell, y, ms) {
+    if (cell.zone === 'pupil') {
+      // 孤瞳：蓝线幽影窗里显形 →（蓝线扫到瞳孔行）中亮 →（紫线扫到）更亮
+      if (ms < inStart()) return ghost(y - outerYs(ms));
+      return { b: ms < pupilHi() ? B_MED : B_HI, scanned: true, visible: true };
+    }
+    if (cell.zone === 'outer') {
+      var ys = outerYs(ms), prog = ms / T_OUT, d = y - ys;
+      if (prog < 1 && d < 0) return ghost(d);
+      return { b: scanB(y, ys, prog, +1, cell.base), scanned: true, visible: true };
+    }
+    // inner：紫线（顶→底）探照灯同理；蓝线过瞳孔=紫线压内环顶尖=点火
+    var yi = innerYs(ms), progi = (yi - (ECY - 7)) / 14, di = yi - y;
+    if (progi < 1 && di < 0) return ghost(di);
+    return { b: scanB(y, yi, progi, -1, cell.base), scanned: true, visible: true };
+  }
+
+  // ---- v9b 全屏光束：与环上扫线同 y，横贯屏宽 ----
+  var beamO = document.getElementById('beamO');
+  var beamI = document.getElementById('beamI');
+  function setBeam(el, ys) {
+    if (ys === null) { el.style.opacity = '0'; return; }
+    var g = geom();
+    el.style.opacity = '1';
+    el.style.top = (preRect.top + (ys + 0.5) * (preRect.height / EH) - 1) + 'px';
+  }
 
   function frame(ms) {
-    var phase = (ms % WAVE_MS) / WAVE_MS * Math.PI * 2;
+    ms = ms % LOOP;
     var lines = [];
     for (var y = 0; y < EH; y++) {
-      var html = '', runCls = null, runGlyph = null, run = '';
+      var html = '', runCls = null, run = '';
       function flush() {
         if (!run) return;
         html += runCls ? '<span class="' + runCls + '">' + run + '</span>' : run;
@@ -144,29 +272,37 @@
       }
       for (var x = 0; x < EW; x++) {
         var cell = emblem[y][x];
-        if (cell && cell.nudge) {
-          // v7 钉线块：独立 span 亚格平移，不进同行合并 run
-          flush(); runCls = undefined;
-          var nb = 0.5 + 0.5 * Math.sin(phase - cell.dist * 0.45);
-          html += '<span class="z-' + cell.zone + '-' + Math.round(nb * (STEPS - 1)) +
-                  '" style="position:relative;left:' + cell.nudge.toFixed(2) + 'ch">' +
-                  cell.glyph + '</span>';
-          continue;
-        }
-        var cls = '', ch = ' ';
         if (cell) {
-          // 唯一动效：亮度波从瞳心(dist=0)向外环传播
-          var b = 0.5 + 0.5 * Math.sin(phase - cell.dist * 0.45);
-          cls = 'z-' + cell.zone + '-' + Math.round(b * (STEPS - 1));
-          ch = cell.glyph;
+          var st = cellState(cell, y, ms);
+          if (st.visible && st.scanned && cell.nudge) {
+            // 已固化活块 + 钉线：独立 span 亚格平移，不进同行合并 run
+            flush(); runCls = undefined;
+            html += '<span class="z-' + cell.zone + '-' +
+                    Math.round(st.b * (STEPS - 1)) +
+                    '" style="position:relative;left:' + cell.nudge.toFixed(2) + 'ch">' +
+                    cell.glyph + '</span>';
+            continue;
+          }
+          if (st.visible) {
+            // v12：幽影=标准件（统一 █ 无钉线）；已固化=随机字形+随机亮度
+            var cls = 'z-' + cell.zone + '-' + Math.round(st.b * (STEPS - 1));
+            var ch = st.scanned ? cell.glyph : '█';
+            if (cls !== runCls) { flush(); runCls = cls; }
+            run += ch;
+            continue;
+          }
+          // 幽影窗之外=不可见，落进空格 run（v12 纯黑）
         }
-        if (cls !== runCls) { flush(); runCls = cls; }
-        run += ch;
+        if ('' !== runCls) { flush(); runCls = ''; }
+        run += ' ';
       }
       flush();
       lines.push(html);
     }
     pre.innerHTML = lines.join('\n');
+    // 光束：只在各自扫描进行中出现（外 0–1200 / 内 600–1500），定格与暗场不挂线
+    setBeam(beamO, ms < T_OUT ? outerYs(ms) : null);
+    setBeam(beamI, (ms >= purpleIn() && ms < purpleOut()) ? innerYs(ms) : null);
   }
 
   // ---- 驱动：?t=ms 冻结单帧（截图用）；否则循环到点按。
