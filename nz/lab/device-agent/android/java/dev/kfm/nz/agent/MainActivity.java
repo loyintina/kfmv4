@@ -187,19 +187,29 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** 首帧可操作才切换：splash 层 __complete() 扫完定帧，渐隐后摘除 */
+    /** 首帧可操作才切换：splash 层 __complete() 扫完定帧渐隐——剩余毫秒
+     *  由 JS 唯一真源回报，壳只按回报值延时摘层（不再写死猜 JS 行为：
+     *  700+400ms 固定猜曾是双时间源，终端就绪后白盖 ~1.1s） */
     private void dismissSplash() {
         if (dismissed || splashWeb == null) return;
         dismissed = true;
-        // complete()=扫完帧定帧 SETTLE 500ms+自身淡出 320ms——900ms 后摘层
-        splashWeb.evaluateJavascript("window.__complete&&window.__complete()", null);
-        splashWeb.animate().alpha(0f).setStartDelay(700).setDuration(400)
-                .withEndAction(() -> {
-                    root.removeView(splashWeb);
-                    splashWeb.destroy();
-                    splashWeb = null;
-                    mark("splash-dismissed");
-                }).start();
+        final WebView sw = splashWeb;
+        sw.evaluateJavascript(
+                "window.__complete ? window.__complete() : 0",
+                v -> {
+                    int ms;
+                    try { ms = Integer.parseInt(v == null ? "0" : v.trim()); }
+                    catch (Exception e) { ms = 0; }
+                    if (ms <= 0 || ms > 2000) ms = 900; // 无回报/离谱=旧版兜底
+                    // JS 自己渐隐（#nz-splash .out 320ms），壳到点摘层即可
+                    root.postDelayed(() -> {
+                        if (splashWeb != sw) return; // 已被摘（看门狗等）
+                        root.removeView(sw);
+                        sw.destroy();
+                        if (splashWeb == sw) splashWeb = null;
+                        mark("splash-dismissed");
+                    }, ms);
+                });
     }
 
     /** 盲窗时间戳：每拍一行 JSON POST 服务器（墙钟+相对点击毫秒） */

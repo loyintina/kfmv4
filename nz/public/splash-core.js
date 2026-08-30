@@ -384,15 +384,20 @@ window.NzSplashCore = (function () {
     }
     // v15 首帧收口：预测与实际必有偏差——没扫完=时钟平移到扫完帧
     // （光束灭/徽标完整/活跃动画起点），定帧后自动退场；已扫完=短停留。
-    // 幂等；未在播=false。
+    // 幂等；未在播/已收口=0。
+    // 返回值=距完全隐去的剩余毫秒（settle+淡出 320，唯一真源时间线）——
+    // 壳层开屏（8.8.6）据此摘层：曾经壳侧写死 700+400ms 猜 JS 的行为，
+    // 两个时间源各说各话=终端就绪后白盖 ~1.1s（2026-08-30 启动速度
+    // 修正，用户拍板）。真值判断不受影响（0=falsy，>0=truthy）。
     function complete() {
-      if (completed || !running) return false;
+      if (completed || !running) return 0;
       completed = true;
       var ms = performance.now() - t0 - T0;
       var late = ms >= roundEnd();
       if (!late) t0 -= (roundEnd() - ms);
-      settleTimer = setTimeout(hide, late ? SETTLE_LATE : SETTLE);
-      return true;
+      var wait = late ? SETTLE_LATE : SETTLE;
+      settleTimer = setTimeout(hide, wait);
+      return wait + 320;
     }
     splash.addEventListener('click', hide);
 
