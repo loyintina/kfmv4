@@ -13,6 +13,8 @@
  *                 opts.introMs = 预测的终端就绪时长——编排骨架等比缩放，
  *                 三条扫线正好在 introMs 扫完（v15 开机自播，用户拍板
  *                 「开机动画结束时三线正好扫完，按时间重新定线速」）。
+ *                 opts.noDelay = true 跳过 1s 黑场延迟（开机自播用——
+ *                 开机时序里 1s 死黑是纯等待；手动重播保留仪式感）。
  *     hide()      淡出关闭
  *     complete()  终端首帧就绪收口：没扫完=时间平移直接跳到扫完帧，
  *                 定帧 SETTLE 后自动淡出；已扫完=短停留后淡出（v15）
@@ -52,8 +54,13 @@ window.NzSplashCore = (function () {
     var splash = refs.splash, pre = refs.art;
     var beamO = refs.beamO, beamO2 = refs.beamO2, beamI = refs.beamI;
 
+    // ---- v14f 起 T0：刷新后整体延迟 1s 再动线（治半空出现观感）----
+    // v15：开机自播路径 opts.noDelay=T0=0——开机时序里 1s 死黑是纯粹的
+    // 等待（用户实拍「比较长的黑屏」），扫线应当本体就绪即起；手动重播
+    // （?splash/CDP）保留 1s 黑场仪式感。render(t) 冻结帧恒基准。
     var TICK = 42;
-    var T0 = 1000;      // v14f：刷新后整体延迟 1s 再动线（治半空出现观感）
+    var BASE_T0 = 1000;
+    var T0 = BASE_T0;
     // v15：T_OUT/T_IN 从常量变实例变量——show({introMs}) 时等比缩放，
     // 编排骨架（inStart/purpleIn/pupilHi/blue2V…全从这两个值几何反解）
     // 随之整体伸缩，三线会师/孤瞳点火的相对关系不变。
@@ -353,6 +360,7 @@ window.NzSplashCore = (function () {
       // v15 时长伸缩：必须在 'on' 之后量——display:none 时 preRect 全是 0，
       // roundEnd() 会算出 Infinity/NaN
       T_OUT = BASE_T_OUT; T_IN = BASE_T_IN;
+      T0 = (opts && opts.noDelay) ? 0 : BASE_T0;
       var introMs = opts && opts.introMs;
       if (introMs > 0) {
         var base0 = roundEnd();
@@ -397,7 +405,7 @@ window.NzSplashCore = (function () {
       // 冻结帧：渲染绝对毫秒 t（含 1s 延迟；自验收/截图用；恒用基准速度）
       render: function (t) {
         ensureStyle(); prime();
-        T_OUT = BASE_T_OUT; T_IN = BASE_T_IN;
+        T_OUT = BASE_T_OUT; T_IN = BASE_T_IN; T0 = BASE_T0;
         frame(t - T0);
       },
     };

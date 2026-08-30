@@ -1525,3 +1525,18 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   同样收口）+截图证据（splash-boot-mid/terminal.png，开屏退后
   oh-my-zsh 提示符在底行）+plugtest PLUGTEST_OK 零泄漏+五卷+npm 90
   +typecheck+build 全绿（nz-restart 闭环绿）。
+- 2026-08-30 · 开机序列三段闪修复（8.8.5 续，用户实拍「长黑屏→闪到
+  终端页面+字符标志→跳动画→跳终端，行为奇怪」并质问「你确实能接收
+  到画面渲染的过程吗」）：先补观测再修——CDP screencast 真机 0 帧
+  （WebView 后台不出帧）改 headless 150ms×40 逐帧实录，定罪三处：
+  ①showFb 静态 FALLBACK_ART 小钻标先闪（与真徽标形状完全不同）；
+  ②动画 T0=1000ms 死黑（v14f 为手动重播拍的仪式感，开机时序里是
+  纯等待）；③body #101014 与覆层 #05070f 两截深色色差。修复：
+  splash-core v15 加 opts.noDelay（T0 变实例变量，render(t) 恒基准
+  不受影响）；壳开机路径纯暗场盖屏（pre 清空不出小钻标，FALLBACK_CSS
+  主挂载即常驻管底色/显隐——此前覆层在本体加载前无样式，徽标浮在
+  裸容器上；只有本体挂掉才回退静态徽标）；index.html body 底色对齐
+  #05070f。修后逐帧复验序列=暗场扫线即起→完整徽标定帧→渐隐融合→
+  干净终端（~1.5s），闪烁消除。纪律候选：DOM 类状态断言≠画面——
+  观感问题必须逐帧实录（screencast/连拍）验证，「你确实能看到渲染
+  过程吗」是对的质问。

@@ -27,7 +27,7 @@ declare module 'cordis' {
 }
 
 interface SplashHandle {
-  show(opts?: { introMs?: number }): boolean;
+  show(opts?: { introMs?: number; noDelay?: boolean }): boolean;
   hide(): boolean;
   /** v15 首帧收口：没扫完=跳到扫完帧定帧后退场；已扫完=短停留退场 */
   complete(): boolean;
@@ -114,6 +114,16 @@ export function applySplashBundle(ctx: Context, config: SplashBundleConfig = {})
     '<div class="beam beam-inner"></div>' +
     '<pre><span class="st-cyan">' + FALLBACK_ART + '</span></pre>';
 
+  // 覆层底色/显隐 CSS 主挂载即常驻（用户实拍定罪：本体加载前覆层无
+  // 样式=静态徽标浮在裸容器上「两段闪」）——本体 CSS 后到时同值覆盖，
+  // 只多不少（beam/pulse 样式）。dispose 摘除防残留。
+  if (primary) {
+    const fbStyle = document.createElement('style');
+    fbStyle.textContent = FALLBACK_CSS;
+    document.head.appendChild(fbStyle);
+    ctx.effect(() => () => fbStyle.remove());
+  }
+
   // ---- 本体脚本注入（异步；失败走兜底）----
   let handle: SplashHandle | null = null;
   let failed = false;
@@ -138,11 +148,13 @@ export function applySplashBundle(ctx: Context, config: SplashBundleConfig = {})
       });
       return true;
     }
-    // 兜底：注入最小 CSS，覆层只展示静态徽标帧
+    // 兜底：注入最小 CSS（主挂载已常驻，只补影子），覆层只展示静态徽标帧
     failed = true;
-    const st = document.createElement('style');
-    st.textContent = FALLBACK_CSS;
-    document.head.appendChild(st);
+    if (!primary) {
+      const st = document.createElement('style');
+      st.textContent = FALLBACK_CSS;
+      document.head.appendChild(st);
+    }
     return false;
   });
 
@@ -207,9 +219,17 @@ export function applySplashBundle(ctx: Context, config: SplashBundleConfig = {})
       if (raw) predicted = clampMs(parseFloat(raw));
     } catch { /* 隐私模式无 localStorage，用默认 */ }
     const shownAt = performance.now();
-    showFb(); // 立即盖屏（静态帧）；本体就绪后换动画从 t=0 起播
+    // 纯暗场盖屏（用户逐帧实拍定罪：静态小钻标→T0 黑场→快扫=三段闪）——
+    // 覆层 bg 即黑场，pre 清空不出 FALLBACK_ART 小钻标；noDelay 跳过
+    // 1s 死黑，本体就绪扫线即起；只有本体挂掉才回退静态徽标帧
+    const bootPre = el.querySelector('pre');
+    if (bootPre) bootPre.textContent = '';
+    el.classList.remove('out');
+    el.classList.add('on');
+    running = true;
     void ready.then((ok) => {
-      if (ok && handle) running = handle.show({ introMs: predicted });
+      if (ok && handle) { running = handle.show({ introMs: predicted, noDelay: true }); return; }
+      if (bootPre) bootPre.innerHTML = '<span class="st-cyan">' + FALLBACK_ART + '</span>';
     });
     const onMark = (ev: Event): void => {
       if ((ev as CustomEvent).detail !== 'first-frame') return;

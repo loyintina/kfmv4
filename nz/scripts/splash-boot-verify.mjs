@@ -60,26 +60,26 @@ async function round(tag, shotMid) {
   const t0 = Date.now();
   await page.goto(BOOT, { waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => {});
   const tl = [];
-  let firstFrameAt = null, outAt = null, offAt = null, midShot = false;
+  let firstFrameAt = null, outAt = null, offAt = null, reloaded = false, lastPageT = -1;
   for (let i = 0; i < 200; i++) { // 100ms × 200 = 20s 上限
     const s = await probe();
     if (s) {
+      if (s.t < lastPageT) reloaded = true; // pageT 回退=发生过 reload（热更腿）
+      lastPageT = s.t;
       if (s.marks && s.marks['first-frame'] && firstFrameAt === null) firstFrameAt = Date.now() - t0;
       if (s.out === true && outAt === null) outAt = Date.now() - t0;
       if (s.on === false && offAt === null) offAt = Date.now() - t0;
       tl.push(s);
-      if (shotMid && !midShot && s.on === true && s.t > 1200) {
-        midShot = true;
-        await page.screenshot({ path: `${SHOTS}splash-boot-${tag}-mid.png` }).catch(() => {});
-      }
       if (offAt !== null) break;
     }
     await sleep(100);
   }
-  await page.screenshot({ path: `${SHOTS}splash-boot-${tag}-after.png` }).catch(() => {});
+  // 截图一律挪出轮询环（纪律：后台 WebView 的 screenshot 会挂起到 30s
+  // 超时，堵在环里会把 offAt/outAt 污染成 ~31s 假红——已踩过两轮）
+  if (shotMid) await page.screenshot({ path: `${SHOTS}splash-boot-${tag}-after.png`, timeout: 5000 }).catch(() => {});
   const last = tl[tl.length - 1] || {};
   const seenOn = tl.some((s) => s.on === true);
-  return { lsBefore, firstFrameAt, outAt, offAt, seenOn, lsAfter: last.ls ?? null, marks: last.marks ?? null };
+  return { lsBefore, firstFrameAt, outAt, offAt, reloaded, seenOn, lsAfter: last.ls ?? null, marks: last.marks ?? null };
 }
 
 // ── 第一轮（可能无 localStorage 记录=默认预测 11000=snap 路径）────────
