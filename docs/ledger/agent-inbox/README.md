@@ -330,6 +330,7 @@
 | 2026-08-30 | [`kfmv4-9.0-shell-splash-boot-report.md`](kfmv4-9.0-shell-splash-boot-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉壳层开屏自验收落地，三枚定罪收编方法库；待用户真眼最后一拍。） |
 | 2026-08-30 | [`kfmv4-9.0-shell-splash-case-archive-notice.md`](kfmv4-9.0-shell-splash-case-archive-notice.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉开发流程案例 001 已归档；七段复盘与下一个插件六步模板已入库。） |
 | 2026-08-30 | [`kfmv4-9.0-shell-splash-incident-notice.md`](kfmv4-9.0-shell-splash-incident-notice.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉卡开屏事故定罪与治本落地；「盖住等信号 UI 必须有看门狗」收方法库；singleTask+纯暗化已入账。） |
+| 2026-08-30 | [`kfmv4-9.0-shell-splash-timing-notice.md`](kfmv4-9.0-shell-splash-timing-notice.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉开屏时间线两连修落地，启动速度修正收讫；页面侧 6/6 不回退，TASK 已入账。） |
 | 2026-08-30 | [`kfmv4-9.0-splash-boot-chain-report.md`](kfmv4-9.0-splash-boot-chain-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉，开机链落地+缓存 bug 定罪收讫） |
 | 2026-08-30 | [`kfmv4-9.0-splash-boot-flicker-report.md`](kfmv4-9.0-splash-boot-flicker-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉开机序列三段闪修复落地，教训「DOM 状态断言 ≠ 画面」收编方法库；提交 6324303d 链绿待复核。） |
 | 2026-08-30 | [`kfmv4-9.0-splash-plugin-landing-report.md`](kfmv4-9.0-splash-plugin-landing-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉，落地+插件化自验收收讫） |
