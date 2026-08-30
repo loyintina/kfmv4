@@ -72,13 +72,24 @@ ws.onmessage = (ev) => {
     m.error ? reject(new Error(m.error.message)) : resolve(m.result);
   }
 };
+// target 销毁=ws 断，挂着的请求必须全部拒掉——否则 promise 永挂，
+// 进程以 unsettled await 退出 13（2026-08-30 实踩：f1 截图撞上
+// splash WebView 摘除瞬间）
+ws.onclose = () => {
+  for (const { reject } of pending.values()) reject(new Error('ws closed（target 已摘除）'));
+  pending.clear();
+};
 await new Promise((r, j) => { ws.onopen = r; ws.onerror = j; });
 await send('Page.enable');
 
 const frames = [];
 for (let i = 0; i < 10; i++) {
   try {
-    const r = await send('Page.captureScreenshot', { format: 'jpeg', quality: 70 });
+    // 截图与 target 摘除抢跑：5s 超时=认输收场，不算失败
+    const r = await Promise.race([
+      send('Page.captureScreenshot', { format: 'jpeg', quality: 70 }),
+      sleep(5000).then(() => Promise.reject(new Error('shot 5s 超时'))),
+    ]);
     const p = `${SHOTS}boot-splash-f${i}.jpg`;
     writeFileSync(p, Buffer.from(r.data, 'base64'));
     frames.push({ i, at: Date.now() - t0, path: p, bytes: r.data.length });
