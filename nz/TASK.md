@@ -1674,3 +1674,30 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   10+5+19+6+4+9+npm90 零回退。边界：omp/opencode 等全屏 TUI 的
   resize 整史重绘是行业通病，洪峰字节必须流完（节流只省中间帧），
   治本在对端别重绘。
+- 2026-08-30 · **IME pan 不 resize（格网解耦）根治弹收洪峰**（用户报告：
+  召唤/关闭输入法也疯狂滚动、连点更久；a770faff）。定罪链（experiments/
+  dbg-ime-toggle-flood.mjs，NzNative.tap 真触摸复现）：键盘弹/收→vv 变→
+  rows 重测→PTY resize→tmux resize→SIGWINCH→kimi 整史重绘，弹 +423KB/
+  收 +308KB/连点×3 +713KB，nz 自身滚动全程 st=0 无辜。修法=键盘占位期
+  行列格网**不动**（tmux/TUI 零感知=零洪峰），可视区变矮用视窗平移补：
+  ALT(TUI) 程序化滚到底让输入行露键盘上方（overflow:hidden 下 scrollTop
+  可写、禁滚纪律不破）；行模式不抢滚动位（顶行锚定）。入态四闸（几何上
+  键盘与地址栏大缩/旧考卷 vv mock 信号同款，靠语义区分）：①武装窗口
+  =召唤键盘**意图**2s 内（容器 click 主武装+focus 兜原生路径——武装挂
+  focus 事件是坑：收键盘后诱饵持焦，二次 focus()=no-op 永不武装，考卷
+  实锤）②宽不变 ③innerH 不变（resizes-content 只缩视觉视口；桌面拖窗
+  两都变=确定性排除）④跌幅>20% 且>150px（真机键盘≈271/地址栏≈40-90）。
+  雷区处置：checkDrift/scheduleResize/RO 三自愈路全加 IME 闸（不认得
+  「故意不重测」=把洪峰放回来）。**模拟键盘基建**（用户拍板：键盘对终端
+  的本质=底部占位+输入接口，输入已有 Inject）：vv 野生散装读取收编
+  vvNow 单源（生产=真 vv/测试=mock），__kfmNzTermMockIme(open,kbPx=271)
+  用真机实测参数重放占位，与真键盘走完全相同的几何链路——后台零打扰
+  回归成可能。原则记方法库：**模拟验证已知、真机发现未知**——地形探熟
+  的区域模拟全权代理，新地形第一刀真机开道。验收：A 档 ime-pan 8/8
+  （red-first 实过：武装 bug 版 ②③④红）+六卷/npm90/rust9 零回退+真机
+  mock 验收（experiments/verify-ime-pan-device.mjs）：三段字节增量
+  16/11/17KB（kimi 心跳量级）vs 真键盘对照 423/308/713KB=数量级根治，
+  rows 恒 44∈[44,44] 格网未动、ALT 平移 st=257.8 底行露键盘上方。
+  待办：前台真键盘终验（tap 全链）——合成 tap 原语在「页面活但触摸
+  死」态失灵（mark 落账而页面零事件，vis=visible/hasFocus=true 谜，
+  21:47 同款代码工作正常）——判卷改用户真手指+CDP 旁观数据。
