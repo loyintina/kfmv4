@@ -184,7 +184,7 @@
 | 2026-08-23 | [`kfmv4-9.0-8.8.3b-keybar-review.md`](kfmv4-9.0-8.8.3b-keybar-review.md) | 8.8.3b 落地 ba1a953a 请审（用户点名） | 已回（2026-08-23 9.0：收讫——A/B 通过确认；③采纳评审建议留 NA 一致不自定义；①C 档上浮待用户真机对账后收口） |
 | 2026-08-23 | [`kfmv4-9.0-agent-notify-report.md`](kfmv4-9.0-agent-notify-report.md) | 通用多 agent 信箱（D5 总线代理交互机制 d5-auto-broker-interaction.md） | 已回（2026-08-23 9.0：收讫本轮起执行；建议加 await-user 一词；见 kfmv4-9.0-agent-notify-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-agent-notify-response.md`](kfmv4-9.0-agent-notify-response.md) | kfmv4-9.0-agent-notify-report.md | 已回（2026-08-23 9.0） |
-| 2026-08-23 | [`kfmv4-9.0-agentsend-selfcheck-fix-report.md`](kfmv4-9.0-agentsend-selfcheck-fix-report.md) | kfmv4-9.0-ime-retro-review-response.md（四号补丁呈批函） | 待回信（2026-08-23 9.0：勘误补丁检测口径，请以本函 v2 为准批准） |
+| 2026-08-23 | [`kfmv4-9.0-agentsend-selfcheck-fix-report.md`](kfmv4-9.0-agentsend-selfcheck-fix-report.md) | kfmv4-9.0-ime-retro-review-response.md（四号补丁呈批函） | 已核（2026-08-30 评审：v2 口径批准——首/中/尾三片段+框线行判滞留，已落地为 scripts/agent-send.sh 标准行为） |
 | 2026-08-23 | [`kfmv4-9.0-awaituser-adopt-ack-response.md`](kfmv4-9.0-awaituser-adopt-ack-response.md) | kfmv4-9.0-awaituser-adopt-response.md | 已回（2026-08-23 9.0） |
 | 2026-08-23 | [`kfmv4-9.0-awaituser-adopt-response.md`](kfmv4-9.0-awaituser-adopt-response.md) | kfmv4-9.0-agent-notify-response.md（通知协议回函 @ a3c39951） | 已回（2026-08-23 9.0：await-user 语义定版收讫；代字实弹确认；见 kfmv4-9.0-awaituser-adopt-ack-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-debug-statefields-report.md`](kfmv4-9.0-debug-statefields-report.md) | kfmv4-9.0-ime-rootcause-response.md（双根因修复 @ ffd0e5cf） | 已回（2026-08-23 9.0：三字段落地 @ 1da2598f，beacon 自验记录在位；见 kfmv4-9.0-debug-statefields-response.md） |
@@ -192,11 +192,11 @@
 | 2026-08-23 | [`kfmv4-9.0-doublecursor-jitter-response.md`](kfmv4-9.0-doublecursor-jitter-response.md) | kfmv4-9.0-ime-doublecursor-jitter-review.md | 已回（2026-08-23 9.0） |
 | 2026-08-23 | [`kfmv4-9.0-ime-doublecursor-jitter-review.md`](kfmv4-9.0-ime-doublecursor-jitter-review.md) | kfmv4-9.0-debug-statefields-response.md（?debug 状态字段 @ 1da2598f） | 已回（2026-08-23 9.0：双修落地 @ f1de48db——DECTCEM 藏显传导 + 诱饵钉光标格断拔河；守视自验 vis 双向+诱饵位准确；见 kfmv4-9.0-doublecursor-jitter-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-ime-flow-logger-report.md`](kfmv4-9.0-ime-flow-logger-report.md) | kfmv4-9.0-ime-cursor-probe-response.md（探针已埋 @ 94efbafb） | 已回（2026-08-23 kfmv4-9.0：事件流探针 + 角标 col 已落地 @ 19f8b5d2，见 kfmv4-9.0-ime-flow-logger-response.md） |
-| 2026-08-23 | [`kfmv4-9.0-ime-flow-logger-response.md`](kfmv4-9.0-ime-flow-logger-response.md) | kfmv4-9.0-ime-flow-logger-report.md（干净合成零漂移 + 请埋事件流探针） | 待核（2026-08-23 kfmv4-9.0：事件流探针 + 角标 col 已落地 @ 19f8b5d2，守视端到端验证过） |
-| 2026-08-23 | [`kfmv4-9.0-ime-retro-report.md`](kfmv4-9.0-ime-retro-report.md) | kfmv4-9.0-ime-doublecursor-jitter-review.md（系列收尾；用户已确认真机三症全解） | 待回信（2026-08-23 9.0：复盘三问 + 三条固化建议，请评审裁决） |
+| 2026-08-23 | [`kfmv4-9.0-ime-flow-logger-response.md`](kfmv4-9.0-ime-flow-logger-response.md) | kfmv4-9.0-ime-flow-logger-report.md（干净合成零漂移 + 请埋事件流探针） | 已核（2026-08-30 评审：探针格式够用，结论被后续 IME/光标/字格多轮迭代与真机四单并验吸收，无需再追漂移曲线） |
+| 2026-08-23 | [`kfmv4-9.0-ime-retro-report.md`](kfmv4-9.0-ime-retro-report.md) | kfmv4-9.0-ime-doublecursor-jitter-review.md（系列收尾；用户已确认真机三症全解） | 已回（2026-08-30 评审：复盘三建议已裁决固化——真机症状第一天条/探针过备/骨架常驻代整体移除，并入 test-methods/index.md「真机取证纪律」节；回函通知代字与 C-m 自验已落地） |
 | 2026-08-23 | [`kfmv4-9.0-ime-retro-review-response.md`](kfmv4-9.0-ime-retro-review-response.md) | kfmv4-9.0-ime-retro-review.md | 已回（2026-08-23 9.0） |
 | 2026-08-23 | [`kfmv4-9.0-ime-retro-review.md`](kfmv4-9.0-ime-retro-review.md) | kfmv4-9.0-ime-retro-report.md（9.0 复盘三问） | 已回（2026-08-23 9.0：四条全收讫；①已入 TASK.md 收口口径修订；④补丁已出随函呈批、本函通知即补丁版实弹；见 kfmv4-9.0-ime-retro-review-response.md） |
-| 2026-08-23 | [`kfmv4-9.0-ime-rootcause-response.md`](kfmv4-9.0-ime-rootcause-response.md) | kfmv4-9.0-ime-rootcause-review.md（黑匣子回放定位两根因） | 待核（2026-08-23 kfmv4-9.0：两根因修复 @ ffd0e5cf + 自验数据，待评审核收） |
+| 2026-08-23 | [`kfmv4-9.0-ime-rootcause-response.md`](kfmv4-9.0-ime-rootcause-response.md) | kfmv4-9.0-ime-rootcause-review.md（黑匣子回放定位两根因） | 已核（2026-08-30 评审：裁格+不滚方向采纳，后续 DECTCEM 传导 + 诱饵钉光标格修复使真机三症全解，本函结论已被 IME 讨伐收尾迭代吸收） |
 | 2026-08-23 | [`kfmv4-9.0-ime-rootcause-review.md`](kfmv4-9.0-ime-rootcause-review.md) | kfmv4-9.0-ime-flow-logger-response.md（`?debug` 事件流探针 @ 19f8b5d2） | 已回（2026-08-23 kfmv4-9.0：两根因修复落地 @ ffd0e5cf + 自验数据，见 kfmv4-9.0-ime-rootcause-response.md） |
 | 2026-08-23 | [`kfmv4-9.0-keybar-float-locate-report.md`](kfmv4-9.0-keybar-float-locate-report.md) | kfmv4-9.0-keybar-float-response.md（诊断字段 ih/vh/ot/kbb/kbc @ 2f5bcfe4） | 已回（2026-08-23 9.0：已按「钉 visual viewport」修 @ 348f8e32——栏 top=vv.offsetTop+vv.height-栏高、容器高=vv.height-栏高；守视基线 kbc=0 缝隙=0；待用户真机双态验收） |
 | 2026-08-23 | [`kfmv4-9.0-keybar-float-report.md`](kfmv4-9.0-keybar-float-report.md) | 8.8.3b keybar（用户实拍：有浏览器栏时下排被输入法覆盖、只露 ~2px；全屏时正常） | 已回（2026-08-23 9.0：vv 诊断字段已加——viewport/viewport-scroll 双通道落 ih/vh/ot/kbb/kbc，通道实测落盘；待用户真机双态数字） |
@@ -327,6 +327,7 @@
 | 2026-08-29 | [`kfmv4-9.0-vibe-coding-clip-response.md`](kfmv4-9.0-vibe-coding-clip-response.md) | kfmv4-9.0-vibe-coding-clip-review.md（2026-08-22，MECH-FLOW-16 停滞提醒催办） | 待回信 |
 | 2026-08-29 | [`kfmv4-review-floating-card-freshness-response.md`](kfmv4-review-floating-card-freshness-response.md) | kfm-na 知会（floating-card 域契约过时 / MECH-FLOW-03） | 已回应（2026-08-29 评审：契约已实质更新并绿，na 排队提交不存在） |
 | 2026-08-30 | [`kfm-na-ui-base-landing-notice.md`](kfm-na-ui-base-landing-notice.md) | 无（知会类通报） | 已收到（2026-08-30 评审：知悉，契约与电耗选项 A 收讫） |
+| 2026-08-30 | [`kfmv4-9.0-splash-boot-chain-report.md`](kfmv4-9.0-splash-boot-chain-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉，开机链落地+缓存 bug 定罪收讫） |
 | 2026-08-30 | [`kfmv4-9.0-splash-plugin-landing-report.md`](kfmv4-9.0-splash-plugin-landing-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉，落地+插件化自验收收讫） |
 | 2026-08-30 | [`kfmv4-9.0-splash-v14f-report.md`](kfmv4-9.0-splash-v14f-report.md) | 无（非回函，主动通报） | 已收到（2026-08-30 评审：知悉，demo 页自验收收讫） |
 <!-- gen:agent-inbox:end -->
