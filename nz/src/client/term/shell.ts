@@ -456,4 +456,16 @@ export class TermShell {
       y: this.historyDiv.offsetHeight + row * this.cellH,
     };
   }
+
+  /** 客户端像素坐标 → 屏幕格网 0 基 {col,row}（SGR 鼠标上报换算用）。
+   * 行模式滚进历史区/越出屏幕格网时 null（历史行不属格网，不上报）；
+   * ALT 态 historyDiv 隐藏（offsetHeight=0），整屏即格网。 */
+  cellAtPoint(clientX: number, clientY: number): { col: number; row: number } | null {
+    if (this.cellW <= 0 || this.cellH <= 0) return null;
+    const r = this.el.getBoundingClientRect();
+    const col = Math.floor((clientX - r.left) / this.cellW);
+    const row = Math.floor((clientY - r.top - this.historyDiv.offsetHeight) / this.cellH);
+    if (col < 0 || col >= this.opts.cols || row < 0 || row >= this.opts.rows) return null;
+    return { col, row };
+  }
 }

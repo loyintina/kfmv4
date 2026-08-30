@@ -152,7 +152,11 @@ export function createNzServer(): Server {
         // build-info.json 用 no-cache（热更自刷腿要拿最新，协商 304）。
         // splash-core.js 额外 no-cache（2026-08-30 用户拍板「改开屏直接
         // 覆盖」）：它是唯一真源动画本体，覆盖后刷新即新版，不动 bundle。
-        const NO_CACHE_BASE = new Set(['splash-core.js']);
+        // term-core glue/wasm 同 no-cache（08-30 鼠标上报真机实锤）：这俩
+        // URL 固定无 hash，wasm 重编后函数表移位，immutable 一年强缓存让
+        // 真机抱着旧 wasm 配新 glue → "null pointer passed to rust"。
+        // no-cache 代价只是协商 304（wasm 643KB 不重传），变更才全量。
+        const NO_CACHE_BASE = new Set(['splash-core.js', 'kfm_term_core.js', 'kfm_term_core_bg.wasm']);
         const immutable = !NO_CACHE_BASE.has(basename(abs)) &&
           ['.ttf', '.woff2', '.wasm', '.js', '.css', '.png', '.svg', '.map'].includes(ext);
         res.writeHead(200, {

@@ -86,7 +86,10 @@ na：`prefer_cjk()`；nz：双字体栈 NaMain/NaCJK（文件直接复用 na 的
 
 - na：SCROLLBACK_LINES=10000 显式常量+容量考题（终裁 #1 配套）
 - nz：SCROLLBACK_LINES=1000 三处单源+理由注+压帽考题；鼠标报告 SGR 1006
-  缺口挂单（排期已定：tmux 线之后）
+  ✅ 转正（2026-08-30）：核 mouse_mode() 位图（bit0=任一上报模式/bit1=SGR
+  编码）+壳滚轮/触摸拖拽合成/tap→SGR 序列；考卷 mouse-report.test.mjs
+  8/8（真 tmux 服务端 pane_in_mode/scroll_position 判）+真机 C 档 4/4。
+  边界：编码一律 SGR（X10/UTF8 旧编码不覆盖）、拖拽选择 motion 未实现
 - 双线：keymap.rs:4 式「注释旧话」清理教训——注释描述的行为与实现同步是
   契约维护的一部分
 

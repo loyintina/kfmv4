@@ -142,6 +142,25 @@ impl TermCore {
         self.term.mode().contains(rio_vt::crosswords::Mode::ALT_SCREEN)
     }
 
+    /// 鼠标报告模式位图（SGR 1006 转正，term-contract 挂单核销）：
+    /// bit0 = 任一鼠标上报模式在（?9h/?1000h/?1002h/?1003h 其一）；
+    /// bit1 = SGR 编码在（?1006h）。对端（tmux mouse on / htop）开鼠标
+    /// 上报后，渲染壳要把滚轮/触摸翻成 SGR 序列发回 PTY，本地滚动让路。
+    /// rio-vt 的 MOUSE_MODE 组合掩码不含编码位（SGR/UTF8 是编码开关，
+    /// 与上报模式正交），所以两位分开报。
+    pub fn mouse_mode(&self) -> u32 {
+        use rio_vt::crosswords::Mode;
+        let m = self.term.mode();
+        let mut bits = 0u32;
+        if m.intersects(Mode::MOUSE_MODE) {
+            bits |= 1;
+        }
+        if m.contains(Mode::SGR_MOUSE) {
+            bits |= 2;
+        }
+        bits
+    }
+
     /// 渲染帧（渲染壳取数协议 v1）：可见区逐行，行间 '\n' 分隔；
     /// 每行 = `{text}\x1f{runs}`。text 是该行全部格子（占位格跳过、
     /// 空白 '\0'→空格，不裁尾——渲染要满宽）；runs 是同样式连续段的
@@ -346,6 +365,20 @@ mod tests {
         assert!(t.alt_screen(), "?1049h 后应进备用屏幕");
         t.feed(b"\x1b[?1049l");
         assert!(!t.alt_screen(), "?1049l 后应回主屏幕");
+    }
+
+    #[test]
+    fn mouse_mode_tracks_sgr() {
+        let mut t = TermCore::new(80, 24, 1000);
+        assert_eq!(t.mouse_mode(), 0, "默认无鼠标上报");
+        // tmux mouse on 的标准组合：?1000h(点击上报) + ?1006h(SGR 编码)
+        t.feed(b"\x1b[?1000h");
+        assert_eq!(t.mouse_mode() & 1, 1, "?1000h 后 bit0 应置位");
+        assert_eq!(t.mouse_mode() & 2, 0, "未开 ?1006h 时 bit1 不应置位");
+        t.feed(b"\x1b[?1006h");
+        assert_eq!(t.mouse_mode(), 3, "?1000h+?1006h 后两位都置位");
+        t.feed(b"\x1b[?1000l\x1b[?1006l");
+        assert_eq!(t.mouse_mode(), 0, "复位后清零");
     }
 
     #[test]

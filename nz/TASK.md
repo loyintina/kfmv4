@@ -1619,3 +1619,26 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   渐隐结束与就绪差 10ms；页面侧 splash-boot-verify 6/6 不回退；
   boot-splash-capture 改判据（0 帧=开屏 attach 前已摘=bye 生效
   特征非故障）。
+- 2026-08-30：**鼠标报告 SGR 1006 转正**（term-contract 挂单核销，
+  用户痛点=tmux attach 后无法滚动）。双堵定罪：①tmux 走 alt screen
+  →ALT 三路禁滚无回滚区；②滚轮→SGR 1006 未实现→tmux(mouse on)
+  收不到滚轮进不了 copy-mode。实现：核 mouse_mode() 位图（bit0=
+  MOUSE_MODE 任一/bit1=SGR_MOUSE，rio-vt 的 MOUSE_MODE 掩码不含编码
+  位故分报）；壳层=wheel(passive:false) 激活时 preventDefault 发
+  `\x1b[<64/65;c;rM`、触摸拖拽合成滚轮（2 行 px=1 notch，上滑=64）、
+  tap=左键 press+release、touchmove 兜底拦本地滚动；坐标换算=shell
+  .cellAtPoint（历史区/越界 null 不上报）。未激活时一切照旧。
+  验收：A 档 mouse-report.test.mjs 8/8（真 PTY+真 tmux scrtest：
+  服务端 pane_in_mode/scroll_position 判、WS 帧字节断言 1 基坐标、
+  行模式/ALT 无鼠标零鼠标帧、触摸合成）+真机 C 档 4/4（实验台
+  attach，copy-mode 截图取证 assets/mouse-device-copymode.png）
+  +五卷 10+5+19+6+4+npm90+rust9 零回退。**顺手两条真机实锤修复**：
+  ①term-core glue/wasm 缓存头 immutable→no-cache（URL 无 hash，wasm
+  重编函数表移位，真机抱旧 wasm 配新 glue=null pointer passed to
+  rust——热更闭环的断腿）；②__kfmNzTermScroll 闭包裸抓 core const，
+  replay 重连 free 换新核后全钩抛锈错，改 card.core 活引用（服务器
+  重启即触发，真机 C 档的实证价值）。**实验台边界记档**：CDP
+  Input.dispatchMouseEvent/dispatchTouchEvent 与 Page.captureScreenshot
+  经 cdp-relay 无应答/超时（首 send 即挂），本期用页内合成事件+
+  canvasShot 像素眼绕行，引擎级输入待 relay 排查；最终手感球交用户
+  真指。边界：编码一律 SGR（X10/UTF8 不覆盖）、拖拽选择 motion 未做。

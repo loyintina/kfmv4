@@ -24,6 +24,10 @@ export interface TermCoreHandle {
   /** 备用屏幕（ALT_SCREEN，TUI 整屏程序）：true 时渲染壳切整屏渲染
    * （两区模型的固定输入行只对行模式成立，TUI 光标满屏跑不能剥行）。 */
   alt_screen(): boolean;
+  /** 鼠标报告模式位图（SGR 1006）：bit0=任一上报模式在（?1000/?1002/
+   * ?1003），bit1=SGR 编码在（?1006h）。渲染壳据此把滚轮/触摸翻成
+   * SGR 序列发回 PTY。 */
+  mouse_mode(): number;
   /** 渲染帧取数协议（行级 DOM 渲染壳用），格式见 wasm 侧注释。 */
   render_frame(): string;
   /** 历史区行数（scrollback 已攒，8.8.3c） */

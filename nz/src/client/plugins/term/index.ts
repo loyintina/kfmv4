@@ -326,6 +326,66 @@ export function applyTermBundle(ctx: Context): void {
           >= scrollEl.scrollHeight - 5;
         shell.autoScroll = card.atBottom; // 上滑中光标 nearest 兜底歇火
       });
+
+      // SGR 1006 鼠标上报层（term-contract 挂单转正，tmux 滚动修复）：
+      // 对端开鼠标上报（?1000/?1002/?1003 任一）时——tmux mouse on、htop——
+      // 滚轮/触摸翻成 SGR 序列经 bridge.input 发回 PTY，本地滚动让路；
+      // 未开时一切照旧（行模式上滑翻历史、文本选择不受影响）。
+      // 编码一律 SGR（tmux 默认带 ?1006h；X10/UTF8 旧编码手机场景不覆盖，
+      // 记边界）。拖拽选择（motion 事件）本期不做，记边界。
+      const mouseActive = () => (card.core.mouse_mode() & 1) !== 0;
+      const sgrMouse = (btn: number, col: number, row: number, release: boolean) => {
+        if (!card.sessionId) return;
+        bridge.input(card.sessionId, `\x1b[<${btn};${col};${row}${release ? 'm' : 'M'}`);
+      };
+      scrollEl.addEventListener('wheel', (e) => {
+        if (!mouseActive()) return; // 未激活：本地滚动照旧
+        const cell = shell.cellAtPoint(e.clientX, e.clientY);
+        if (!cell) return;
+        e.preventDefault(); // 拦截本地滚动，滚轮语义交给对端
+        sgrMouse(e.deltaY < 0 ? 64 : 65, cell.col + 1, cell.row + 1, false);
+      }, { passive: false });
+      // 手机没有滚轮：触摸拖拽合成滚轮（每累计 2 行像素=1 个 notch，
+      // 手指上滑=看更早内容=64 上滚）；tap（未拖动的抬指）=左键
+      // press+release（htop 点按钮/tmux 选 pane）。touch-action 不动态
+      // 切：ALT 态 scrollEl overflow:hidden 本就滚不动；行模式开鼠标是
+      // 罕态，用 touchmove preventDefault 兜底拦截。
+      let touchAcc = 0, touchLastY = 0, touchMoved = false, touchDown = false;
+      scrollEl.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' || !mouseActive()) return;
+        touchDown = true; touchMoved = false; touchAcc = 0; touchLastY = e.clientY;
+      });
+      scrollEl.addEventListener('pointermove', (e) => {
+        if (!touchDown || !mouseActive()) return;
+        const dy = e.clientY - touchLastY;
+        touchLastY = e.clientY;
+        if (Math.abs(dy) > 1) touchMoved = true;
+        touchAcc += dy;
+        const notchPx = (shell.metrics.cellH || 16) * 2;
+        while (Math.abs(touchAcc) >= notchPx) {
+          const cell = shell.cellAtPoint(e.clientX, e.clientY);
+          if (!cell) { touchAcc = 0; break; }
+          sgrMouse(touchAcc < 0 ? 64 : 65, cell.col + 1, cell.row + 1, false);
+          touchAcc -= Math.sign(touchAcc) * notchPx;
+        }
+      });
+      const touchEnd = (e: PointerEvent) => {
+        if (!touchDown) return;
+        touchDown = false;
+        if (!mouseActive() || e.pointerType === 'mouse') return;
+        if (!touchMoved) { // tap = 左键点按
+          const cell = shell.cellAtPoint(e.clientX, e.clientY);
+          if (cell) {
+            sgrMouse(0, cell.col + 1, cell.row + 1, false);
+            sgrMouse(0, cell.col + 1, cell.row + 1, true);
+          }
+        }
+      };
+      scrollEl.addEventListener('pointerup', touchEnd);
+      scrollEl.addEventListener('pointercancel', () => { touchDown = false; });
+      scrollEl.addEventListener('touchmove', (e) => {
+        if (mouseActive()) e.preventDefault(); // 行模式罕态兜底：拦本地滚动
+      }, { passive: false });
       // 判卷/取证钩子契约（standard-scrollback 三节 + bottom-anchor
       // 考卷）：v1 单卡口径，多卡并存时后开的覆盖——多卡改造小步再按
       // cardId 分键。两区模型的 __kfmNzTermInputRow 随单区回退退役
@@ -349,9 +409,14 @@ export function applyTermBundle(ctx: Context): void {
         rows: card.rows, // RO 自愈钉要断言行列落地（ranger-rows-not-shrink）
         cols: card.cols,
         // 压帽考卷字段（审计终裁漂移#1：SCROLLBACK_LINES=1000 三件套之
-        // 考题件）——历史封顶与挤出计数，断言「灌超量后历史恒=钉值」
-        histLen: core.history_len(),
-        evicted: core.lines_evicted(),
+        // 考题件）——历史封顶与挤出计数，断言「灌超量后历史恒=钉值」。
+        // 必须走 card.core（活引用）：replay 重连会 free 旧核换新核
+        // （onOutput replay 分支），闭包裸抓 core const=已释放的
+        // null pointer（08-30 真机实锤：服务器重启后全钩抛锈错）
+        histLen: card.core.history_len(),
+        evicted: card.core.lines_evicted(),
+        // SGR 鼠标上报判卷字段（mouse-report 考卷）：核当前鼠标模式位图
+        mouseMode: card.core.mouse_mode(),
         // C4 对照题取数口：壳渲染尺（宽 span 断言用）
         cellW: shell.metrics.cellW,
         cellH: shell.metrics.cellH,
