@@ -257,8 +257,8 @@
       "attempts": 1
     },
     "contract-vs-map-floating-card": {
-      "hash": "5910f2e6ddf273f47285ad1d7df5d2114369b33c",
-      "lastRun": "2026-08-23",
+      "hash": "ce4d6332111fb01f9459c0c3c0ad285094ccfa49",
+      "lastRun": "2026-08-29",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -1241,6 +1241,13 @@
       "skipped": 21,
       "kept": 1,
       "dropped": 1
+    },
+    {
+      "date": "2026-08-29",
+      "ran": 1,
+      "skipped": 29,
+      "kept": 0,
+      "dropped": 0
     }
   ]
 }

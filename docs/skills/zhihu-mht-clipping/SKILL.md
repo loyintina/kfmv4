@@ -1,6 +1,6 @@
 ---
 name: zhihu-mht-clipping
-description: 把知乎 MHT（等网页另存为产物）剪藏进 vault 的 /root/00-Loyintina/50-AI研究/10-剪藏/——解正文、提取并验证图片、坏图走 CDN 抓真、读图描述、产出单个 md。用于处理信箱里的知乎 .mht 文件。
+description: 把知乎 MHT（等网页另存为产物）剪藏进 vault 的 /root/00-Loyintina/50-AI研究/10-剪藏/——解正文、提取并验证图片、坏图走 CDN 抓真、读图描述、产出单个 md。用于处理手机 Download/分享保存 里的知乎 .mht 文件。
 whenToUse: 当任务涉及把知乎 MHT（或类似网页 MHT）剪藏入库、提取知乎图片、处理 .mht / page_1.html / mht_parts。也适用于"知乎 MHT 图片损坏"相关场景。
 ---
 
@@ -19,7 +19,7 @@ whenToUse: 当任务涉及把知乎 MHT（或类似网页 MHT）剪藏入库、�
 ## 流程
 
 ### 1. 取文件
-`scp -P 8022 localhost:'~/w/信箱/<标题>.mht'  <工作目录>/`
+`scp -P 8022 localhost:"/storage/emulated/0/Download/分享保存/<文件名>.mht"  <工作目录>/`
 
 ### 2. 解正文（二进制）+ 图（带位置标记）
 ```python
