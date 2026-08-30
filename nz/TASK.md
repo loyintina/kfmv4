@@ -1649,3 +1649,17 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   =65）；detach 改服务端 detach-client -s（打字 detach 依赖
   copy-mode 状态两次真红：在内被键位吞、不在则 q 污染命令行拼
   qtmux）。A 档 9/9+真机 C 档 4/4+五卷/npm90 零回退。
+- 2026-08-30 · **tmux attach「大滚动」观测定罪**（用户报告：进入 tmux
+  窗口后有很大滚动才落地，窗口够长滚得久；脚本 experiments/dbg-tmux-
+  attach-scroll.mjs，100ms×12s 逐帧采样实锤）：**nz 本地滚动全程无辜**
+  （scrollTop=0/scrollHeight=728 恒定）——滚动观感=对端 kimi TUI 的
+  **整史重绘洪峰**：attach 触发 tmux 窗口 resize（最小客户端规则）→
+  SIGWINCH → kimi 把整个会话历史按新尺寸重排重绘，洪峰时长∝会话长度
+  （dsh 4638 行历史滚 12s+ 未净）。对照：纯 zsh 会话 attach 瞬时落地
+  无洪峰。修向候选（待用户拍板）：①tmux window-size 策略 ②kimi 侧
+  别整史重绘 ③nz 渲染吞吐优化（洪峰必须流完，但流速有头部空间待量）。
+  **观测纪律两钉**：①实验台选页按容器非零筛前台——App 有前台
+  Activity(?nosplash)+离屏 Service(裸 URL,0×0,回退格网 20x5)双
+  WebView，find includes 会错拿离屏页（实测离屏 20x5 attach 把 dsh
+  窗口压到 20 列，殃及其它客户端）；②detach-client -t 只认
+  client_tty 不认 client_id（两轮残留 20x5/73x44 观测客户端实测）。
