@@ -1540,3 +1540,41 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   干净终端（~1.5s），闪烁消除。纪律候选：DOM 类状态断言≠画面——
   观感问题必须逐帧实录（screencast/连拍）验证，「你确实能看到渲染
   过程吗」是对的质问。
+- 2026-08-30 · 壳层开屏落地（8.8.5 续，用户拍板「从 apk 壳层点击就
+  播放动画，持续到能操作再切换」）：①MainActivity 双层 WebView——
+  底=终端（8023/?nosplash 页面内开屏让位壳层，_tApk=点击墙钟入账），
+  顶=splash WebView 载 file:///android_asset/splash（零网络等待，
+  动画本体 splash-core.js 与页面侧唯一真源同文件，package.sh 打包
+  时机械拷贝）；主题 windowBackground=同款静态徽标帧（experiments/
+  gen-splash-static.mjs 从 demo ?t=4000 冻结帧生成）盖住点击→
+  WebView 初始化盲窗（连渲染体都不存在的一段，任何 App 都只能
+  静态帧）。②盲窗自监控（用户拍板「让它自己监控自己的数据传
+  过来」）：onCreate/webview-created/loadUrl/splash-first-picture
+  （postVisualStateCallback，弃 PictureListener——API 18 起废弃
+  且现代 WebView 常不回调）/term-page-started/finished/
+  native-first-frame/splash-dismissed 逐拍墙钟 POST /__boot-marks
+  落 /tmp/nz-boot-marks.log——「点击→页面出生」这段页面
+  performance 永远看不到的账由壳记。③桥：终端页 first-frame →
+  window.NzNative.firstFrame() → 壳令 splash 层 __complete() 收口
+  →渐隐摘除。三轮冷启动数字账稳定：动画点击后 ~0.16s 起跑、
+  ~2.7s 可操作、~3.8s 开屏退净。④盲窗像素取证走 CDP（scripts/
+  boot-splash-capture.mjs：ssh nz_exit 杀→am start 冷启→8026 轮询
+  出 splash target→attach 连拍真合成器像素，帧落 docs/active/
+  nine-zero/assets/boot-splash-f*.jpg）——f0 实证外蓝内紫菱瞳
+  徽标在真机盲窗期真实上屏，f1=渐隐帧。定罪并废弃 decorView
+  自绘路线：View.draw() 抓不到硬件加速 WebView 内容（自证图全黑，
+  Android 已知限制），壳侧 sendDecorShot+服务器 /__boot-shot 端点
+  已拆；点击→splash-first-picture ~0.16s 静态帧段声明盲区（内容
+  =windowBackground 固定图，时长有账）。⑤自杀令两连坑定罪：
+  裸 am start 的 extras 被 Intent.filterEquals 吸收（不带 extras
+  比较）=纯「带回前台」谁都不收，对活进程下自杀令必须
+  FLAG_ACTIVITY_CLEAR_TOP（-f 0x04000000）销毁重建走 onCreate；
+  nz-exit mark 与 System.exit(0) 抢跑输赢不定=正常，死透判据=
+  CDP target 消失不赌日志。⑥观测脚本纪律新增：CDP relay 死在
+  App 里，App 一死 8026 黑洞（connect 挂起不拒绝），fetch 必须
+  带 AbortSignal.timeout 否则轮询环整体卡死（实踩一次）。验收：
+  端到端对活 App 全自治闭环绿（杀→死透判→冷启→取证→终端回）+
+  五卷（bottom-anchor 10/10、scrollback 5/5、keybar-click 19/19、
+  term-hooks 6/6、cjk-inktop 4/4）+npm 90 全绿+typecheck+build 过；
+  bottom-anchor ②一次红复跑绿=考卷时序抖动（clickSends 同类
+  脆弱点）。待：用户真眼过开机序列观感。

@@ -24,7 +24,10 @@
         android:label="NZ-Agent"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
-        android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
+        android:theme="@style/NzSplashTheme">
+        <!-- 主题=8.8.6 壳层开屏（res/values/styles.xml）：windowBackground
+             =静态徽标帧盖住点击→WebView 初始化盲窗；原 Theme.DeviceDefault
+             .NoActionBar.Fullscreen 语义由 parent 继承。 -->
         <!-- usesCleartextTraffic=true：targetSdk=28 起明文 HTTP 默认被禁，
              而 nz 终端是 http://127.0.0.1:8023/ 回环明文——不开这个 WebView
              直接拒载（net::ERR_CLEARTEXT_NOT_PERMITTED）。回环+隧道语境

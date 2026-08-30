@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 8.8.6 壳层开屏主题（用户拍板「从 apk 壳层点击就播放动画」）：
+     windowBackground=静态徽标帧——点击图标第一拍系统就画上它，盖住
+     「进程创建+WebView 初始化」这段连渲染体都不存在的盲窗（约 1s）；
+     原 Fullscreen 主题其余语义不动。帧图=gen-splash-static.mjs 从
+     splash-core 冻结帧机械生成（唯一真源的定帧态，不手画）。 -->
+<resources>
+    <style name="NzSplashTheme" parent="android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@drawable/splash_img</item>
+    </style>
+</resources>

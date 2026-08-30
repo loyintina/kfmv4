@@ -59,12 +59,18 @@ echo "=== [2/5] d8（class → dex） ==="
     $(find "$BUILD/classes" -name '*.class')
 
 echo "=== [3/5] aapt2 compile+link + 装 dex ==="
-# res 先 compile 成 .flat 再 -R 喂 link（图标入包正路；不编 R.java——
-# Java 皮不引用资源，manifest 的 @mipmap 引用由 aapt2 解析）
+# 动画本体同步（8.8.6 唯一真源纪律）：asset 开屏页的 splash-core.js 一律
+# 从 nz/public/ 机械拷贝——壳层/页面内/demo 三处同一文件，不手抄不抄岔
+cp ../../public/splash-core.js android/assets/splash/splash-core.js
+# res 先 compile 成 .flat 再喂 link（图标/主题入包正路；不编 R.java——
+# Java 皮不引用资源，manifest 的 @mipmap/@style 引用由 aapt2 解析）。
+# 注意位置参数=base 资源，-R=overlay——overlay 语义下新 style 会被当
+# 「override 不存在的资源」报错（8.8.6 加 NzSplashTheme 时实踩），base 没事
 "$AAPT2" compile --dir android/res -o "$BUILD/res.zip"
 "$AAPT2" link -o "$BUILD/unsigned.apk" -I "$AJAR" \
     --manifest android/AndroidManifest.xml \
-    -R "$BUILD/res.zip" \
+    "$BUILD/res.zip" \
+    -A android/assets \
     --min-sdk-version "$MIN_API" --target-sdk-version "$TARGET_SDK" \
     --version-code "$VERSION_CODE" --version-name "$VERSION_NAME"
 cp "$BUILD/dex/classes.dex" "$BUILD/stage/"

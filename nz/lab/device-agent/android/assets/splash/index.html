@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nz-splash</title>
+<!--
+  壳层开屏薄页（8.8.6，用户拍板「从 apk 壳层点击就播放动画，持续到能
+  操作再切换」）——APK splash WebView 加载 file:///android_asset/splash/
+  index.html，零网络等待，WebView 一就绪动画即起。
+
+  唯一真源纪律：动画本体 ./splash-core.js 由 package.sh 从 nz/public/
+  机械拷贝（与页面内开屏/demo 同一文件），本页只做 DOM 引用装配 +
+  noDelay 起播 + 暴露 __complete 收口口（壳收到终端首帧桥信号后调它，
+  扫完定帧→壳渐隐摘除本层）。
+
+  时长语义：intro 按基准速度扫一遍（~2.6s）后进入永久活跃动画——
+  壳层开屏的等待时长不可预知（冷启动字体 9.5s 也可能），不定死时长，
+  等 __complete 信号收口。
+-->
+<style>
+  html, body { margin: 0; background: #05070f; height: 100%; }
+</style>
+</head>
+<body>
+<div id="nz-splash"><div class="beam beam-outer"></div><div class="beam beam-outer"></div><div class="beam beam-inner"></div><pre></pre></div>
+<script src="./splash-core.js"></script>
+<script>
+  (function () {
+    var root = document.getElementById('nz-splash');
+    var kids = root.children;
+    var h = window.NzSplashCore.create({
+      splash: root,
+      art: root.querySelector('pre'),
+      beamO: kids[0], beamO2: kids[1], beamI: kids[2],
+    });
+    h.show({ noDelay: true }); // 壳层即点即播：无 1s 黑场延迟
+    // 壳的收口口：终端首帧桥信号到达时由 MainActivity evaluateJavascript 调
+    window.__complete = function () { return h.complete(); };
+    // 观测口（CDP 直连 splash WebView 时读）：版本与运行态
+    window.__splashHandle = h;
+  })();
+</script>
+</body>
+</html>

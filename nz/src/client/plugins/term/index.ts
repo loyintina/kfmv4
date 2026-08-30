@@ -169,8 +169,20 @@ export function applyTermBundle(ctx: Context): void {
         // 开机开屏收口信号（2026-08-30 开机自播开屏）：splash 壳听
         // 'first-frame' 调 complete() 让扫线收口退场；判卷取数口不变。
         try { window.dispatchEvent(new CustomEvent('nz-term-mark', { detail: k })); } catch { /* 事件口失败不挡 */ }
+        if (k === 'first-frame') {
+          // 壳层开屏桥（8.8.6，用户拍板「持续到能操作再切换」）：APK 的
+          // splash WebView 等此信号 __complete() 收口渐隐；浏览器/Via
+          // 无 NzNative=空调用不挡
+          try { (window as unknown as { NzNative?: { firstFrame?: () => void } }).NzNative?.firstFrame?.(); } catch { /* 桥失败不挡 */ }
+        }
       };
       mark('open-start');
+      // 壳层启动账（8.8.6）：APK 把 onCreate（点击）墙钟放在 ?_tApk=，
+      // 本页算「点击→页面出生」真实差值一并入账（浏览器无此参不记）
+      try {
+        const tApk = new URLSearchParams(location.search).get('_tApk');
+        if (tApk) bootMarks['tap-to-nav'] = Math.round(performance.timeOrigin - Number(tApk));
+      } catch { /* 解析失败不挡 */ }
       const g = await glue();
       mark('glue-wasm-ready');
       glueCtor = g.TermCore; // replay 重建核用

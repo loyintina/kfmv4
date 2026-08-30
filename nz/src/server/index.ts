@@ -26,6 +26,10 @@ const PUBLIC_DIR = resolve(fileURLToPath(new URL('../../public/', import.meta.ur
 /** IME 事件流落盘位置（诊断取证；/tmp 易失正合适——取证完即弃，不入仓） */
 const IME_LOG = process.env.NZ_IME_LOG ?? '/tmp/nz-ime-events.log';
 
+/** 壳层启动时间戳落盘（8.8.6：APK 盲窗自监控——onCreate→首绘逐拍 POST，
+ *  「点击→页面出生」这段页面不可见的账由壳记；/tmp 易失同 IME 取证） */
+const BOOT_MARKS_LOG = process.env.NZ_BOOT_MARKS_LOG ?? '/tmp/nz-boot-marks.log';
+
 /** 服务端启动日志（客户端同款模式；未来接 ledger-service） */
 export const serverBootLog: string[] = [];
 function slog(msg: string): void {
@@ -99,6 +103,26 @@ export function createNzServer(): Server {
       });
       return;
     }
+    // 壳层启动时间戳端点（8.8.6 盲窗自监控）：APK MainActivity 把
+    // onCreate/webview-created/loadUrl/page-started/first-draw/page-finished
+    // 逐拍 POST 过来（JSON 一行一拍，墙钟+相对毫秒），原样追加落盘——
+    // 「点击→页面出生」是页面自己的 performance 永远看不到的账。
+    if (req.method === 'POST' && (req.url ?? '').split('?')[0] === '/__boot-marks') {
+      const chunks: Buffer[] = [];
+      let size = 0;
+      req.on('data', (c: Buffer) => {
+        size += c.length;
+        if (size <= 16384) chunks.push(c); // 单拍 16KB 封顶（一拍一行 JSON）
+      });
+      req.on('end', () => {
+        appendFile(BOOT_MARKS_LOG, Buffer.concat([...chunks, Buffer.from('\n')])).catch(() => { /* 落盘失败不挡服务 */ });
+        res.writeHead(204).end();
+      });
+      return;
+    }
+    // 盲窗像素取证不走服务器端点：splash WebView 本身是 CDP target，
+    // scripts/boot-splash-capture.mjs attach 它截真合成器像素（壳侧
+    // decorView 自绘抓不到硬件加速 WebView 内容，实测全黑已废弃）
     // gate 查询端点（App 侧轮询）：GET /api/gate/app-restart → 查
     // /tmp/nz-gate/app-restart，在 = {restart:true} 并摘除（P2 闸门第一片
     // 信号：na gate.rs restart-req 同语义，App 自杀 START_STICKY 拉回）
