@@ -14,9 +14,10 @@
   noDelay 起播 + 暴露 __complete 收口口（壳收到终端首帧桥信号后调它，
   扫完定帧→壳渐隐摘除本层）。
 
-  时长语义：intro 按基准速度扫一遍（~2.6s）后进入永久活跃动画——
-  壳层开屏的等待时长不可预知（冷启动字体 9.5s 也可能），不定死时长，
-  等 __complete 信号收口。
+  时长语义：intro 按 1.5s 扫完（用户 2026-08-30 拍板「1.5 秒跑完，
+  退静后正好能操作」——基准 ~2.6s 等比缩放 k≈0.58），扫完进入永久
+  活跃动画——壳层开屏的等待时长不可预知（冷启动字体 9.5s 也可能），
+  不定死时长，等 __complete 信号收口。
 -->
 <style>
   html, body { margin: 0; background: #05070f; height: 100%; }
@@ -34,7 +35,7 @@
       art: root.querySelector('pre'),
       beamO: kids[0], beamO2: kids[1], beamI: kids[2],
     });
-    h.show({ noDelay: true }); // 壳层即点即播：无 1s 黑场延迟
+    h.show({ noDelay: true, introMs: 1500 }); // 即点即播+1.5s 扫完
     // 壳的收口口：终端首帧桥信号到达时由 MainActivity evaluateJavascript 调
     window.__complete = function () { return h.complete(); };
     // 观测口（CDP 直连 splash WebView 时读）：版本与运行态
