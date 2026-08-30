@@ -207,6 +207,48 @@ public class MainActivity extends Activity {
                 dismissSplash();
             });
         }
+
+        /** 真触摸原语（2026-08-30 用户拍板，实验台通用基建）：给自己的
+         *  WebView dispatchTouchEvent 派发真实 DOWN/UP——无需任何权限
+         *  （只有注入*别的* uid 才要 INJECT_EVENTS），产出与用户手指
+         *  完全同款的真点击：容器 click→聚焦诱饵→键盘自然弹起，整个
+         *  链路走系统真触摸管道，无任何「模拟」差异。坐标=物理像素
+         *  （JS 侧用 cssX*devicePixelRatio 换算）。为什么不用
+         *  showSoftInput 直控键盘：窗口焦点被 IME 抢走后 ROM 拒调
+         *  （ime-show-rej/forced 三连实测），不可靠。 */
+        @JavascriptInterface
+        public void tap(final float x, final float y) {
+            runOnUiThread(() -> {
+                long now = android.os.SystemClock.uptimeMillis();
+                android.view.MotionEvent down = android.view.MotionEvent.obtain(
+                        now, now, android.view.MotionEvent.ACTION_DOWN, x, y, 0);
+                android.view.MotionEvent up = android.view.MotionEvent.obtain(
+                        now, now + 60, android.view.MotionEvent.ACTION_UP, x, y, 0);
+                termWeb.dispatchTouchEvent(down);
+                termWeb.dispatchTouchEvent(up);
+                down.recycle();
+                up.recycle();
+                mark("tap-" + (int) x + "-" + (int) y);
+            });
+        }
+
+        /** 收键盘（弹起走 tap 真触摸，收起用这个——hideSoftInputFromWindow
+         *  不依赖窗口焦点，实测可靠） */
+        @JavascriptInterface
+        public void ime(final boolean show) {
+            runOnUiThread(() -> {
+                if (show) {
+                    // 弹起统一走 tap（见上）；保留此分支只为兼容旧调用
+                    mark("ime-show-use-tap");
+                    return;
+                }
+                android.view.inputmethod.InputMethodManager imm =
+                        (android.view.inputmethod.InputMethodManager)
+                                getSystemService(INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(termWeb.getWindowToken(), 0);
+                mark("ime-hide");
+            });
+        }
     }
 
     /** 幂等摘层：removeView+destroy+入账，各路（complete 回报/bye 硬摘/
