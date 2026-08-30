@@ -7,7 +7,8 @@
  *   动画本体 = public/splash-core.js（唯一真源，splash-demo.html 同源；
  *   服务器对本文件单独 no-cache——覆盖后刷新即新版，不动 bundle.js）。
  *   本壳只管：DOM 挂载（容器走 host，owner 死自动摘）/ 本体脚本注入 /
- *   唤醒通道（?splash 参数、__kfmNzSplash CDP 口、click 关闭）/ ctx 服务。
+ *   唤醒通道（开机自播+首帧收口、?splash 参数、__kfmNzSplash CDP 口、
+ *   click 关闭）/ ctx 服务。
  *   未来换动画：①覆盖 splash-core.js ②config.src 指到别的本体——壳不改。
  *
  * 降级：本体脚本加载失败 → 壳注入兜底 CSS，覆层仍可 show 静态徽标帧
@@ -26,8 +27,10 @@ declare module 'cordis' {
 }
 
 interface SplashHandle {
-  show(): boolean;
+  show(opts?: { introMs?: number }): boolean;
   hide(): boolean;
+  /** v15 首帧收口：没扫完=跳到扫完帧定帧后退场；已扫完=短停留退场 */
+  complete(): boolean;
   render(t: number): void;
   isRunning(): boolean;
   VERSION: string;
@@ -87,7 +90,10 @@ const FALLBACK_CSS =
   '@keyframes nzPulseFb{0%,100%{opacity:1}50%{opacity:.45}}';
 
 export function applySplashBundle(ctx: Context, config: SplashBundleConfig = {}): void {
-  const src = config.src ?? './splash-core.js';
+  // ?v=15：一次性越狱——v14f 时代服务器缓存头 bug 把 splash-core.js 错发成
+  // immutable 一年，已中毒的 WebView/Via 缓存对裸 URL 永不再验证；带新查询
+  // 串=新缓存键。此后服务器 no-cache 已修对，覆盖文件刷新即新版。
+  const src = config.src ?? './splash-core.js?v=15';
 
   // ---- 主/影分流（plugtest 实测钉出来的纪律）----
   // main.ts 在 root 直挂后，cordis 全局 store 已有 'splash' 服务 + host 户口
@@ -175,12 +181,60 @@ export function applySplashBundle(ctx: Context, config: SplashBundleConfig = {})
   el.addEventListener('click', () => { void service.hide(); });
 
   // ---- 唤醒通道（仅主挂载）：?splash 参数 + __kfmNzSplash CDP 口 ----
+  const splashParam = /[?&]splash([=&]|$)/.test(location.search);
   if (primary) {
     window.__kfmNzSplash = (on: boolean): boolean => {
       if (on) { void service.show(); return true; }
       return service.hide();
     };
-    if (/[?&]splash([=&]|$)/.test(location.search)) void service.show();
+    if (splashParam) void service.show();
+  }
+
+  // ---- 开机自播（2026-08-30 用户拍板：开机动画进开机链，三线速度按
+  // 预测就绪时长重新定，动画结束正好扫完）----
+  // 编排：localStorage 存上次「开屏→首帧」实测时长做本次预测（无记录=
+  // 首次安装=冷启动 ~11.7s，08-28 探针实测），introMs 传给本体等比缩放
+  // 编排骨架；term 插件 first-frame 事件到达=实际就绪→complete() 收口
+  // （预测偏差由时间平移吸收）+ 实测回写 localStorage（下次更准）。
+  // ?splash=只看动画（不挂收口）；?nosplash=本次不开开屏。
+  if (primary && !splashParam && !/[?&]nosplash([=&]|$)/.test(location.search)) {
+    const LS_KEY = 'nz-splash-intro-ms';
+    const DEFAULT_INTRO = 11000;
+    const clampMs = (v: number): number => Math.min(20000, Math.max(400, Math.round(v)));
+    let predicted = DEFAULT_INTRO;
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) predicted = clampMs(parseFloat(raw));
+    } catch { /* 隐私模式无 localStorage，用默认 */ }
+    const shownAt = performance.now();
+    showFb(); // 立即盖屏（静态帧）；本体就绪后换动画从 t=0 起播
+    void ready.then((ok) => {
+      if (ok && handle) running = handle.show({ introMs: predicted });
+    });
+    const onMark = (ev: Event): void => {
+      if ((ev as CustomEvent).detail !== 'first-frame') return;
+      window.removeEventListener('nz-term-mark', onMark);
+      clearTimeout(watchdog);
+      try { localStorage.setItem(LS_KEY, String(clampMs(performance.now() - shownAt))); } catch { /* 记账失败不挡 */ }
+      // 本体可能还没加载完（首帧比 splash-core.js 快=冷启动带宽被字体/
+      // wasm 挤占的极端时序）——等 ready 再 complete，顺序保证在 boot
+      // show 之后（同 promise 先注册先跑）；兜底帧路径短停留即退
+      if (handle) { handle.complete(); return; }
+      void ready.then((ok) => {
+        if (ok && handle) { handle.complete(); return; }
+        setTimeout(() => { if (failed) hideFb(); }, 300);
+      });
+    };
+    // 看门狗：终端 OPEN FAIL/卡死不得让开屏永远盖屏
+    const watchdog = setTimeout(() => {
+      window.removeEventListener('nz-term-mark', onMark);
+      if (handle) handle.complete(); else if (failed) hideFb();
+    }, Math.max(predicted * 3, 30000));
+    window.addEventListener('nz-term-mark', onMark);
+    ctx.effect(() => () => {
+      window.removeEventListener('nz-term-mark', onMark);
+      clearTimeout(watchdog);
+    });
   }
 
   // ---- 卸载清场（plugtest 量残留：DOM 容器 host 白送；全局口只有主挂载

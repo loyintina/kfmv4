@@ -50,7 +50,9 @@ plugtest.register('eyes', (ctx) => applyEyesBundle(ctx));
 
 // 8.8.5 开屏插件（2026-08-30 用户拍板落地）：动画本体=public/splash-core.js
 // 静态资源（唯一真源，demo 同源，服务器 no-cache——覆盖即生效不动 bundle）；
-// 壳管 DOM 挂载/唤醒通道/服务。休眠默认，?splash 或 __kfmNzSplash 唤醒。
+// 壳管 DOM 挂载/唤醒通道/服务。开机自播（?nosplash 关）：intro 时长按
+// localStorage 上次实测预测，终端 first-frame 到达=complete() 收口退场；
+// ?splash / __kfmNzSplash 可手动重播（基准速度，不挂收口）。
 applySplashBundle(rootCtx);
 plugtest.register('splash', (ctx) => applySplashBundle(ctx));
 

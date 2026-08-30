@@ -1,5 +1,5 @@
 /* ============================================================================
- * 深蓝意志开屏核心 v14f —— 动画唯一真源（demo 页与正式覆层共用本文件）。
+ * 深蓝意志开屏核心 v15 —— 动画唯一真源（demo 页与正式覆层共用本文件）。
  *
  * 覆盖纪律（2026-08-30 用户拍板「未来改这个可以直接覆盖」）：
  *   本文件是唯一真源 + 服务器对 splash-core.js 单独 no-cache——
@@ -8,10 +8,16 @@
  * API：
  *   window.NzSplashCore.create(refs) -> handle
  *   refs   = { splash, art, beamO, beamO2, beamI }（DOM 元素，id 不约定）
- *   handle = { show(), hide(), render(t), isRunning(), VERSION }
- *     show()      唤醒（幂等重入：重置时钟从头播）
+ *   handle = { show(opts), hide(), complete(), render(t), isRunning(), VERSION }
+ *     show(opts)  唤醒（幂等重入：重置时钟从头播）。
+ *                 opts.introMs = 预测的终端就绪时长——编排骨架等比缩放，
+ *                 三条扫线正好在 introMs 扫完（v15 开机自播，用户拍板
+ *                 「开机动画结束时三线正好扫完，按时间重新定线速」）。
  *     hide()      淡出关闭
- *     render(t)   冻结帧渲染绝对毫秒 t（含 1s 延迟；自验收/截图用）
+ *     complete()  终端首帧就绪收口：没扫完=时间平移直接跳到扫完帧，
+ *                 定帧 SETTLE 后自动淡出；已扫完=短停留后淡出（v15）
+ *     render(t)   冻结帧渲染绝对毫秒 t（含 1s 延迟；自验收/截图用；
+ *                 恒用基准速度，不受 show(opts) 缩放影响）
  *
  * 编排骨架（v9c 起纪律：编排点钉光束位置按几何反解，不钉屏幕出现时机）：
  *   黑场 1s → 双蓝同底升起（快蓝开外环、慢蓝在后）→ 快蓝过瞳孔行时点出
@@ -21,7 +27,7 @@
  * 演化史与拍板记录见 splash-demo.html 头注与 TASK 2026-08-30 条目。
  * ========================================================================== */
 window.NzSplashCore = (function () {
-  var VERSION = 'v14f';
+  var VERSION = 'v15';
 
   // 覆层 CSS（唯一真源：demo 与正式覆层都吃这份；z-index 400 压 Cordis
   // 层根 overlay 300——v8 port 实测 300 被压漏出底部按键栏/终端）
@@ -48,8 +54,12 @@ window.NzSplashCore = (function () {
 
     var TICK = 42;
     var T0 = 1000;      // v14f：刷新后整体延迟 1s 再动线（治半空出现观感）
-    var T_OUT = 2000;   // 蓝光束扫全程（屏底缘→屏顶缘）
-    var T_IN = 2000;    // 紫光束扫全程（屏顶缘→屏底缘）
+    // v15：T_OUT/T_IN 从常量变实例变量——show({introMs}) 时等比缩放，
+    // 编排骨架（inStart/purpleIn/pupilHi/blue2V…全从这两个值几何反解）
+    // 随之整体伸缩，三线会师/孤瞳点火的相对关系不变。
+    var BASE_T_OUT = 2000, BASE_T_IN = 2000;
+    var T_OUT = BASE_T_OUT;   // 蓝光束扫全程（屏底缘→屏顶缘）
+    var T_IN = BASE_T_IN;     // 紫光束扫全程（屏顶缘→屏底缘）
     var SCAN_W = 1.5;                // 扫线冲顶亮斑半宽（行）
     var AHEAD_W = 0.6, AHEAD_MAX = 0.22; // 迎头微晕
     var REVEAL = 2;                  // 探照灯半径（行）
@@ -324,6 +334,9 @@ window.NzSplashCore = (function () {
       document.head.appendChild(st);
     }
     var t0 = 0, last = 0, dead = false, running = false;
+    var SETTLE = 500;       // 扫完定帧：给用户看一眼完整徽标再退场
+    var SETTLE_LATE = 300;  // 就绪时早已扫完（预测偏短）：短停留
+    var settleTimer = 0, completed = false;
     function tick(now) {
       if (dead || !running) return;
       if (now - last >= TICK) {
@@ -332,20 +345,46 @@ window.NzSplashCore = (function () {
       }
       requestAnimationFrame(tick);
     }
-    function show() {
+    function show(opts) {
       ensureStyle();
       prime();
       splash.classList.remove('out');
       splash.classList.add('on');
+      // v15 时长伸缩：必须在 'on' 之后量——display:none 时 preRect 全是 0，
+      // roundEnd() 会算出 Infinity/NaN
+      T_OUT = BASE_T_OUT; T_IN = BASE_T_IN;
+      var introMs = opts && opts.introMs;
+      if (introMs > 0) {
+        var base0 = roundEnd();
+        if (base0 > 0 && isFinite(base0)) {
+          var k = introMs / base0;
+          if (k < 0.15) k = 0.15; else if (k > 8) k = 8; // 防离谱预测拉爆编排
+          T_OUT = BASE_T_OUT * k; T_IN = BASE_T_IN * k;
+        }
+      }
+      clearTimeout(settleTimer); completed = false;
       t0 = performance.now(); last = 0; dead = false; running = true;
       requestAnimationFrame(tick);
       return running;
     }
     function hide() {
       running = false;
+      clearTimeout(settleTimer);
       splash.classList.add('out');
       setTimeout(function () { splash.classList.remove('on'); }, 320);
       return running;
+    }
+    // v15 首帧收口：预测与实际必有偏差——没扫完=时钟平移到扫完帧
+    // （光束灭/徽标完整/活跃动画起点），定帧后自动退场；已扫完=短停留。
+    // 幂等；未在播=false。
+    function complete() {
+      if (completed || !running) return false;
+      completed = true;
+      var ms = performance.now() - t0 - T0;
+      var late = ms >= roundEnd();
+      if (!late) t0 -= (roundEnd() - ms);
+      settleTimer = setTimeout(hide, late ? SETTLE_LATE : SETTLE);
+      return true;
     }
     splash.addEventListener('click', hide);
 
@@ -353,9 +392,14 @@ window.NzSplashCore = (function () {
       VERSION: VERSION,
       show: show,
       hide: hide,
+      complete: complete,
       isRunning: function () { return running; },
-      // 冻结帧：渲染绝对毫秒 t（含 1s 延迟；自验收/截图用）
-      render: function (t) { ensureStyle(); prime(); frame(t - T0); },
+      // 冻结帧：渲染绝对毫秒 t（含 1s 延迟；自验收/截图用；恒用基准速度）
+      render: function (t) {
+        ensureStyle(); prime();
+        T_OUT = BASE_T_OUT; T_IN = BASE_T_IN;
+        frame(t - T0);
+      },
     };
   }
 

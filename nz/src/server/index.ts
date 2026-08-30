@@ -134,7 +134,10 @@ export function createNzServer(): Server {
         res.writeHead(200, {
           'content-type': MIME[ext] ?? 'application/octet-stream',
           'last-modified': st.mtime.toUTCString(),
-          'cache-control': ext === '.html' || ext === '.json'
+          // immutable 变量必须真用——上一版只算不用，splash-core.js 实际
+          // 仍吃到 immutable 一年强缓存（08-30 真机实锤：覆盖 v15 后 WebView
+          // 5ms 缓存命中拿 v14f，complete() 不存在开屏永不退场）
+          'cache-control': ext === '.html' || ext === '.json' || !immutable
             ? 'no-cache'
             : 'public, max-age=31536000, immutable',
         });

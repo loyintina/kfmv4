@@ -166,6 +166,9 @@ export function applyTermBundle(ctx: Context): void {
       const mark = (k: string): void => {
         bootMarks[k] = Math.round(performance.now());
         try { (window as unknown as Record<string, unknown>).__kfmNzTermBootMarks = bootMarks; } catch { /* 判卷取数口失败不挡 */ }
+        // 开机开屏收口信号（2026-08-30 开机自播开屏）：splash 壳听
+        // 'first-frame' 调 complete() 让扫线收口退场；判卷取数口不变。
+        try { window.dispatchEvent(new CustomEvent('nz-term-mark', { detail: k })); } catch { /* 事件口失败不挡 */ }
       };
       mark('open-start');
       const g = await glue();

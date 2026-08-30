@@ -1502,3 +1502,26 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   version=v14f CDP 口在）+影子折腾完主挂载存活+五卷（bottom-anchor
   10/10、scrollback 5/5、keybar 19/19、term-hooks 6/6、cjk-inktop
   4/4）+npm 90 全绿+typecheck+build 过。
+- 2026-08-30 · 开屏进开机链（8.8.5 续，用户拍板「把开机动画加进去，
+  保证动画结束时三线正好扫完，按时间重新定线速」）：①splash-core
+  v15——T_OUT/T_IN 从常量变实例变量，show({introMs}) 等比缩放编排骨架
+  （全部编排点从这两个值几何反解，缩放后三线会师/孤瞳点火相对关系
+  不变；k clamp 0.15–8 防离谱预测），新增 complete()=首帧收口（没扫完
+  =时钟平移跳到扫完帧定帧 SETTLE 500ms 后自动淡出；已扫完=短停留
+  300ms；幂等），render(t) 冻结帧恒用基准速度（自验收确定性）；
+  ②term 插件 mark() 派发 nz-term-mark 事件（判卷取数口不变）；
+  ③splash 壳开机自播（?nosplash 关、?splash 只看动画不挂收口）——
+  localStorage 'nz-splash-intro-ms' 存上次「开屏→首帧」实测做本次
+  预测（无记录=首次安装=冷启动 11000 默认，clamp 400–20000），showFb
+  立即盖静态帧、本体就绪换动画从 t=0 起播，first-frame 到达=实测回写
+  +complete() 收口，看门狗 max(3×预测,30s) 防 OPEN FAIL 永远盖屏，
+  首帧比本体加载快的极端时序等 ready 再 complete；④顺带定罪两个
+  存量 bug（真机首验 3/6 红钓出来的）：服务器缓存头 immutable 变量
+  只算不用——splash-core.js 实际吃一年强缓存，已中毒 WebView/Via 对
+  裸 URL 永不再验证（真机实锤 5ms 缓存命中拿 v14f，complete() 不存在
+  开屏永不退场），修复=no-cache 真用上+壳侧 ?v=15 一次性越狱中毒
+  缓存键。验收：真机 CDP 两轮 6/6（scripts/splash-boot-verify.mjs：
+  开屏先盖屏/首帧后 .out 433ms 收口/预测写账/覆层摘除/scaled 路径
+  同样收口）+截图证据（splash-boot-mid/terminal.png，开屏退后
+  oh-my-zsh 提示符在底行）+plugtest PLUGTEST_OK 零泄漏+五卷+npm 90
+  +typecheck+build 全绿（nz-restart 闭环绿）。
