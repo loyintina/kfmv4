@@ -327,6 +327,7 @@
 | 2026-08-29 | [`kfmv4-9.0-vibe-coding-clip-response.md`](kfmv4-9.0-vibe-coding-clip-response.md) | kfmv4-9.0-vibe-coding-clip-review.md（2026-08-22，MECH-FLOW-16 停滞提醒催办） | 待回信 |
 | 2026-08-29 | [`kfmv4-review-floating-card-freshness-response.md`](kfmv4-review-floating-card-freshness-response.md) | kfm-na 知会（floating-card 域契约过时 / MECH-FLOW-03） | 已回应（2026-08-29 评审：契约已实质更新并绿，na 排队提交不存在） |
 | 2026-08-30 | [`kfm-na-ui-base-landing-notice.md`](kfm-na-ui-base-landing-notice.md) | 无（知会类通报） | 已收到（2026-08-30 评审：知悉，契约与电耗选项 A 收讫） |
+| 2026-08-30 | [`kfmv4-9.0-shell-splash-boot-report.md`](kfmv4-9.0-shell-splash-boot-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉壳层开屏自验收落地，三枚定罪收编方法库；待用户真眼最后一拍。） |
 | 2026-08-30 | [`kfmv4-9.0-splash-boot-chain-report.md`](kfmv4-9.0-splash-boot-chain-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉，开机链落地+缓存 bug 定罪收讫） |
 | 2026-08-30 | [`kfmv4-9.0-splash-boot-flicker-report.md`](kfmv4-9.0-splash-boot-flicker-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉开机序列三段闪修复落地，教训「DOM 状态断言 ≠ 画面」收编方法库；提交 6324303d 链绿待复核。） |
 | 2026-08-30 | [`kfmv4-9.0-splash-plugin-landing-report.md`](kfmv4-9.0-splash-plugin-landing-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉，落地+插件化自验收收讫） |
