@@ -1663,3 +1663,14 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   WebView，find includes 会错拿离屏页（实测离屏 20x5 attach 把 dsh
   窗口压到 20 列，殃及其它客户端）；②detach-client -t 只认
   client_tty 不认 client_id（两轮残留 20x5/73x44 观测客户端实测）。
+- 2026-08-30 · **洪峰节流渲染落地**（用户拍板「直接把最尾部信息替换
+  贴上」；attach 大滚动定罪后续）：字节时间线实锤洪峰 246KB/1.2s
+  到齐、旧实现 135 消息=135 次全屏 DOM 渲染——瓶颈在逐消息渲染非
+  源头。修法=字节照全喂核（终态正确性不可跳）+渲染按档合并：平常
+  16ms（打字手感不变）、洪峰（500ms 窗>16KB）150ms 跳帧、尾帧必画
+  （makeRenderScheduler，plugins/term/index.ts）。验收：A 档
+  render-throttle 3/3（24KB 洪峰仅 5 帧/终态不丢/平常档 600ms 上屏）
+  +真机 A/B：attach dsh 收敛 2740→1585ms、渲染 135→29 帧；六卷
+  10+5+19+6+4+9+npm90 零回退。边界：omp/opencode 等全屏 TUI 的
+  resize 整史重绘是行业通病，洪峰字节必须流完（节流只省中间帧），
+  治本在对端别重绘。

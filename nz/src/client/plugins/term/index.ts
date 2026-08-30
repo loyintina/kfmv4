@@ -62,6 +62,40 @@ interface TermCardInstance {
    *  2026-08-26 用户拍板 TUI 底部要求，tui-keybar-bottom-review） */
   syncAlt: () => void;
   checkDrift: () => void;
+  /** 洪峰节流渲染（08-30 用户拍板「贴尾部」）：输出字节照全喂核（终态
+   * 正确性），渲染按档位调度——平常 16ms 内上屏（打字手感不变），
+   * 洪峰（500ms 窗内 >16KB）降 150ms 档跳帧，尾帧必画。 */
+  scheduleRender: (nBytes: number) => void;
+}
+
+/** 洪峰节流渲染调度器（2026-08-30 attach 洪峰定罪：300KB/1.2s 到齐、
+ * 135 条消息=135 次全屏 DOM 渲染，中间帧纯属白画还拖慢收敛）：
+ * feed 照旧逐消息（核状态必须吃完所有字节），renderFrame 按档位合并。
+ * 洪峰判据=500ms 滑窗字节量>16KB（attach 重绘/seq 大输出），平时 16ms
+ * ≈单帧刷新，打字回显无感；洪峰档 150ms——视觉从「疯狂滚动」变「一两
+ * 下跳变落地」。尾帧保证：每条输出都调度，pending 期间到达的合并进
+ * 同一帧，静默后最后一帧必画。 */
+function makeRenderScheduler(inst: TermCardInstance): (nBytes: number) => void {
+  let pending = false;
+  let lastRender = 0;
+  let winStart = 0;
+  let winBytes = 0;
+  return (nBytes: number) => {
+    const now = Date.now();
+    if (now - winStart >= 500) { winStart = now; winBytes = 0; }
+    winBytes += nBytes;
+    if (pending) return;
+    pending = true;
+    const flood = winBytes > 16384;
+    const interval = flood ? 150 : 16;
+    const wait = Math.max(0, interval - (now - lastRender));
+    setTimeout(() => {
+      pending = false;
+      lastRender = Date.now();
+      inst.shell.renderFrame();
+      inst.placeKb(); // 诱饵钉光标格——渲染后坐标才是终态
+    }, wait);
+  };
 }
 
 export interface TermCardService {
@@ -141,8 +175,7 @@ export function applyTermBundle(ctx: Context): void {
         inst.core.feed(new TextEncoder().encode(data));
         inst.syncAlt();
         inst.checkDrift();
-        inst.shell.renderFrame();
-        inst.placeKb();
+        inst.scheduleRender(data.length); // 洪峰节流：渲染合并，尾帧必画
         inst.followOutput();
       }
     },
@@ -152,8 +185,7 @@ export function applyTermBundle(ctx: Context): void {
         inst.core.feed(new TextEncoder().encode(`\r\n[进程已退出 code=${code}]\r\n`));
         inst.syncAlt();
         inst.checkDrift();
-        inst.shell.renderFrame();
-        inst.placeKb();
+        inst.scheduleRender(64); // 退出提示走平常档，立即上屏
         inst.followOutput();
       }
     },
@@ -302,9 +334,10 @@ export function applyTermBundle(ctx: Context): void {
       const card: TermCardInstance = {
         cardId, sessionId: null, core, shell, cols: size.cols, rows: size.rows,
         placeKb: () => {}, atBottom: true, followOutput: () => {}, inputToBottom: () => {},
-        syncAlt: () => {}, checkDrift: () => {},
+        syncAlt: () => {}, checkDrift: () => {}, scheduleRender: () => {},
       };
       instances.set(cardId, card);
+      card.scheduleRender = makeRenderScheduler(card);
 
       // 8.8.3c scrollback 集中状态机（standard-scrollback-8.8.3c 纪律，
       // 散写必翻车）：atBottom 初始 true；新输出仅 true 才跟底（follow
@@ -421,6 +454,8 @@ export function applyTermBundle(ctx: Context): void {
         evicted: card.core.lines_evicted(),
         // SGR 鼠标上报判卷字段（mouse-report 考卷）：核当前鼠标模式位图
         mouseMode: card.core.mouse_mode(),
+        // 洪峰节流判卷字段：实际渲染帧计数（洪峰期应远小于消息数）
+        frames: shell.stats.frames,
         // C4 对照题取数口：壳渲染尺（宽 span 断言用）
         cellW: shell.metrics.cellW,
         cellH: shell.metrics.cellH,
