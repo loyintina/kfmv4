@@ -42,11 +42,10 @@ import java.nio.charset.StandardCharsets;
  *      windowBackground 纯暗帧，时长有 boot-marks 入账）。
  *   4. 自毁钩子：intent extra nz_exit=true → 退进程（Termux 无权限
  *      force-stop 别的 uid，冷启动闭环测试靠它自杀再由 ssh 拉起）。
- *      对活进程下自杀令必须带 FLAG_ACTIVITY_CLEAR_TOP（am start
- *      -f 0x04000000）：裸 am start 的 extras 会被 filterEquals
- *      吸收（不带 extras 比较），变成纯「带回前台」谁都不收；
- *      CLEAR_TOP 销毁重建走 onCreate 才拿得到 extras（2026-08-30
- *      实踩）。onNewIntent 一路留作未来改 singleTop/Task 的保险。
+ *      singleTask 单实例后对活进程下自杀令走 onNewIntent（裸
+ *      am start 即可送达）；onCreate 一路管冷进程。历史坑：standard
+ *      时代裸 am start 的 extras 被 filterEquals 吸收（不带 extras
+ *      比较）=纯「带回前台」，须 CLEAR_TOP 销毁重建（2026-08-30 实踩）。
  *      注：nz-exit mark 与 System.exit(0) 抢跑，输赢不定=正常，
  *      死透判据=CDP target 消失，不赌这拍日志。
  *
@@ -142,6 +141,18 @@ public class MainActivity extends Activity {
         termWeb.loadUrl(TERM_URL + "?nosplash&_tApk=" + t0);
         splashWeb.loadUrl(SPLASH_URL);
         mark("loadUrl");
+
+        // 开屏看门狗（2026-08-30 实踩定罪：用户卡开屏进不去——网络 flap
+        // 期 WebView 吃旧缓存 bundle，无 NzNative 桥调用=摘屏信号永远
+        // 不到）。壳层开屏绝不能有「卡死永远出不去」的路径：15s 无
+        // first-frame 信号也强行摘层放用户进终端（页面侧开屏早有同款
+        // 看门狗 max(3×预测,30s)，壳层补上）。
+        root.postDelayed(() -> {
+            if (!dismissed) {
+                mark("splash-watchdog");
+                dismissSplash();
+            }
+        }, 15000);
 
         // 保活前台服务（BAR-029 同款）：退后台/息屏不被 cached-app 冻结器
         // 冻住——冻结=心跳停跳、DIAL 黑洞、实验台链路全僵（2026-08-27 实测）

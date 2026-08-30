@@ -36,10 +36,15 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density|fontScale">
             <!-- configChanges 全集=国产 ROM 实锤坑对策（kfm-na 2026-08-13
                  android-activity#196：MIUI/OriginOS 启动注入 density/fontScale
-                 变化触发 relaunch），一个都不许删。 -->
+                 变化触发 relaunch），一个都不许删。singleTask=单实例 kiosk
+                 壳：standard 模式下反复 am start/点图标会叠出多个
+                 MainActivity 实例（2026-08-30 实踩：B 实例卡开屏、C 实例
+                 正常，两实例同框会诊半小时）；单实例后 am start 走
+                 onNewIntent，自杀令/拉起语义唯一。 -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
