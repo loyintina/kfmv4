@@ -1578,3 +1578,20 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   term-hooks 6/6、cjk-inktop 4/4）+npm 90 全绿+typecheck+build 过；
   bottom-anchor ②一次红复跑绿=考卷时序抖动（clickSends 同类
   脆弱点）。待：用户真眼过开机序列观感。
+- 2026-08-30 · 卡开屏事故定罪+双治本（用户实拍「进入后只有启动
+  画面不会进入了」）：逐拍账+CDP 会诊还原——隧道 flap 期 WebView
+  吃旧缓存 bundle（无 NzNative 桥调用版本），摘屏信号永远不到=
+  壳层开屏有「卡死永远出不去」路径；另实锤 standard launchMode
+  反复 am start 叠出多 MainActivity 实例（B 卡死/C 正常同框）。
+  修复：①壳层 15s 看门狗——任何原因 15s 无 first-frame 强摘层
+  放行进终端（页面侧开屏早有同款 max(3×预测,30s)，壳层补齐）；
+  ②launchMode=singleTask 单实例 kiosk 壳，am start 走 onNewIntent，
+  自杀令裸 am start 即可送达（CLEAR_TOP 变备用）。同日盲窗纯暗化
+  （用户实拍定罪：静态徽标帧→动画暗场开场接不上=闪帧「很不专业」）：
+  windowBackground/root/WebView 三处钉 #05070f 与动画第一帧同色，
+  splash_img.png+gen-splash-static.mjs 拆除，WebView 默认白底
+  setBackgroundColor 防首绘前闪白。验收（nz-agent-1788063209）：
+  冷启动闭环绿（onNewIntent 自杀令首验过）+数字账稳定（动画
+  0.15s/可操作 2.7s/退净 3.8s）+看门狗不误伤（无 splash-watchdog
+  行）+f0 徽标帧实证。纪律：任何「盖住等信号」的 UI 都必须有
+  看门狗——信号链路上每一环都可能缺席（缓存/断网/桥丢）。
