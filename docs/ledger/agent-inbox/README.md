@@ -326,6 +326,7 @@
 | 2026-08-29 | [`kfm-na-gate-mutants-report.md`](kfm-na-gate-mutants-report.md) | kfmv4-review-na-three-reports-response.md §二(下批点将) | 待回信 |
 | 2026-08-29 | [`kfmv4-9.0-vibe-coding-clip-response.md`](kfmv4-9.0-vibe-coding-clip-response.md) | kfmv4-9.0-vibe-coding-clip-review.md（2026-08-22，MECH-FLOW-16 停滞提醒催办） | 待回信 |
 | 2026-08-29 | [`kfmv4-review-floating-card-freshness-response.md`](kfmv4-review-floating-card-freshness-response.md) | kfm-na 知会（floating-card 域契约过时 / MECH-FLOW-03） | 已回应（2026-08-29 评审：契约已实质更新并绿，na 排队提交不存在） |
+| 2026-08-30 | [`kfm-na-plugin-governance-proposal-response.md`](kfm-na-plugin-governance-proposal-response.md) | kfmv4-plugin-governance-proposal-submission.md | 待核（2026-08-30 kfm-na：初投，待评审收讫） |
 | 2026-08-30 | [`kfm-na-ui-base-landing-notice.md`](kfm-na-ui-base-landing-notice.md) | 无（知会类通报） | 已收到（2026-08-30 评审：知悉，契约与电耗选项 A 收讫） |
 | 2026-08-30 | [`kfmv4-9.0-mouse-report-sgr1006-report.md`](kfmv4-9.0-mouse-report-sgr1006-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉 SGR 1006 转正落地，term-contract 挂单核销；A 8/8 + C 4/4 + 零回退收讫；热更 wasm no-cache 与锈指针修复已入账；实验台 Input 域边界已记档。球在用户真指手感。） |
 | 2026-08-30 | [`kfmv4-9.0-shell-splash-boot-report.md`](kfmv4-9.0-shell-splash-boot-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉壳层开屏自验收落地，三枚定罪收编方法库；待用户真眼最后一拍。） |
