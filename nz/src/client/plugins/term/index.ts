@@ -246,13 +246,64 @@ export function applyTermBundle(ctx: Context): void {
       const prevBodyOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       ctx.effect(() => () => { document.body.style.overflow = prevBodyOverflow; });
+      // 视口提供者单源（2026-08-30 用户拍板「模拟键盘」基建）：终端所有
+      // vv 读取只走 vvNow——生产=visualViewport 直读；mockIme 激活=模拟
+      // 值。野生散装读取收编为一个可替换入口后，测试环境可用真机采到的
+      // 键盘参数重放占位，几何全链路可后台验证（原则：模拟验证已知、
+      // 真机发现未知）。
+      let mockVv: { offsetTop: number; height: number; width: number } | null = null;
+      const vvNow = () => {
+        if (mockVv) return mockVv;
+        const vv = window.visualViewport;
+        return vv ? { offsetTop: vv.offsetTop, height: vv.height, width: vv.width } : null;
+      };
+      // IME pan 不 resize（2026-08-30 用户拍板；dbg-ime-toggle-flood 真机
+      // 定罪：键盘弹收→vv 变→rows 重测→PTY resize→tmux resize→SIGWINCH
+      // →kimi 整史重绘洪峰，弹 +423KB/收 +308KB/连点×3 +713KB）。修法=
+      // 格网解耦：键盘占位期间行列格网**不动**（tmux/TUI 零感知=零洪峰），
+      // 可视区变矮用「视窗平移」补——ALT(TUI) 程序化滚到底让输入行露在
+      // 键盘上方；行模式不抢用户滚动位（顶行锚定最不惊吓），光标被遮由
+      // renderFrame nearest 兜底原样。
+      //
+      // 入态四闸（几何上「键盘」与「地址栏大缩/考卷 vv mock」信号同款，
+      // 必须靠语义区分）：
+      //   ①武装窗口：诱饵 2s 内刚聚焦——平台规矩「键盘只为刚聚焦的可编辑
+      //     元素弹起」，地址栏伸缩/桌面拖窗/bottom-anchor 的 vv mock 都不
+      //     带这个聚焦序曲（该卷 kbFocus 在卷首，vv mock 在十余秒后）；
+      //   ②宽不变 ③innerH 不变（resizes-content 只缩视觉视口；桌面拖窗
+      //     两个都变=确定性排除）④跌幅>20% 且 >150px（真机键盘≈271px、
+      //     地址栏≈40-90px，双阈值居中）。武装只管入态：入态后锁存，
+      //     高度涨回阈值内=收键盘退出（此时打字多久都不影响）。
+      // 键盘弹了但没聚焦序曲（理论不存在）=退回旧 resize 行为，优雅降级。
+      let vvBaseW = 0, vvBaseH = 0, baseInnerH = 0, imeActive = false;
+      let imeArmUntil = 0;
+      // 武装=「召唤键盘的意图」信号：必须挂在点击/聚焦**意图**上而非
+      // focus 事件——收键盘（返回键）后诱饵仍持焦，再点终端 kb.focus()
+      // 是 no-op 不发事件，第二次起召唤会永远武装不上（考卷实锤）。
+      const armIme = () => { imeArmUntil = Date.now() + 2000; };
+      const updateImeState = () => {
+        const v = vvNow();
+        if (!v || v.width <= 0) return;
+        // 宽/布局视口变=真几何变更：重置基线、退 IME 态、走正常重测
+        if (v.width !== vvBaseW || Math.abs(window.innerHeight - baseInnerH) > 2) {
+          vvBaseW = v.width; vvBaseH = v.height; baseInnerH = window.innerHeight;
+          imeActive = false; return;
+        }
+        if (imeActive) { // 锁存态：高度涨回=收键盘退出（基线顺手收下）
+          if (v.height >= vvBaseH * 0.8) { imeActive = false; vvBaseH = v.height; }
+          return;
+        }
+        if (v.height > vvBaseH) vvBaseH = v.height; // 基线=本宽度见过的最高
+        const drop = vvBaseH - v.height;
+        if (Date.now() < imeArmUntil && drop > vvBaseH * 0.2 && drop > 150) imeActive = true;
+      };
       // 钉视觉视口（锚真可见区）：卡身 top/height 随 vv 走。初次即钉，
       // 让下面 measure() 读到的 scrollEl.clientHeight 就是真可见区高度。
       // 同值跳过：pinToVv 被帧级/空闲巡查高频调用，值没变就别写 style
       // （避免无意义的 style recalc 失效）。
       let pinnedTop = -1, pinnedH = -1;
       const pinToVv = () => {
-        const vv = window.visualViewport;
+        const vv = vvNow();
         if (!vv) return; // 无 vv API：height:100% 贴布局视口兜底
         const top = vv.offsetTop, h = vv.height;
         if (top === pinnedTop && h === pinnedH) return;
@@ -261,6 +312,7 @@ export function applyTermBundle(ctx: Context): void {
         container.el.style.height = `${h}px`;
       };
       pinToVv();
+      updateImeState(); // 基线即立：冷启动 500ms 内弹键盘也有「无键盘高」可比对
       // 实测定尺寸（写死 80×24 时代结束）：先用与壳同字体的探针量字格，
       // 再按容器可视面积算行列——手机有多宽终端就有多少列，不再裁字。
       // 探针字体栈=壳渲染栈（TERM_FONT_STACK 同源——换字体后度量自动跟
@@ -360,6 +412,15 @@ export function applyTermBundle(ctx: Context): void {
         shell.autoScroll = card.atBottom; // 上滑中光标 nearest 兜底歇火
       });
 
+      // IME 视窗平移（格网解耦的补视动作）：键盘占位期卡身已钉 vv（矮了）
+      // 而格网没缩——ALT(TUI) 底行=输入区会被键盘挡住，程序化滚到底让
+      // 底行露在键盘上方（overflow:hidden 下 scrollTop 仍可写，用户手势
+      // 滚不动=ALT 禁滚纪律不破；渲染壳 nearest 兜底 ALT 下歇火，不会
+      // 来抢这个值）。行模式故意不动：顶行锚定最不惊吓阅读中的用户。
+      const applyImePan = () => {
+        if (card.core.alt_screen()) scrollEl.scrollTop = scrollEl.scrollHeight;
+      };
+
       // SGR 1006 鼠标上报层（term-contract 挂单转正，tmux 滚动修复）：
       // 对端开鼠标上报（?1000/?1002/?1003 任一）时——tmux mouse on、htop——
       // 滚轮/触摸翻成 SGR 序列经 bridge.input 发回 PTY，本地滚动让路；
@@ -443,6 +504,10 @@ export function applyTermBundle(ctx: Context): void {
         scrollHeight: scrollEl.scrollHeight,
         clientHeight: scrollEl.clientHeight,
         isAtBottom: card.atBottom,
+        // IME 态判卷字段（ime-pan 考卷）：true=键盘占位期格网解耦中
+        // （rows 故意不动、不重测），断言「mock 弹键盘后 ime=true 且
+        // rows 恒=弹前值」用。
+        ime: imeActive,
         rows: card.rows, // RO 自愈钉要断言行列落地（ranger-rows-not-shrink）
         cols: card.cols,
         // 压帽考卷字段（审计终裁漂移#1：SCROLLBACK_LINES=1000 三件套之
@@ -552,6 +617,37 @@ export function applyTermBundle(ctx: Context): void {
       // 画布重画眼（2026-08-28 用户拍板）：后台不产帧时的像素眼，
       // 原理/保真边界见 shell.canvasShot 注释。返 dataURL（空串=失败）。
       win.__kfmNzCanvasShot = (scale?: number) => shell.canvasShot(scrollEl, scale);
+      // 模拟键盘（2026-08-30 用户拍板「后台模拟键盘」）：键盘对终端的
+      // 本质=底部占位+输入接口——输入接口已有 __kfmNzTermInject，本钩
+      // 补占位半：用真机实测键盘参数（默认 271px，dbg-ime-toggle-flood
+      // 真机采得）重放 vv 收缩，走与真键盘完全相同的几何链路（vvNow
+      // 单源保证），后台零打扰验收「IME 弹收零洪峰」。open=false=摘
+      // mock 回真 vv。返 imeActive（扳机是否命中，判卷直断）。
+      // 边界：只重放「已知地形」（已实测的占位/时序）；ROM 真行为
+      // （动画过渡帧/焦点/浏览器 vv 怪癖）不在重放范围=前台真键盘的活。
+      win.__kfmNzTermMockIme = (open: boolean, kbPx = 271) => {
+        if (open) {
+          armIme(); // 召唤意图武装（模拟 tap）；focus 兜原生聚焦路径
+          kb.focus({ preventScroll: true });
+          const real = window.visualViewport;
+          const h = real?.height ?? container.el.clientHeight;
+          mockVv = {
+            offsetTop: 0,
+            width: real?.width ?? container.el.clientWidth,
+            height: Math.max(120, h - kbPx),
+          };
+        } else {
+          mockVv = null;
+        }
+        // 与真键盘同一条路：钉卡身→更 IME 态→（IME 中）平移→报遥测→
+        // 防抖重测（IME 闸在 scheduleResize 内，此处不重复判）
+        pinToVv();
+        updateImeState();
+        if (imeActive) applyImePan();
+        reportViewport(open ? 'mock-ime-open' : 'mock-ime-close');
+        scheduleResize('mock-ime');
+        return imeActive;
+      };
 
       // ?debug 诊断骨架（常备基建，复盘裁决①：管道+字段注册点常驻，专症
       // 字段随症收口——IME 专用 col/cv/cb 已随三症全解移除，保留通用渲染
@@ -605,7 +701,7 @@ export function applyTermBundle(ctx: Context): void {
       // scrollClientH=可滚余量）。原 ch 字段并入 scrollClientH（同值正名）。
       const reportViewport = (type: string, extra: Record<string, unknown> = {}) => {
         if (!postDebug) return;
-        const vv = window.visualViewport;
+        const vv = vvNow(); // 单源：mockIme 期遥测报的是模拟占位（后台重放可判读）
         const cardRect = container.el.getBoundingClientRect();
         const scrollRect = scrollEl.getBoundingClientRect();
         postDebug({
@@ -632,6 +728,11 @@ export function applyTermBundle(ctx: Context): void {
       // 一条同内容 input——记下刚上屏的文本，补发来了直接吞掉防二次发送。
       let composing = false;
       let justCommitted = '';
+      // IME 入态武装（平台规矩镜像：键盘只为刚聚焦的可编辑元素弹起——
+      // 聚焦序曲后 2s 内的 vv 大缩才认作键盘占位，见 updateImeState 四闸。
+      // 主武装点在容器 click=召唤意图；focus 监听兜原生聚焦路径——Tab
+      // 直入、直接点中 1px 诱饵、程序化 focus）
+      kb.addEventListener('focus', armIme);
       kb.addEventListener('compositionstart', () => { composing = true; kb.value = ''; });
       kb.addEventListener('compositionend', (e) => {
         composing = false;
@@ -644,7 +745,7 @@ export function applyTermBundle(ctx: Context): void {
           bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
         }
       });
-      container.el.addEventListener('click', () => kb.focus({ preventScroll: true }));
+      container.el.addEventListener('click', () => { armIme(); kb.focus({ preventScroll: true }); });
       kb.addEventListener('keydown', (e) => {
         if (composing || e.isComposing) return; // 合成中按键归输入法
         let bytes = keyToBytes(e);
@@ -689,6 +790,16 @@ export function applyTermBundle(ctx: Context): void {
           // ranger-alt-enter-rows-measure-review）：先钉到当前 vv 再量——
           // 键盘/地址栏动画期 vv 会尖峰，pin 落在量之后会量到瞬态高。
           pinToVv();
+          // IME 闸（格网解耦）：键盘占位期**不重测行列**——格网不动则
+          // tmux/TUI 零感知零洪峰；补视走 applyImePan 平移。退出 IME 态
+          // （高度涨回阈值内）自然落到下面重测：行列若与键盘前一致=
+          // no-op（收键盘也零洪峰），真变了（旋转/地址栏）才补一刀。
+          updateImeState();
+          if (imeActive) {
+            applyImePan();
+            reportViewport('ime-pan', { src });
+            return;
+          }
           // 行数对卡身量：scrollEl.clientHeight 源自 vv 锚定的卡身（已被
           // 真可见区限高 + overflow:hidden 硬裁剪），rows×cellH 恒
           // ≤ 真可见区——chrome 显隐/键盘弹收都物理画不出卡外。
@@ -727,6 +838,10 @@ export function applyTermBundle(ctx: Context): void {
         // 先钉到 live vv：vv 事件不送达时 visualViewport.height 仍是当前
         // 真值（属性直读不依赖事件）——输出帧驱动下卡身总会收敛到真可见区
         pinToVv();
+        // IME 闸：键盘占位期 rows 故意 ≠ floor(clientH/cellH)（格网解耦），
+        // 漂移自愈必须认得这不是漂移——不纠，纠了=把洪峰放回来。
+        updateImeState();
+        if (imeActive) return;
         const m = metricNow(); // 字格单源：与 measure 同一把壳渲染尺
         if (m.cellW <= 0 || m.cellH <= 0) return;
         const wantRows = Math.max(5, Math.floor(scrollEl.clientHeight / m.cellH));
@@ -744,6 +859,9 @@ export function applyTermBundle(ctx: Context): void {
         // 卡身同拍钉 vv（transition-report①：防抖后跳=过渡闪帧真凶）；
         // 按键栏在容器流内，卡身底动=整组底部 UI 同步上浮
         pinToVv();
+        // IME 平移同样当拍即钉（不等 150ms 防抖，防抖后跳=闪帧同款病）
+        updateImeState();
+        if (imeActive) applyImePan();
         // 视口事件随 IME 事件同流落日志（评审五节建议）
         reportViewport('viewport');
         // 不滚！resize 时无条件滚到底是「每字抖几行」的真凶（黑匣子坐实：
@@ -759,6 +877,8 @@ export function applyTermBundle(ctx: Context): void {
       // 可视区变小→htop 底行切半，button-ime-tui-overflow-review 真机证据）
       const onViewportScroll = () => {
         pinToVv();
+        updateImeState();
+        if (imeActive) applyImePan();
         reportViewport('viewport-scroll');
         scheduleResize('vv-scroll');
       };
@@ -812,6 +932,9 @@ export function applyTermBundle(ctx: Context): void {
         // ALT 进入时清行模式残留的程序化滚动：行模式 scrollTop 可能>0，
         // ALT 下禁滚后这值会残留成"超屏几帧"的起点（runaway 实锤其一）。
         if (altNow) scrollEl.scrollTop = 0;
+        // 键盘开着进 ALT（TUI）：清零后立刻补平移——底行=输入区必须
+        // 露在键盘上方，不能停在顶（格网解耦，applyImePan 内有 ALT 判）
+        if (imeActive) applyImePan();
         // TUI 填满（视口−键栏高）不滚、行模式可回翻（fullscreen-card-port
         // 三节③：ALT 内容物理画不出卡外，overflow:hidden 防 TUI 溢出撑
         // 出滚动条；三路禁滚治程序化赋值，与此正交）
