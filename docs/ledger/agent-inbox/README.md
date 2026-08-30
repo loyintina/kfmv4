@@ -328,6 +328,7 @@
 | 2026-08-29 | [`kfmv4-review-floating-card-freshness-response.md`](kfmv4-review-floating-card-freshness-response.md) | kfm-na 知会（floating-card 域契约过时 / MECH-FLOW-03） | 已回应（2026-08-29 评审：契约已实质更新并绿，na 排队提交不存在） |
 | 2026-08-30 | [`kfm-na-ui-base-landing-notice.md`](kfm-na-ui-base-landing-notice.md) | 无（知会类通报） | 已收到（2026-08-30 评审：知悉，契约与电耗选项 A 收讫） |
 | 2026-08-30 | [`kfmv4-9.0-shell-splash-boot-report.md`](kfmv4-9.0-shell-splash-boot-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉壳层开屏自验收落地，三枚定罪收编方法库；待用户真眼最后一拍。） |
+| 2026-08-30 | [`kfmv4-9.0-shell-splash-case-alive-notice.md`](kfmv4-9.0-shell-splash-case-alive-notice.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉案例 001 转活文档；8.8.6 壳层开屏全线正式闭环收讫。） |
 | 2026-08-30 | [`kfmv4-9.0-shell-splash-case-archive-notice.md`](kfmv4-9.0-shell-splash-case-archive-notice.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉开发流程案例 001 已归档；七段复盘与下一个插件六步模板已入库。） |
 | 2026-08-30 | [`kfmv4-9.0-shell-splash-incident-notice.md`](kfmv4-9.0-shell-splash-incident-notice.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉卡开屏事故定罪与治本落地；「盖住等信号 UI 必须有看门狗」收方法库；singleTask+纯暗化已入账。） |
 | 2026-08-30 | [`kfmv4-9.0-shell-splash-timing-notice.md`](kfmv4-9.0-shell-splash-timing-notice.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉开屏时间线两连修落地，启动速度修正收讫；页面侧 6/6 不回退，TASK 已入账。） |
