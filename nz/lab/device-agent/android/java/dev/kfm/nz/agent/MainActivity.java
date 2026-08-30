@@ -138,8 +138,27 @@ public class MainActivity extends Activity {
         setContentView(root);
         mark("webview-created");
 
+        // 预测驱动退场（2026-08-30 用户拍板「隐去结束后刚好赶上准备完毕，
+        // 而不是准备完毕后开始隐去」）：上次实测「点击→就绪」毫秒存
+        // SharedPreferences，本次开机传给开屏页 ?bye=预测-320——开屏自己
+        // 提前渐隐，隐去完正好终端就绪。无数据（首启）不传=就绪才退场
+        // 的安全行为；预测偏慢=bye 晚于 first-frame=complete() 先走正常
+        // 路径（bye 作废）；预测偏快=bye 早隐去后露纯暗终端（WebView 底
+        // 已钉 #05070f），可接受的降级。实测就绪波动 ±100ms，锚很稳。
+        int predReady = getSharedPreferences("boot", MODE_PRIVATE).getInt("readyMs", -1);
+        String splashUrl = SPLASH_URL;
+        if (predReady > 0) {
+            // bye 不得早于 intro 扫完（1500）+一点余量，否则扫线途中渐隐=断帧；
+            // hash 传参不用 ?query——file:// 资源解析对 query 行为不赌
+            int bye = Math.max(predReady - 320, 1600);
+            splashUrl = SPLASH_URL + "#bye=" + bye;
+            // bye 路径的硬摘层保险：JS 已隐但 first-frame 迟迟不到时，
+            // 透明层仍会挡触摸——预测+1s 后无论如何摘（15s 看门狗是最终底）
+            root.postDelayed(this::removeSplashNow, predReady + 1000);
+        }
+
         termWeb.loadUrl(TERM_URL + "?nosplash&_tApk=" + t0);
-        splashWeb.loadUrl(SPLASH_URL);
+        splashWeb.loadUrl(splashUrl);
         mark("loadUrl");
 
         // 开屏看门狗（2026-08-30 实踩定罪：用户卡开屏进不去——网络 flap
@@ -182,33 +201,42 @@ public class MainActivity extends Activity {
         public void firstFrame() {
             runOnUiThread(() -> {
                 mark("native-first-frame");
+                // 实测「点击→就绪」入账，作下次开屏 bye 预测锚（预测驱动退场）
+                getSharedPreferences("boot", MODE_PRIVATE).edit()
+                        .putInt("readyMs", (int) (System.currentTimeMillis() - t0)).apply();
                 dismissSplash();
             });
         }
     }
 
+    /** 幂等摘层：removeView+destroy+入账，各路（complete 回报/bye 硬摘/
+     *  看门狗）共用，先到先摘后到空转 */
+    private void removeSplashNow() {
+        if (splashWeb == null) return;
+        WebView sw = splashWeb;
+        splashWeb = null;
+        root.removeView(sw);
+        sw.destroy();
+        mark("splash-dismissed");
+    }
+
     /** 首帧可操作才切换：splash 层 __complete() 扫完定帧渐隐——剩余毫秒
      *  由 JS 唯一真源回报，壳只按回报值延时摘层（不再写死猜 JS 行为：
-     *  700+400ms 固定猜曾是双时间源，终端就绪后白盖 ~1.1s） */
+     *  700+400ms 固定猜曾是双时间源，终端就绪后白盖 ~1.1s）。回报 0=
+     *  JS 已自行隐去（bye 预测路径先走了）=100ms 快摘；无回报/离谱=
+     *  旧版兜底 900ms */
     private void dismissSplash() {
         if (dismissed || splashWeb == null) return;
         dismissed = true;
-        final WebView sw = splashWeb;
-        sw.evaluateJavascript(
-                "window.__complete ? window.__complete() : 0",
+        splashWeb.evaluateJavascript(
+                "window.__complete ? window.__complete() : -1",
                 v -> {
                     int ms;
-                    try { ms = Integer.parseInt(v == null ? "0" : v.trim()); }
-                    catch (Exception e) { ms = 0; }
-                    if (ms <= 0 || ms > 2000) ms = 900; // 无回报/离谱=旧版兜底
-                    // JS 自己渐隐（#nz-splash .out 320ms），壳到点摘层即可
-                    root.postDelayed(() -> {
-                        if (splashWeb != sw) return; // 已被摘（看门狗等）
-                        root.removeView(sw);
-                        sw.destroy();
-                        if (splashWeb == sw) splashWeb = null;
-                        mark("splash-dismissed");
-                    }, ms);
+                    try { ms = Integer.parseInt(v == null ? "-1" : v.trim()); }
+                    catch (Exception e) { ms = -1; }
+                    if (ms == 0) ms = 100;            // JS 已隐（bye 先走）=快摘
+                    else if (ms < 0 || ms > 2000) ms = 900; // 无 __complete=旧版兜底
+                    root.postDelayed(this::removeSplashNow, ms);
                 });
     }
 

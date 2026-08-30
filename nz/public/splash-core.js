@@ -343,7 +343,7 @@ window.NzSplashCore = (function () {
     var t0 = 0, last = 0, dead = false, running = false;
     var SETTLE = 500;       // 扫完定帧：给用户看一眼完整徽标再退场
     var SETTLE_LATE = 300;  // 就绪时早已扫完（预测偏短）：短停留
-    var settleTimer = 0, completed = false;
+    var settleTimer = 0, byeTimer = 0, completed = false;
     function tick(now) {
       if (dead || !running) return;
       if (now - last >= TICK) {
@@ -370,14 +370,25 @@ window.NzSplashCore = (function () {
           T_OUT = BASE_T_OUT * k; T_IN = BASE_T_IN * k;
         }
       }
-      clearTimeout(settleTimer); completed = false;
+      clearTimeout(settleTimer); clearTimeout(byeTimer); completed = false;
       t0 = performance.now(); last = 0; dead = false; running = true;
+      // byeMs（2026-08-30 预测驱动退场，用户拍板「隐去结束刚好赶上就绪」）：
+      // 壳把「预测就绪−320」传进来，到点自行渐隐——渐隐完正好终端就绪。
+      // first-frame 先到=complete() 正常路径，bye 作废（clearTimeout）；
+      // bye 先到=自行隐去，complete() 后到 return 0=壳 100ms 快摘层。
+      var byeMs = opts && opts.byeMs;
+      if (byeMs > 0) {
+        byeTimer = setTimeout(function () {
+          if (!completed && running) { completed = true; hide(); }
+        }, byeMs);
+      }
       requestAnimationFrame(tick);
       return running;
     }
     function hide() {
       running = false;
       clearTimeout(settleTimer);
+      clearTimeout(byeTimer);
       splash.classList.add('out');
       setTimeout(function () { splash.classList.remove('on'); }, 320);
       return running;

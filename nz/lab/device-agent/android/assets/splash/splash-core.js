@@ -343,7 +343,7 @@ window.NzSplashCore = (function () {
     var t0 = 0, last = 0, dead = false, running = false;
     var SETTLE = 500;       // 扫完定帧：给用户看一眼完整徽标再退场
     var SETTLE_LATE = 300;  // 就绪时早已扫完（预测偏短）：短停留
-    var settleTimer = 0, completed = false;
+    var settleTimer = 0, byeTimer = 0, completed = false;
     function tick(now) {
       if (dead || !running) return;
       if (now - last >= TICK) {
@@ -370,29 +370,45 @@ window.NzSplashCore = (function () {
           T_OUT = BASE_T_OUT * k; T_IN = BASE_T_IN * k;
         }
       }
-      clearTimeout(settleTimer); completed = false;
+      clearTimeout(settleTimer); clearTimeout(byeTimer); completed = false;
       t0 = performance.now(); last = 0; dead = false; running = true;
+      // byeMs（2026-08-30 预测驱动退场，用户拍板「隐去结束刚好赶上就绪」）：
+      // 壳把「预测就绪−320」传进来，到点自行渐隐——渐隐完正好终端就绪。
+      // first-frame 先到=complete() 正常路径，bye 作废（clearTimeout）；
+      // bye 先到=自行隐去，complete() 后到 return 0=壳 100ms 快摘层。
+      var byeMs = opts && opts.byeMs;
+      if (byeMs > 0) {
+        byeTimer = setTimeout(function () {
+          if (!completed && running) { completed = true; hide(); }
+        }, byeMs);
+      }
       requestAnimationFrame(tick);
       return running;
     }
     function hide() {
       running = false;
       clearTimeout(settleTimer);
+      clearTimeout(byeTimer);
       splash.classList.add('out');
       setTimeout(function () { splash.classList.remove('on'); }, 320);
       return running;
     }
     // v15 首帧收口：预测与实际必有偏差——没扫完=时钟平移到扫完帧
     // （光束灭/徽标完整/活跃动画起点），定帧后自动退场；已扫完=短停留。
-    // 幂等；未在播=false。
+    // 幂等；未在播/已收口=0。
+    // 返回值=距完全隐去的剩余毫秒（settle+淡出 320，唯一真源时间线）——
+    // 壳层开屏（8.8.6）据此摘层：曾经壳侧写死 700+400ms 猜 JS 的行为，
+    // 两个时间源各说各话=终端就绪后白盖 ~1.1s（2026-08-30 启动速度
+    // 修正，用户拍板）。真值判断不受影响（0=falsy，>0=truthy）。
     function complete() {
-      if (completed || !running) return false;
+      if (completed || !running) return 0;
       completed = true;
       var ms = performance.now() - t0 - T0;
       var late = ms >= roundEnd();
       if (!late) t0 -= (roundEnd() - ms);
-      settleTimer = setTimeout(hide, late ? SETTLE_LATE : SETTLE);
-      return true;
+      var wait = late ? SETTLE_LATE : SETTLE;
+      settleTimer = setTimeout(hide, wait);
+      return wait + 320;
     }
     splash.addEventListener('click', hide);
 

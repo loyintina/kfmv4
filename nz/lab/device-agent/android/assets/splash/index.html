@@ -16,8 +16,10 @@
 
   时长语义：intro 按 1.5s 扫完（用户 2026-08-30 拍板「1.5 秒跑完，
   退静后正好能操作」——基准 ~2.6s 等比缩放 k≈0.58），扫完进入永久
-  活跃动画——壳层开屏的等待时长不可预知（冷启动字体 9.5s 也可能），
-  不定死时长，等 __complete 信号收口。
+  活跃动画。退场两条路：①first-frame→__complete() 正常收口；
+  ②#bye=<ms>（壳把上次实测「点击→就绪」−320 经 hash 传进来）到点
+  自行渐隐=预测驱动退场，隐去完正好赶上就绪（同日拍板）；
+  无 bye=首启安全行为（就绪才退场）。
 -->
 <style>
   html, body { margin: 0; background: #05070f; height: 100%; }
@@ -35,7 +37,10 @@
       art: root.querySelector('pre'),
       beamO: kids[0], beamO2: kids[1], beamI: kids[2],
     });
-    h.show({ noDelay: true, introMs: 1500 }); // 即点即播+1.5s 扫完
+    // 即点即播+1.5s 扫完；#bye=<ms>=壳传预测退场点（hash 不用 ?query——
+    // file:// 资源解析对 query 行为不赌；无=首启安全行为）
+    var bye = parseInt((location.hash.match(/bye=(\d+)/) || [])[1] || '0', 10);
+    h.show({ noDelay: true, introMs: 1500, byeMs: bye });
     // 壳的收口口：终端首帧桥信号到达时由 MainActivity evaluateJavascript 调
     window.__complete = function () { return h.complete(); };
     // 观测口（CDP 直连 splash WebView 时读）：版本与运行态
