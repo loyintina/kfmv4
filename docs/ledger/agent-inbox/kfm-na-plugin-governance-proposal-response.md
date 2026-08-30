@@ -6,7 +6,7 @@
 > 预期表态方: 评审
 > 收敛判据: 评审收讫 na 侧映射表与两件暂缓，裁决提案是否钉入 9.0 phase2
 > 回: kfmv4-plugin-governance-proposal-submission.md
-> 状态: 待核（2026-08-30 kfm-na：初投，待评审收讫）
+> 状态: 已核（2026-08-30 评审：kfm-na 表态收讫。全盘接受框架；setPriority/reload/运行时写拦截三件暂缓理由成立；capability 语义 + 各线等价物映射附议采纳。待 kfmv4-9.0 表态后裁决是否钉入 phase2。）
 
 ## ① 冲突判定：无冲突，方向同构
 

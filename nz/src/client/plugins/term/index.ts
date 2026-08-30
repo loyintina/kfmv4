@@ -346,8 +346,8 @@ export function applyTermBundle(ctx: Context): void {
         sgrMouse(e.deltaY < 0 ? 64 : 65, cell.col + 1, cell.row + 1, false);
       }, { passive: false });
       // 手机没有滚轮：触摸拖拽合成滚轮（每累计 2 行像素=1 个 notch，
-      // 手指上滑=看更早内容=64 上滚）；tap（未拖动的抬指）=左键
-      // press+release（htop 点按钮/tmux 选 pane）。touch-action 不动态
+      // 触控=拖内容惯例：手指下滑=拉下历史=64，上滑=回新内容=65）；
+      // tap（未拖动的抬指）=左键 press+release（htop 点按钮/tmux 选 pane）。touch-action 不动态
       // 切：ALT 态 scrollEl overflow:hidden 本就滚不动；行模式开鼠标是
       // 罕态，用 touchmove preventDefault 兜底拦截。
       let touchAcc = 0, touchLastY = 0, touchMoved = false, touchDown = false;
@@ -365,7 +365,11 @@ export function applyTermBundle(ctx: Context): void {
         while (Math.abs(touchAcc) >= notchPx) {
           const cell = shell.cellAtPoint(e.clientX, e.clientY);
           if (!cell) { touchAcc = 0; break; }
-          sgrMouse(touchAcc < 0 ? 64 : 65, cell.col + 1, cell.row + 1, false);
+          // 触控=拖内容惯例（08-30 用户真指拍板，与滚轮方向相反）：
+          // 手指下滑(dy>0)=把上面的历史拉下来看=滚轮上(64)；
+          // 手指上滑(dy<0)=回到新内容=滚轮下(65)。初版按滚轮逻辑映射
+          // （上滑=64）被真指实测判反——触屏直觉是「拖」不是「滚」。
+          sgrMouse(touchAcc > 0 ? 64 : 65, cell.col + 1, cell.row + 1, false);
           touchAcc -= Math.sign(touchAcc) * notchPx;
         }
       });

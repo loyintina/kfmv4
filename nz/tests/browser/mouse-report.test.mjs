@@ -101,8 +101,21 @@ const downFrames = await frames();
 const sgrDown = downFrames.filter(d => d.includes('\x1b[<65;'));
 check('③b 滚轮下发出 SGR \\x1b[<65; 帧', sgrDown.length > 0, `65帧=${sgrDown.length} 样例=${JSON.stringify(sgrDown[0] ?? null)}`);
 
-// ⑥ 触摸拖拽合成（在 ALT+鼠标态做：上滑=64，下滑=65）
+// ⑥ 触摸拖拽合成（在 ALT+鼠标态做）：触控=拖内容惯例——下滑=拉历史=64，上滑=回新=65
 await frames();
+await page.evaluate(() => {
+  const el = window.__kfmNzTermScroll().getContainer();
+  const r = el.getBoundingClientRect();
+  const x = r.left + r.width / 2;
+  const mk = (type, y) => new PointerEvent(type, { pointerType: 'touch', clientX: x, clientY: y, bubbles: true, cancelable: true });
+  el.dispatchEvent(mk('pointerdown', r.top + 100));
+  for (let y = 100; y <= 300; y += 25) el.dispatchEvent(mk('pointermove', r.top + y)); // 下滑 200px
+  el.dispatchEvent(mk('pointerup', r.top + 300));
+});
+await page.waitForTimeout(300);
+const touchFrames = await frames();
+const t64 = touchFrames.filter(d => d.includes('\x1b[<64;'));
+check('⑥a 触摸下滑拖拽→合成 64 帧（拖历史下来）', t64.length > 0, `64帧=${t64.length}`);
 await page.evaluate(() => {
   const el = window.__kfmNzTermScroll().getContainer();
   const r = el.getBoundingClientRect();
@@ -113,16 +126,13 @@ await page.evaluate(() => {
   el.dispatchEvent(mk('pointerup', r.top + 100));
 });
 await page.waitForTimeout(300);
-const touchFrames = await frames();
-const t64 = touchFrames.filter(d => d.includes('\x1b[<64;'));
-check('⑥触摸上滑拖拽→合成 64 帧', t64.length > 0, `64帧=${t64.length}`);
-// ⑥的拖拽把 tmux 拖进了 copy-mode——先 q 退出再 detach，否则
-// 'tmux detach' 被 copy-mode 键位吞掉（首轮红测实锤：detach 没生效）
-await inject('q');
-await pollPane(s => !s.inMode);
-
-// ④ detach 回行模式 → 滚轮零鼠标帧 + 本地滚动照旧
-await inject('tmux detach\r');
+const touchFrames2 = await frames();
+const t65 = touchFrames2.filter(d => d.includes('\x1b[<65;'));
+check('⑥b 触摸上滑拖拽→合成 65 帧（拖回新内容）', t65.length > 0, `65帧=${t65.length}`);
+// ④ detach 回行模式 → 滚轮零鼠标帧 + 本地滚动照旧。
+// detach 走服务端命令（两次真红教训：打字 detach 依赖 copy-mode 状态——
+// 在 copy-mode 里被键位吞、不在则清场 q 污染命令行拼出 qtmux，都不确定）
+try { tmux('detach-client -s scrtest'); } catch {}
 await page.waitForTimeout(1200);
 await inject('seq 1 100\r');
 await page.waitForTimeout(1200);

@@ -87,20 +87,20 @@ const up = await pollPane(s => s.inMode && s.pos > 0);
 check('②真机滚轮上→copy-mode+scroll_position>0', up.inMode === true && up.pos > 0,
   `pane_in_mode=${up.inMode} scroll_position=${up.pos}`);
 
-// ③ 触摸拖拽上滑（手机主路径，JS 合成 PointerEvent 同②边界）：
-// scroll_position 继续涨
+// ③ 触摸拖拽下滑（手机主路径，触控=拖内容：下滑=拉历史，08-30 用户
+// 真指拍板反向；JS 合成 PointerEvent 同②边界）：scroll_position 续涨
 const posBefore = paneState().pos ?? 0;
 await page.evaluate(() => {
   const el = window.__kfmNzTermScroll().getContainer();
   const r = el.getBoundingClientRect();
   const x = r.left + r.width / 2;
   const mk = (type, y) => new PointerEvent(type, { pointerType: 'touch', clientX: x, clientY: y, bubbles: true, cancelable: true });
-  el.dispatchEvent(mk('pointerdown', r.top + 300));
-  for (let y = 300; y >= 60; y -= 30) el.dispatchEvent(mk('pointermove', r.top + y));
-  el.dispatchEvent(mk('pointerup', r.top + 60));
+  el.dispatchEvent(mk('pointerdown', r.top + 100));
+  for (let y = 100; y <= 340; y += 30) el.dispatchEvent(mk('pointermove', r.top + y));
+  el.dispatchEvent(mk('pointerup', r.top + 340));
 });
 const up2 = await pollPane(s => s.pos > posBefore, 3000);
-check('③真机触摸拖拽上滑→scroll_position 续涨', up2.pos > posBefore, `scroll_position ${posBefore}→${up2.pos}`);
+check('③真机触摸拖拽下滑→scroll_position 续涨', up2.pos > posBefore, `scroll_position ${posBefore}→${up2.pos}`);
 // 截图走页内像素眼 canvasShot（CDP Page.captureScreenshot 经 relay 超时，
 // 与 Input 域同病；canvasShot 是为此建的后台通道）
 const shot = await page.evaluate(() => window.__kfmNzCanvasShot?.(1) ?? '');
@@ -111,8 +111,8 @@ await wheelJs(240, 12);
 const down = await pollPane(s => !s.inMode);
 check('④真机滚轮下→回底（pane_in_mode=0）', down.inMode === false, `pane_in_mode=${down.inMode} pos=${down.pos}`);
 
-// 清场：detach + 杀会话，终端还原
-await inject('tmux detach\r');
+// 清场：服务端 detach（打字 detach 依赖 copy-mode 状态，两次真红教训）+杀会话
+try { tmux('detach-client -s mscrtest'); } catch {}
 await sleep(800);
 try { tmux('kill-session -t mscrtest 2>/dev/null'); } catch {}
 await browser.close();
