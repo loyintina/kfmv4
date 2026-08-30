@@ -2,7 +2,6 @@ package dev.kfm.nz.agent;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.view.ViewGroup;
 import android.webkit.JavascriptInterface;
@@ -11,14 +10,13 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 /**
- * nz 设备代理壳（8.8.6 壳层开屏版）：点击即静态徽标 → WebView 就绪即动画
+ * nz 设备代理壳（8.8.6 壳层开屏版）：点击即纯暗场 → WebView 就绪即动画
  * → 终端首帧可操作才切换。
  *
  * 三张牌（P1 评审信 kfmv4-9.0-nz-device-agent-p1-review §二）不变：
@@ -29,8 +27,10 @@ import java.nio.charset.StandardCharsets;
  *      切换」）：FrameLayout 双层 WebView——底=终端（8023，nosplash
  *      让位壳层），顶=splash WebView 加载 asset 本地开屏页（零网络
  *      等待，动画本体 splash-core.js 与页面侧唯一真源同文件）。
- *      主题 windowBackground=同款静态徽标帧，盖住点击→WebView 初始化
- *      盲窗（连渲染体都不存在的一段，任何 App 都只能静态帧）。
+ *      主题 windowBackground=纯暗 #05070f，盖住点击→WebView 初始化
+ *      盲窗（连渲染体都不存在的一段，任何 App 都只能静态帧；动画
+ *      开场本来就是暗场扫线，纯暗帧无缝衔接。曾用静态徽标帧，用户
+ *      实拍定罪：徽标→暗场开场接不上=闪帧，2026-08-30 拍板改纯暗）。
  *   2. 盲窗自监控（用户拍板「让它自己监控自己的数据传过来」）：
  *      onCreate→首绘逐拍墙钟 POST /__boot-marks——「点击→页面出生」
  *      这段页面 performance 永远看不到的账由壳记。
@@ -39,7 +39,7 @@ import java.nio.charset.StandardCharsets;
  *      真合成器像素。注：decorView 自绘 Bitmap 抓不到硬件加速
  *      WebView 内容（实测全黑，Android 已知限制），已废弃；点击→
  *      splash-first-picture ~0.2s 的静态帧段声明盲区（内容=主题
- *      windowBackground 固定图，时长有 boot-marks 入账）。
+ *      windowBackground 纯暗帧，时长有 boot-marks 入账）。
  *   4. 自毁钩子：intent extra nz_exit=true → 退进程（Termux 无权限
  *      force-stop 别的 uid，冷启动闭环测试靠它自杀再由 ssh 拉起）。
  *      对活进程下自杀令必须带 FLAG_ACTIVITY_CLEAR_TOP（am start
@@ -97,14 +97,10 @@ public class MainActivity extends Activity {
         WebView.setWebContentsDebuggingEnabled(true);
 
         root = new FrameLayout(this);
-        // 根布局背景=主题同款静态徽标帧：splash WebView 透明隙/摘除
-        // 瞬间不透出白底
-        try {
-            InputStream in = getAssets().open("splash/splash_img.png");
-            root.setBackground(new BitmapDrawable(getResources(),
-                    android.graphics.BitmapFactory.decodeStream(in)));
-            in.close();
-        } catch (Exception e) { /* 图缺失=纯色底，不挡启动 */ }
+        // 根布局背景=主题同款纯暗 #05070f：splash WebView 透明隙/摘除
+        // 瞬间不透出白底。曾用静态徽标帧，用户实拍定罪：静态徽标→动画
+        // 暗场开场接不上=闪帧「很不专业」（2026-08-30 拍板改纯暗）
+        root.setBackground(new android.graphics.drawable.ColorDrawable(0xFF05070F));
 
         // ---- 底层：终端 WebView（?nosplash=页面内开屏让位壳层；_tApk=
         // 点击墙钟，页面算「点击→出生」差值入账）----
@@ -159,6 +155,9 @@ public class MainActivity extends Activity {
         WebSettings s = w.getSettings();
         s.setJavaScriptEnabled(true);   // nz 终端/开屏都是 JS 页
         s.setDomStorageEnabled(true);   // 终端本地态
+        // WebView 默认白底——内容首绘前会闪白。钉纯暗 #05070f 与主题/
+        // 根布局同色系，启动全程无一帧白（2026-08-30 纯暗化顺带）
+        w.setBackgroundColor(0xFF05070F);
         // 缺它=JS 发起的导航（热更自愈的 location.reload/重定向）不走
         // WebView 而被 ActionView 外部化到系统浏览器（2026-08-27 C 档实测：
         // 用户看见「跳浏览器开 8023」×3，WebView 内页面纹丝不动=reload
