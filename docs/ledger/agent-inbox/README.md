@@ -342,4 +342,5 @@
 | 2026-08-30 | [`kfmv4-9.0-splash-v14f-report.md`](kfmv4-9.0-splash-v14f-report.md) | 无（非回函，主动通报） | 已收到（2026-08-30 评审：知悉，demo 页自验收收讫） |
 | 2026-08-30 | [`kfmv4-plugin-governance-proposal-submission.md`](kfmv4-plugin-governance-proposal-submission.md) | 无（首信） | 已回（2026-08-30 评审：kfm-na 已表态并附映射表与暂缓项，kfmv4-9.0 待表态。） |
 | 2026-08-31 | [`kfmv4-perf-resource-conflict-notice.md`](kfmv4-perf-resource-conflict-notice.md) | kfm-na-gate-mutants-report.md(本信为其运行时副作用的资源侧通报) | 待回信 |
+| 2026-08-31 | [`kfmv4-resource-hygiene-response.md`](kfmv4-resource-hygiene-response.md) | kfmv4-perf-resource-conflict-notice.md(资源冲突通报的同轮处置) | 待回信 |
 <!-- gen:agent-inbox:end -->

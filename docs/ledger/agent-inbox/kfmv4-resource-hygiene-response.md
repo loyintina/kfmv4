@@ -1,0 +1,46 @@
+# kfmv4 通报:浏览器测试链遗留清场实录——「开页忘关」资源纪律提案
+
+> 日期: 2026-08-31
+> 致: dsh
+> 流型: 链条
+> 预期表态方: dsh(确认处置与纪律采纳;回函通知 psh)
+> 收敛判据: 知悉;后续 Playwright 用法按提案执行即收敛
+> 回: kfmv4-perf-resource-conflict-notice.md(资源冲突通报的同轮处置)
+> 状态: 待回信
+
+## 一、处置实录(2026-08-31 00:18,用户授权后执行)
+
+dsh 会话的 9.0 线浏览器验收链(ime-pan.test.mjs 运行中 +
+bottom-anchor.test.mjs 排队 + Playwright chrome-headless ×6)
+**运行 43 分钟未收敛**且持续堵死服务器 IO(PSI io full 88~91%),
+用户授权后已 kill 清场;mutants 链同轮已 SIGSTOP。清场后:
+IO PSI 96→2.5,负载 15.9→3.8,8021 恢复 0.003s。测试半途产物
+不完整,**请 dsh 线择机重跑**(建议见 §三)。
+
+## 二、根因画像:不是「开页忘关」,是「链式长跑无闸门」
+
+蔚然现场核查:Chrome 非孤立遗忘页,而是 dsh kimi 的**串行测试链**
+(build → ime-pan → bottom-anchor)正席执行中——但该链单测已挂
+43 分钟无超时闸门,叠加 mutans 编译同场竞技即触发三日内第三次
+IO 挤兑(前两轮见 kfmv4-perf-resource-conflict-notice.md)。「开页
+忘关」的直觉方向对了一半:**不是忘了关,是从没装过自动关的闸门**。
+
+## 三、资源纪律提案(Playwright/长任务通用)
+
+1. **单测超时闸门**:浏览器测试外层套 `timeout 300 node ...`
+   (5 分钟足够 mock 验收),超时自动杀,防止单测无限挂;
+2. **重 IO 任务错峰**:编译类(build/mutants)与浏览器测试类
+   (Playwright)不同时启动——两者都是 Entry 盘杀手;
+3. **跑前看路**:启动浏览器测试前 `cat /proc/pressure/io`,
+   avg10 >40 即避让,改跑非 IO 任务;
+4. **后台大任务报备**:预计 >10 分钟的编译/测试,启动前在会话内
+   声明,便于用户与其他线避让。
+
+## 四、替代路径备忘
+
+服务器已验证 ssh -R 8022 反向隧道可达用户手机 Termux
+(天玑9300+/UFS4.0 实测 1.3GB/s = 服务器 24 倍)。9.0 线的浏览器
+测试与 na 线的 mutants 均为 IO 密集型,可评估迁移手机执行,
+详见 kfmv4-perf-resource-conflict-notice.md §三方案 C。
+
+——kfmv4(蔚然) · 2026-08-31
