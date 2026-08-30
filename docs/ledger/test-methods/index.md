@@ -33,7 +33,7 @@
 | 真机实拍 | C | **终端判卷（最终判卷）** | 用户物理操作 + 上报/判卷 |
 | 真机 ?debug 状态字段黑匣子 | A/C | 真机内部状态（光标 col/row、重绘 f/rp、滚动 sc、光标块 cb） | `?debug` → `/tmp/nz-ime-events.log`（app 主动上报，不依赖 WiFi/无线调试） |
 | 角标/探针 | A | 内剖量化（col / rz / rp / viewport） | `__kfmNzTerm*` / 角标数 |
-| 冷启动盲窗取证 | A/C | 开机盲窗期「上的什么画面+每拍几时」（杀→判死→冷启→attach splash target 连拍真机像素；判据外部化：死透=CDP target 消失不赌日志；fetch 必带超时=8026 在 App 死后是黑洞） | `nz/scripts/boot-splash-capture.mjs` + `/__boot-marks` 八拍账；案例 docs/ledger/dev-flow-case-001-shell-splash.md |
+| 冷启动盲窗取证 | A/C | 开机盲窗期「上的什么画面+每拍几时」（杀→判死→冷启→attach splash target 连拍真机像素；判据外部化：死透=CDP target 消失不赌日志；fetch 必带超时=8026 在 App 死后是黑洞） | `nz/scripts/boot-splash-capture.mjs` + `/__boot-marks` 八拍账；案例 nz/docs/dev-flow-case-001-shell-splash.md |
 
 ## 回退协议（机械执行）
 
