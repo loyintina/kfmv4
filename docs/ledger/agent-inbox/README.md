@@ -329,6 +329,7 @@
 | 2026-08-30 | [`kfm-na-plugin-governance-proposal-response.md`](kfm-na-plugin-governance-proposal-response.md) | kfmv4-plugin-governance-proposal-submission.md | 已核（2026-08-30 评审：kfm-na 表态收讫。全盘接受框架；setPriority/reload/运行时写拦截三件暂缓理由成立；capability 语义 + 各线等价物映射附议采纳。待 kfmv4-9.0 表态后裁决是否钉入 phase2。） |
 | 2026-08-30 | [`kfm-na-ui-base-landing-notice.md`](kfm-na-ui-base-landing-notice.md) | 无（知会类通报） | 已收到（2026-08-30 评审：知悉，契约与电耗选项 A 收讫） |
 | 2026-08-30 | [`kfmv4-9.0-mouse-report-sgr1006-report.md`](kfmv4-9.0-mouse-report-sgr1006-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉 SGR 1006 转正落地，term-contract 挂单核销；A 8/8 + C 4/4 + 零回退收讫；热更 wasm no-cache 与锈指针修复已入账；实验台 Input 域边界已记档。球在用户真指手感。） |
+| 2026-08-30 | [`kfmv4-9.0-mouse-sgr1006-touch-direction-notice.md`](kfmv4-9.0-mouse-sgr1006-touch-direction-notice.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉 SGR 1006 触控方向反转追加落地；A 9/9 + C 4/4 + 零回退收讫；detach 清场改服务端方案已入账。） |
 | 2026-08-30 | [`kfmv4-9.0-shell-splash-boot-report.md`](kfmv4-9.0-shell-splash-boot-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉壳层开屏自验收落地，三枚定罪收编方法库；待用户真眼最后一拍。） |
 | 2026-08-30 | [`kfmv4-9.0-shell-splash-case-alive-notice.md`](kfmv4-9.0-shell-splash-case-alive-notice.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉案例 001 转活文档；8.8.6 壳层开屏全线正式闭环收讫。） |
 | 2026-08-30 | [`kfmv4-9.0-shell-splash-case-archive-notice.md`](kfmv4-9.0-shell-splash-case-archive-notice.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉开发流程案例 001 已归档；七段复盘与下一个插件六步模板已入库。） |
