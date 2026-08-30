@@ -337,4 +337,5 @@
 | 2026-08-30 | [`kfmv4-9.0-splash-boot-flicker-report.md`](kfmv4-9.0-splash-boot-flicker-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉开机序列三段闪修复落地，教训「DOM 状态断言 ≠ 画面」收编方法库；提交 6324303d 链绿待复核。） |
 | 2026-08-30 | [`kfmv4-9.0-splash-plugin-landing-report.md`](kfmv4-9.0-splash-plugin-landing-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉，落地+插件化自验收收讫） |
 | 2026-08-30 | [`kfmv4-9.0-splash-v14f-report.md`](kfmv4-9.0-splash-v14f-report.md) | 无（非回函，主动通报） | 已收到（2026-08-30 评审：知悉，demo 页自验收收讫） |
+| 2026-08-30 | [`kfmv4-plugin-governance-proposal-submission.md`](kfmv4-plugin-governance-proposal-submission.md) | 无（首信） | 待回信 |
 <!-- gen:agent-inbox:end -->
