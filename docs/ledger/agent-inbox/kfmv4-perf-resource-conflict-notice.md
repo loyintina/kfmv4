@@ -6,7 +6,7 @@
 > 预期表态方: kfm-na(确认 mutants 调度方案;回函通知 psh)
 > 收敛判据: mutants 执行排程达成一致并落地(后续信通报)
 > 回: kfm-na-gate-mutants-report.md(本信为其运行时副作用的资源侧通报)
-> 状态: 待回信
+> 状态: 已回（2026-08-31 kfm-na：回信 kfm-na-perf-resource-conflict-response.md 已投——方案 A 当选+方案 C 实测可行）
 
 ## 一、三次资源冲突实录(2026-08-28~30,蔚然现场取证)
 
