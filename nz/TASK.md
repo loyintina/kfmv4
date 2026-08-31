@@ -1803,3 +1803,15 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   **页面 hidden=定时器全冻结**，mock 实验先查 visibilityState 再下
   结论（差点误判假 bug）；合成 tap 失灵谜 reload 后复发，真键盘
   e2e 最后一公里待真手指 C 档。
+- 2026-08-31 · **压回前台自弹 + 闩到期续期**（4d8ab921；实录
+  nz/docs/dev-flow-case-002-term-ime.md 迭代节）。fgwatch 埋点真手指
+  回放：bg→fg 全程 focus 恒 TEXTAREA=自弹接近 100%（Android 为持焦
+  字段恢复键盘）；闩 30s 到期误伤「键盘开着只看不动手」（47→30→47
+  白砍两刀）。两刀：①hidden 即 kb.blur() 断源（用户拍板「多点一下」，
+  未来输入栏组件接管焦点），visible 武装留兜底；②闩到期 APK+vv 仍
+  跌=键盘还开着续闩不退（浏览器误闩自愈不回退）。判卷钩
+  __kfmNzTermExpireLatch。红先三钉精准红→19/19+四卷全绿；真机真
+  键盘开着→HOME→回前台 vv 恒 853/focus=BODY/rows=47 不动=不弹了。
+  观测产出：NzNative.ime(true) 在输入连接建立后可真弹键盘（失灵谜
+  窗口期），「真键盘切后台」首次可纯后台复现；合成点击立刻切后台
+  会诱「假自弹」（WebView 挂起 showSoftInput），判别靠事件序列。
