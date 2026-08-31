@@ -68,6 +68,7 @@ try {
       ['あいui', 6, '平假名 2+2+1+1'],
       ['中A中B', 6, '2+1+2+1'],
       ['┌─┐', 3, '制表符 U+2500 区单宽（BAR-028 家族边界）'],
+      ['A⚡B', 4, '⚡ U+26A1 核判宽 2（光标右移半格案主犯，壳表已对齐）'],
     ];
     for (let i = 0; i < naTable.length; i++) {
       const [s, want, note] = naTable[i];
@@ -99,6 +100,23 @@ try {
     check('C4⑤ 渲染层宽 span=2×cellW（画忠实于核）',
       !!dom && Math.abs(dom.spanW - 2 * dom.cellW) < 0.6,
       dom ? `spanW=${dom.spanW.toFixed(2)} 2×cellW=${(2 * dom.cellW).toFixed(2)}` : '未找到行盒直下的「中」span');
+
+    // ── C4⑥ ⚡ 渲染层钉（2026-08-31 光标右移半格案）：核判 ⚡=2 格，
+    // 壳也必须裁进 2×cellW span——走自然文本（字形 ≈1 格）则其后整行
+    // 左移、按 col×cellW 定位的光标显右移。修复前此断言必红。 ──────
+    await page.evaluate(() => window.__kfmNzTermInject('printf "P\\u26A1Q\\n"\r'));
+    await new Promise((r) => setTimeout(r, 1200));
+    const bolt = await page.evaluate(() => {
+      const spans = [...document.querySelectorAll('.nz-term span')]
+        .filter((s) => s.textContent === '\u26A1' && s.parentElement.tagName === 'DIV');
+      const first = spans[spans.length - 1];
+      if (!first) return null;
+      const scroll = window.__kfmNzTermScroll();
+      return { spanW: first.getBoundingClientRect().width, cellW: scroll.cellW };
+    });
+    check('C4⑥ ⚡ U+26A1 渲染层=2×cellW（emoji 默认文本呈现区同钉格）',
+      !!bolt && Math.abs(bolt.spanW - 2 * bolt.cellW) < 0.6,
+      bolt ? `spanW=${bolt.spanW.toFixed(2)} 2×cellW=${(2 * bolt.cellW).toFixed(2)}` : '未找到「⚡」span');
   }
 } finally {
   await browser.close();
