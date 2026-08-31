@@ -17,6 +17,9 @@ export interface BridgeEvents {
   /** 会话死透（重连后服务端报「会话不存在」=服务端重启过，旧会话全灭）——
    *  消费方自愈（摘账+reload/重开），bridge 只清簿不决策 */
   onSessionDead?(reason: string): void;
+  /** 链路假死（心跳 pong 超时：WS 无 close 事件但已零回显——2026-08-31
+   *  僵尸页实锤的形态）。消费方自愈（reload，续命账保留），bridge 不决策 */
+  onSilentDead?(reason: string): void;
 }
 
 export class TermWsBridge {
@@ -25,6 +28,14 @@ export class TermWsBridge {
   private _sessions = new Set<string>();
   private _retry = 0;
   private _stopped = false;
+  /** 心跳看门狗（2026-08-31 僵尸页实锤：WS 会「悄悄死」——无 close 事件、
+   *  inject 零回显，页面还以为活着）。每 hbMs 发一帧应用层 ping（浏览器
+   *  WebSocket 发不了协议级 ping），下一拍还没等到 pong=链路假死→报
+   *  onSilentDead（一次，消费方自愈 reload）。只在 OPEN 态跳，close/重连
+   *  期停摆；后台标签 setInterval 被节流=检测变慢但不缺席。 */
+  private _hbTimer: ReturnType<typeof setInterval> | null = null;
+  private _awaitingPong = false;
+  private _silentDeadFired = false;
   /** open 等待方：socket 没连上时排队，连上后重放 */
   private _pending: Array<() => void> = [];
   /** opened 帧的等待队列（FIFO 配对 open 调用） */
@@ -36,6 +47,8 @@ export class TermWsBridge {
   constructor(
     private _url: string,
     private _ev: BridgeEvents,
+    /** 心跳间隔毫秒（测试可压短；生产默认 15s） */
+    private _hbMs = 15000,
   ) {}
 
   connect(): void {
@@ -44,7 +57,9 @@ export class TermWsBridge {
     this.ws = ws;
     ws.onopen = () => {
       this._retry = 0;
+      this._silentDeadFired = false;
       this._ev.onLink?.(true);
+      this._startHb();
       for (const fn of this._pending.splice(0)) fn();
       // 重连：簿上会话逐个 attach，tail 补断档
       for (const id of this._sessions) {
@@ -54,6 +69,9 @@ export class TermWsBridge {
     ws.onmessage = (e) => {
       const m = JSON.parse(String(e.data)) as Record<string, unknown>;
       switch (m.t) {
+        case 'pong':
+          this._awaitingPong = false;
+          break;
         case 'opened': {
           const id = String(m.id);
           this._sessions.add(id);
@@ -94,6 +112,7 @@ export class TermWsBridge {
       }
     };
     ws.onclose = () => {
+      this._stopHb();
       this._ev.onLink?.(false);
       if (this._stopped) return;
       const delay = Math.min(500 * 2 ** this._retry++, 5000);
@@ -102,9 +121,35 @@ export class TermWsBridge {
     ws.onerror = () => ws.close();
   }
 
+  private _startHb(): void {
+    this._stopHb();
+    this._awaitingPong = false;
+    this._hbTimer = setInterval(() => {
+      if (this.ws?.readyState !== WebSocket.OPEN) return;
+      if (this._awaitingPong) {
+        // 上一拍 ping 无 pong=链路假死。报一次即停跳：消费方 reload
+        // 后页面整世重启；不消费则下个 open 重新起跳（防风暴）。
+        this._stopHb();
+        if (!this._silentDeadFired) {
+          this._silentDeadFired = true;
+          this._ev.onSilentDead?.('心跳 pong 超时（链路假死）');
+        }
+        return;
+      }
+      this._awaitingPong = true;
+      this._send({ t: 'ping' });
+    }, this._hbMs);
+  }
+
+  private _stopHb(): void {
+    if (this._hbTimer) { clearInterval(this._hbTimer); this._hbTimer = null; }
+    this._awaitingPong = false;
+  }
+
   /** 停桥：不再重连，会话簿清空（插件 unload 用） */
   stop(): void {
     this._stopped = true;
+    this._stopHb();
     this.ws?.close();
     this._sessions.clear();
   }

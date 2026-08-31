@@ -99,6 +99,11 @@ if (termCards) {
 // boot 记当前 builtAt，10s 轮询 /build-info.json（build.mjs 每次构建重写），
 // 变了 = 新 bundle 已就位 → location.reload()。服务端代码热更走另一腿
 // （gate restart-req → supervisor 拉回），两腿解耦。
+// 看门狗（2026-08-31 僵尸页实锤：reload 导航撞隧道抖挂起→页面网络栈全瘫、
+// WS 悄死、热更失效）：reload 调了但 15s 后页面还活着=导航卡死→重试，
+// 至多 3 次（成功则页面已死、定时器随之消失）；3 次都卡=终端 WS 心跳
+// 看门狗（bridge onSilentDead）兜底。重试有效已实证：事故当天 CDP 补发
+// 一次 location.reload() 即复活。
 const BUILD_INFO = '/build-info.json';
 void fetch(BUILD_INFO).then((r) => r.json() as Promise<{ builtAt?: string }>).then((info) => {
   const bornAt = info.builtAt ?? '';
@@ -106,7 +111,14 @@ void fetch(BUILD_INFO).then((r) => r.json() as Promise<{ builtAt?: string }>).th
   setInterval(() => {
     void fetch(BUILD_INFO, { cache: 'no-store' }).then((r) => r.json() as Promise<{ builtAt?: string }>)
       .then((now) => {
-        if (now.builtAt && now.builtAt !== bornAt) location.reload();
+        if (!now.builtAt || now.builtAt === bornAt) return;
+        let tries = 0;
+        const attempt = (): void => {
+          if (++tries > 3) return; // 放弃，心跳看门狗兜底
+          setTimeout(attempt, 15000);
+          location.reload();
+        };
+        attempt();
       })
       .catch(() => { /* 服务端重启间隙取不到——WS 自愈腿管，这里静默 */ });
   }, 10000);

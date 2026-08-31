@@ -13,6 +13,7 @@
  *        {t:'resize', id, cols, rows}
  *        {t:'close', id}
  *        {t:'list'}                              → {t:'list', ids}（活会话名册）
+ *        {t:'ping'}                              → {t:'pong'}（应用层心跳，浏览器发不了协议级 ping）
  *   S→C  {t:'output', id, data} / {t:'exit', id, code} / {t:'error', message}
  *
  * 权限：open 判定在 term-connection 层已挂（影子期落审计）；本桥不二次
@@ -104,6 +105,12 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
           break;
         case 'list':
           send({ t: 'list', ids: conn.list() });
+          break;
+        // 应用层心跳（2026-08-31 僵尸页实锤：WS 会「悄悄死」无 close 事件；
+        // 浏览器 WebSocket 发不了协议级 ping，只能应用层）——客户端看门狗
+        // 靠 pong 判活，见 client/term/bridge.ts 心跳块。
+        case 'ping':
+          send({ t: 'pong' });
           break;
         default:
           send({ t: 'error', message: '未知帧型' });

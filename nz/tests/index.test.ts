@@ -14,6 +14,7 @@ import './eyes.test.ts';
 import './server.test.ts';
 import './term-connection.test.ts';
 import './ws-bridge.test.ts';
+import './bridge-heartbeat.test.ts';
 import './term-core-shared.test.ts';
 import './keymap.test.ts';
 import './cdp-relay.test.ts';

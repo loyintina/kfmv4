@@ -157,6 +157,21 @@ export function applyTermBundle(ctx: Context): void {
     } catch { /* sessionStorage 不可用就 nothing */ }
   };
 
+  /** onSilentDead 自愈（2026-08-31 僵尸页实锤：WS 悄悄死无 close 事件，
+   *  inject 零回显、热更 fetch 全挂）：死的是网络不是服务端会话——
+   *  **续命账保留**，reload 后 attach 回同一会话用户无感。与
+   *  onSessionDead 共用 5s 防循环闸（两腿不叠加刷）。 */
+  const onSilentDead = (reason: string): void => {
+    try {
+      const last = Number(sessionStorage.getItem('nzTermDeadReload') ?? 0);
+      if (Date.now() - last > 5000) {
+        sessionStorage.setItem('nzTermDeadReload', String(Date.now()));
+        console.warn('[term] 链路假死（' + reason + '），自愈 reload（续命账保留）');
+        location.reload();
+      }
+    } catch { /* sessionStorage 不可用就 nothing */ }
+  };
+
   // 渲染健康计数（?debug 骨架常驻字段的源头，平时零上报）：vp=可视区事件
   // rz=落地的行列变更。f/rp/sc 在 shell.stats。诊断角标已随 IME 收口移除
   // （2026-08-23 复盘裁决①：骨架常驻、专症字段随症收口、角标移除）。
@@ -190,6 +205,7 @@ export function applyTermBundle(ctx: Context): void {
       }
     },
     onSessionDead,
+    onSilentDead,
   });
 
   const service: TermCardService = {
