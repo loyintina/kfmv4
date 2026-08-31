@@ -1749,3 +1749,19 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   （一刀切 3.5s 曾把④打红）；手机六卷全绿。判卷方法论记一笔：
   **终验②全程后台旁观零打扰**——用户真手指提供真键盘语义，旁观器
   提供逐 300ms 数字，判卷不用人读屏。
+- 2026-08-31 · **keybar 点击召唤 IME 根治 + 僵尸页双看门狗**（9283eaa8 /
+  231cc375；全程实录 nz/docs/dev-flow-case-002-term-ime.md 迭代节）。
+  ①用户报告「点任何键都弹输入法」——间谍 v2 坐标级取证：点 ENTER
+  87ms 后 vv 812→541，kb.focus 零调用、click stopPropagation 防线
+  完好。真凶=Chromium 安卓 **ShowImeIfNeeded 原生规矩**（tap 结束+
+  可编辑持焦=召回 IME，不管点哪），2026-08-24 修复防的是 JS 召唤，
+  这是原生召唤=两层问题。修复=键栏 touchstart preventDefault（取消
+  整个 tap 手势默认行为），bar 冒泡覆盖按钮+缝隙；keybar-click 新增
+  钉 20/20，用户真手指终验不弹。②附案：验证期间发现页面热更失效，
+  资源计时定罪=热更 reload 导航撞隧道抖挂起→网络栈全瘫（连不过
+  隧道的本机端口都挂）+终端 WS 悄死（无 close、零回显）→页面僵尸
+  12.5 分钟。双看门狗：bridge 应用层心跳（ping/pong，一拍无 pong=
+  假死→保留续命账 reload）+ 热更 reload 15s 卡死重试×3。考卷
+  bridge-heartbeat 三钉 npm 93/93 + 手机四卷全绿。纪律升级：**「等
+  信号」链路必有看门狗，包括 reload 自己**；WS 活性只能靠应用层
+  心跳证明，不能信 close 必达；JS 召唤与原生召唤是两层。
