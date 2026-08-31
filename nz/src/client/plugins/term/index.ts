@@ -308,7 +308,10 @@ export function applyTermBundle(ctx: Context): void {
       //   桌面打字后 2s 内拖窗是常态，武装若挂 input 上=把缩窗误判键盘
       //   （bottom-anchor ④ 实锤：考卷 type() 走 input 事件，一武装
       //   缩窗全被钉死 7/10）。武装只认召唤意图（click/focus）。
-      // 键盘弹了但没召唤序曲（理论不存在）=退回旧 resize 行为，优雅降级。
+      // 键盘弹了但没点击/聚焦序曲=bg→fg 自弹（Android 回前台为持焦诱饵
+      // 恢复键盘，2026-08-31 真机实锤非「理论不存在」）：APK 由
+      // visibilitychange→visible 武装（见下方监听）兜住；其余环境退回
+      // 旧 resize 行为，优雅降级。
       let vvBaseW = 0, vvBaseH = 0, baseInnerH = 0, imeActive = false;
       let imeArmUntil = 0, imeLatchUntil = 0;
       // 武装=「召唤键盘的意图」信号：必须挂在点击/聚焦**意图**上而非
@@ -930,6 +933,17 @@ export function applyTermBundle(ctx: Context): void {
         scheduleResize('vv-scroll');
       };
       window.visualViewport?.addEventListener('scroll', onViewportScroll);
+      // bg→fg 自弹键盘识别（2026-08-31 真机帧级追踪定罪）：回前台时
+      // Android 为持焦诱饵自动恢复键盘——无点击/聚焦序曲、武装窗不开，
+      // ime=false 走 resize 路径 rows 47→30=tmux 每回前台白吃一刀
+      // SIGWINCH 洪峰。APK（NzNative 在）无地址栏/窗口拖拽，回前台
+      // 3.5s 内的 vv 大缩唯一天命=键盘恢复，visible 即视同召唤序曲武装。
+      // 浏览器不武装：桌面 alt-tab 回来拖窗是常态，武装会把缩窗误判键盘
+      // （ime-pan ①e0 对照钉：浏览器 visibilitychange 后 vv 跌不入态）。
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        if ((window as unknown as { NzNative?: unknown }).NzNative) armIme(true);
+      });
       // 字体晚到自适应（真机图A 列截断修复）：fonts.load 在个别浏览器
       // 可能提前 resolve/不可信——loadingdone/loadingerror 兜底重量字格，
       // 字宽变了才动作：壳度量缓存作废 + 行列重测三方同步（cols 跟实际

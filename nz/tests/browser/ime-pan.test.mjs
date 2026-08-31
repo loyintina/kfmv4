@@ -14,6 +14,11 @@
  *   ③跌幅>20% 且>150px。innerH 不当闸：APK adjustResize 下真键盘连布局
  *   视口一起缩（2026-08-30 真手指实锤，innerH 闸曾致永不入态）。闩锁
  *   30s、打字续闩，误闩自愈。
+ *   ①e APK 回前台自弹武装（2026-08-31 真机帧级追踪定罪：bg→fg 时
+ *   Android 为持焦诱饵自动恢复键盘——无点击/聚焦序曲、武装窗不开，
+ *   ime=false 走 resize 路径 rows 47→30=tmux 每回前台白吃一刀
+ *   SIGWINCH）。APK（NzNative 在）visibilitychange→visible 即视同召唤
+ *   序曲武装；浏览器不武装（桌面 alt-tab 回来拖窗是常态）。
  *   旁证：bottom-anchor ④b-d（vv-only mock、无聚焦序曲、十余秒后）保持
  *   绿=武装闸判别力成立，本卷不重复造钉。
  *
@@ -108,6 +113,51 @@ const coldClosed = await scroll();
 check('①d2 冷启动卷还原→退闩、行列回基线', !!coldClosed
       && coldClosed.ime === false && coldClosed.rows === base.rows,
       `ime=${coldClosed?.ime} rows=${coldClosed?.rows}（基线${base?.rows}）`);
+
+// ①e APK 回前台自弹识别（2026-08-31 真机定罪：bg→fg 自弹键盘无召唤
+// 序曲→ime=false→rows 47→30 洪峰）：先跑对照（无 NzNative=浏览器语义，
+// visibilitychange 后 vv 跌 271px 仍不得入态、行列跟随），再 stub
+// NzNative 走 APK 语义——dispatch visibilitychange 后同款 vv 跌必须
+// 入态钉行列。vv-only mock 与 ①d 同款 defineProperty 路径（不带任何
+// 点击/聚焦序曲，武装若命中只可能来自 visibilitychange 监听）
+const vvDrop271 = () => page.evaluate(() => {
+  const vv = window.visualViewport;
+  Object.defineProperty(vv, 'height', { get: () => 620 - 271, configurable: true });
+  Object.defineProperty(vv, 'offsetTop', { get: () => 0, configurable: true });
+  vv.dispatchEvent(new Event('resize'));
+});
+const vvRestore = () => page.evaluate(() => {
+  const vv = window.visualViewport;
+  delete vv.height; delete vv.offsetTop;
+  vv.dispatchEvent(new Event('resize'));
+});
+await page.evaluate(() => { delete window.NzNative; document.dispatchEvent(new Event('visibilitychange')); });
+await vvDrop271();
+await page.waitForTimeout(1000);
+const fgBrowser = await scroll();
+check('①e0 对照：浏览器 visibilitychange 后 vv 跌→不入态、行列跟随', !!fgBrowser
+      && fgBrowser.ime === false && fgBrowser.rows < base.rows,
+      `ime=${fgBrowser?.ime} rows=${fgBrowser?.rows}（基线${base?.rows}）`);
+await vvRestore();
+await page.waitForTimeout(1000);
+const fgBrowserBack = await scroll();
+check('①e1 对照卷还原→行列回基线', !!fgBrowserBack
+      && fgBrowserBack.ime === false && fgBrowserBack.rows === base.rows,
+      `ime=${fgBrowserBack?.ime} rows=${fgBrowserBack?.rows}（基线${base?.rows}）`);
+await page.evaluate(() => { window.NzNative = {}; document.dispatchEvent(new Event('visibilitychange')); });
+await vvDrop271();
+await page.waitForTimeout(1000);
+const fgApk = await scroll();
+check('①e2 APK 回前台（visibilitychange+NzNative）后 vv 跌→入态钉行列', !!fgApk
+      && fgApk.ime === true && fgApk.rows === base.rows,
+      `ime=${fgApk?.ime} rows=${fgApk?.rows}（基线${base?.rows}）`);
+await vvRestore();
+await page.waitForTimeout(1000);
+const fgApkBack = await scroll();
+check('①e3 APK 卷还原→退闩、行列回基线', !!fgApkBack
+      && fgApkBack.ime === false && fgApkBack.rows === base.rows,
+      `ime=${fgApkBack?.ime} rows=${fgApkBack?.rows}（基线${base?.rows}）`);
+await page.evaluate(() => { delete window.NzNative; });
 
 // ② 模拟键盘弹起：扳机命中 + 卡身缩（占位生效）+ 行列格网不动（核心判据）
 const imeHit = await mockIme(true); // 默认 kbPx=271（真机实测键盘占位）
