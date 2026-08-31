@@ -1701,3 +1701,24 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   待办：前台真键盘终验（tap 全链）——合成 tap 原语在「页面活但触摸
   死」态失灵（mark 落账而页面零事件，vis=visible/hasFocus=true 谜，
   21:47 同款代码工作正常）——判卷改用户真手指+CDP 旁观数据。
+- 2026-08-31 · **IME pan 修正二刀（真手指终验①定罪）+ 浏览器测试迁
+  手机基建**（bf93d78e）。终验①（experiments/watch-ime-finger.mjs
+  后台旁观 + 用户真手指）实锤：APK adjustResize 下真键盘连布局视口
+  同缩（vv 812→541 时 innerH 同缩），原 innerH 闸把真键盘误判桌面
+  拖窗→永不入态→rows 44→28 旧行为复活。修正一=innerH 从闸里退役，
+  判别全押武装序曲（click/focus 2s 窗）+闩锁 30s。修正二=打字只续闩
+  不武装：武装若挂 input 事件，桌面打字后 2s 内拖窗被误判键盘
+  （bottom-anchor ④ 实锤打回 7/10），武装只认召唤意图 click/focus，
+  打字经 touchImeLatch 只续闩。考卷补 ①c APK 语义钉（武装后 innerH
+  同缩窗→入态钉行列）。**测试迁手机**（资源纪律：服务器 IO 挤兑清场
+  后拍板）：Ubuntu proot + 官方 glibc node（Termux node 报 platform
+  android 被 Playwright 拒）+ Playwright chromium；坑③=GPU 进程
+  FATAL 自杀（gpu_data_manager_impl_private.cc:417，fallback 构建在
+  不支持 OS 上），**--use-gl=disabled 一参救活**（headless_shell 与
+  full chrome 均验）。launch.mjs 统一启动入口，11 考卷接入，服务器
+  无副作用；KFM_NZ_NO_SANDBOX=1 补 proot 容器参数。回归全绿：手机
+  ime-pan 9/9 + bottom-anchor 10/10（修正后首跑）+ scrollback 5/5 +
+  keybar-click 19/19 + term-hooks 6/6 + cjk-inktop 4/4；mouse-report
+  9/9（tmux 依赖留服务器单跑）；npm 90/90 + cargo 9/9。待办：真手指
+  终验②（修正后全链，判据=rows 恒基线/ime 跟随弹收/ALT st 平移）。
+  遗留记账：合成 tap 失灵谜（终验①同款，不挡真手指判据）。
