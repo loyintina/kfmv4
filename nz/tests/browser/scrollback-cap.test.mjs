@@ -7,13 +7,13 @@
  * lines_evicted=200（1200+24 屏初? ≥ 封顶后恒 1000 且随输出递增）。
  * 钩子：__kfmNzTermScroll().histLen / .evicted（本卷驱动加的两字段）。
  */
-import { chromium } from 'playwright';
+import { launchBrowser } from './launch.mjs';
 
 const URL = process.env.KFM_NZ_URL || 'http://127.0.0.1:8023/';
 let failed = false;
 const check = (name, ok, detail) => { if (!ok) failed = true; console.log(`${ok ? '✅' : '❌'} ${name}${detail ? ' — ' + detail : ''}`); };
 
-const browser = await chromium.launch({ headless: true });
+const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 900, height: 620 } });
 await page.goto(URL, { waitUntil: 'networkidle', timeout: 25000 }).catch(() => {});
 await page.waitForSelector('.nz-term', { timeout: 15000 });

@@ -7,9 +7,11 @@
  * 可视区变矮用视窗平移补——ALT(TUI) 程序化滚到底让输入行露在键盘上方；
  * 行模式不抢滚动位。收键盘行列若未变=零重测零洪峰。
  *
- * 入态四闸（几何上键盘与地址栏大缩/旧考卷 vv mock 信号同款，靠语义区分）：
- *   ①诱饵 2s 内刚聚焦（键盘只为刚聚焦的可编辑元素弹起）②宽不变
- *   ③innerH 不变（resizes-content 只缩视觉视口）④跌幅>20% 且>150px。
+ * 入态三闸+闩锁（几何上键盘与窗口缩/旧考卷 vv mock 信号同款，靠语义区分）：
+ *   ①召唤键盘意图 2s 内（click 主武装+focus 兜原生）②宽不变
+ *   ③跌幅>20% 且>150px。innerH 不当闸：APK adjustResize 下真键盘连布局
+ *   视口一起缩（2026-08-30 真手指实锤，innerH 闸曾致永不入态）。闩锁
+ *   30s、打字续闩，误闩自愈。
  *   旁证：bottom-anchor ④b-d（vv-only mock、无聚焦序曲、十余秒后）保持
  *   绿=武装闸判别力成立，本卷不重复造钉。
  *
@@ -22,13 +24,13 @@
  *
  * 跑法：起 8023 dev + node tests/browser/ime-pan.test.mjs（playwright + chromium）。
  */
-import { chromium } from 'playwright';
+import { launchBrowser } from './launch.mjs';
 
 const URL = process.env.KFM_NZ_URL || 'http://127.0.0.1:8023/';
 const results = [];
 const check = (name, ok, detail) => { results.push({ name, ok, detail }); console.log(`${ok ? '✅' : '❌'} ${name}${detail ? ' — ' + detail : ''}`); };
 
-const browser = await chromium.launch({ headless: true });
+const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 900, height: 620 } });
 await page.goto(URL, { waitUntil: 'networkidle', timeout: 25000 }).catch(() => {});
 await page.waitForSelector('.nz-term', { timeout: 15000 }).catch(() => {});
@@ -42,22 +44,39 @@ const hookOk = await page.evaluate(() => typeof window.__kfmNzTermMockIme === 'f
 check('钩子存在（__kfmNzTermMockIme + scroll.ime 字段）', hookOk && (await scroll())?.ime === false,
       `hook=${hookOk} ime=${(await scroll())?.ime}`);
 
-// ① 入态闸判别（真缩窗≠键盘）：先聚焦（武装）再真缩窗口——innerH 变=
-// 真几何变更，绝不能进 IME 态，行列必须跟随（bottom-anchor ④语义不回退）
-await page.evaluate(() => document.querySelector('textarea.kfm-term-kb')?.focus());
+// ① 入态闸判别（无武装序曲的缩窗≠键盘）：不点不聚焦直接真缩窗口——
+// 无召唤意图，绝不能进 IME 态，行列必须跟随（bottom-anchor ④语义不回退）
+await page.evaluate(() => document.activeElement?.blur());
 const base = await scroll();
 await page.setViewportSize({ width: 900, height: 400 });
 await page.waitForTimeout(1000); // 防抖150+RO+空闲巡查500 落地
 const shrunkWin = await scroll();
-check('①武装后真缩窗（innerH 变）→ 不进 IME 态、行列跟随', !!(base && shrunkWin)
+check('①无武装真缩窗→不进 IME 态、行列跟随', !!(base && shrunkWin)
       && shrunkWin.ime === false && shrunkWin.rows < base.rows,
       `rows ${base?.rows}→${shrunkWin?.rows} ime=${shrunkWin?.ime}`);
+
+// ①c 武装+innerH 同缩的缩窗=入态（APK adjustResize 语义钉，2026-08-30
+// 真手指实锤：WebView 下真键盘连布局视口一起缩，innerH 闸会把真键盘
+// 误判成桌面拖窗永不入态——判别全押武装序曲）：先还原窗（无武装、
+// 行列回基线），再点终端（召唤意图武装）再缩窗——行列必须钉住不动；
+// 还原窗=退闩重测回基线
+await page.setViewportSize({ width: 900, height: 620 });
+await page.waitForTimeout(1000);
+const restored0 = await scroll();
+await page.evaluate(() => document.querySelector('textarea.kfm-term-kb')?.focus());
+await page.setViewportSize({ width: 900, height: 400 });
+await page.waitForTimeout(1000);
+const armedShrink = await scroll();
+check('①c武装后缩窗（innerH 同缩）→入态钉行列（APK 语义）', !!(armedShrink && restored0)
+      && restored0.rows === base.rows            // 前置：还原窗行列已回基线
+      && armedShrink.ime === true && armedShrink.rows === base.rows,
+      `restored=${restored0?.rows} ime=${armedShrink?.ime} rows=${armedShrink?.rows}（基线${base?.rows}）`);
 await page.setViewportSize({ width: 900, height: 620 });
 await page.waitForTimeout(1000);
 const restored = await scroll();
 const R0 = restored?.rows, C0 = restored?.clientHeight;
-check('①b 窗口还原→行列回到基线', !!(restored && R0 && restored.rows === base.rows),
-      `rows ${shrunkWin?.rows}→${R0}（基线${base?.rows}） clientH=${C0}`);
+check('①b 窗口还原→退闩、行列回基线', !!(restored && R0) && restored.ime === false && restored.rows === base.rows,
+      `rows ${armedShrink?.rows}→${R0}（基线${base?.rows}） ime=${restored?.ime} clientH=${C0}`);
 
 // ② 模拟键盘弹起：扳机命中 + 卡身缩（占位生效）+ 行列格网不动（核心判据）
 const imeHit = await mockIme(true); // 默认 kbPx=271（真机实测键盘占位）

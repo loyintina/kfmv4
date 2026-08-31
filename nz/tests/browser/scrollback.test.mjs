@@ -7,13 +7,13 @@
  * 钩子契约：window.__kfmNzTermScroll() → {scrollTop, scrollHeight, clientHeight, isAtBottom}
  *            .getContainer() → 可滚动容器(overflow:auto)
  */
-import { chromium } from 'playwright';
+import { launchBrowser } from './launch.mjs';
 
 const URL = process.env.KFM_NZ_URL || 'http://127.0.0.1:8023/';
 const results = [];
 const check = (name, ok, detail) => { results.push({ name, ok, detail }); console.log(`${ok?'✅':'❌'} ${name}${detail?' — '+detail:''}`); };
 
-const browser = await chromium.launch({ headless: true });
+const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 900, height: 620 } });
 await page.goto(URL, { waitUntil:'networkidle', timeout:25000 }).catch(()=>{});
 await page.waitForSelector('.nz-term', { timeout:15000 }).catch(()=>{});

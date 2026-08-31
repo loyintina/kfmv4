@@ -76,3 +76,8 @@
 - 2026-08-28 ✅ 入口文档体检通过（3 臂：实错 0.33/臂 LCA 0/3 硬破界 0/3 质疑 1/3）
 - 2026-08-30 04:17 ⚠️ 7 条待裁决（SEM001×6 SEM002×1；本轮新增 0，跑 1 跳 29，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
 - 2026-08-29 ⚠️ 入口文档体检 FAIL（3 臂：实错 0.67/臂 LCA 1/3 硬破界 0/3 质疑 0.6666666666666666/3）→ 走 onboarding.md 修复轮
+- 2026-08-31 04:17 ⚠️ 7 条待裁决（SEM001×6 SEM002×1；本轮新增 0，跑 1 跳 29，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
+- 2026-08-31 04:23 ⚠️ 7 条待裁决（SEM001×6 SEM002×1；本轮新增 0，跑 0 跳 30，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
+- 2026-08-31 04:23 📏 基准校准：召回（并集）：5/28 · NC 误报：1/3 · 变异面之外额外发现：1 条
+- 2026-08-30 📊 - LLM 调用：103 次 · 成功 58 · 失败 45 · 平均 97s/次
+- 2026-08-30 ⚠️ 入口文档体检 FAIL（3 臂：实错 1.00/臂 LCA 2/3 硬破界 0/3 质疑 0.6666666666666666/3）→ 走 onboarding.md 修复轮

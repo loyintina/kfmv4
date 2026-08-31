@@ -12,14 +12,14 @@
  *
  * 跑法：node tests/browser/hot-update.test.mjs（nz 目录下，8023 dev 起着）
  */
-import { chromium } from 'playwright';
+import { launchBrowser } from './launch.mjs';
 
 const URL = process.env.KFM_NZ_URL || 'http://127.0.0.1:8023/';
 const results = [];
 const check = (name, ok, detail) => { results.push({ ok }); console.log(`${ok ? '✅' : '❌'} ${name}${detail ? ' — ' + detail : ''}`); };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const browser = await chromium.launch({ headless: true });
+const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 900, height: 620 } });
 
 try {

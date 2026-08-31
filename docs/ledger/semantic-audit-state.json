@@ -135,24 +135,16 @@
       "attempts": 1
     },
     "claude-vs-docs": {
-      "hash": "484452cf7c1d82000e25462c88a09753d98b09eb",
-      "lastRun": "2026-08-28",
+      "hash": "3a41712f0e18fc1529b856770a3ab95394bfbfc7",
+      "lastRun": "2026-08-30",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 1,
+      "reported": 0,
       "kept": 0,
-      "dropped": 1,
+      "dropped": 0,
       "keptFindings": [],
-      "droppedFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/CLAUDE.md:45",
-          "against": "docs/guides/onboarding.md:74",
-          "quote": "迁出本仓",
-          "note": "CLAUDE.md 声明 library/ 已迁出本仓，onboarding.md 术语表仍将 library/ 列为收集库并指向 library/README"
-        }
-      ],
+      "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
@@ -1246,6 +1238,20 @@
       "date": "2026-08-29",
       "ran": 1,
       "skipped": 29,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-30",
+      "ran": 1,
+      "skipped": 29,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-30",
+      "ran": 0,
+      "skipped": 30,
       "kept": 0,
       "dropped": 0
     }

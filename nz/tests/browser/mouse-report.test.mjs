@@ -11,7 +11,7 @@
  *  ⑥ 触摸拖拽合成（手机无滚轮）→ 发出 64/65 帧
  * 钩子契约：__kfmNzTermScroll().mouseMode（核模式位图）、__kfmNzTermInject
  */
-import { chromium } from 'playwright';
+import { launchBrowser } from './launch.mjs';
 import { execSync } from 'node:child_process';
 
 const URL = process.env.KFM_NZ_URL || 'http://127.0.0.1:8023/';
@@ -26,7 +26,7 @@ tmux('set-option -t scrtest mouse on');
 tmux("send-keys -t scrtest 'seq 1 200' Enter");
 await new Promise(r => setTimeout(r, 800));
 
-const browser = await chromium.launch({ headless: true });
+const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 900, height: 620 } });
 // WS 发送帧采集（字节精确性判卷）：劫持 send，解 JSON 收 input 帧的 data
 await page.addInitScript(() => {

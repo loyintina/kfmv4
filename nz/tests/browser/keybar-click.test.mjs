@@ -3,11 +3,11 @@
  * 重构版：用 tests/browser/clickability.mjs 的通用断言（可点达/点即有果/焦点保持）。
  * 8.8.3b 布局 bug（终端盖住 keybar）用这套 A 档断言钉死；9.0 修后转绿。
  */
-import { chromium } from 'playwright';
+import { launchBrowser } from './launch.mjs';
 import { reachable, clickSends, focusKept, summarize } from './clickability.mjs';
 
 const URL = process.env.KFM_NZ_URL || 'http://127.0.0.1:8023/';
-const browser = await chromium.launch({ headless: true });
+const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 900, height: 620 } });
 await page.goto(URL, { waitUntil: 'networkidle', timeout: 25000 }).catch(()=>{});
 await page.waitForSelector('.kfm-term-keybar', { timeout: 15000 }).catch(()=>{});

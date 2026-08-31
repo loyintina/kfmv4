@@ -265,32 +265,43 @@ export function applyTermBundle(ctx: Context): void {
       // 键盘上方；行模式不抢用户滚动位（顶行锚定最不惊吓），光标被遮由
       // renderFrame nearest 兜底原样。
       //
-      // 入态四闸（几何上「键盘」与「地址栏大缩/考卷 vv mock」信号同款，
+      // 入态三闸+闩锁（几何上「键盘」与「窗口缩/考卷 vv mock」信号同款，
       // 必须靠语义区分）：
-      //   ①武装窗口：诱饵 2s 内刚聚焦——平台规矩「键盘只为刚聚焦的可编辑
-      //     元素弹起」，地址栏伸缩/桌面拖窗/bottom-anchor 的 vv mock 都不
-      //     带这个聚焦序曲（该卷 kbFocus 在卷首，vv mock 在十余秒后）；
-      //   ②宽不变 ③innerH 不变（resizes-content 只缩视觉视口；桌面拖窗
-      //     两个都变=确定性排除）④跌幅>20% 且 >150px（真机键盘≈271px、
-      //     地址栏≈40-90px，双阈值居中）。武装只管入态：入态后锁存，
-      //     高度涨回阈值内=收键盘退出（此时打字多久都不影响）。
-      // 键盘弹了但没聚焦序曲（理论不存在）=退回旧 resize 行为，优雅降级。
+      //   ①武装窗口：召唤键盘**意图**2s 内（容器 click 主武装+focus 兜原
+      //     生路径）——键盘必有召唤序曲，桌面拖窗/分屏/bottom-anchor 的
+      //     vv mock 都没有（该卷 kbFocus 在卷首，vv mock 在十余秒后）；
+      //   ②宽不变（旋转/真宽度变更=真几何，走正常重测）；
+      //   ③跌幅>20% 且>150px（真机键盘≈271px、地址栏≈40-90px，双阈值居中）。
+      //   innerH 不能当闸：APK adjustResize 下真键盘连布局视口一起缩
+      //   （WebView 本体变矮），innerH 闸会把真键盘误判成桌面拖窗——
+      //   2026-08-30 真手指实锤（vv 812→541 时 innerH 同缩，闸复位→
+      //   永不入态→rows 44→28 旧行为复活）。判别全押武装序曲。
+      //   闩锁：入态即闩 30s，打字事件（keydown/input 经 touchImeLatch）
+      //   续闩——活跃键盘会话永不闩死；误闩（桌面点完终端 2s 内拖窗的罕态）
+      //   30s 自愈补一刀重测，不永久钉死行列。**打字只续闩不武装**：
+      //   桌面打字后 2s 内拖窗是常态，武装若挂 input 上=把缩窗误判键盘
+      //   （bottom-anchor ④ 实锤：考卷 type() 走 input 事件，一武装
+      //   缩窗全被钉死 7/10）。武装只认召唤意图（click/focus）。
+      // 键盘弹了但没召唤序曲（理论不存在）=退回旧 resize 行为，优雅降级。
       let vvBaseW = 0, vvBaseH = 0, baseInnerH = 0, imeActive = false;
-      let imeArmUntil = 0;
+      let imeArmUntil = 0, imeLatchUntil = 0;
       // 武装=「召唤键盘的意图」信号：必须挂在点击/聚焦**意图**上而非
       // focus 事件——收键盘（返回键）后诱饵仍持焦，再点终端 kb.focus()
       // 是 no-op 不发事件，第二次起召唤会永远武装不上（考卷实锤）。
-      const armIme = () => { imeArmUntil = Date.now() + 2000; };
+      // 同一个调用顺带起闩/续闩（点击时往往伴随键盘会话开始）。
+      const armIme = () => { const t = Date.now(); imeArmUntil = t + 2000; imeLatchUntil = t + 30000; };
+      // 只续闩不武装（见上「打字只续闩不武装」）：活跃键盘会话的心跳。
+      const touchImeLatch = () => { imeLatchUntil = Date.now() + 30000; };
       const updateImeState = () => {
         const v = vvNow();
         if (!v || v.width <= 0) return;
-        // 宽/布局视口变=真几何变更：重置基线、退 IME 态、走正常重测
-        if (v.width !== vvBaseW || Math.abs(window.innerHeight - baseInnerH) > 2) {
+        // 宽变=真几何变更（旋转/桌面横向拖窗）：重置基线、退 IME 态
+        if (v.width !== vvBaseW) {
           vvBaseW = v.width; vvBaseH = v.height; baseInnerH = window.innerHeight;
           imeActive = false; return;
         }
-        if (imeActive) { // 锁存态：高度涨回=收键盘退出（基线顺手收下）
-          if (v.height >= vvBaseH * 0.8) { imeActive = false; vvBaseH = v.height; }
+        if (imeActive) { // 锁存态：高度涨回=收键盘；闩到期=放行补一刀重测
+          if (v.height >= vvBaseH * 0.8 || Date.now() > imeLatchUntil) { imeActive = false; vvBaseH = v.height; }
           return;
         }
         if (v.height > vvBaseH) vvBaseH = v.height; // 基线=本宽度见过的最高
@@ -747,6 +758,7 @@ export function applyTermBundle(ctx: Context): void {
       });
       container.el.addEventListener('click', () => { armIme(); kb.focus({ preventScroll: true }); });
       kb.addEventListener('keydown', (e) => {
+        touchImeLatch(); // 打字=活跃键盘心跳：只续闩不武装（桌面打字+拖窗常态）
         if (composing || e.isComposing) return; // 合成中按键归输入法
         let bytes = keyToBytes(e);
         if (bytes) bytes = takeMods(bytes); // 粘滞修饰（按键栏 Ctrl/Alt/Shift）
@@ -757,6 +769,7 @@ export function applyTermBundle(ctx: Context): void {
         }
       });
       kb.addEventListener('input', (e) => {
+        touchImeLatch(); // 打字=活跃键盘心跳：只续闩不武装（合成中事件也算活跃）
         const ie = e as InputEvent;
         if (composing || ie.isComposing) return; // 中间态不发
         if (justCommitted && ie.data === justCommitted) {
