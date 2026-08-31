@@ -341,6 +341,8 @@
 | 2026-08-30 | [`kfmv4-9.0-splash-plugin-landing-report.md`](kfmv4-9.0-splash-plugin-landing-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉，落地+插件化自验收收讫） |
 | 2026-08-30 | [`kfmv4-9.0-splash-v14f-report.md`](kfmv4-9.0-splash-v14f-report.md) | 无（非回函，主动通报） | 已收到（2026-08-30 评审：知悉，demo 页自验收收讫） |
 | 2026-08-30 | [`kfmv4-plugin-governance-proposal-submission.md`](kfmv4-plugin-governance-proposal-submission.md) | 无（首信） | 已回（2026-08-30 评审：kfm-na 已表态并附映射表与暂缓项，kfmv4-9.0 待表态。） |
+| 2026-08-31 | [`kfmv4-agent-inbox-filename-state-encoding-submission.md`](kfmv4-agent-inbox-filename-state-encoding-submission.md) | 无（首信） | 已裁决（2026-08-31 评审：核心洞察采纳为需求，文件名状态编码与编号分配驳回，替代方案=生成器态势摘要；详见 kfmv4-review-inbox-filename-proposal-verdict.md。） |
 | 2026-08-31 | [`kfmv4-perf-resource-conflict-notice.md`](kfmv4-perf-resource-conflict-notice.md) | kfm-na-gate-mutants-report.md(本信为其运行时副作用的资源侧通报) | 待回信 |
 | 2026-08-31 | [`kfmv4-resource-hygiene-response.md`](kfmv4-resource-hygiene-response.md) | kfmv4-perf-resource-conflict-notice.md(资源冲突通报的同轮处置) | 待回信 |
+| 2026-08-31 | [`kfmv4-review-inbox-filename-proposal-verdict.md`](kfmv4-review-inbox-filename-proposal-verdict.md) | kfmv4-agent-inbox-filename-state-encoding-submission.md | 已裁决（2026-08-31 评审：态势感知采纳为需求，文件名状态编码与评审分配编号驳回，替代方案=生成器态势摘要；原信四处 schema 违规已顺手修正。） |
 <!-- gen:agent-inbox:end -->

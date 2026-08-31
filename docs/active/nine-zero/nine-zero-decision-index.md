@@ -1,6 +1,6 @@
-# 9.0 决策索引（跨线评审信箱 253 封信 → 决策一张表）
+# 9.0 决策索引（跨线评审信箱 257 封信 → 决策一张表）
 
-> 这是什么：`docs/ledger/agent-inbox/` 253 封信的**决策级索引**——信箱是
+> 这是什么：`docs/ledger/agent-inbox/` 257 封信的**决策级索引**——信箱是
 > ledger（只追加不删改），裁决史散在信里；本表把**已拍板决策**提取成一张表，
 > 「为什么这么定」从这里查、细节回信里读。信仍在，本表只索引不替代。
 > 别的去哪找：契约全文 → `nine-zero-phase1-contracts.md` / `nine-zero-phase2-contracts.md`；
@@ -74,6 +74,7 @@
 | 9.0 步 0 四项验证 | 用户终审 2026-08-17 已通过，🔶 验证中 | 9.0 线执行 |
 | provider contextWindow 精确化（2026-08-18 洛拍板交 9.0） | v8 遗留：providers.json contextWindow 曾整表批量 131072 占位（只有 k3/k3-256k/deepseek-v4-flash 验证过），预检误压缩深坑（119k 触发 1M 模型）；v8 已修「未登记窗口跳过预检」兜底（宁漏勿错），但精确窗口登记仍是硬编码猜测 | 9.0 从源头解决：窗口值从 provider 元数据/API 错误信息动态获取，不再手填猜测；遗留信源：2026-08-18 会话（茉莉·洛） |
 | agent 信箱 D4 代际戳落地（2026-08-18 补登，MECH-FLOW-14 机检抓漏） | 代际戳防过期回执覆盖新状态：载体骑状态字段 + f3 签名行扫描可行 + 软告警建议 + LEGACY 豁免接受；v2 序位对账（暂存区对账+序位倒退拦截）支持立项但不并 D4；收敛判据达成待用户终审 | `kfmv4-agent-mailbox-d4-design-submission.md` | ✅ 茉莉已回（待用户终审） | experiments/agent-mailbox/design/d4-epoch-stamp.md（研究线 index 已登记） |
+| agent-inbox 文件名状态编码提案裁决（2026-08-31 评审） | 核心洞察（`ls` 态势感知）采纳为需求；文件名状态编码/评审分配编号/编号引用三项驳回——双状态源必漂移 + ASCII 纪律冲突（MECH-FLOW-12）+ git rename 噪音与正文引用断链；「ls 可感知」已有等价物且更强（README 投影 + MECH-FLOW-16 停滞机检）；替代方案 = gen-agent-inbox 态势摘要节，触发制立项不预建；原信四处 schema 违规（流型/致线名/状态词/文件名末词）已顺手修正并重命名 -submission | `kfmv4-review-inbox-filename-proposal-verdict.md` | ✅ 已裁决（提案方如有异议走新信征集流） | docs/ledger/agent-inbox/kfmv4-agent-inbox-filename-state-encoding-submission.md |
 
 ---
 
