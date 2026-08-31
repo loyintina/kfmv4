@@ -1788,3 +1788,18 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   sat=42px、scrollClientH 733→769（多 2 行）。纪律：**全屏主题≠
   全面屏，刘海是独立一维，声明式+运行时双写**；页面外的区域用
   几何差量诊（screen vs innerH vs env()）别截图。
+- 2026-08-31 · **bg→fg 自弹键盘漏识别根治 + 31s 重载死循环案中案**
+  （9cbe163b；实录 nz/docs/dev-flow-case-002-term-ime.md 迭代节）。
+  用户报「回前台键盘有概率自跳/点击后盖住不跟随」。案中案：
+  231cc375 心跳单边上线（server 旧码不认 ping）→31s 重载死循环
+  543 次，nz-restart 收口——**协议加帧型必须 server 同重启**，记账
+  build.mjs 检测 src/server 变更自动 restart-req（待办）。主案帧级
+  tracer（50ms）定罪：「盖住不跟随」修循环后复现不出；真异常=自弹
+  键盘无召唤序曲→ime=false→rows 47→30=tmux 每回前台白吃 SIGWINCH
+  洪峰（注释「理论不存在」被真机证伪）。修=APK visibilitychange→
+  visible 即 armIme(true)（浏览器不武装，①e0 对照钉判别）。红先
+  ①e2 精准红→15/15+四卷回归全绿；真机 A/B 收口：无武装 vv 跌 271
+  →ime=false rows 47→30；fg 武装→ime=true rows 47 冻结。观测纪律：
+  **页面 hidden=定时器全冻结**，mock 实验先查 visibilityState 再下
+  结论（差点误判假 bug）；合成 tap 失灵谜 reload 后复发，真键盘
+  e2e 最后一公里待真手指 C 档。

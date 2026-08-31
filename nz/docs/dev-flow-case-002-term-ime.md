@@ -208,4 +208,46 @@ _（下一条 term 相关修改从这里继续记）_
   区域用几何差量诊（screen vs innerH vs env()），别试图截图；
   ③safe-area 变量立 :root 单源，容器 padding 与遥测同吃一源。
 
+### 2026-08-31 · bg→fg 自弹键盘漏识别根治（visibilitychange 武装）+ 31s 重载死循环案中案
+- **为什么改**：用户报告「从后台切回前台，键盘有概率自动跳出/不跳出，
+  点击屏幕键盘弹出后盖住内容不跟随」。
+- **排查一（案中案，先行定罪）**：`/tmp/nz-boot-marks.log` 里
+  `term-page-started` 每 ~31s 一条累计 543 次=页面在重载死循环。根因=
+  231cc375 给 bridge 加应用层心跳（15s 无 pong→reload），但 **server
+  进程还是加心跳前的旧代码**，不认 ping 帧回「未知帧型」→客户端每 15s
+  误报假死→reload→新页再 ping→循环（31s≈2×15s+reload 耗时）。修复=
+  `nz-restart.sh` 重启 server（ping→pong 18ms 实测，73+ 分钟零新
+  boot mark）。**用户感知的「键盘自动跳出有概率」高度疑似此循环表象
+  （reload 后焦点态不定）——协议加帧型必须伴随 server 同重启**，记账：
+  build.mjs 应检测 src/server 变更自动置 restart-req（待办）。
+- **排查二（帧级追踪定罪）**：重载循环修掉后，埋 50ms 帧级 tracer
+  （vv/ime/rows/cBot/vis）跑 bg→fg 全周期：自弹键盘路径页面 50-150ms
+  内跟随到位、光标恒可见，**「盖住不跟随」在修复后版本复现不出**。
+  但抓到真异常：**自弹键盘 ime=false**——Android 回前台为持焦诱饵
+  恢复键盘，无点击/聚焦序曲，武装窗不开（代码注释原写「理论不存在」，
+  真机证伪），走 resize 路径 rows 47→30=tmux 每回前台白吃一刀
+  SIGWINCH 洪峰。对照：点击召唤路径 ime=true、rows 冻结（正确）。
+- **改了什么**：`visibilitychange→visible` 且 APK 环境（NzNative 在）
+  即 `armIme(true)` 视同召唤序曲——APK 无地址栏/窗口拖拽，回前台
+  3.5s 内 vv 大缩唯一天命=键盘恢复。浏览器不武装（桌面 alt-tab 回来
+  拖窗是常态，武装会误判）。
+- **验收**：考卷红先 ①e2 精准红（14/15，①e0 浏览器对照绿=判别力成立）
+  →修后 15/15；回归 bottom-anchor 10/10+scrollback 5/5+keybar-click
+  20/20+term-hooks 6/6 全绿。真机数字收口（新 bundle v=77e03f90，
+  defineProperty vv-only mock 路径）：A 对照（无武装）vv 跌 271px→
+  ime=false、rows 47→30 跟随；B（HOME→fg 触发 visibilitychange 武装）
+  同款 vv 跌→**ime=true、rows 47 冻结**，还原退闩回基线。
+- **观测方法注**：①帧级 tracer（50ms setInterval 记 vv/ime/rows/几何）
+  是 bg→fg 这类时序症的尺，单帧快照会骗人；②**页面 hidden=定时器
+  全冻结**（屏幕熄灭/后台）——mock 实验事件同步生效（pin 落）但
+  150ms 重测定时器不跑，读数像「resize 失灵」，先查 visibilityState
+  再下结论（这轮差点误判一个假 bug）；③合成 tap 失灵谜 reload 后
+  复发（NzNative.tap 落地但输入连接建不起来，TASK 已记账同款），
+  真键盘 e2e 的最后一公里仍需真手指。
+- **纪律产出**：①「键盘弹了但没召唤序曲」不是理论不存在，是 bg→fg
+  自弹——注释写死「不存在」前先问真机；②协议/心跳类改动=客户端
+  server 一体，单边上线=死循环，build 链应自动检测 server 变更要求
+  重启；③同症异物：用户的「盖住不跟随」（重载循环表象）与「自弹
+  漏识别」（真 bug）是两条病，分开定罪分开修。
+
 _（下一条 term 相关修改从这里继续记）_
