@@ -130,6 +130,16 @@ export function mountKeybar(parent: HTMLElement, hooks: KeybarHooks): KeybarHand
       bar.appendChild(b);
     }
   }
+  // 原生召唤防线（2026-08-31 真机实锤，dbg-keybar-ime-summon）：Chromium
+  // 安卓的 ShowImeIfNeeded——tap 结束只要焦点元素可编辑就召回 IME，不管
+  // 点在页面哪里。诱饵 textarea 永久持焦（IME 输入靠它），于是点键栏也
+  // 被原生层弹键盘——JS 层的 click stopPropagation（防 JS 召唤）拦不住
+  // 原生召唤。preventDefault touchstart 取消整个 tap 手势的默认行为
+  // （含 ShowImeIfNeeded）；挂在 bar 上冒泡全覆盖——按钮+缝隙通吃。
+  // 按键由 pointerdown 触发（按下即发），防 touchstart 不伤按键逻辑。
+  bar.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+  // 缝隙兜底：点在按钮间隙的 click 会冒泡到终端容器→kb.focus()→JS 召唤。
+  bar.addEventListener('click', (e) => e.stopPropagation());
   parent.appendChild(bar);
 
   const handle: KeybarHandle = {

@@ -65,6 +65,27 @@ const kbGot = await page.evaluate(() => document.activeElement?.classList.contai
 results.push({ name: '点终端文本区→焦点落诱饵(聚焦通路正常)', ok: kbGot,
   detail: await page.evaluate(() => document.activeElement?.className || document.activeElement?.tagName || 'none') });
 
+// ⑤ 原生召唤防线钉（2026-08-31 真机实锤，dbg-keybar-ime-summon）：键栏
+// touchstart 必须可取消且被取消（preventDefault）——Chromium 安卓
+// ShowImeIfNeeded「tap 结束+可编辑持焦=召回 IME」是原生层行为，JS 层
+// click stopPropagation（④钉的防线）拦不住；touchstart preventDefault
+// 取消整个 tap 手势默认行为=原生召唤断源。按钮+缝隙由 bar 冒泡全覆盖。
+await page.evaluate(() => document.querySelector('textarea.kfm-term-kb')?.focus());
+const touchGuard = await page.evaluate(() => {
+  const btn = [...document.querySelectorAll('.kfm-term-keybar > div')].find(d => d.textContent === 'ENTER');
+  const bar = document.querySelector('.kfm-term-keybar');
+  if (!btn || !bar) return { ok: false, why: 'no btn/bar' };
+  const onBtn = new Event('touchstart', { bubbles: true, cancelable: true });
+  btn.dispatchEvent(onBtn);
+  // 缝隙（bar 本体，非按钮）也要被同一 listener 兜住
+  const onGap = new Event('touchstart', { bubbles: true, cancelable: true });
+  bar.dispatchEvent(onGap);
+  return { ok: onBtn.defaultPrevented && onGap.defaultPrevented,
+           btn: onBtn.defaultPrevented, gap: onGap.defaultPrevented };
+});
+results.push({ name: '键栏 touchstart 默认行为已防（原生召唤 ShowImeIfNeeded 断源）',
+  ok: touchGuard.ok === true, detail: JSON.stringify(touchGuard) });
+
 await browser.close();
 const { allOk } = summarize(results);
 process.exit(allOk ? 0 : 1);
