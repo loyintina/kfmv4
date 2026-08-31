@@ -175,3 +175,37 @@ _（下一条 term 相关修改从这里继续记）_
   要挡住——宽度表是协议，协议要么全对要么全错。
 
 _（下一条 term 相关修改从这里继续记）_
+
+### 2026-08-31 · 附案：全面屏 edge-to-edge——顶 42px 黑条（刘海 letterbox）根治
+- **为什么改**：用户实拍 nz 顶栏一条黑条什么都没有——其他软件都
+  支持全面屏，nz 避让摄像头区。后台几何 eval 钉死病灶：屏 854 而
+  innerH=812（42px 没给页面）、`env(safe-area-inset-top)=0`——
+  **窗口层就被系统切了，页面连那块区域的存在都感知不到**，不是
+  页面在避让。
+- **根因**：targetSdk=28 下刘海模式默认 DEFAULT——全屏（状态栏
+  隐藏）时短边刘海区拉黑信box。设备=vivo V2339FA API 36。
+- **改了什么**（两刀才透）：
+  ①a69fbd2c 壳层 onCreate setAttributes SHORT_EDGES + 页面
+  viewport-fit=cover + :root --sat/--sab 变量单源 + 终端容器
+  safe-area padding（box-sizing:border-box，绝对定位子元素以
+  padding box 为包含块自动缩进，scrollEl.clientHeight 行数测量
+  自洽）+ ?debug 遥测 sat/sab 字段。**真机复验仍 letterbox**
+  （innerH=812→816 只涨 4px，sat 恒 0px）——API 36 只设运行时
+  SHORT_EDGES 不够。
+  ②980ab795 补刀：主题**声明式** windowLayoutInDisplayCutoutMode
+  =shortEdges（窗口创建第一拍生效，国产 ROM 更买账）+ 状态/导航
+  栏透明 + API30+ setDecorFitsSystemWindows(false) 显式放行。
+- **验收**（后台 eval 数字收口，无需抓图）：innerH 812→**853**、
+  sat 0px→**42px**（页面真拿到刘海账）、scrollClientH 733→769
+  （多出 2 行可见区）、sab=0（手势条无占位）、用户真机实拍黑条
+  消失内容不进摄像头洞。行列无超屏回归。
+- **观测方法注**：黑条在 WebView **外面**（窗口层），canvasShot
+  重画眼/CDP 截图都够不着——几何 eval（screen.height vs innerH
+  vs env(safe-area)）才是这条症的尺，且后台随时能跑。
+- **纪律产出**：①Android 全屏主题≠全面屏——刘海模式是独立一维，
+  现代 API 要**声明式（主题）+ 运行时（setAttributes/decorFits）
+  双写**，只写一边国产 ROM/新 API 可能都不买账；②页面感知不到的
+  区域用几何差量诊（screen vs innerH vs env()），别试图截图；
+  ③safe-area 变量立 :root 单源，容器 padding 与遥测同吃一源。
+
+_（下一条 term 相关修改从这里继续记）_

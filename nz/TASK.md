@@ -1778,3 +1778,13 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   全绿；真机复量 gap 2×cellW→1×cellW=恰好尾空格。纪律：**派生表
   绝不手抄，生成-对拍-零不一致才算完**（手抄两连错被对拍尺当场
   抓住）；宽度表是协议，抽查必漏要全量扫面。
+- 2026-08-31 · **全面屏 edge-to-edge 根治**（a69fbd2c / 980ab795；
+  实录 nz/docs/dev-flow-case-002-term-ime.md 迭代节）。用户实拍顶
+  42px 黑条=刘海 letterbox：屏 854 而 innerH=812、env(safe-area-
+  inset-top)=0=窗口层被切页面感知不到。设备 vivo V2339FA API 36。
+  两刀才透：①运行时 SHORT_EDGES+页面 viewport-fit=cover+容器
+  safe-area padding——复验仍 letterbox（812→816）；②主题声明式
+  shortEdges+栏透明+decorFits(false)。验收后台 eval：innerH=853、
+  sat=42px、scrollClientH 733→769（多 2 行）。纪律：**全屏主题≠
+  全面屏，刘海是独立一维，声明式+运行时双写**；页面外的区域用
+  几何差量诊（screen vs innerH vs env()）别截图。
