@@ -106,6 +106,12 @@ public class MainActivity extends Activity {
                             .LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
             getWindow().setAttributes(lp);
         }
+        // decor 不贴系统窗口（API 30+；API 36 实测只设 SHORT_EDGES 仍
+        // letterbox——edge-to-edge 时代要显式放行，内容才真铺进刘海/
+        // 状态栏区）。配合主题声明式 windowLayoutInDisplayCutoutMode。
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            getWindow().setDecorFitsSystemWindows(false);
+        }
 
         // 必须在创建任何 WebView 之前调（静态全局开关）
         WebView.setWebContentsDebuggingEnabled(true);
