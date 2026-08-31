@@ -8,7 +8,9 @@
  * 行模式不抢滚动位。收键盘行列若未变=零重测零洪峰。
  *
  * 入态三闸+闩锁（几何上键盘与窗口缩/旧考卷 vv mock 信号同款，靠语义区分）：
- *   ①召唤键盘意图 2s 内（click 主武装+focus 兜原生）②宽不变
+ *   ①召唤键盘意图武装窗两档：点击 3.5s（冷启动首弹可>2s，2026-08-31
+ *   终验②实锤，①d 延迟钉红先复现）/裸聚焦 2s（bottom-anchor ④ 判别力
+ *   不回退）②宽不变
  *   ③跌幅>20% 且>150px。innerH 不当闸：APK adjustResize 下真键盘连布局
  *   视口一起缩（2026-08-30 真手指实锤，innerH 闸曾致永不入态）。闩锁
  *   30s、打字续闩，误闩自愈。
@@ -77,6 +79,35 @@ const restored = await scroll();
 const R0 = restored?.rows, C0 = restored?.clientHeight;
 check('①b 窗口还原→退闩、行列回基线', !!(restored && R0) && restored.ime === false && restored.rows === base.rows,
       `rows ${armedShrink?.rows}→${R0}（基线${base?.rows}） ime=${restored?.ime} clientH=${C0}`);
+
+// ①d 冷启动延迟弹键盘（2026-08-31 真手指终验②实锤：会话首弹冷启动
+// 从点击到 vv 开始缩可>2s，2s 武装窗过期→漏武装→rows 44→28 旧行为对
+// 一次；之后键盘热了次次窗内全中）——真点击容器武装→等 3s（2s 窗已
+// 过期、3.5s 窗内在）→vv-only mock 下跌 271px（不自带聚焦序曲，
+// bottom-anchor ④b-d 同款 defineProperty 路径）→必须入态钉行列
+await page.click('.nz-term');
+await page.waitForTimeout(3000);
+await page.evaluate(() => {
+  const vv = window.visualViewport;
+  Object.defineProperty(vv, 'height', { get: () => 620 - 271, configurable: true });
+  Object.defineProperty(vv, 'offsetTop', { get: () => 0, configurable: true });
+  vv.dispatchEvent(new Event('resize'));
+});
+await page.waitForTimeout(1000); // 防抖150+RO+空闲巡查500 落地
+const coldOpen = await scroll();
+check('①d 冷启动延迟（点→3s→vv 跌 271px）→入态钉行列', !!coldOpen
+      && coldOpen.ime === true && coldOpen.rows === base.rows,
+      `ime=${coldOpen?.ime} rows=${coldOpen?.rows}（基线${base?.rows}）`);
+await page.evaluate(() => {
+  const vv = window.visualViewport;
+  delete vv.height; delete vv.offsetTop;
+  vv.dispatchEvent(new Event('resize'));
+});
+await page.waitForTimeout(1000);
+const coldClosed = await scroll();
+check('①d2 冷启动卷还原→退闩、行列回基线', !!coldClosed
+      && coldClosed.ime === false && coldClosed.rows === base.rows,
+      `ime=${coldClosed?.ime} rows=${coldClosed?.rows}（基线${base?.rows}）`);
 
 // ② 模拟键盘弹起：扳机命中 + 卡身缩（占位生效）+ 行列格网不动（核心判据）
 const imeHit = await mockIme(true); // 默认 kbPx=271（真机实测键盘占位）

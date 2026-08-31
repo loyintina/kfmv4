@@ -267,9 +267,13 @@ export function applyTermBundle(ctx: Context): void {
       //
       // 入态三闸+闩锁（几何上「键盘」与「窗口缩/考卷 vv mock」信号同款，
       // 必须靠语义区分）：
-      //   ①武装窗口：召唤键盘**意图**2s 内（容器 click 主武装+focus 兜原
-      //     生路径）——键盘必有召唤序曲，桌面拖窗/分屏/bottom-anchor 的
-      //     vv mock 都没有（该卷 kbFocus 在卷首，vv mock 在十余秒后）；
+      //   ①武装窗口两档：点击=真召唤序曲 3.5s（冷启动首弹键盘从点击到 vv
+      //     开始缩可>2s——2026-08-31 真手指终验②实锤漏武装→rows 44→28
+      //     旧行为对一次，之后键盘热了次次窗内全中；ime-pan ①d 延迟钉
+      //     红先复现）；裸聚焦=弱信号 2s（桌面聚焦后拖窗是常态，
+      //     bottom-anchor ④ 的 kbFocus→数秒后缩窗必须照常过期，一刀切
+      //     3.5s 曾把它打红）。桌面拖窗/分屏/bottom-anchor 的 vv mock
+      //     都没有召唤序曲；加宽误伤面有③双阈值兜底；
       //   ②宽不变（旋转/真宽度变更=真几何，走正常重测）；
       //   ③跌幅>20% 且>150px（真机键盘≈271px、地址栏≈40-90px，双阈值居中）。
       //   innerH 不能当闸：APK adjustResize 下真键盘连布局视口一起缩
@@ -289,7 +293,11 @@ export function applyTermBundle(ctx: Context): void {
       // focus 事件——收键盘（返回键）后诱饵仍持焦，再点终端 kb.focus()
       // 是 no-op 不发事件，第二次起召唤会永远武装不上（考卷实锤）。
       // 同一个调用顺带起闩/续闩（点击时往往伴随键盘会话开始）。
-      const armIme = () => { const t = Date.now(); imeArmUntil = t + 2000; imeLatchUntil = t + 30000; };
+      // 武装分两档（bottom-anchor ④ 实锤：一刀切 3.5s 会把「聚焦 3s 后
+      // 拖窗」误判键盘）：点击=真召唤序曲给 3.5s（冷启动首弹可>2s，
+      // 终验②实锤）；裸聚焦=弱信号只给 2s（桌面聚焦后拖窗是常态，
+      // bottom-anchor ④ 的 kbFocus→十余秒链路必须照常过期）。
+      const armIme = (strong = false) => { const t = Date.now(); imeArmUntil = Math.max(imeArmUntil, t + (strong ? 3500 : 2000)); imeLatchUntil = t + 30000; };
       // 只续闩不武装（见上「打字只续闩不武装」）：活跃键盘会话的心跳。
       const touchImeLatch = () => { imeLatchUntil = Date.now() + 30000; };
       const updateImeState = () => {
@@ -638,7 +646,7 @@ export function applyTermBundle(ctx: Context): void {
       // （动画过渡帧/焦点/浏览器 vv 怪癖）不在重放范围=前台真键盘的活。
       win.__kfmNzTermMockIme = (open: boolean, kbPx = 271) => {
         if (open) {
-          armIme(); // 召唤意图武装（模拟 tap）；focus 兜原生聚焦路径
+          armIme(true); // 召唤意图武装（模拟 tap=强档）；focus 兜原生聚焦路径
           kb.focus({ preventScroll: true });
           const real = window.visualViewport;
           const h = real?.height ?? container.el.clientHeight;
@@ -743,7 +751,7 @@ export function applyTermBundle(ctx: Context): void {
       // 聚焦序曲后 2s 内的 vv 大缩才认作键盘占位，见 updateImeState 四闸。
       // 主武装点在容器 click=召唤意图；focus 监听兜原生聚焦路径——Tab
       // 直入、直接点中 1px 诱饵、程序化 focus）
-      kb.addEventListener('focus', armIme);
+      kb.addEventListener('focus', () => armIme()); // 裸聚焦=弱档 2s（事件对象当参数会 truthy 成强档，包一层）
       kb.addEventListener('compositionstart', () => { composing = true; kb.value = ''; });
       kb.addEventListener('compositionend', (e) => {
         composing = false;
@@ -756,7 +764,7 @@ export function applyTermBundle(ctx: Context): void {
           bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
         }
       });
-      container.el.addEventListener('click', () => { armIme(); kb.focus({ preventScroll: true }); });
+      container.el.addEventListener('click', () => { armIme(true); kb.focus({ preventScroll: true }); });
       kb.addEventListener('keydown', (e) => {
         touchImeLatch(); // 打字=活跃键盘心跳：只续闩不武装（桌面打字+拖窗常态）
         if (composing || e.isComposing) return; // 合成中按键归输入法
