@@ -154,6 +154,17 @@ npm run smoke       # node 侧 Cordis 全链冒烟
   sessions.jsonl / active.json / 日志；
 - 替换完成后继承正式数据区。
 
+### 2.5a 重负载任务落位（2026-08-31 用户拍板）
+
+- **浏览器测试/重负载任务默认放手机跑**（Ubuntu proot + glibc node +
+  Playwright chromium，`launch.mjs` 统一入口，`--use-gl=disabled` 必备；
+  跑法见 2026-08-31 日志条）。耗电发热实测可接受（六卷连跑≈10 分钟
+  ≈刷网页量级），用户确认无顾虑。
+- 服务器只留：mouse-report（tmux 依赖）、npm test/cargo 等轻量卷、
+  build.mjs 轻构建。
+- 公约①重 IO 窗口制管的是**服务器**侧；手机侧不受窗口约束，但仍串行
+  不并发、单卷 timeout 300。
+
 ### 2.6 跨线运维公约（2026-08-28 评审裁决 ops-convention-verdict 全批准）
 
 - **公约①重 IO 窗口制**：连续型重 IO（全量构建/变异复跑/多卷连跑）
