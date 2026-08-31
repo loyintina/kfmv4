@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content, viewport-fit=cover">
   <title>kfm-nz</title>
   <style>
     /* 终端字体 = NA 同款（2026-08-26 用户拍板，nz-font-adapt-review）：
@@ -24,6 +24,14 @@
     }
     /* body 底色对齐开屏覆层 #05070f（2026-08-30 逐帧实录定罪：#101014
        与覆层两截深色色差=开机序列里多一次肉眼可辨的跳变） */
+    /* safe-area 变量单源（2026-08-31 全面屏 edge-to-edge）：壳层
+       SHORT_EDGES 铺进刘海区后 env() 吐真值；终端容器 padding 与
+       ?debug 遥测（sat/sab）同吃这两个变量，不各量各的。非刘海/非
+       edge-to-edge 环境（桌面/headless）=0px，天然无影响。 */
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+    }
     body { margin: 0; background: #05070f; color: #d8d8e0; font-family: monospace; }
     #boot-panel { padding: 24px; }
     /* 8.8.3：刷新即全屏终端——开屏日志默认不挡门，URL 带 ?debug 才显示 */
@@ -46,6 +54,6 @@
     <h1>kfm-nz · Cordis 根总线骨架</h1>
     <pre id="boot-log">加载中…</pre>
   </div>
-  <script type="module" src="./bundle.js?v=4f933a6d"></script>
+  <script type="module" src="./bundle.js?v=639696e2"></script>
 </body>
 </html>

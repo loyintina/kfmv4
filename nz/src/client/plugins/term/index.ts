@@ -256,7 +256,13 @@ export function applyTermBundle(ctx: Context): void {
       //   ③行数对卡身量（measure 读 scrollEl.clientHeight，卡身限高后
       //     rows×cellH 恒 ≤ 真可见区）。
       // 内部绝对分区不变：scrollEl 终端本体（flex 列底锚）+ barStrip 垫底。
-      container.el.style.cssText = 'position:fixed;left:0;right:0;top:0;height:100%;overflow:hidden;';
+      // safe-area padding（2026-08-31 全面屏）：卡身钉 vv 后背景铺满刘海区
+      // （黑条消失），padding 把内容区让出摄像头洞/手势条——绝对定位子元素
+      // 以 padding box 为包含块，scrollEl/barStrip 自动缩进，行数测量
+      // （scrollEl.clientHeight）同源自洽。box-sizing:border-box 保
+      // height=vv.height 语义不被 padding 撑破。变量单源=index.html :root。
+      container.el.style.cssText = 'position:fixed;left:0;right:0;top:0;height:100%;overflow:hidden;'
+        + 'box-sizing:border-box;padding-top:var(--sat,0px);padding-bottom:var(--sab,0px);';
       // 终端卡全屏期间锁死背景页滚动（boot 页比屏幕高，不锁会和终端抢
       // 滚动、被 scrollIntoView 类行为带着跑——实测闪烁根因之一）
       const prevBodyOverflow = document.body.style.overflow;
@@ -751,6 +757,10 @@ export function applyTermBundle(ctx: Context): void {
           cellH: shell.metrics.cellH, cellW: shell.metrics.cellW,
           layoutMinusVisual: vv ? window.innerHeight - vv.height : null,
           overflowBeyondVisible: scrollEl.scrollHeight - scrollEl.clientHeight,
+          // safe-area（2026-08-31 全面屏）：壳层 SHORT_EDGES 后 sat>0=真
+          // 铺进刘海区；恒 0=edge-to-edge 没生效（验收判据，变量单源 :root）
+          sat: getComputedStyle(document.documentElement).getPropertyValue('--sat'),
+          sab: getComputedStyle(document.documentElement).getPropertyValue('--sab'),
         });
       };
       // 必须挂在 click 而非 pointerdown/mousedown：按下事件的默认行为会

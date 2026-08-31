@@ -92,6 +92,21 @@ public class MainActivity extends Activity {
         }
         mark("onCreate");
 
+        // edge-to-edge（2026-08-31 用户拍板全面屏）：窗口铺进刘海区。
+        // 现状=主题 Fullscreen 但刘海模式默认 DEFAULT——状态栏隐藏时
+        // 短边刘海区拉黑信box（真机实锤：屏 854 而 innerH=812，顶 42px
+        // 黑条，env(safe-area-inset-top)=0=窗口层就被切、页面感知不到）。
+        // SHORT_EDGES 允许铺进短边刘海区；页面侧 viewport-fit=cover 后
+        // env(safe-area-inset-top) 吐真值，内容避让交给页面 padding
+        // （背景铺满=黑条消失，摄像头洞下不排内容）。
+        if (android.os.Build.VERSION.SDK_INT >= 28) {
+            android.view.WindowManager.LayoutParams lp = getWindow().getAttributes();
+            lp.layoutInDisplayCutoutMode =
+                    android.view.WindowManager.LayoutParams
+                            .LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            getWindow().setAttributes(lp);
+        }
+
         // 必须在创建任何 WebView 之前调（静态全局开关）
         WebView.setWebContentsDebuggingEnabled(true);
 
