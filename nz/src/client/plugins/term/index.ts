@@ -333,8 +333,18 @@ export function applyTermBundle(ctx: Context): void {
           vvBaseW = v.width; vvBaseH = v.height; baseInnerH = window.innerHeight;
           imeActive = false; return;
         }
-        if (imeActive) { // 锁存态：高度涨回=收键盘；闩到期=放行补一刀重测
-          if (v.height >= vvBaseH * 0.8 || Date.now() > imeLatchUntil) { imeActive = false; vvBaseH = v.height; }
+        if (imeActive) { // 锁存态
+          // 高度涨回=收键盘，退态（行列若与键盘前一致=no-op 零洪峰）
+          if (v.height >= vvBaseH * 0.8) { imeActive = false; vvBaseH = v.height; return; }
+          if (Date.now() > imeLatchUntil) {
+            // 闩到期：APK 里 vv 仍跌幅态=键盘还开着（APK 无窗口拖拽，
+            // 持续跌幅唯一天命=键盘——「键盘开着只看不动手 >30s」2026-08-31
+            // 真机 fgwatch 实锤：退闩 rows 47→30、收键盘又 30→47 白砍两刀
+            // SIGWINCH）——续闩不退态。浏览器维持误闩自愈（退态补一刀
+            // 重测，bottom-anchor ④ 语义不回退，ime-pan ①f2 对照钉）。
+            if ((window as unknown as { NzNative?: unknown }).NzNative) imeLatchUntil = Date.now() + 30000;
+            else { imeActive = false; vvBaseH = v.height; }
+          }
           return;
         }
         if (v.height > vvBaseH) vvBaseH = v.height; // 基线=本宽度见过的最高
@@ -692,6 +702,13 @@ export function applyTermBundle(ctx: Context): void {
         scheduleResize('mock-ime');
         return imeActive;
       };
+      // 闩到期路径判卷钩（ime-pan ①f：30s 闩考卷等不起，直接拨到期
+      // 走 updateImeState 到期分支）。返到期处理后的 imeActive。
+      win.__kfmNzTermExpireLatch = () => {
+        imeLatchUntil = 0;
+        updateImeState();
+        return imeActive;
+      };
 
       // ?debug 诊断骨架（常备基建，复盘裁决①：管道+字段注册点常驻，专症
       // 字段随症收口——IME 专用 col/cv/cb 已随三症全解移除，保留通用渲染
@@ -933,15 +950,20 @@ export function applyTermBundle(ctx: Context): void {
         scheduleResize('vv-scroll');
       };
       window.visualViewport?.addEventListener('scroll', onViewportScroll);
-      // bg→fg 自弹键盘识别（2026-08-31 真机帧级追踪定罪）：回前台时
-      // Android 为持焦诱饵自动恢复键盘——无点击/聚焦序曲、武装窗不开，
-      // ime=false 走 resize 路径 rows 47→30=tmux 每回前台白吃一刀
-      // SIGWINCH 洪峰。APK（NzNative 在）无地址栏/窗口拖拽，回前台
-      // 3.5s 内的 vv 大缩唯一天命=键盘恢复，visible 即视同召唤序曲武装。
-      // 浏览器不武装：桌面 alt-tab 回来拖窗是常态，武装会把缩窗误判键盘
-      // （ime-pan ①e0 对照钉：浏览器 visibilitychange 后 vv 跌不入态）。
+      // bg→fg 自弹键盘两刀（2026-08-31 真机帧级追踪+fgwatch 定罪）：
+      // Android 回前台为持焦诱饵恢复键盘。第一刀=识别：自弹无点击/聚焦
+      // 序曲、武装窗不开，ime=false 走 resize 路径 rows 47→30=tmux 每回
+      // 前台白吃一刀 SIGWINCH 洪峰——APK visible 即视同召唤序曲武装
+      // （9cbe163b）。第二刀=断源：用户拍板「多点一下」（进来常常不为
+      // 打字，未来输入栏组件也要接管焦点），切后台摘掉诱饵焦点——
+      // Android 回前台只为持焦可编辑字段恢复键盘，无焦点=不弹（fgwatch
+      // 实锤：后台期间 focus 恒 TEXTAREA=自弹必然）。点屏幕经容器
+      // click 重新聚焦召唤（既有路径）。
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState !== 'visible') return;
+        if (document.visibilityState === 'hidden') { kb.blur(); return; }
+        // visible 武装保留兜底：ROM 怪癖/外接键盘仍可能自弹，弹了也必须
+        // 认得是键盘而非拖窗（ime-pan ①e 钉）。浏览器不武装：桌面
+        // alt-tab 回来拖窗是常态，武装会把缩窗误判键盘（①e0 对照钉）。
         if ((window as unknown as { NzNative?: unknown }).NzNative) armIme(true);
       });
       // 字体晚到自适应（真机图A 列截断修复）：fonts.load 在个别浏览器

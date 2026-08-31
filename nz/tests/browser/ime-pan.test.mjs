@@ -159,6 +159,58 @@ check('①e3 APK 卷还原→退闩、行列回基线', !!fgApkBack
       `ime=${fgApkBack?.ime} rows=${fgApkBack?.rows}（基线${base?.rows}）`);
 await page.evaluate(() => { delete window.NzNative; });
 
+// ①f 闩到期续期（2026-08-31 真机 fgwatch 实锤：键盘开着只看不动手
+// >30s，闩到期退态 rows 47→30、收键盘又 30→47=白砍两刀 SIGWINCH）：
+// APK（NzNative 在）闩到期+vv 仍跌幅态=键盘还开着（APK 无窗口拖拽，
+// 持续跌幅唯一天命=键盘），必须续闩不退、行列不动；对照（无
+// NzNative=浏览器）同款到期必须退闩（误闩自愈语义不回退）。
+// 30s 闩考卷等不起，用判卷钩 __kfmNzTermExpireLatch 直接拨到期
+await page.evaluate(() => { window.NzNative = {}; });
+const f1 = await page.evaluate(() => {
+  const hit = window.__kfmNzTermMockIme?.(true);
+  const exp = window.__kfmNzTermExpireLatch?.();
+  return { hit, exp };
+});
+await page.waitForTimeout(800); // 空闲巡查跑过一轮：续闩态 checkDrift 必须认得非漂移
+const f1s = await scroll();
+check('①f APK 闩到期+vv 仍跌→续闩不退、行列不动', f1?.hit === true && f1?.exp === true
+      && f1s?.ime === true && f1s?.rows === base.rows,
+      `hit=${f1?.hit} exp=${f1?.exp} ime=${f1s?.ime} rows=${f1s?.rows}（基线${base?.rows}）`);
+await page.evaluate(() => window.__kfmNzTermMockIme?.(false));
+await page.waitForTimeout(1000);
+await page.evaluate(() => { delete window.NzNative; });
+const f2 = await page.evaluate(() => {
+  const hit = window.__kfmNzTermMockIme?.(true);
+  const exp = window.__kfmNzTermExpireLatch?.();
+  return { hit, exp };
+});
+await page.waitForTimeout(1000);
+const f2s = await scroll();
+check('①f2 对照：浏览器闩到期→退闩自愈（误闩重测不回退）', f2?.hit === true && f2?.exp === false
+      && f2s?.ime === false && f2s?.rows < base.rows,
+      `hit=${f2?.hit} exp=${f2?.exp} ime=${f2s?.ime} rows=${f2s?.rows}（基线${base?.rows}）`);
+await page.evaluate(() => window.__kfmNzTermMockIme?.(false));
+await page.waitForTimeout(1000);
+const f2b = await scroll();
+check('①f3 ①f 卷还原→行列回基线', !!f2b && f2b.ime === false && f2b.rows === base.rows,
+      `ime=${f2b?.ime} rows=${f2b?.rows}（基线${base?.rows}）`);
+
+// ①g 压回前台自弹（2026-08-31 用户拍板「多点一下」：进来常常不为打字，
+// 未来输入栏组件也要接管焦点）：切后台（visibilitychange→hidden）必须
+// 摘掉诱饵焦点——Android 回前台只为持焦可编辑字段恢复键盘，无焦点=
+// 不弹；点屏幕经容器 click 重新聚焦召唤（既有路径）。headless 里
+// visibilityState 只读，defineProperty mock（vv mock 同款路径）
+await page.evaluate(() => { document.querySelector('textarea.kfm-term-kb')?.focus(); });
+const gFocused = await page.evaluate(() => document.activeElement?.tagName);
+const g1 = await page.evaluate(() => {
+  Object.defineProperty(document, 'visibilityState', { get: () => 'hidden', configurable: true });
+  document.dispatchEvent(new Event('visibilitychange'));
+  return document.activeElement?.tagName;
+});
+check('①g 切后台→诱饵失焦（回前台自弹断源）', gFocused === 'TEXTAREA' && g1 === 'BODY',
+      `切前=${gFocused} 切后=${g1}`);
+await page.evaluate(() => { delete document.visibilityState; document.dispatchEvent(new Event('visibilitychange')); });
+
 // ② 模拟键盘弹起：扳机命中 + 卡身缩（占位生效）+ 行列格网不动（核心判据）
 const imeHit = await mockIme(true); // 默认 kbPx=271（真机实测键盘占位）
 await page.waitForTimeout(1200);    // 防抖150+空闲巡查500 各跑过至少一轮
