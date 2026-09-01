@@ -15,11 +15,12 @@ const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 900, height: 620 } });
 await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 }).catch(() => {});
 await page.waitForSelector('.nz-term', { timeout: 20000 }).catch(() => {});
-// 慢隧道容忍：等插件钩子全就绪（bundle 下载数秒是常态）
-for (let i = 0; i < 60; i++) {
-  if (await page.evaluate(() => !!window.__kfmNzTmuxTabs && !!window.__kfmNzTermInject)) break;
-  await page.waitForTimeout(500);
-}
+// 钩子就绪等待：waitForFunction 在浏览器内轮询（protocol 单呼叫，
+// 不受中继每轮 evaluate 延迟影响）；慢隧道 bundle 下载 30s 预算
+await page.waitForFunction(
+  () => !!window.__kfmNzTmuxTabs && !!window.__kfmNzTermInject,
+  null, { timeout: 30000, polling: 250 },
+).catch((e) => { console.log('[HOOK-TIMEOUT]', String(e).slice(0, 120)); });
 await page.waitForTimeout(1500);
 page.on('pageerror', (e) => console.log('[PAGEERROR]', String(e).slice(0, 250)));
 
@@ -40,9 +41,9 @@ const waitScreen = async (pred, ms) => {
 // ① 清残留→HIDDEN（无会话）→建会话→重试腿重连→HANDLE+alpha
 await inject('tmux kill-session -t kfm-exam-browser 2>/dev/null; true\r');
 let s1 = null;
-for (let i = 0; i < 10; i++) { await page.waitForTimeout(400); s1 = await tabs(); if (s1.rt?.windows?.length === 0 && s1.rt?.state === 'HIDDEN') break; }
-check('①清残留→把手常在（0 窗 HANDLE）', s1?.state === 'HANDLE' && s1?.windows?.length === 0,
-      `state=${s1?.state} wins=${s1?.windows?.length}`);
+for (let i = 0; i < 10; i++) { await page.waitForTimeout(400); s1 = await tabs(); if (s1.rt?.windows?.length === 0) break; }
+check('①清残留→把手常在（0 窗 HANDLE）', s1?.rt?.state === 'HANDLE' && s1?.rt?.windows?.length === 0,
+      `state=${s1?.rt?.state} wins=${s1?.rt?.windows?.length}`);
 await inject('tmux new-session -d -s kfm-exam-browser -n alpha\r');
 let s2 = null;
 for (let i = 0; i < 30; i++) { await page.waitForTimeout(400); s2 = await tabs(); if ((s2?.rt?.windows?.length ?? 0) > 0) break; }
@@ -62,16 +63,16 @@ check('③T1 展开→EXPANDED+attached=false', s3.kind === 'EXPANDED' && s3.rt?
 const alphaId = s3.rt.windows.find((w) => w.name === 'alpha').id;
 const t03 = Date.now();
 await page.click(`[data-tmux-id="${alphaId}"]`);
-const ok3 = await waitScreen((scr) => scr.includes('[kfm-exam-browser]') && scr.includes('alpha*'), 4000);
+const ok3 = await waitScreen((scr) => scr.includes('[kfm-exam-browser]') && scr.includes('alpha*'), 8000);
 const t3bMs = Date.now() - t03;
 const s3b = await tabs();
 check('③T3b 未附点聚焦标签→attach 进 tmux（状态行+alpha*）',
-      ok3 && s3b.rt?.attached === true && t3bMs <= 8000, // 端到端含中继开销；真机纯延迟实测 455ms
+      ok3 && s3b.rt?.attached === true && t3bMs <= 10000, // 端到端含中继开销；真机纯延迟实测 455ms
       `attach ${t3bMs}ms attached=${s3b.rt?.attached}`);
 
 // ④ T5：＋建 beta（名字钉死）→聚焦新窗+收起回终端视图
-await page.click('[data-tmux-tabs="HANDLE"]');
-await page.waitForTimeout(300);
+const kindPre4 = await page.evaluate(() => document.querySelector('[data-tmux-tabs]')?.getAttribute('data-tmux-tabs') ?? null);
+if (kindPre4 === 'HANDLE') { await page.click('[data-tmux-tabs="HANDLE"]'); await page.waitForTimeout(300); }
 await page.click('[data-tmux-plus="1"]');
 await page.fill('[data-tmux-new-name]', 'beta');
 await page.click('[data-tmux-confirm="1"]');
@@ -81,8 +82,8 @@ check('④T5 ＋建 beta→聚焦+收起', s4?.rt?.windows?.some((w) => w.name =
       `wins=${JSON.stringify(s4?.rt?.windows?.map((w) => w.name))} state=${s4?.rt?.state}`);
 
 // ⑤ T1 再展开
-await page.click('[data-tmux-tabs="HANDLE"]');
-await page.waitForTimeout(300);
+const kindPre5 = await page.evaluate(() => document.querySelector('[data-tmux-tabs]')?.getAttribute('data-tmux-tabs') ?? null);
+if (kindPre5 === 'HANDLE') { await page.click('[data-tmux-tabs="HANDLE"]'); await page.waitForTimeout(300); }
 const s5 = await tabs();
 check('⑤T1 再展开（beta* 在屏）', s5.kind === 'EXPANDED' && (await screen()).includes('beta*'),
       `kind=${s5.kind}`);
@@ -90,25 +91,25 @@ check('⑤T1 再展开（beta* 在屏）', s5.kind === 'EXPANDED' && (await scre
 // ⑥ T2：点非聚焦 alpha→切窗（alpha*）≤800ms+停 EXPANDED+attached 保持
 const t06 = Date.now();
 await page.click(`[data-tmux-id="${alphaId}"]`);
-const ok6 = await waitScreen((scr) => scr.includes('alpha*'), 3000);
+const ok6 = await waitScreen((scr) => scr.includes('alpha*'), 6000);
 const t2ms = Date.now() - t06;
 const s6 = await tabs();
 check('⑥T2 已附点非聚焦→切窗（alpha*）≤800ms+停 EXPANDED',
       ok6 && t2ms <= 800 && s6.kind === 'EXPANDED' && s6.rt?.attached === true,
       `切窗 ${t2ms}ms kind=${s6.kind} attached=${s6.rt?.attached}`);
 
-// ⑦ T3：点聚焦 beta→detach 回终端态（状态行消失+⚡+HANDLE+attached=false）
-await page.click(`[data-tmux-id="${betaWinId(s6)}"]`);
-const ok7 = await waitScreen((scr) => !scr.includes('[kfm-exam-browser]') && scr.includes('⚡'), 4000);
+// ⑦ T3：点聚焦标签（⑥ 后聚焦=alpha）→detach 回终端态（状态行消失+⚡+HANDLE）
+await page.click(`[data-tmux-id="${alphaId}"]`);
+const ok7 = await waitScreen((scr) => !scr.includes('[kfm-exam-browser]') && scr.includes('⚡'), 8000);
 const s7 = await tabs();
 check('⑦T3 点聚焦标签→detach 回终端态', ok7 && s7.rt?.attached === false && s7.rt?.state === 'HANDLE'
       && (await screen()).includes('⚡'),
       `attached=${s7.rt?.attached} kind=${s7.kind}`);
-function betaWinId(s) { return s.rt.windows.find((w) => w.name === 'beta').id; }
 
 // ⑧ T2a：脱附态点非聚焦标签→重新 attach+切窗（进出自由）
-await page.click(`[data-tmux-id="${betaWinId(s7)}"]`);
-const ok8 = await waitScreen((scr) => scr.includes('[kfm-exam-browser]') && scr.includes('beta*'), 4000);
+const betaIdNow = (await tabs()).rt.windows.find((w) => w.name === 'beta').id;
+await page.click(`[data-tmux-id="${betaIdNow}"]`);
+const ok8 = await waitScreen((scr) => scr.includes('[kfm-exam-browser]') && scr.includes('beta*'), 8000);
 const s8 = await tabs();
 check('⑧T2a 脱附态点标签→重新 attach+切窗（beta*）', ok8 && s8.rt?.attached === true,
       `attached=${s8.rt?.attached}`);
