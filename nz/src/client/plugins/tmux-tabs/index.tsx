@@ -23,12 +23,7 @@ export interface TmuxWindow {
 }
 
 /** 状态机词汇表（docs/tmux-tabs-v2-state-machine.md §一，清单外名字禁止） */
-export type TmuxTabsState =
-  | 'HIDDEN'
-  | 'HANDLE'
-  | 'EXPANDED'
-  | 'OVERLAY_NEW'
-  | 'OVERLAY_CLOSE';
+export type TmuxTabsState = 'HANDLE' | 'EXPANDED' | 'OVERLAY_NEW' | 'OVERLAY_CLOSE';
 
 // ========== 脑（纯 TS：WS 连接 + 重试 + 发帧 + 环境事件，不碰 DOM） ==========
 
@@ -214,18 +209,25 @@ function TmuxTabs(props: {
       onCancel: onOverlayCancel,
     });
   }
-  if (windows.length === 0) return createElement('div', { 'data-tmux-tabs': 'HIDDEN' });
+  // 把手常在（2026-09-01 用户仲裁：＋入口不随最后窗口消失）：0 窗也渲染。
+  // 形态=光球规格 32px 圆、靠左（sat+12px），SVG 四格窗格图标（无字符 emoji）。
   if (!expanded) {
     return createElement('div', {
       'data-tmux-tabs': 'HANDLE',
+      'data-tmux-empty': windows.length === 0 ? '1' : '0',
       onClick: () => onExpand(true),
       style: {
-        position: 'fixed', top: 'var(--sat, 0px)', left: '50%', transform: 'translateX(-50%)',
-        width: '72px', height: '14px', borderRadius: '0 0 10px 10px', background: BAR_BG,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 40, cursor: 'pointer', color: '#64748b', fontSize: '9px', lineHeight: '14px',
+        position: 'fixed', top: 'calc(var(--sat, 0px) + 12px)', left: '12px',
+        width: '32px', height: '32px', borderRadius: '50%', background: BAR_BG,
+        border: `1px solid ${HAIRLINE}`, display: 'flex', alignItems: 'center',
+        justifyContent: 'center', zIndex: 40, cursor: 'pointer', opacity: windows.length === 0 ? 0.55 : 1,
       },
-    }, '▾ tmux');
+    }, createElement('svg', {
+      width: 14, height: 14, viewBox: '0 0 14 14', 'data-tmux-grid': '1',
+    }, createElement('rect', { x: 1, y: 1, width: 5, height: 5, fill: '#8A93A3' }),
+       createElement('rect', { x: 8, y: 1, width: 5, height: 5, fill: '#8A93A3' }),
+       createElement('rect', { x: 1, y: 8, width: 5, height: 5, fill: '#8A93A3' }),
+       createElement('rect', { x: 8, y: 8, width: 5, height: 5, fill: '#8A93A3' })));
   }
   return createElement('div', {
     'data-tmux-tabs': 'EXPANDED',
@@ -290,7 +292,7 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
     stateMachine: 'docs/tmux-tabs-v2-state-machine.md',
     mount(slot: HTMLElement): UiPluginHandle {
       const runtimeRef: { current: TmuxTabsRuntime } = {
-        current: { state: 'HIDDEN', windows: [], activeId: null, expanded: false, overlay: null, lastSelected: '', order: [], history: [] },
+        current: { state: 'HANDLE', windows: [], activeId: null, expanded: false, overlay: null, lastSelected: '', order: [], history: [] },
       };
       // 自观测环（观测先于基建）：状态名直引清单词汇（修正三）
       const ring: Array<{ t: number; state: string; expanded: boolean; wins: number }> = [];
@@ -349,8 +351,7 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
         const state: TmuxTabsState | 'OVERLAY_NEW' | 'OVERLAY_CLOSE' =
           overlay?.kind === 'new' ? 'OVERLAY_NEW'
             : overlay?.kind === 'close' ? 'OVERLAY_CLOSE'
-              : windows.length === 0 ? 'HIDDEN'
-                : expanded ? 'EXPANDED' : 'HANDLE';
+              : expanded ? 'EXPANDED' : 'HANDLE';
         const activeId = windows.find((w) => w.active)?.id ?? null;
 
         runtimeRef.current = {
