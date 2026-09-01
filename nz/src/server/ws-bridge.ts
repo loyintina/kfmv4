@@ -26,6 +26,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import type { Server, IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import type { Context } from 'cordis';
+import { TmuxControl } from './tmux-connection.js';
 
 type Msg =
   | { t: 'open'; command?: string; cols?: number; rows?: number }
@@ -33,7 +34,11 @@ type Msg =
   | { t: 'input'; id: string; data: string }
   | { t: 'resize'; id: string; cols: number; rows: number }
   | { t: 'close'; id: string }
-  | { t: 'list' };
+  | { t: 'list' }
+  | { t: 'tmux-open'; session: string }
+  | { t: 'tmux-select'; session: string; id: string }
+  | { t: 'tmux-close'; session: string }
+  | { t: 'tmux-cmd'; session: string; cmd: string };
 
 export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): void {
   const wss = new WebSocketServer({ noServer: true });
@@ -49,6 +54,8 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
   wss.on('connection', (ws: WebSocket) => {
     /** 本连接订阅过的会话 → 退订函数（socket 断开统一退订，会话不死） */
     const subs = new Map<string, () => void>();
+    /** 本连接开的 tmux 控制通道（socket 断开统一收尸，session 不死） */
+    const tmuxes = new Map<string, TmuxControl>();
     const send = (m: Record<string, unknown>) => {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m));
     };
@@ -112,6 +119,34 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
         case 'ping':
           send({ t: 'pong' });
           break;
+        // tmux 控制通道开门（宪法 §6 Step 2）：一连接一通道，state 推送
+        // 由 TmuxControl 的 debounce 刷新驱动；socket 断开统一收尸
+        // （close 只杀控制客户端，session 不死——tmux-connection ④钉）。
+        case 'tmux-open': {
+          if (tmuxes.has(m.session)) break; // 幂等：重复 open 不另开通道
+          const open = (ctx as unknown as { tmuxControlOpen?: (o: { session: string }) => TmuxControl }).tmuxControlOpen;
+          if (!open) { send({ t: 'error', message: 'tmux 服务未挂载' }); break; }
+          const c = open({ session: m.session });
+          tmuxes.set(m.session, c);
+          c.onChange(() => send({ t: 'tmux-state', session: m.session, windows: c.state().windows }));
+          c.onExit(() => send({ t: 'tmux-exit', session: m.session }));
+          break;
+        }
+        case 'tmux-select':
+          tmuxes.get(m.session)?.selectWindow(m.id);
+          break;
+        case 'tmux-cmd': {
+          // 控制通道裸命令透传（标签条 new-window/kill-window/automatic-
+          // rename 等管理动作）；长度封顶防灌，命令合法性由 tmux 裁决
+          const cmd = m.cmd.slice(0, 200);
+          tmuxes.get(m.session)?.send(cmd);
+          break;
+        }
+        case 'tmux-close': {
+          const c = tmuxes.get(m.session);
+          if (c) { tmuxes.delete(m.session); c.close(); }
+          break;
+        }
         default:
           send({ t: 'error', message: '未知帧型' });
       }
@@ -120,6 +155,8 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
     ws.on('close', () => {
       for (const off of subs.values()) off();
       subs.clear();
+      for (const c of tmuxes.values()) c.close();
+      tmuxes.clear();
     });
   });
 

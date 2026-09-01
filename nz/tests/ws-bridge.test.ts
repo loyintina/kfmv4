@@ -9,9 +9,11 @@
  *   ②socket 断开时把会话杀掉 → 「断线会话不死，attach 续命」钉红。
  */
 import { Context } from 'cordis';
+import { execSync } from 'node:child_process';
 import WebSocket from 'ws';
 import { test, group, assert } from './runner.ts';
 import { mountTermConnection } from '../src/server/term-connection.ts';
+import { mountTmuxConnection } from '../src/server/tmux-connection.ts';
 import { mountWsBridge } from '../src/server/ws-bridge.ts';
 import { createNzServer } from '../src/server/index.ts';
 import type { AddressInfo } from 'node:net';
@@ -21,6 +23,7 @@ interface Ctx { ctx: Context; url: string; closeServer(): Promise<void> }
 async function newEnv(): Promise<Ctx> {
   const ctx = new Context();
   mountTermConnection(ctx, { shell: '/bin/sh' });
+  mountTmuxConnection(ctx);
   const server = createNzServer();
   mountWsBridge(ctx, server);
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
@@ -123,5 +126,98 @@ test('断线会话不死：socket 断开只退订，重连 attach + tail 补断�
   c2.send({ t: 'close', id });
   await c2.wait((m) => m.t === 'exit' && m.id === id, '终态 exit');
   c2.close();
+  await env.closeServer();
+});
+
+// ========== tmux 控制通道开门（宪法 §6 Step 2，2026-09-01）==========
+// 帧：C→S {t:'tmux-open',session} / {t:'tmux-select',session,id} / {t:'tmux-close',session}
+//     S→C {t:'tmux-state',session,windows} / {t:'tmux-exit',session}
+
+const TS = 'kfm-ws-exam';
+const sh = (cmd: string): string => execSync(cmd, { encoding: 'utf8' }).trim();
+
+group('ws-bridge tmux 帧（控制通道开门）');
+
+test('tmux-open 真会话→tmux-state 帧（窗口列表）+ tmux-select 切换生效', async () => {
+  try { sh(`tmux kill-session -t ${TS}`); } catch { /* 不存在即可 */ }
+  sh(`tmux new-session -d -s ${TS} -x 100 -y 26 -n w1`);
+  sh(`tmux new-window -t ${TS} -n w2`);
+  const env = await newEnv();
+  const c = await client(env.url);
+  try {
+    c.send({ t: 'tmux-open', session: TS });
+    const st = await c.wait((m) => m.t === 'tmux-state' && Array.isArray(m.windows) && (m.windows as unknown[]).length === 2, 'tmux-state 两窗');
+    const wins = st.windows as Array<{ id: string; name: string; active: boolean }>;
+    assert(wins.some((w) => w.name === 'w1') && wins.some((w) => w.name === 'w2'), '窗口名应 w1/w2');
+    const target = wins.find((w) => w.name === 'w2')!;
+    c.send({ t: 'tmux-select', session: TS, id: target.id });
+    // 权威验证：问 tmux 本尊当前窗（控制通道之外的第三方法庭）
+    let activeId = '';
+    for (let i = 0; i < 30; i++) {
+      activeId = sh(`tmux display-message -t ${TS} -p '#{window_id}'`);
+      if (activeId === target.id) break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    assert(activeId === target.id, `select 应切到 ${target.id}，实际 ${activeId}`);
+  } finally {
+    c.close();
+    sh(`tmux kill-session -t ${TS} 2>/dev/null || true`);
+    await env.closeServer();
+  }
+});
+
+test('tmux-open 不存在会话→tmux-exit 帧（客户端据此隐藏标签条）', async () => {
+  const env = await newEnv();
+  const c = await client(env.url);
+  try {
+    c.send({ t: 'tmux-open', session: 'kfm-no-such-session' });
+    const ex = await c.wait((m) => m.t === 'tmux-exit', 'tmux-exit 帧');
+    assert(ex.t === 'tmux-exit', '应收到 tmux-exit');
+  } finally {
+    c.close();
+    await env.closeServer();
+  }
+});
+
+test('tmux-cmd 透传：new-window→推送新窗+automatic-rename off 生效', async () => {
+  try { sh(`tmux kill-session -t ${TS}`); } catch { /* 不存在即可 */ }
+  sh(`tmux new-session -d -s ${TS} -x 100 -y 26 -n w1`);
+  const env = await newEnv();
+  const c = await client(env.url);
+  try {
+    c.send({ t: 'tmux-open', session: TS });
+    await c.wait((m) => m.t === 'tmux-state', '首帧 state');
+    c.send({ t: 'tmux-cmd', session: TS, cmd: 'new-window -n cmdwin' });
+    const st = await c.wait((m) => m.t === 'tmux-state' && (m.windows as Array<{ name: string }>).some((w) => w.name === 'cmdwin'), 'cmdwin 推送');
+    const cmdwin = (st.windows as Array<{ id: string; name: string }>).find((w) => w.name === 'cmdwin')!;
+    c.send({ t: 'tmux-cmd', session: TS, cmd: `set -w automatic-rename off -t ${cmdwin.id}` });
+    await new Promise((r) => setTimeout(r, 300));
+    const names = sh(`tmux list-windows -t ${TS} -F '#{window_name}'`).split('\n');
+    assert(names.includes('cmdwin'), `cmdwin 应在列，实际 ${JSON.stringify(names)}`);
+  } finally {
+    c.close();
+    sh(`tmux kill-session -t ${TS} 2>/dev/null || true`);
+    await env.closeServer();
+  }
+});
+
+test('socket 断开→控制客户端收尸（不占 tmux 客户端位）', async () => {
+  try { sh(`tmux kill-session -t ${TS}`); } catch { /* 不存在即可 */ }
+  sh(`tmux new-session -d -s ${TS} -x 100 -y 26 -n w1`);
+  const env = await newEnv();
+  const c = await client(env.url);
+  c.send({ t: 'tmux-open', session: TS });
+  await c.wait((m) => m.t === 'tmux-state', '首帧 state');
+  c.close();
+  let clientsGone = false;
+  for (let i = 0; i < 30; i++) {
+    // list-clients 无客户端时退出码 0 且输出空串（不触发 || echo none）——
+    // 空串=收尸成功，别只认 'none'（0901 考卷自身判定 bug，桥是好的）
+    const out = sh(`tmux list-clients -t ${TS} 2>/dev/null || echo none`);
+    if (out.trim() === 'none' || out.trim() === '') { clientsGone = true; break; }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  assert(clientsGone, 'socket 断开后控制客户端应被收尸');
+  sh(`tmux kill-session -t ${TS} 2>/dev/null || true`);
   await env.closeServer();
 });
