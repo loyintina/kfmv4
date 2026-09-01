@@ -156,6 +156,7 @@ export interface TmuxTabsRuntime {
 export function createTmuxTabsPlugin(session: string): UiPlugin {
   return {
     id: 'tmux-tabs',
+    stateMachine: 'docs/tmux-tabs-v2-state-machine.md',
     mount(slot: HTMLElement): UiPluginHandle {
       const runtimeRef: { current: TmuxTabsRuntime } = {
         current: { state: 'HIDDEN', windows: [], activeId: null, expanded: false, overlay: null, lastSelected: '', history: [] },

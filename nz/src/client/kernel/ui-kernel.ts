@@ -14,6 +14,8 @@ export interface UiPluginHandle {
 }
 export interface UiPlugin {
   id: string;
+  /** 状态机清单路径（契约 §7：词汇表真源，机检锚点） */
+  stateMachine: string;
   mount(slot: HTMLElement, ctx: PluginCtx): UiPluginHandle;
 }
 export interface PluginCtx {
