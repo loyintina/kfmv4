@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- kfm-v4 主线日常壳（kfmv4-review-shell-apk-verdict 2026-09-02 批准开工）：
+     复刻实验台壳模式（nz/lab/device-agent 同款零 Gradle 手工链），
+     装载 kfmv4 8.x 主线（8021）。与实验台 APK 并存：
+       - 实验台 dev.kfm.nz.agent：观测语义（?nosplash&_tApk、8025/8026/8028）
+       - 本壳   dev.kfm.v4.shell：日常干净壳（8021 + ?_tApk 防强缓存、
+         CDP 中继三元组 8029 桥/8030 客户端/8031 控制——端口普查账 nz/TASK）
+     开屏：主题 windowBackground 静态徽标帧（裁决 §三：不移植 splash——
+     8.x 无 splash-core，且无 NzNative.firstFrame 桥，P1 摘层机制会永远
+     落到 15s 看门狗；「点开即有物」由静态帧承担）。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="dev.kfm.v4.shell">
+
+    <!-- WebView 加载 kfmv4 8.x 主线（经 kalo 隧道 -L 8021，手机侧 127.0.0.1）+
+         CDP 中继出站 127.0.0.1:8029/8031（kalo -L 8029/8031；8030 服务器本机） -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 保活三件套（BAR-029 同款）：前台服务 + 通知 + 息屏 CPU 保活 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- 开机自启（只拉保活 Service，零 UI） -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:label="kfm-v4"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/KfmV4Theme">
+        <!-- 主题=静态徽标 windowBackground（res/values/styles.xml）：
+             盖住点击→WebView 初始化盲窗；8.x 页面首绘后自然盖过它。
+             usesCleartextTraffic=true：targetSdk=28 起明文 HTTP 默认禁，
+             而 8021 走 kalo 回环明文——不开 WebView 直接拒载
+             （net::ERR_CLEARTEXT_NOT_PERMITTED）。回环+隧道语境无暴露面。 -->
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density|fontScale">
+            <!-- configChanges 全集=国产 ROM 实锤坑对策（kfm-na 2026-08-13
+                 android-activity#196），一个都不许删；singleTask=单实例
+                 kiosk 壳（2026-08-30 双实例实踩）。 -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <service
+            android:name=".KeepAliveService"
+            android:exported="false" />
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 静态徽标开屏帧：底色满铺 + 徽标居中（nodpi 原尺寸≈170-230dp）。
+     徽标素材与 adaptive icon 前景同源（kfmv4-shell-icon-src.jpg）。 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/kfm_bg" />
+    <item>
+        <bitmap
+            android:src="@drawable/splash_logo"
+            android:gravity="center" />
+    </item>
+</layer-list>

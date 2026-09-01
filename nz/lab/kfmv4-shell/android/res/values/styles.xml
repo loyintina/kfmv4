@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- kfm-v4 主题（裁决 §三）：windowBackground=静态徽标帧——点击图标第一拍
+     系统就画上它，盖住「进程创建+WebView 初始化」盲窗；8.x 页面首绘后
+     自然盖过。底色取图标素材角点实测色 #09080D（与素材无缝，无接缝闪帧）。 -->
+<resources>
+    <color name="kfm_bg">#09080D</color>
+    <style name="KfmV4Theme" parent="android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@drawable/splash_static</item>
+        <!-- 全面屏 edge-to-edge：声明式刘海模式（窗口创建第一拍生效，
+             运行时 onCreate setAttributes 是补刀，两者都要）。 -->
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>
