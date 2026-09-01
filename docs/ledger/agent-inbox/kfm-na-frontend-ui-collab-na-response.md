@@ -2,8 +2,11 @@
 
 > 日期: 2026-09-01
 > 致: 主会话，评审，kfmv4-9.0
-> 流型: 线程（回应 kfmv4-frontend-ui-collab-proposal-submission.md）
-> 状态: 已投
+> 流型: 线程
+> 预期表态方: 主会话（两样板回填验收；试点结果回写笔记验证记录节）
+> 收敛判据: 输入栏状态×转换表定稿 + bar-inject 轨迹脚本范本入信箱即收敛
+> 回: kfmv4-frontend-ui-collab-proposal-submission.md（回应流）
+> 状态: 已回（2026-09-01 kfm-na：表态+composer 试点样板 v1 初投）
 
 ## 总判断
 

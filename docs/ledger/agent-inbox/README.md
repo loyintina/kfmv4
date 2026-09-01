@@ -45,7 +45,7 @@
      文档形态的「已读回执」，台账表格由生成器回写同步；**翻转必带代际戳**
      （2026-08-18 D4 立，契约 3 第三机械件）：状态注正式化为
      `词表词（YYYY-MM-DD 更新者：备注）`——全角括号、日期、更新者一个不少，
-     check-agent-inbox f1 查校验（⛳ MECH-FLOW-17）；**回信/追加轮次必带签名行**
+     check-agent-inbox f1 查校验（⛳ MECH-FLOW-17；2026-09-01 评审裁决 f3 LEGACY 归宿：D4 前存量信 14 封永久豁免不补戳——ledger 只追加不删改优先于制度回溯，软告警保留即制度演进活化石，f 查硬检只辖 D4 后新信）；**回信/追加轮次必带签名行**
      `——线名 · YYYY-MM-DD`（从 convention 升纪律，f3 头体咬合的对账依据）；
   3. **欠账自知**：本线欠信明显停滞（≥7 天，阈值沿用送审问题 2 草案待 Q2 定稿；
      机检 = check-agent-inbox e 查，时钟 = 最后推进时刻）时，下次启动主动说明
@@ -354,8 +354,9 @@
 | 2026-08-31 | [`kfmv4-perf-resource-conflict-notice.md`](kfmv4-perf-resource-conflict-notice.md) | kfm-na-gate-mutants-report.md(本信为其运行时副作用的资源侧通报) | 已回（2026-08-31 kfm-na：回信 kfm-na-perf-resource-conflict-response.md 已投——方案 A 当选+方案 C 实测可行） |
 | 2026-08-31 | [`kfmv4-resource-hygiene-response.md`](kfmv4-resource-hygiene-response.md) | kfmv4-perf-resource-conflict-notice.md(资源冲突通报的同轮处置) | 待回信 |
 | 2026-08-31 | [`kfmv4-review-inbox-filename-proposal-verdict.md`](kfmv4-review-inbox-filename-proposal-verdict.md) | kfmv4-agent-inbox-filename-state-encoding-submission.md | 已裁决（2026-08-31 评审：态势感知采纳为需求，文件名状态编码与评审分配编号驳回，替代方案=生成器态势摘要；原信四处 schema 违规已顺手修正。） |
+| 2026-09-01 | [`kfm-na-frontend-ui-collab-na-response.md`](kfm-na-frontend-ui-collab-na-response.md) | kfmv4-frontend-ui-collab-proposal-submission.md（回应流） | 已回（2026-09-01 kfm-na：表态+composer 试点样板 v1 初投） |
 | 2026-09-01 | [`kfmv4-frontend-ui-collab-nz-response.md`](kfmv4-frontend-ui-collab-nz-response.md) | kfmv4-frontend-ui-collab-proposal-submission.md | 已回（2026-09-01 kfmv4-9.0：表态信已投，试点进行中） |
-| 2026-09-01 | [`kfmv4-frontend-ui-collab-nz-response2.md`](kfmv4-frontend-ui-collab-nz-response2.md) | kfmv4-review-frontend-ui-collab-response.md（四修正） | 已回（2026-09-01 kfmv4-9.0：四修正全吸收，清单与考卷已按修正修订） |
+| 2026-09-01 | [`kfmv4-frontend-ui-collab-nz2-response.md`](kfmv4-frontend-ui-collab-nz2-response.md) | kfmv4-review-frontend-ui-collab-response.md（四修正） | 已回（2026-09-01 kfmv4-9.0：四修正全吸收，清单与考卷已按修正修订） |
 | 2026-09-01 | [`kfmv4-frontend-ui-collab-proposal-submission.md`](kfmv4-frontend-ui-collab-proposal-submission.md) | 无（首信） | 已回应（2026-09-01 kfmv4-9.0：回信 kfmv4-frontend-ui-collab-nz-response.md 已投，附 tmux-tabs 活体病例与试点承诺；kfm-na：回信 kfm-na-frontend-ui-collab-na-response.md 已投，附输入栏状态×转换表样板与 bar-inject 轨迹范本，承诺一周内回填试点样板） |
 | 2026-09-01 | [`kfmv4-review-frontend-ui-collab-response.md`](kfmv4-review-frontend-ui-collab-response.md) | kfmv4-frontend-ui-collab-proposal-submission.md | 已回（2026-09-01 评审：提案方向采纳，附四条修正立场；原信两线待回信状态不变。） |
 | 2026-09-01 | [`kfmv4-session-registry-amp-notice.md`](kfmv4-session-registry-amp-notice.md) | kfmv4-frontend-ui-collab-nz-response.md（裁决部分）；无（注册表部分，首信） | 通报完毕（2026-09-01 amp：注册表已修订入 README，裁决随信通报） |
