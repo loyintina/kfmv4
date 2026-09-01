@@ -201,6 +201,7 @@ for (let i = 0; i < 20; i++) {
 check('⑬T11 拖动换序→推送顺序翻转（beta 到首位）',
       s13?.rt?.windows?.[0]?.name === 'beta',
       `order=${JSON.stringify(s13?.rt?.windows?.map((w) => w.name))}`);
+console.log('[DBG]', await page.evaluate(() => JSON.stringify(window.__kfmNzTmuxTabsDbgGet?.() ?? null)));
 
 // ========== 附窗接线四钉（T2a/T2/T3/T3b，2026-09-01 用户二次仲裁）==========
 // 终端本体=裸 shell；标签条点选语义以 attached（终端是否 attach 在会话上）为条件：

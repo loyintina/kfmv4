@@ -181,8 +181,9 @@ function TmuxTabs(props: {
   onAskClose: (w: TmuxWindow) => void;
   onPlus: () => void;
 }): React.ReactElement {
-  const { windows, expanded, overlay, dragId, onExpand, onSelect, onNewConfirm, onCloseConfirm, onOverlayCancel, onChipPointerDown, onChipPointerMove, onChipPointerUp, onAskClose, onPlus } = props;
+  const { windows, expanded, overlay, dragId, onExpand, onSelect, onNewConfirm, onCloseConfirm, onOverlayCancel, onChipPointerDown, onChipPointerMove, onChipPointerUp, onAskClose, onPlus, onChipClick } = props;
   const [newName, setNewName] = useState('');
+  // 输入状态随毛玻璃页开关清零（0901 考卷实锤：残留旧名→二次建同名窗）
   const chipClick = useCallback((e: ReactMouseEvent, w: TmuxWindow): void => {
     e.stopPropagation();
     // T2/T3（P4）：非聚焦=切窗且停 EXPANDED；聚焦=收起回把手（无 select）
@@ -190,6 +191,7 @@ function TmuxTabs(props: {
     else onSelect(w.id);
   }, [onExpand, onSelect]);
 
+  useEffect(() => { if (overlay?.kind === 'new') setNewName(''); }, [overlay?.kind]);
   if (overlay?.kind === 'new') {
     return createElement(OverlayPage, {
       title: '新窗口',
@@ -297,6 +299,8 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
         if (ring.length > 40) ring.shift();
       };
       (window as unknown as Record<string, unknown>).__kfmNzTmuxTabsSnap = { ring, push };
+      const dbg: Record<string, number> = { down: 0, move: 0, dragmove: 0, reorder: 0, swap: 0, up: 0 };
+      (window as unknown as Record<string, unknown>).__kfmNzTmuxTabsDbg = dbg;
 
       function TabsApp(): React.ReactElement {
         const [windows, setWindows] = useState<TmuxWindow[]>([]);
@@ -304,7 +308,7 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
         const [overlay, setOverlay] = useState<null | { kind: 'new' } | { kind: 'close'; target: TmuxWindow }>(null);
         const [dragId, setDragId] = useState<string | null>(null);
         const linkRef = useRef<TmuxLink | null>(null);
-        const drag = useRef<{ id: string; x0: number; holdTimer?: ReturnType<typeof setTimeout>; dragging: boolean } | null>(null);
+        const drag = useRef<{ id: string; x0: number; holdTimer?: ReturnType<typeof setTimeout>; dragging: boolean; startWindows: TmuxWindow[] } | null>(null);
         const orderRef = useRef<string[]>([]);
         // 附窗账本（清单 §二·b）：终端是否 attach 在会话上。注入通道=公共
         // 契约钩子 __kfmNzTermInject（attach=tmux new-session -A；detach=Ctrl-B d）。
@@ -361,19 +365,22 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
 
         // ---- 拖动（T11）：按住 300ms 起拖，本地乐观排序，松手发 swap 串 ----
         const onChipPointerDown = (e: ReactPointerEvent, w: TmuxWindow): void => {
+          dbg.down++;
           if (windows.length < 2) return;
           const x0 = e.clientX;
-          drag.current = { id: w.id, x0, dragging: false };
+          drag.current = { id: w.id, x0, dragging: false, startWindows: [...windows] };
           drag.current.holdTimer = setTimeout(() => {
             if (drag.current?.id === w.id) { drag.current.dragging = true; setDragId(w.id); }
           }, 300);
-          void x0;
         };
         const onChipPointerMove = (e: ReactPointerEvent): void => {
+          dbg.move++;
           const d = drag.current;
           if (!d?.dragging) return;
+          dbg.dragmove++;
           // 悬停目标 = 指针下方的其他标签（几何判定，皮只上报）
-          const chips = [...(e.currentTarget.parentElement?.querySelectorAll('[data-tmux-id]') ?? [])];
+          const bar = e.currentTarget.closest('[data-tmux-tabs="EXPANDED"]');
+          const chips = [...(bar?.querySelectorAll('[data-tmux-id]') ?? [])];
           const over = chips.find((el) => {
             const r = (el as HTMLElement).getBoundingClientRect();
             return e.clientX >= r.left && e.clientX <= r.right;
@@ -388,16 +395,21 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
             const [m] = next.splice(from, 1);
             next.splice(to, 0, m);
             orderRef.current = next.map((w) => w.id);
+            dbg.reorder++;
             return next;
           });
         };
         const onChipPointerUp = (): void => {
           const d = drag.current;
+          dbg.up++;
           drag.current = null;
           setDragId(null);
           if (!d?.dragging) return;
-          // 乐观排序 → swap 串（脑层几何），服务器推送为准（P5）
-          const cmds = swapsFor(windows, orderRef.current);
+          // 乐观排序 → swap 串（脑层几何）。基线=起手时服务器顺序
+          // （本地已被乐观排序污染，直接对比恒得零——0901 考卷 dbg 实锤）。
+          // 服务器推送为准（P5）。
+          const cmds = swapsFor(d.startWindows, orderRef.current);
+          dbg.swap += cmds.length;
           for (const c of cmds) linkRef.current?.cmd(c);
         };
 
@@ -433,6 +445,7 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
       root.render(createElement(TabsApp));
       // 判卷钩子（观测基建，公共契约）
       (window as unknown as Record<string, unknown>).__kfmNzTmuxTabs = () => runtimeRef.current;
+      (window as unknown as Record<string, unknown>).__kfmNzTmuxTabsDbgGet = () => dbg;
       return {
         unmount: () => {
           root.unmount();
