@@ -1854,3 +1854,13 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   §0.5 实验台 P 段补状态、§0.6 宪法入口、§3 时间线 8.8.3c/d 补 ✅+
   新增 8.8.3e 键盘三案行+8.8.4 标 🔄（React 先行）、§2.7 补登记
   fgwatch/帧级 tracer/合成键盘三手段+hidden 冻结纪律。
+- 2026-09-01 · **宪法 §6 Step 1 落地：React 宿主边界**（UI 内核
+  kernel/ui-kernel.ts+react-adapter.tsx 接线 main.ts，零 UI 变化）。
+  考卷 kernel.test.mjs 红先（0/4→4/4：钩子/React 冒烟端到端/unmount
+  删干净/重复 id 拒绝）+变异抽检活证明（故意不调清理回调→③精准红，
+  复原→4/4）。回归 bottom-anchor 10/10+scrollback 5/5+keybar 20/20
+  +term-hooks 6/6+ime-pan 19/19；真机新 bundle reload：rows=47/
+  bootErr=0/canvasShot 视觉无变化。观测记账：bundle 85KB→281KB 后，
+  慢隧道首载可能超考卷 goto 预算（scrollback 首跑 0/5 瞬态，重跑全
+  绿实证非代码回归）——后续缓解候选：服务器 gzip/分包/考卷超时放宽。
+  下一刀：Step 2 tmux 标签条（顶部覆盖条，首个 React 插件）。

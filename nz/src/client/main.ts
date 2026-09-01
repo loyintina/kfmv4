@@ -18,6 +18,8 @@ import { applyEyesBundle } from './plugins/eyes/index.js';
 import { applySplashBundle } from './plugins/splash/index.js';
 import { loadTermCoreShared, probeTermCore } from './term-core.js';
 import { applyTermBundle } from './plugins/term/index.js';
+import { createUiKernel } from './kernel/ui-kernel.js';
+import { reactSmokePlugin } from './kernel/react-adapter.js';
 
 // ========== 内核件接线：宿主给盒子，手势管输入，broker 管卡类型户口 ==========
 const host = new RenderHost();
@@ -94,6 +96,19 @@ if (termCards) {
 
 // 供守视 eval 直读
 (window as unknown as Record<string, unknown>).__kfmNz = { rootCtx, bootLog, isHelloCleaned, host, gestures, cardTypes, permissions, plugtest };
+
+// ========== UI 内核（plugin-contract §6 Step 1，2026-09-01 宪法 v0） ==========
+// 契约 docs/plugin-contract.md：UI 插件 = { id, mount(slot, ctx) → handle }。
+// 本步零 UI 变化：只建内核+暴露观测钩子，不自动 mount 任何东西（term 等
+// 存量插件仍走各自 apply*Bundle，迁移见宪法 §6 路线）。__kfmNzKernel 供
+// kernel 考卷/守视 eval 判卷（mount/unmount/list+React 冒烟夹具）。
+const uiKernel = createUiKernel({ host: document.body, debug: debugOn });
+(window as unknown as Record<string, unknown>).__kfmNzKernel = {
+  mount: uiKernel.mount.bind(uiKernel),
+  unmount: uiKernel.unmount.bind(uiKernel),
+  list: uiKernel.list.bind(uiKernel),
+  plugins: { reactSmoke: reactSmokePlugin },
+};
 
 // ========== 热更自刷（前端腿：build → 页面自动换血，会话靠续命 attach 不断） ==========
 // boot 记当前 builtAt，10s 轮询 /build-info.json（build.mjs 每次构建重写），
