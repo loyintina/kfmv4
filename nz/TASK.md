@@ -221,6 +221,8 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
 | fgwatch 轻量监视 | 页面注入 20 行段（visibilitychange/诱饵 focus-blur/vv resize → beacon `/debug/ime-log`，tag=`fgwatch`） | bg→fg/焦点/键盘起落事件序列回放（键盘三案定罪主力） | 事件级精确、无像素；页面 reload 即失效需重注 | 后台可用（冻结期事件排队，唤醒后落盘） |
 | 帧级 tracer | 页面注入 `setInterval 50ms` 记 vv/ime/rows/容器几何 → window 环形缓冲 | 时序症多帧演化（单帧快照会骗人，runaway 教训制度化） | 冻结期不推进、读数出长条，唤醒后判读 | 后台可埋（读数要唤醒） |
 | 合成键盘 | `NzNative.ime(true/false)` + `NzNative.tap(x*dpr,y*dpr)` | 真键盘弹/收、纯后台复现「真键盘切后台」类场景 | **输入连接建立后才真弹**（合成 tap 失灵谜窗口期）；合成点击后立刻切后台会诱「假自弹」（WebView 挂起 showSoftInput），判别靠事件序列 | 后台可用 |
+| tmux-tabs 判卷钩子 | 页内 `__kfmNzTmuxTabs()` / `__kfmNzTmuxTabsDbgGet()` / `__kfmNzTmuxTabsSnap.ring` | 组件全机位（state/windows/attached/expanded/overlay/order/lastSelected）+拖动 dbg 六环计数（down/move/dragmove/reorder/swap/up）+40 拍状态环 | reducer 单源直读；ring 仅 40 拍（dump 要看尾部） | 后台可用 |
+| 单症探针族 | `tests/browser/probe-{click,collapse,attach,drag,push}.mjs`（headless） | 考卷红后的单症深挖：几何/hit-target 实测、状态演化采样、cmd→推送延迟测量、dbg 逐环读数+tmux 服务器真值互证 | 一次性诊断件，随症增删（登记防「存在过但没人知道」）；非回归门 | 服务器本地 |
 
 **判卷层选择纪律**（C4 对拍换来）：可打印串/文本类断言浏览器层可判；
 **定位类序列（CUP/CHA）必须 Rust 层判**——CoreFeed 与活体 PTY 共享
@@ -1888,3 +1890,45 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   补 tmuxUnescape（\NNN 八进制+\\ 还原）。两病皆考卷当场抓获。
   待办：WS 桥开门（mountTmuxConnection 已备未挂）+客户端顶部覆盖条
   React 插件=Step 2 收口。
+- 2026-09-02 · **端口普查账：kfm-v4 relay 三元组 8029/8030/8031 钉死登记**
+  （kfmv4-review-shell-apk-verdict 两条登记要求①）。实测 ss：8021=8.x
+  主线 / 8022+8024=sshd / 8023=nz / 8025+8026+8028=实验台 cdp-relay 三口
+  （桥/客户端/控制）/ 8027=kalo overlay。**修正 notice 的「端口对」**：
+  relay 是三元组（P1 拓扑：桥←kalo -L、客户端服务器本机、控制←kalo -L），
+  候选 8028 实为实验台控制口。kfm-v4 钉 8029 桥/8030 客户端/8031 控制
+  （整体+4 记忆法对齐），纯 env 零代码（NZ_CDP_*_PORT），systemd 单元
+  kfmv4-cdp-relay.service 托管（比实验台 setsid 姿态升级：Restart=always
+  +开机自启）。手机侧待 kalo 加 -L 8029 -L 8031。
+- 2026-09-02 · **kfm-v4 主线日常壳 APK 落地**（nz/lab/kfmv4-shell/，评审
+  三点全认可批准开工）：复刻实验台壳（dev.kfm.nz.agent）→ dev.kfm.v4.shell
+  并存，加载 8.x 主线 8021+?_tApk 防强缓存。**开屏退役**：单 WebView+
+  主题 windowBackground 静态徽标帧（裁决 §三；8.x 无 firstFrame 桥，P1
+  摘层机制必然落 15s 看门狗——双层结构不搬）。承袭：CDP 调试常开（裁决
+  第四条强认可，8.x 主线第一版即有真机像素眼）+盲窗 boot-marks（8.x 无
+  端点=404 静默，端点上线即通）+真触摸 tap/ime+nz_exit 自毁+KeepAlive
+  （gate 轮询 8021/api/gate/app-restart，8.x 缺端点暂空转不碍事）。图标：
+  素材 JPG→legacy 五密度 PNG+adaptive v26（前景 62% 画布）+nodpi 开屏帧，
+  底色取素材角点实测 #09080D 无缝。打包零 Gradle 链一把过：APK 250K
+  versionCode=1788280038，badging+apksigner verify 过。待用户真机：装
+  APK/kalo -L 8029 -L 8031/验收五条，首张 8.x 真机渲染截图单独知会
+  （8.x 自观测时代第一帧）。
+- 2026-09-02 · **tmux-tabs v2 终验闭环：考卷 v4 10/10 全绿+回归 12 卷零红
+  +node 套件 104/0**。终验三案定罪（全靠 CLICK-ERR-DUMP+守卫式重试+
+  探针族，无一句猜测）：①actUntil 重试不幂等——仲裁语义下点聚焦芯片=
+  attach/detach 拨动，重试第二点拆掉第一点的 attach（上轮「id 错位」
+  假象真身），考卷改守卫式（只在 attached=false 时点，已附未确认=纯等）；
+  ②夹具陷阱——tmux 默认 status-left-length=10 把 [kfm-exam-browser] 截成
+  [kfm-exam-，attach 实证成功（TMUXVAR 已设/RC=0/状态行在屏）而断言读空，
+  考卷自设 40；③**真产品 bug（重构引入，考卷立功）**——把手重构时删掉了
+  OVERLAY_NEW/OVERLAY_CLOSE 两个渲染分支，点＋状态机进毛玻璃页但页面
+  永不渲染；已以覆盖层归位（z=60 盖标签排，毛玻璃后保留实景）。另修
+  产品病：拖动收尾点击穿透（换序重渲染挪位，松手合成 click 落别片=
+  重排却附带切窗）——完成后 400ms 抑制芯片点选。⑨补 confirm 后重展开
+  （T5/T6 收起语义的正确消费）。回归：bottom-anchor 10/10+scrollback
+  5/5+scrollback-cap+keybar-click 20/20+term-hooks 6/6+kernel 4/4+
+  cjk-inktop 4/4+cjk-width-c4 12+render-throttle 3/3+ime-pan 19/19+
+  hot-update 6+mouse-report 9/9；node 104/0。§2.7 登记判卷钩子+单症
+  探针族两行。考卷 v4 升级：actUntil 劣化网络韧性框架+CLICK-ERR-DUMP
+  （带 ring 尾/fn 引用/rootCount，二次挂载侦测）。工作树收口：server 侧
+  mountTmuxConnection 接线（HEAD 一直悬空欠账，runtime 早已用）+
+  build.mjs server-hash 看门狗（31s 重载死循环案制度化）一并入账。

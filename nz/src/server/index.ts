@@ -59,6 +59,11 @@ import { mountTermConnection } from './term-connection.js';
 mountTermConnection(serverCtx);
 slog('term-connection 已挂服务端总线（五动作：open/input/resize/close/重连=attach）');
 
+// tmux 控制通道（宪法 §6 Step 2）：控制客户端工厂挂总线，WS 桥经此开门
+import { mountTmuxConnection } from './tmux-connection.js';
+mountTmuxConnection(serverCtx);
+slog('tmux-connection 已挂服务端总线（tmux -C 结构化事实源）');
+
 // ========== 静态服务 ==========
 
 const MIME: Record<string, string> = {

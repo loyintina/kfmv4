@@ -166,7 +166,6 @@ function TmuxTabs(props: {
   dragId: string | null;
   onExpand: (v: boolean) => void;
   onSelect: (id: string) => void;
-  onChipClick: (w: TmuxWindow) => void;
   onNewConfirm: (name: string) => void;
   onCloseConfirm: (w: TmuxWindow) => void;
   onOverlayCancel: () => void;
@@ -179,74 +178,24 @@ function TmuxTabs(props: {
   const { windows, expanded, overlay, dragId, onExpand, onSelect, onNewConfirm, onCloseConfirm, onOverlayCancel, onChipPointerDown, onChipPointerMove, onChipPointerUp, onAskClose, onPlus, onChipClick } = props;
   const [newName, setNewName] = useState('');
   // 输入状态随毛玻璃页开关清零（0901 考卷实锤：残留旧名→二次建同名窗）
-  const chipClick = useCallback((e: ReactMouseEvent, w: TmuxWindow): void => {
-    e.stopPropagation();
-    // T2/T3（P4）：非聚焦=切窗且停 EXPANDED；聚焦=收起回把手（无 select）
-    if (w.active) onExpand(false);
-    else onSelect(w.id);
-  }, [onExpand, onSelect]);
-
   useEffect(() => { if (overlay?.kind === 'new') setNewName(''); }, [overlay?.kind]);
-  if (overlay?.kind === 'new') {
-    return createElement(OverlayPage, {
-      title: '新窗口',
-      onConfirm: () => onNewConfirm(newName.trim()),
-      onCancel: onOverlayCancel,
-    }, createElement('input', {
-      'data-tmux-new-name': '1', autoFocus: true, value: newName,
-      onChange: (e: React.ChangeEvent<HTMLInputElement>) => setNewName(e.target.value),
-      placeholder: '窗口名（留空=跟随程序）',
-      style: {
-        background: 'none', border: `1px solid ${HAIRLINE}`, color: '#F5F7FA',
-        padding: '8px 10px', fontSize: '14px', outline: 'none', borderRadius: 0,
-      },
-    }));
-  }
-  if (overlay?.kind === 'close') {
-    return createElement(OverlayPage, {
-      title: `关闭 '${overlay.target.name}'？`,
-      onConfirm: () => onCloseConfirm(overlay.target),
-      onCancel: onOverlayCancel,
-    });
-  }
-  // 把手常在（2026-09-01 用户仲裁：＋入口不随最后窗口消失）：0 窗也渲染。
-  // 形态=光球规格 32px 圆、靠左（sat+12px），SVG 四格窗格图标（无字符 emoji）。
-  if (!expanded) {
-    return createElement('div', {
-      'data-tmux-tabs': 'HANDLE',
-      'data-tmux-empty': windows.length === 0 ? '1' : '0',
-      onClick: () => onExpand(true),
-      style: {
-        position: 'fixed', top: 'calc(var(--sat, 0px) + 12px)', left: '12px',
-        width: '32px', height: '32px', borderRadius: '50%', background: BAR_BG,
-        border: `1px solid ${HAIRLINE}`, display: 'flex', alignItems: 'center',
-        justifyContent: 'center', zIndex: 40, cursor: 'pointer', opacity: windows.length === 0 ? 0.55 : 1,
-      },
-    }, createElement('svg', {
-      width: 14, height: 14, viewBox: '0 0 14 14', 'data-tmux-grid': '1',
-    }, createElement('rect', { x: 1, y: 1, width: 5, height: 5, fill: '#8A93A3' }),
-       createElement('rect', { x: 8, y: 1, width: 5, height: 5, fill: '#8A93A3' }),
-       createElement('rect', { x: 1, y: 8, width: 5, height: 5, fill: '#8A93A3' }),
-       createElement('rect', { x: 8, y: 8, width: 5, height: 5, fill: '#8A93A3' })));
-  }
-  return createElement('div', {
+
+  // 常驻把手（光球规格 32px 圆、左上）：点击=展开/收起切换。
+  // 收起态：把手即全部；展开态：把手仍在原位（收起开关），标签排从其右侧展开。
+  // 注意：data-tmux-tabs 标记必须在「可见且可点击」的元素本体上
+  // （0901 考卷实锤：标记落在零尺寸包装层=Playwright 判不可见）。
+
+  // 展开排：从把手右侧展开（锚定关系），＋固定右端（新标签出现位）
+  const strip = expanded ? createElement('div', {
     'data-tmux-tabs': 'EXPANDED',
     style: {
-      position: 'fixed', top: 'var(--sat, 0px)', left: 0, right: 0, height: '36px',
-      background: BAR_BG, borderBottom: `1px solid ${HAIRLINE}`, display: 'flex',
-      alignItems: 'center', gap: '6px', padding: '0 8px', overflowX: 'auto', zIndex: 40,
+      position: 'fixed', top: 'calc(var(--sat, 0px) + 12px)', left: '52px', right: '8px',
+      height: '32px', background: BAR_BG, border: `1px solid ${HAIRLINE}`,
+      display: 'flex', alignItems: 'center', gap: '6px', padding: '0 6px',
+      overflowX: 'auto', zIndex: 40,
     },
     onClick: () => onExpand(false),
   },
-  createElement('div', {
-    'data-tmux-plus': '1',
-    onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onPlus(); },
-    style: {
-      flex: '0 0 auto', width: '26px', height: '24px', marginLeft: '2px',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      border: `1px solid ${HAIRLINE}`, color: '#F5F7FA', cursor: 'pointer', fontSize: '14px',
-    },
-  }, '+'),
   windows.map((w) => createElement('div', { key: w.id, style: { display: 'flex', alignItems: 'center', gap: '4px', flex: '0 0 auto' } },
     createElement('div', {
       'data-tmux-win': w.name,
@@ -266,10 +215,83 @@ function TmuxTabs(props: {
     createElement('span', {
       'data-tmux-close': w.name,
       onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onAskClose(w); },
-      onPointerDown: (e: ReactPointerEvent) => e.stopPropagation(), // × 不触发拖动
+      onPointerDown: (e: ReactPointerEvent) => e.stopPropagation(),
       style: { color: '#8A93A3', cursor: 'pointer', fontSize: '12px', lineHeight: 1 },
     }, '×'),
-  )));
+  )),
+  createElement('div', {
+    'data-tmux-plus': '1',
+    onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onPlus(); },
+    style: {
+      marginLeft: 'auto', flex: '0 0 auto', width: '26px', height: '24px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      border: `1px solid ${HAIRLINE}`, color: '#F5F7FA', cursor: 'pointer', fontSize: '14px',
+    },
+  }, '+'),
+  ) : null;
+
+  // 收起态把手（ vocabulary：HANDLE）
+  const svgGrid = createElement('svg', { width: 14, height: 14, viewBox: '0 0 14 14' },
+    createElement('rect', { x: 1, y: 1, width: 5, height: 5, fill: '#8A93A3' }),
+    createElement('rect', { x: 8, y: 1, width: 5, height: 5, fill: '#8A93A3' }),
+    createElement('rect', { x: 1, y: 8, width: 5, height: 5, fill: '#8A93A3' }),
+    createElement('rect', { x: 8, y: 8, width: 5, height: 5, fill: '#8A93A3' }));
+  const orbCircle = {
+    position: 'fixed' as const, top: 'calc(var(--sat, 0px) + 12px)', left: '12px',
+    width: '32px', height: '32px', borderRadius: '50%', background: BAR_BG,
+    border: `1px solid ${HAIRLINE}`, display: 'flex', alignItems: 'center',
+    justifyContent: 'center', cursor: 'pointer',
+    opacity: windows.length === 0 ? 0.55 : 1,
+  };
+  const collapsedOrb = createElement('div', {
+    'data-tmux-tabs': 'HANDLE', 'data-tmux-orb': '1',
+    onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onExpand(true); },
+    style: { ...orbCircle, zIndex: 41 },
+  }, svgGrid);
+
+  // 展开态：把手常驻 + 标签排（ vocabulary：EXPANDED）
+  const expandedOrb = createElement('div', {
+    'data-tmux-orb': '1',
+    onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onExpand(false); },
+    style: { ...orbCircle, zIndex: 41 },
+  }, svgGrid);
+  const expandedTree = createElement('div', { 'data-tmux-tabs': 'EXPANDED' }, expandedOrb, strip);
+
+  const base = createElement('div', { 'data-tmux-tabs-root': '1' },
+    expanded ? expandedTree : collapsedOrb,
+  );
+  // 毛玻璃二级页（T4-T10）：覆盖在标签排之上（z=60>40），标签排留在
+  // DOM 作毛玻璃后的实景。0901 考卷实锤：重构时早退分支被删=点＋无
+  // 页面，这里以覆盖层形式归位（不整页替换）。
+  if (overlay?.kind === 'new') {
+    return createElement('div', { 'data-tmux-tabs-root': '1' },
+      expandedTree,
+      createElement(OverlayPage, {
+        title: '新窗口',
+        onConfirm: () => onNewConfirm(newName.trim()),
+        onCancel: onOverlayCancel,
+      }, createElement('input', {
+        'data-tmux-new-name': '1', autoFocus: true, value: newName,
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => setNewName(e.target.value),
+        placeholder: '窗口名（留空=跟随程序）',
+        style: {
+          background: 'none', border: `1px solid ${HAIRLINE}`, color: '#F5F7FA',
+          padding: '8px 10px', fontSize: '14px', outline: 'none', borderRadius: 0,
+        },
+      })),
+    );
+  }
+  if (overlay?.kind === 'close') {
+    return createElement('div', { 'data-tmux-tabs-root': '1' },
+      expandedTree,
+      createElement(OverlayPage, {
+        title: `关闭 '${overlay.target.name}'？`,
+        onConfirm: () => onCloseConfirm(overlay.target),
+        onCancel: onOverlayCancel,
+      }),
+    );
+  }
+  return base;
 }
 
 // ========== 插件装配（契约签名：mount(slot, ctx) → handle） ==========
@@ -315,6 +337,9 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
         // 附窗账本（清单 §二·b）：终端是否 attach 在会话上。注入通道=公共
         // 契约钩子 __kfmNzTermInject（attach=tmux new-session -A；detach=Ctrl-B d）。
         const attachedRef = useRef(false);
+        // 拖动收尾的点击穿透抑制：换序重渲染挪动芯片，松手合成 click 会落在
+        // 别的芯片上=重排却附带切窗。完成拖动后 400ms 内忽略芯片点选。
+        const suppressClickUntil = useRef(0);
         const termInject = (s2: string): void => {
           (window as unknown as Record<string, unknown>).__kfmNzTermInject?.(s2);
         };
@@ -330,6 +355,7 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
           setExpanded(false); // T3 终点 HANDLE（回终端视图）
         };
         const onChipClick = (w: TmuxWindow): void => {
+          if (Date.now() < suppressClickUntil.current) return; // 拖动收尾穿透（见上）
           // 清单 §二·b：附窗条件点选语义
           if (attachedRef.current) {
             if (w.active) leaveTmux(); // T3：点聚焦=detach 回终端态
@@ -406,6 +432,7 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
           drag.current = null;
           setDragId(null);
           if (!d?.dragging) return;
+          suppressClickUntil.current = Date.now() + 400; // 拖动收尾穿透抑制
           // 乐观排序 → swap 串（脑层几何）。基线=起手时服务器顺序
           // （本地已被乐观排序污染，直接对比恒得零——0901 考卷 dbg 实锤）。
           // 服务器推送为准（P5）。

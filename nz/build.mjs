@@ -6,7 +6,7 @@
  */
 import { build } from 'esbuild';
 import { createHash } from 'crypto';
-import { readFileSync, statSync, writeFileSync } from 'fs';
+import { readFileSync, statSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'fs';
 import { gzipSync, brotliCompressSync, constants as zlibConstants } from 'node:zlib';
 
 await build({
@@ -45,3 +45,22 @@ writeFileSync('public/bundle.js.br', brotliCompressSync(bundle, {
   params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 11 },
 }));
 console.log(`[build] OK bundle.js ${size} bytes (v=${hash}) gzip=${gzipSync(bundle, { level: 9 }).length} br=${brotliCompressSync(bundle, { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 11 } }).length}`);
+
+// ========== server 同步看门狗（2026-09-01 31s 重载死循环案的制度化收口） ==========
+// src/server/*.ts 内容哈希存档 public/.server-hash：变化即写 gate restart-req
+// （supervisor 拉回新码）。协议帧型/服务端逻辑变更从此不可能「客户端新码+
+// 服务器旧码」单腿上线。首次建档（无旧哈希）不触发——部署链首跑不重启。
+const serverHash = readdirSync('src/server').filter((f) => f.endsWith('.ts')).sort()
+  .map((f) => `${f}:${createHash('sha256').update(readFileSync(`src/server/${f}`)).digest('hex')}`)
+  .join('\n');
+const hashFile = 'public/.server-hash';
+const prevHash = existsSync(hashFile) ? readFileSync(hashFile, 'utf8').trim() : null;
+if (serverHash !== prevHash) {
+  writeFileSync(hashFile, serverHash);
+  if (prevHash !== null) {
+    const gateDir = '/tmp/nz-gate';
+    mkdirSync(gateDir, { recursive: true });
+    writeFileSync(`${gateDir}/restart-req`, String(Date.now()));
+    console.log('[build] src/server 变更 → restart-req 已置（server 同步看门狗，supervisor 拉回）');
+  }
+}
