@@ -12,15 +12,28 @@
 
 ## 0. 当前状态快照
 
-> **⏸ 2026-08-26 用户拍板：nz 实验台（设备代理）为最高优先——8.x/9.x 全部版本号「后推」，实验台先做出来，其余再说。** 见 §0.5。
-
 > 每次进度更新只改本节。
 
-- **当前阶段**：**nz 实验台（设备代理，device-agent）· 最高优先**——可控真机 APK（真机渲染截图 + 输入注入 + 遥测回传 + 插件/热更/自重启），最终当 nz 启动器。见 §0.5 计划。
-- **后推**：原 8.7 内核/8.8 终端/8.9 自观测/8.10-8.13/9.x 里程碑**整体后推**，等实验台落地后再续（版本号暂不改，避免全图级联重编号；要整体重编号另议）。
-- **刚完成**：8.8.x 终端系列（终端连接家族 / 渲染卡 / 全屏 / 按键栏 / scrollback / 两区改单区底锚定 / TUI 键栏在底 / CJK 墨迹对齐——详见下表，均已核）。
-- **下一步**：实验台 **P0**——nz 终端补「程序化注入输入 + 读当前屏」钩子（`__kfmNzTermInject` / `__kfmNzTermScreen`），这是「能动手」的前提。
+- **当前阶段**：**9.0 终端体验线 + UI 宪法立项**（2026-09-01）。实验台
+  P0/P1/P3 已收口（P2 闸门第一片交付、P4 未启），终端回归主线。
+- **刚完成**：①键盘/IME 收尾三案（31s 重载死循环 / bg→fg 自弹识别 /
+  压自弹+闩续期，全部考卷+真机双收口）②**React 全量拍板**——真机
+  实测点火成本 21-47ms，react 19 入册+jsx 构建链（1e540823）③
+  **插件契约 v0 立项**（`docs/plugin-contract.md`，UI 宪法：React=唯一
+  组件系统当前约定、内核/契约/适配器三层、逻辑皮分离、无黑盒红线）。
+- **下一步**：Step 1 React 宿主边界（零 UI 变化）→ Step 2 tmux 标签条
+  （8.8.4，第一个 React 插件，顶部覆盖条方案）→ Step 3 keybar 迁皮。
+  见 plugin-contract §6 迁移路线。
 - **阻塞**：无
+
+---
+
+## 0.6 UI 宪法（2026-09-01 立项）
+
+一切皆插件的根文件：[`docs/plugin-contract.md`](docs/plugin-contract.md)
+——三层架构（内核/契约/适配器）、契约签名、逻辑皮分离、性能边界
+（终端渲染核 ref 飞地）、黑盒红线、五步迁移路线。**宪法级：修订须
+用户拍板，评审存照。**
 
 ---
 
@@ -44,11 +57,11 @@
 
 ### 分阶段执行（每步有验收，遇问题中途变向）
 
-- **P0 · nz 终端前置钩子**（能动手的前提，必须最先）：给 nz 终端补 `window.__kfmNzTermInject(str)`（程序化注入输入）+ `window.__kfmNzTermScreen()`（读当前可视屏文本/网格）。验收：headless 这两个钩子可用。
-- **P1 · wry WebView 壳**：Rust wry 加载 nz 终端 + `setWebContentsDebuggingEnabled(true)` + 反隧道（nz 端口）。验收：APK 起 nz；服务器 CDP attach 成功；**首张真机渲染终端截图**。
-- **P2 · 文件信号闸门 gate**（镜像 NA gate.rs）：DUMP_DIR + 值守线程（shot/keys-in/text/ping）+ nz 端口 ssh 可达 + `scripts/nz-shot.sh / nz-text.sh / nz-type.sh`。验收：服务器一键拿 shot.rgb（真机渲染）+ screen.txt + keys-in 注入生效。
-- **P3 · report 遥测 + 插件/热更/自重启**：report 隧道回传落 `/tmp`；cordis 插件面（镜 NA）；restart-req→守护拉回。验收：遥测落服务器、插件 push 生效、热更重启闭环。
-- **P4 · 启动器化**：App 前台常驻、开机进工作台；弃用手机浏览器/网页快捷方式。验收：日常工作只用这个 APK 进 nz。
+- **P0 · nz 终端前置钩子**（能动手的前提，必须最先）：给 nz 终端补 `window.__kfmNzTermInject(str)`（程序化注入输入）+ `window.__kfmNzTermScreen()`（读当前可视屏文本/网格）。验收：headless 这两个钩子可用。**✅（2026-08-31：term-hooks 6/6）**
+- **P1 · wry WebView 壳**：Rust wry 加载 nz 终端 + `setWebContentsDebuggingEnabled(true)` + 反隧道（nz 端口）。验收：APK 起 nz；服务器 CDP attach 成功；**首张真机渲染终端截图**。**✅（2026-08-31：纯 Java 壳选型，首睁达成，五条验收全过）**
+- **P2 · 文件信号闸门 gate**（镜像 NA gate.rs）：DUMP_DIR + 值守线程（shot/keys-in/text/ping）+ nz 端口 ssh 可达 + `scripts/nz-shot.sh / nz-text.sh / nz-type.sh`。验收：服务器一键拿 shot.rgb（真机渲染）+ screen.txt + keys-in 注入生效。**🔄（闸门第一片已交付：KeepAliveService 5s 轮询 exit(0)；余量按需补）**
+- **P3 · report 遥测 + 插件/热更/自重启**：report 隧道回传落 `/tmp`；cordis 插件面（镜 NA）；restart-req→守护拉回。验收：遥测落服务器、插件 push 生效、热更重启闭环。**✅（2026-08-31：全链收口通报，P3 认可）**
+- **P4 · 启动器化**：App 前台常驻、开机进工作台；弃用手机浏览器/网页快捷方式。验收：日常工作只用这个 APK 进 nz。**⬜（等 9.0 可日常用后启动）**
 
 ### 关键决策点（执行中可能变向）
 
@@ -186,7 +199,10 @@ npm run smoke       # node 侧 Cordis 全链冒烟
 empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1，
 必须 `localhost` 连（127.0.0.1 挂死）③spare 用完导航回 about:blank
 收尸（导航 8023 会起 PTY）④App 后台时 Android 合成器不产帧，
-`captureScreenshot` 必超时——像素需求走后台路径（画布重画/帧序列）。
+`captureScreenshot` 必超时——像素需求走后台路径（画布重画/帧序列）
+⑤**页面 hidden（熄屏/后台）=定时器全冻结**——mock 实验的同步事件照落
+（pin 生效）但 150ms 防抖/500ms 巡查不跑，读数像「resize 失灵」；
+任何 mock 实验先查 `visibilityState` 再下结论（差点误判假 bug 实例）。
 
 | 手段 | 入口 | 能看什么 | 保真边界 | 前后台 |
 |---|---|---|---|---|
@@ -202,6 +218,9 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
 | A/B 档考卷 | `tests/browser/*.test.mjs`（headless playwright） | 终端行为回归（bottom-anchor/scrollback/keybar/term-hooks/cjk-width-c4…） | headless 合成环境 | 服务器本地 |
 | Rust 层判卷 | `cd term-core && cargo test` | 核层语义（宽度/换行/模式位） | 纯净无竞态 | 服务器本地 |
 | 真机四单自验收 | `scripts/device-verify.mjs` | 真机行为清单（评审抽查节奏收录） | 真机实证 | 后台可用 |
+| fgwatch 轻量监视 | 页面注入 20 行段（visibilitychange/诱饵 focus-blur/vv resize → beacon `/debug/ime-log`，tag=`fgwatch`） | bg→fg/焦点/键盘起落事件序列回放（键盘三案定罪主力） | 事件级精确、无像素；页面 reload 即失效需重注 | 后台可用（冻结期事件排队，唤醒后落盘） |
+| 帧级 tracer | 页面注入 `setInterval 50ms` 记 vv/ime/rows/容器几何 → window 环形缓冲 | 时序症多帧演化（单帧快照会骗人，runaway 教训制度化） | 冻结期不推进、读数出长条，唤醒后判读 | 后台可埋（读数要唤醒） |
+| 合成键盘 | `NzNative.ime(true/false)` + `NzNative.tap(x*dpr,y*dpr)` | 真键盘弹/收、纯后台复现「真键盘切后台」类场景 | **输入连接建立后才真弹**（合成 tap 失灵谜窗口期）；合成点击后立刻切后台会诱「假自弹」（WebView 挂起 showSoftInput），判别靠事件序列 | 后台可用 |
 
 **判卷层选择纪律**（C4 对拍换来）：可打印串/文本类断言浏览器层可判；
 **定位类序列（CUP/CHA）必须 Rust 层判**——CoreFeed 与活体 PTY 共享
@@ -214,7 +233,9 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
 ## 3. 总时间线（一页总表）
 
 > 状态：⬜ 待办 · 🔄 进行中 · ✅ 完成 · ⏸ 待用户裁决
-> **⏸ 2026-08-26 用户拍板「后推」**：本总表及 §4 的 8.7/8.8/8.9/8.10-8.13/9.x 里程碑**整体后推**（版本号暂不改、避免全图级联重编号），**先做 §0.5 实验台（device-agent）**，实验台落地后再续本表。已完成项（✅）不回退。
+> **2026-09-01 更新**：实验台 P0/P1/P3 收口（P2 半交付、P4 未启），8.x
+> 主线已实质回归——8.8.3 键盘/终端收尾三案闭环，当前推进 8.8.4
+> （React 插件化先行，见 §0.6 宪法与 plugin-contract §6 路线）。
 
 | 小步 | 做什么 | dsh 参考 | Rust 共享 | 测试/考题 | 状态 |
 |------|--------|----------|-----------|-----------|------|
@@ -229,9 +250,10 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
 | 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（评估翻盘：alacritty 被 polling 阻断上不了 wasm32；复活触发=rio-vt 功能缺口/行为考卷长期不齐） | A+B+C：终端功能对照 + M3 基线；考卷全集差分硬门移作 8.8.5 闭环前置（2026-08-23 拍板） | ✅（2026-08-23：IME 三症真机全解 + 轻收口三件落地——对照表 nz/docs/term-checklist.md、M3 基线 nz/tests/m3-baseline/、通报信 kfmv4-9.0-nz-882-closeout-notice；考卷硬门按拍板归 8.8.5 闭环） |
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C 档：刷新即终端；真机数字收口 | ✅（2026-08-23：守视双态实拍绿 + 用户真机确认「确实没问题」） |
 | 8.8.3b | 仿 Termux 按键栏（keybar UI 随键盘上浮）+ keymap 纯逻辑（粘滞修饰/控制字节/SS3-CSI 方向键） | NA keybar.rs/keymap.rs | 核加 `app_cursor()` 暴露（cursor_visible 同款小改） | A：keymap 考题（Ctrl+ASCII→字节 / Alt=ESC x / 方向键 ?1h SS3 vs CSI / 粘滞一次读走清零）；C：栏随软键盘上浮实拍 + 真机数字收口 | ✅（2026-08-24 收口：A 8 题绿 + 核 ?1h/?1l 钉 + B 守视真链绿 + 评审通过；上浮被盖症五轮讨伐落幕——判尺 vm=vv 真尺 / 钉 vv 移出防抖治过渡闪帧 / `?kbOff=<px>` 常驻代字适配 Via 有栏 vv 虚报 ~42px（浏览器硬限制，用户拍板接受现状）；专症字段+双轨色条随症拆，kboff 命中标记保留） |
-| 8.8.3c | scrollback 历史渲染上屏（2026-08-23 用户拍板：随手上滑翻历史=基础体验，9.0 不得比 8 倒退；tmux copy-mode 不作替代）——核已存 1000 行历史，壳从「只画当前屏」扩为「历史+当前屏」同渲，容器 overflow:hidden→auto 开真滚动 | 无 | 核需历史行读取 API（grid 回退区遍历，评估 rio-vt 暴露面） | A：壳考题（历史行渲染 / 跟底判定：新输出仅当已在底部才跟底，用户上滚不拽回）；B：长输出装配冒烟；C：真机上滑翻历史实拍 + IME 纪律兼容（上滚中输入跳回底部再发）+ 真机数字收口 | 🔄（2026-08-24：实现落地 @ 6d261e15——核三 API+壳增量历史块+集中状态机+钩子；A 档裁决两红=考卷 artifact，修卷后 5/5 绿（评审复核+本地复核同数）；B 档千行冒烟绿；待 C 档真机上滑实拍收口） |
-| 8.8.3d | 单区底锚定终端（2026-08-24 用户拍板**回退两区**，评审契约信 kfmv4-9.0-single-zone-bottom-anchor-review）：单一连续终端区——最底=最新、输出续输入下上滚、空屏提示符也在视口底行（壳塌尾空行 + flex 底锚 margin-top:auto）、去掉独立固定输入行；滚动/状态机复用 8.8.3c，按键栏流内垫底不动 | 无 | 核 `alt_screen()` 保留（TUI 整屏不塌行，行列恒定） | A：bottom-anchor 考卷（空屏提示符底行/输出续输入下/超屏最底=最新/键盘占位整体上移底锚不回退）+ scrollback 5/5 + keybar 17/17 不回退；B：千行不卡；C：真机实拍底锚定视觉+上滑翻历史+键盘弹起整体上移 | 🔄（2026-08-24：两区落地 a082f87f+5e3dd75c 后用户拍板回退→单区底锚定 @ 7aa1962b；A 档新考卷 5/5 一遍绿 + scrollback 5/5 + keybar 17/17 不回退 + B 千行绿；`__kfmNzTermInputRow` 退役明示；待 C 档真机收口） |
-| 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C 档：标签切换实拍；真机数字收口 | ⬜ |
+| 8.8.3c | scrollback 历史渲染上屏（2026-08-23 用户拍板：随手上滑翻历史=基础体验，9.0 不得比 8 倒退；tmux copy-mode 不作替代）——核已存 1000 行历史，壳从「只画当前屏」扩为「历史+当前屏」同渲，容器 overflow:hidden→auto 开真滚动 | 无 | 核需历史行读取 API（grid 回退区遍历，评估 rio-vt 暴露面） | A：壳考题（历史行渲染 / 跟底判定：新输出仅当已在底部才跟底，用户上滚不拽回）；B：长输出装配冒烟；C：真机上滑翻历史实拍 + IME 纪律兼容（上滚中输入跳回底部再发）+ 真机数字收口 | ✅（2026-08-24 落地 @ 6d261e15：A 档修卷后 5/5 绿（评审复核+本地复核同数）+B 档千行绿；C 档真机上滑实测通过+滑动方向修正，状态机并成日常验收） |
+| 8.8.3d | 单区底锚定终端（2026-08-24 用户拍板**回退两区**，评审契约信 kfmv4-9.0-single-zone-bottom-anchor-review）：单一连续终端区——最底=最新、输出续输入下上滚、空屏提示符也在视口底行（壳塌尾空行 + flex 底锚 margin-top:auto）、去掉独立固定输入行；滚动/状态机复用 8.8.3c，按键栏流内垫底不动 | 无 | 核 `alt_screen()` 保留（TUI 整屏不塌行，行列恒定） | A：bottom-anchor 考卷（空屏提示符底行/输出续输入下/超屏最底=最新/键盘占位整体上移底锚不回退）+ scrollback 5/5 + keybar 17/17 不回退；B：千行不卡；C：真机实拍底锚定视觉+上滑翻历史+键盘弹起整体上移 | ✅（2026-08-31：A 档多轮回绿+真机四单并验清零，8.x 真机遗留账闭环；后续演进见 8.8.3e） |
+| 8.8.3e | 键盘/IME 收尾三案（2026-08-31/09-01）：①31s 重载死循环（心跳单边上线，server 同重启收口）②bg→fg 自弹键盘识别（APK visibilitychange 武装）③压自弹（切后台摘诱饵焦点，用户拍板）+闩到期续期（键盘开着只看不动手不退态） | 无 | 无 | ①boot-marks 零复发 ②ime-pan ①e 系钉 15/15 ③①f/①g 钉 19/19+四卷回归+真机 A/B 收口（回前台 vv 恒 853 不弹） | ✅（9cbe163b/4d8ab921，实录 case-002 迭代节） |
+| 8.8.4 | 顶栏最小版：tmux 标签——**React 插件化先行**（2026-09-01 用户拍板全量 React+插件契约 v0）：Step1 React 宿主边界→Step2 标签条=第一个 React 插件（tmux -C 控制通道+顶部覆盖条 UI） | dsh ui-slots/ui-layout | 无 | 真 tmux A 档考卷（窗口列表/切换/增删通知）+C 档实拍；宿主步=四卷不回退零 UI 变化 | 🔄（宪法 docs/plugin-contract.md，1e540823 依赖入册） |
 | 8.8.5 | tmux 完整管理 + 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档；闭环前置=考卷全集差分绿（硬门后移不取消） | ⬜ |
 | 8.8.6 | 手单实例（最小：press=视觉+注入一体，对真 UI 验证；坐标对齐眼睛 coords 段） | 无 | 无 | A+B：press 链路考题 + 过 plugtest | ⬜ |
 | 8.9.1 | 自观测·运行时状态导出 + 标准化事件日志（能观地基；替代 ad-hoc console → 带版本结构化事件流） | 无 | 结构化事件流（自研薄） | A 档：状态可查询 + 事件流带版本+可回放 | ⬜ |
@@ -292,8 +314,8 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
 | 8.8.2 | 终端渲染卡 | 无 | **rio-vt→WASM**（2026-08-21 用户拍板；NA 侧 alacritty 不动，行为一致靠两线同源考卷保证） | A+B+C：终端功能对照表全绿；M3 终端基线；开工先补：僵尸会话 list 口径 + open 挂权限判定；**收口硬门（评审前置要求，用户 2026-08-21 接受；2026-08-23 拍板后移挂点）：功能覆盖考卷全集对跑——NA 在用的解析序列全集差分（非抽查），rio-vt 缺序列即触发复活重议；硬门移作 8.8.5 闭环前置，8.8.3–8.8.5 开工不等它** | ✅（2026-08-23：IME 三症真机全解 + 轻收口三件落地——对照表 nz/docs/term-checklist.md、M3 基线 nz/tests/m3-baseline/、通报信 kfmv4-9.0-nz-882-closeout-notice；考卷硬门归 8.8.5 闭环） |
 | 8.8.3 | 刷新默认全屏终端 | dsh ui-layout 思想 | 无 | C：实拍刷新即终端；不得依赖 №11 完整布局；**真机数字收口**（2026-08-23 拍板：tmux 线=用户迁 9.0 判据） | ✅（2026-08-23：守视双态实拍绿——无参刷新即终端 panel=none / ?debug 面板照常；用户真机确认「确实没问题」收口） |
 | 8.8.3b | 仿 Termux 按键栏 + keymap（2026-08-23 评审建议信 kfmv4-9.0-term-keybar-review，用户提过缺口；tmux 刚需：手机无 Ctrl+B 前缀）：两排七列照 NA keybar.rs 定稿（上 Esc/Alt/Home/PgUp/↑/PgDn/Shift，下 Tab/Ctrl/End/←/↓/→/Enter）；四条纪律照抄——①修饰键一次性粘滞（点亮后下次落字读走清零）②keymap 纯逻辑 A 档有题（Ctrl+ASCII→控制字节；Alt+X=ESC x；方向键/End 吃 app_cursor 模式位，?1h 发 SS3 `ESC O A` 否则 CSI `ESC [ A`）③栏随软键盘上浮（贴可视区底，防被键盘盖）④键位序按 NA KEYS 表；核需加 `app_cursor()` 暴露（cursor_visible 同款小改）；keymap 独立纯逻辑模块，keybar UI 进 term 插件包 | NA keybar.rs/keymap.rs | 核 `app_cursor()` | A：keymap 考题（Ctrl+字节/Alt/方向键 SS3-CSI/粘滞清零各一）+ B：栏装配冒烟 + C：上浮跟随真机实拍 | ✅（2026-08-24 收口：A/B 绿+评审通过+点击不可达修复（f99fc67a）；上浮被盖症五轮落幕=判尺 vm=vv 真尺（575a7eb2 单基准 top 锚 vv）+过渡帧闪帧=钉 vv 移出防抖（be5f95b1）+`?kbOff=<px>` 常驻代字（02739919）适配 Via 有栏 vv 虚报 ~42px（浏览器硬限制，用户拍板接受现状）；专症字段/双轨色条随症拆，kboff 命中标记保留） |
-| 8.8.3c | scrollback 历史渲染上屏（2026-08-23 用户拍板：随手上滑翻历史=基础体验，9.0 体验不得比 8 倒退；AI 长对话场景必须可回翻；tmux copy-mode 不作替代——用户从没用过）：核侧 1000 行历史已在（8.8.2 起配置），本步改渲染壳——从「只画当前屏、overflow:hidden」扩为「历史+当前屏同渲、overflow:auto 真滚动」；跟底纪律=终端惯例：新输出到来仅当视口已在底部才跟底，用户上滚阅读时不拽回；输入即回底（xterm 同款：按键/上屏先把视口送回光标处再发字节，与 placeKb 钉光标格纪律兼容——上滚时诱饵在屏外，focus preventScroll 不拽，发字节前显式回底）；容器高度跟随软键盘的既有逻辑不变（8.8.2 吞末行根治保留） | 无 | 核需历史行读取面（评估 rio-vt grid 回退区遍历 API；若缺，cursor_visible 同款小改暴露） | A：壳考题（历史行逐行进屏 / 跟底判定两向 / 回底再发）；B：千行长输出装配冒烟（渲染不卡、内存有界）；C：真机上滑翻历史实拍 + 上滚中收新输出不拽回 + 真机数字收口 | 🔄（2026-08-24：实现落地 @ 6d261e15——核三 API+壳增量历史块+集中状态机+钩子；A 档裁决两红=考卷 artifact，修卷后 5/5 绿（评审复核+本地复核同数）；B 档千行冒烟绿；待 C 档真机上滑实拍收口） |
-| 8.8.3d | 单区底锚定终端（2026-08-24 用户拍板**回退两区**，评审契约信 kfmv4-9.0-single-zone-bottom-anchor-review；两区 fixed-input-row 模型作废）：单一连续终端区——历史+屏幕行同一滚动区（复用 8.8.3c 状态机/增量渲染），无独立输入行；底锚定=壳塌尾空行（渲染到 max(光标行, 最后非空行)）+ 容器 flex 列画布 margin-top:auto：空屏提示符贴视口底行（上方留白）、新内容从底往上顶、超屏真滚动；光标行模式/ALT 统一进滚动区 + nearest 兜底；placeKb 钉光标格可视位（cursorOffset−scrollTop）；按键栏流内垫底、?kbOff/钉 vv 纪律不动 | 无 | 核 `alt_screen()` 保留（TUI 不塌行） | A：bottom-anchor.test.mjs 5 断言 + scrollback 5/5 + keybar-click 17/17 不回退；B：千行长输出上滚不卡；C：真机实拍（底锚定视觉+上滑+键盘弹起整体上移）+ 数字收口 | 🔄（2026-08-24：两区 a082f87f+5e3dd75c 后用户拍板回退→单区 @ 7aa1962b；A 档 5/5 一遍绿+不回退双全绿+B 千行绿；fixed-input-row.test.mjs 作废删除、`__kfmNzTermInputRow` 退役明示；已知悉单区下输入行会被输出顶动（自然终端手感优先，缓解再议不回滚）；待 C 档真机收口） |
+| 8.8.3c | scrollback 历史渲染上屏（2026-08-23 用户拍板：随手上滑翻历史=基础体验，9.0 体验不得比 8 倒退；AI 长对话场景必须可回翻；tmux copy-mode 不作替代——用户从没用过）：核侧 1000 行历史已在（8.8.2 起配置），本步改渲染壳——从「只画当前屏、overflow:hidden」扩为「历史+当前屏同渲、overflow:auto 真滚动」；跟底纪律=终端惯例：新输出到来仅当视口已在底部才跟底，用户上滚阅读时不拽回；输入即回底（xterm 同款：按键/上屏先把视口送回光标处再发字节，与 placeKb 钉光标格纪律兼容——上滚时诱饵在屏外，focus preventScroll 不拽，发字节前显式回底）；容器高度跟随软键盘的既有逻辑不变（8.8.2 吞末行根治保留） | 无 | 核需历史行读取面（评估 rio-vt grid 回退区遍历 API；若缺，cursor_visible 同款小改暴露） | A：壳考题（历史行逐行进屏 / 跟底判定两向 / 回底再发）；B：千行长输出装配冒烟（渲染不卡、内存有界）；C：真机上滑翻历史实拍 + 上滚中收新输出不拽回 + 真机数字收口 | ✅（同 §3 行：6d261e15，A/B/C 全收） |
+| 8.8.3d | 单区底锚定终端（2026-08-24 用户拍板**回退两区**，评审契约信 kfmv4-9.0-single-zone-bottom-anchor-review；两区 fixed-input-row 模型作废）：单一连续终端区——历史+屏幕行同一滚动区（复用 8.8.3c 状态机/增量渲染），无独立输入行；底锚定=壳塌尾空行（渲染到 max(光标行, 最后非空行)）+ 容器 flex 列画布 margin-top:auto：空屏提示符贴视口底行（上方留白）、新内容从底往上顶、超屏真滚动；光标行模式/ALT 统一进滚动区 + nearest 兜底；placeKb 钉光标格可视位（cursorOffset−scrollTop）；按键栏流内垫底、?kbOff/钉 vv 纪律不动 | 无 | 核 `alt_screen()` 保留（TUI 不塌行） | A：bottom-anchor.test.mjs 5 断言 + scrollback 5/5 + keybar-click 17/17 不回退；B：千行长输出上滚不卡；C：真机实拍（底锚定视觉+上滑+键盘弹起整体上移）+ 数字收口 | ✅（同 §3 行：A 档多轮回绿+真机四单并验清零；演进见 8.8.3e） |
 | 8.8.4 | 顶栏最小版：tmux 标签 | dsh ui-slots/ui-layout | 无 | C：标签切换实拍；**真机数字收口** | ⬜ |
 | 8.8.5 | tmux 完整管理（新建/清空/挂起/状态检测）+ 闭环 | dsh terminal-bash | 无 | A+B：tmux 考题全档；**闭环前置：考卷全集差分绿** | ⬜ |
 | 8.8.6 | 手单实例（最小）：overlay 容器 + hand-press 事件 + press 一体链路，对终端卡真按 | 无 | 无 | A+B：press 注入经手势分发实测；过 plugtest | ⬜ |
@@ -1815,3 +1837,20 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   观测产出：NzNative.ime(true) 在输入连接建立后可真弹键盘（失灵谜
   窗口期），「真键盘切后台」首次可纯后台复现；合成点击立刻切后台
   会诱「假自弹」（WebView 挂起 showSoftInput），判别靠事件序列。
+- 2026-09-01 · **React 全量拍板 + 插件契约 v0 + TASK 换血**。①UI 参考
+  调研（用户剪藏）：BeautifulUI（React 组件库，MIT）=9.0 AI 面板层
+  词汇表（Prompt Bar↔输入栏/Task Rows↔卡片堆/Approval Card/Thinking），
+  UIUX-Pro-Max=agent 设计智能（离线可跑，出 nz 设计语言草案用），
+  六库推荐存名录。②用户拍板**React 全量**：真机 A/B 实测点火成本
+  冷 47.6ms/热 21-22ms（开机线 1-3% 噪声，189KB minify），启动时间
+  不构成反对理由；原则=「不留改动不了的纯黑盒」（React 可读可补丁
+  非黑盒），双运行时有竞态故组件系统必须唯一。react 19 入册+jsx
+  automatic 构建链（1e540823）。③**插件契约 v0 立项**
+  （docs/plugin-contract.md，宪法级）：内核/契约/适配器三层、
+  `mount(el,ctx)→handle` 签名、React=当前适配器非地基（可替换）、
+  逻辑/皮分离纪律（换底座只重写皮）、终端渲染核 ref 边界=唯一命令式
+  飞地、黑盒红线三问、五步迁移路线（宿主→tmux 标签条→keybar→term
+  容器→splash/eyes）。④TASK.md 换血：§0 快照更新到 09-01 现实、
+  §0.5 实验台 P 段补状态、§0.6 宪法入口、§3 时间线 8.8.3c/d 补 ✅+
+  新增 8.8.3e 键盘三案行+8.8.4 标 🔄（React 先行）、§2.7 补登记
+  fgwatch/帧级 tracer/合成键盘三手段+hidden 冻结纪律。
