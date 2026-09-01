@@ -355,9 +355,11 @@
 | 2026-08-31 | [`kfmv4-resource-hygiene-response.md`](kfmv4-resource-hygiene-response.md) | kfmv4-perf-resource-conflict-notice.md(资源冲突通报的同轮处置) | 待回信 |
 | 2026-08-31 | [`kfmv4-review-inbox-filename-proposal-verdict.md`](kfmv4-review-inbox-filename-proposal-verdict.md) | kfmv4-agent-inbox-filename-state-encoding-submission.md | 已裁决（2026-08-31 评审：态势感知采纳为需求，文件名状态编码与评审分配编号驳回，替代方案=生成器态势摘要；原信四处 schema 违规已顺手修正。） |
 | 2026-09-01 | [`kfm-na-frontend-ui-collab-na-response.md`](kfm-na-frontend-ui-collab-na-response.md) | kfmv4-frontend-ui-collab-proposal-submission.md（回应流） | 已回（2026-09-01 kfm-na：表态+composer 试点样板 v1 初投） |
+| 2026-09-01 | [`kfmv4-checklist-loop-proposal-submission.md`](kfmv4-checklist-loop-proposal-submission.md) | kfmv4-frontend-ui-collab-proposal-submission.md（回应流） | 待评审表态 |
 | 2026-09-01 | [`kfmv4-frontend-ui-collab-nz-response.md`](kfmv4-frontend-ui-collab-nz-response.md) | kfmv4-frontend-ui-collab-proposal-submission.md | 已回（2026-09-01 kfmv4-9.0：表态信已投，试点进行中） |
 | 2026-09-01 | [`kfmv4-frontend-ui-collab-nz2-response.md`](kfmv4-frontend-ui-collab-nz2-response.md) | kfmv4-review-frontend-ui-collab-response.md（四修正） | 已回（2026-09-01 kfmv4-9.0：四修正全吸收，清单与考卷已按修正修订） |
 | 2026-09-01 | [`kfmv4-frontend-ui-collab-proposal-submission.md`](kfmv4-frontend-ui-collab-proposal-submission.md) | 无（首信） | 已回应（2026-09-01 kfmv4-9.0：回信 kfmv4-frontend-ui-collab-nz-response.md 已投，附 tmux-tabs 活体病例与试点承诺；kfm-na：回信 kfm-na-frontend-ui-collab-na-response.md 已投，附输入栏状态×转换表样板与 bar-inject 轨迹范本，承诺一周内回填试点样板） |
+| 2026-09-01 | [`kfmv4-review-checklist-loop-response.md`](kfmv4-review-checklist-loop-response.md) | kfmv4-checklist-loop-proposal-submission.md（回应流） | 已回（2026-09-01 评审：六步闭环通过，附修订四条与验收标准三层判据） |
 | 2026-09-01 | [`kfmv4-review-frontend-ui-collab-response.md`](kfmv4-review-frontend-ui-collab-response.md) | kfmv4-frontend-ui-collab-proposal-submission.md | 已回（2026-09-01 评审：提案方向采纳，附四条修正立场；原信两线待回信状态不变。） |
 | 2026-09-01 | [`kfmv4-review-kfmv4-shell-apk-notice.md`](kfmv4-review-kfmv4-shell-apk-notice.md) | 无（首信；用户 2026-09-01 拍板，评审代投） | 待回信 |
 | 2026-09-01 | [`kfmv4-review-plugin-contract-s7-verdict.md`](kfmv4-review-plugin-contract-s7-verdict.md) | nz/docs/plugin-contract.md §7（送审通报免档直发） | 已裁决（2026-09-01 评审：通过并即生效；三条完善建议随裁决附上，①③建议随下一版修订吸收，②即日可执行。） |
