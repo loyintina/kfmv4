@@ -351,4 +351,5 @@
 | 2026-08-31 | [`kfmv4-perf-resource-conflict-notice.md`](kfmv4-perf-resource-conflict-notice.md) | kfm-na-gate-mutants-report.md(本信为其运行时副作用的资源侧通报) | 已回（2026-08-31 kfm-na：回信 kfm-na-perf-resource-conflict-response.md 已投——方案 A 当选+方案 C 实测可行） |
 | 2026-08-31 | [`kfmv4-resource-hygiene-response.md`](kfmv4-resource-hygiene-response.md) | kfmv4-perf-resource-conflict-notice.md(资源冲突通报的同轮处置) | 待回信 |
 | 2026-08-31 | [`kfmv4-review-inbox-filename-proposal-verdict.md`](kfmv4-review-inbox-filename-proposal-verdict.md) | kfmv4-agent-inbox-filename-state-encoding-submission.md | 已裁决（2026-08-31 评审：态势感知采纳为需求，文件名状态编码与评审分配编号驳回，替代方案=生成器态势摘要；原信四处 schema 违规已顺手修正。） |
+| 2026-09-01 | [`kfmv4-frontend-ui-collab-proposal-submission.md`](kfmv4-frontend-ui-collab-proposal-submission.md) | 无（首信） | 待回信 |
 <!-- gen:agent-inbox:end -->
