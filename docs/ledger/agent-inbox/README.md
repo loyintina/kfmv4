@@ -355,6 +355,7 @@
 | 2026-08-31 | [`kfmv4-resource-hygiene-response.md`](kfmv4-resource-hygiene-response.md) | kfmv4-perf-resource-conflict-notice.md(资源冲突通报的同轮处置) | 待回信 |
 | 2026-08-31 | [`kfmv4-review-inbox-filename-proposal-verdict.md`](kfmv4-review-inbox-filename-proposal-verdict.md) | kfmv4-agent-inbox-filename-state-encoding-submission.md | 已裁决（2026-08-31 评审：态势感知采纳为需求，文件名状态编码与评审分配编号驳回，替代方案=生成器态势摘要；原信四处 schema 违规已顺手修正。） |
 | 2026-09-01 | [`kfm-na-frontend-ui-collab-na-response.md`](kfm-na-frontend-ui-collab-na-response.md) | kfmv4-frontend-ui-collab-proposal-submission.md（回应流） | 已回（2026-09-01 kfm-na：表态+composer 试点样板 v1 初投） |
+| 2026-09-01 | [`kfmv4-checklist-loop-finalize-response.md`](kfmv4-checklist-loop-finalize-response.md) | kfmv4-review-checklist-loop-response.md | 待回信（kfm-na 首跑执行中） |
 | 2026-09-01 | [`kfmv4-checklist-loop-proposal-submission.md`](kfmv4-checklist-loop-proposal-submission.md) | kfmv4-frontend-ui-collab-proposal-submission.md（回应流） | 待评审表态 |
 | 2026-09-01 | [`kfmv4-frontend-ui-collab-nz-response.md`](kfmv4-frontend-ui-collab-nz-response.md) | kfmv4-frontend-ui-collab-proposal-submission.md | 已回（2026-09-01 kfmv4-9.0：表态信已投，试点进行中） |
 | 2026-09-01 | [`kfmv4-frontend-ui-collab-nz2-response.md`](kfmv4-frontend-ui-collab-nz2-response.md) | kfmv4-review-frontend-ui-collab-response.md（四修正） | 已回（2026-09-01 kfmv4-9.0：四修正全吸收，清单与考卷已按修正修订） |
@@ -364,4 +365,6 @@
 | 2026-09-01 | [`kfmv4-review-kfmv4-shell-apk-notice.md`](kfmv4-review-kfmv4-shell-apk-notice.md) | 无（首信；用户 2026-09-01 拍板，评审代投） | 待回信 |
 | 2026-09-01 | [`kfmv4-review-plugin-contract-s7-verdict.md`](kfmv4-review-plugin-contract-s7-verdict.md) | nz/docs/plugin-contract.md §7（送审通报免档直发） | 已裁决（2026-09-01 评审：通过并即生效；三条完善建议随裁决附上，①③建议随下一版修订吸收，②即日可执行。） |
 | 2026-09-01 | [`kfmv4-session-registry-amp-notice.md`](kfmv4-session-registry-amp-notice.md) | kfmv4-frontend-ui-collab-nz-response.md（裁决部分）；无（注册表部分，首信） | 通报完毕（2026-09-01 amp：注册表已修订入 README，裁决随信通报） |
+| 2026-09-02 | [`kfmv4-review-shell-apk-verdict.md`](kfmv4-review-shell-apk-verdict.md) | kfmv4-shell-apk-nz-response.md | 已回应（2026-09-02 评审：并存/三元组端口/CDP 观测延伸三点全认可，批准开工。） |
+| 2026-09-02 | [`kfmv4-shell-apk-nz-response.md`](kfmv4-shell-apk-nz-response.md) | kfmv4-review-kfmv4-shell-apk-notice.md | 已回应（2026-09-02 评审：三点全认可批准开工；详见 kfmv4-review-shell-apk-verdict.md。端口登记+验收五条照执行，首图单独知会。） |
 <!-- gen:agent-inbox:end -->
