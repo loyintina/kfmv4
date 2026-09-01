@@ -1,18 +1,11 @@
 /**
- * tests/browser/tmux-tabs.test.mjs — tmux 标签条 A 档考题（宪法 §6 Step 2
- * client 侧，2026-09-01）。全真链路：真服务器 + 真 tmux + 真 WS。
+ * tests/browser/tmux-tabs.test.mjs — tmux 标签条 A 档考卷（宪法 §6 Step 2
+ * client 侧，2026-09-01；v2 词汇表统一+时序钉）。全真链路：真服务器+
+ * 真 tmux+真 WS。状态机清单蓝本=docs/tmux-tabs-v2-state-machine.md。
  *
- * 考试会话 kfm-exam-browser 由**页面自身 PTY 注入**创建（P0 钩子的
- * 战斗应用）——考卷进程在手机上，tmux 在服务器上，注入即远程建会话。
- *
- * 钉五件：
- *   ①无会话→标签条隐藏（tmux-exit→hidden 语义）
- *   ②注入建会话→3s 重试腿重开通道→把手出现+展开见 alpha 标签
- *   ③注入 new-window→推送刷新 beta 标签出现
- *   ④点 alpha 标签→select 帧发出（lastSelected）+推送回 active 位翻转
- *   ⑤kernel 注册表在案（tmux-tabs 挂宪法 §1 契约）
- *
- * 跑法：手机 proot，KFM_NZ_URL=http://127.0.0.1:8023/。
+ * 钉：①T12/T13 无会话隐藏+重试腿 ②T1 把手 ③展开 ④E4 推送刷新
+ * ⑤T2 select+P4 停 EXPANDED+时序钉（≤800ms）⑥契约注册
+ * ⑦自观测环（词汇表统一：HIDDEN/HANDLE/EXPANDED）
  */
 import { launchBrowser } from './launch.mjs';
 
@@ -34,39 +27,38 @@ const tabs = () => page.evaluate(() => {
   return { kind: el?.getAttribute('data-tmux-tabs') ?? null, rt };
 });
 
-// ① 无会话→隐藏：先清上一轮残留（崩卷可能留下考试会话）——经页面
-// PTY 杀掉，等 tmux-exit 推送→hidden（顺带钉 exit→隐藏语义）
+// ① 无会话→HIDDEN：先清上一轮残留（经页面 PTY 杀），等 tmux-exit 推送
 await inject('tmux kill-session -t kfm-exam-browser 2>/dev/null; true\r');
 let s1 = null;
 for (let i = 0; i < 12; i++) {
   await page.waitForTimeout(500);
   s1 = await tabs();
-  if (s1.kind === 'hidden') break;
+  if (s1.kind === 'HIDDEN') break;
 }
-check('①无会话→标签条隐藏（hidden 语义）', s1.kind === 'hidden' && s1.rt?.visible === false,
-      `kind=${s1.kind} visible=${s1.rt?.visible}`);
+check('①无会话→HIDDEN（隐藏语义）', s1.kind === 'HIDDEN' && s1.rt?.state === 'HIDDEN',
+      `kind=${s1.kind} state=${s1.rt?.state}`);
 
-// ② 注入建会话→重试腿重开→把手/标签出现
+// ② T13 注入建会话→重试腿重开→HANDLE 出现
 await inject('tmux new-session -d -s kfm-exam-browser -n alpha\r');
 let s2 = null;
-for (let i = 0; i < 24; i++) { // 最多 12s（3s 重试腿 + 推送）
+for (let i = 0; i < 24; i++) {
   await page.waitForTimeout(500);
   s2 = await tabs();
-  if (s2.kind === 'handle' || s2.kind === 'bar') break;
+  if (s2.kind === 'HANDLE' || s2.kind === 'EXPANDED') break;
 }
-check('②注入建会话→重试腿重开通道→标签条出现', s2?.kind === 'handle' || s2?.kind === 'bar',
+check('②T13 重试腿重开通道→HANDLE', s2?.kind === 'HANDLE',
       `kind=${s2?.kind} wins=${JSON.stringify(s2?.rt?.windows?.map((w) => w.name))}`);
 
-// ③ 展开标签排（点把手）
-if (s2?.kind === 'handle') {
-  await page.click('[data-tmux-tabs="handle"]');
+// ③ T1 点把手→EXPANDED
+if (s2?.kind === 'HANDLE') {
+  await page.click('[data-tmux-tabs="HANDLE"]');
   await page.waitForTimeout(300);
 }
 const s3 = await tabs();
-check('③点把手→展开标签排（alpha 标签在列）', s3.kind === 'bar' && s3.rt?.windows?.some((w) => w.name === 'alpha'),
+check('③T1 点把手→EXPANDED（alpha 在列）', s3.kind === 'EXPANDED' && s3.rt?.windows?.some((w) => w.name === 'alpha'),
       `kind=${s3.kind} wins=${JSON.stringify(s3.rt?.windows?.map((w) => w.name))}`);
 
-// ④ 注入 new-window→推送 beta 标签
+// ④ E4 注入 new-window→推送刷新 beta
 await inject('tmux new-window -t kfm-exam-browser -n beta\r');
 let s4 = null;
 for (let i = 0; i < 24; i++) {
@@ -74,45 +66,46 @@ for (let i = 0; i < 24; i++) {
   s4 = await tabs();
   if (s4.rt?.windows?.some((w) => w.name === 'beta')) break;
 }
-check('④注入 new-window→推送刷新 beta 标签', s4?.rt?.windows?.some((w) => w.name === 'beta'),
+check('④E4 推送刷新→beta 标签', s4?.rt?.windows?.some((w) => w.name === 'beta'),
       `wins=${JSON.stringify(s4?.rt?.windows?.map((w) => w.name))}`);
 
-// ⑤ 点非聚焦 alpha 标签→select 发出+active 翻转+标签排必停 EXPANDED（P4）
+// ⑤ T2 点非聚焦 alpha→select+active 翻转+停 EXPANDED（P4）+时序钉≤800ms
 const alphaId = s4.rt.windows.find((w) => w.name === 'alpha').id;
+let elapsed = -1;
+await page.evaluate(() => { window.__t0 = Date.now(); });
 const chip = page.locator(`[data-tmux-id="${alphaId}"]`);
 await chip.click();
 let s5 = null;
-for (let i = 0; i < 20; i++) {
-  await page.waitForTimeout(400);
+for (let i = 0; i < 40; i++) { // 100ms 步进，最长 4s
+  await page.waitForTimeout(100);
   s5 = await tabs();
   const a = s5.rt?.windows?.find((w) => w.id === alphaId);
-  if (a?.active === true) break;
+  if (a?.active === true) { elapsed = await page.evaluate(() => Date.now() - window.__t0); break; }
 }
-check('⑤点非聚焦标签→select+active 翻转+停 EXPANDED（P4）',
+check('⑤T2 非聚焦点选→select+active 翻转+停 EXPANDED+时序≤800ms',
       s5.rt?.lastSelected === alphaId && s5.rt?.windows?.find((w) => w.id === alphaId)?.active === true
-        && s5.kind === 'bar',
-      `lastSelected=${s5.rt?.lastSelected} target=${alphaId} kind=${s5.kind}`);
+        && s5.kind === 'EXPANDED' && elapsed >= 0 && elapsed <= 800,
+      `last=${s5.rt?.lastSelected} kind=${s5.kind} elapsed=${elapsed}ms`);
 
 // ⑥ kernel 注册表在案
 const reg = await page.evaluate(() => window.__kfmNzKernel?.list?.() ?? null);
 check('⑥kernel 注册表在案（tmux-tabs 挂宪法契约）', Array.isArray(reg) && reg.includes('tmux-tabs'),
       `list=${JSON.stringify(reg)}`);
 
-// ⑦ 自观测环（2026-09-01 用户纠偏「自观测先于基建」）：历史环必须忠实
-// 记录形态迁移——handle→bar 推进可见；环末拍=当前事实，与实时 DOM
-// 互证（真相重取，不吃旧快照）
+// ⑦ 自观测环（修正三：词汇表统一）——迁移序列忠实+末拍与实时 DOM 互证
 const s7 = await tabs();
 const hist = s7.rt?.history ?? [];
-const kinds = hist.map((h) => h.kind);
+const states = hist.map((h) => h.state);
 const domNow = await page.evaluate(() => document.querySelector('[data-tmux-tabs]')?.getAttribute('data-tmux-tabs') ?? null);
-const sawBar = kinds.includes('bar');
-const sawHandle = kinds.includes('handle');
-const lastMatchesDom = hist.length > 0 && hist[hist.length - 1].kind === domNow;
-check('⑦自观测环：形态迁移序列忠实（handle→bar 推进+末拍与实时 DOM 互证）',
-      sawBar && sawHandle && lastMatchesDom,
-      `kinds=${JSON.stringify(kinds.slice(-6))} last=${kinds.at(-1)} domNow=${domNow}`);
+const sawEXP = states.includes('EXPANDED');
+const sawHDL = states.includes('HANDLE');
+const vocabOk = states.every((s) => ['HIDDEN', 'HANDLE', 'EXPANDED'].includes(s));
+const lastMatchesDom = hist.length > 0 && hist[hist.length - 1].state === domNow;
+check('⑦自观测环：词汇表统一+迁移序列忠实+末拍互证',
+      sawEXP && sawHDL && vocabOk && lastMatchesDom,
+      `states=${JSON.stringify(states.slice(-6))} last=${states.at(-1)} domNow=${domNow}`);
 
-// 清理考试会话（经页面 PTY，考卷进程不需要 tmux CLI）——崩卷也不残留
+// 清理考试会话（经页面 PTY）——崩卷也不残留
 try {
   await inject('tmux kill-session -t kfm-exam-browser\r');
   await page.waitForTimeout(800);
