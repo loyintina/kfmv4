@@ -1875,3 +1875,16 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   transferSize C 档。运维附记：10:40 四 kimi 会话齐重启（非 OOM，
   uptime 连续；15min 均值 2.39/4 核=多线并发的正常浪）；na 线 8021
   隧道目标未起在刷 sshd 告警（na 需自查）。
+- 2026-09-01 · **宪法 §6 Step 2 server 侧：tmux 控制通道落地**
+  （src/server/tmux-connection.ts，考卷 tmux-connection.test.ts 4 钉，
+  server 侧 100/100）。`tmux -C attach` 第二 PTY=结构化事实源：块协议
+  （%begin/%end 包命令输出）+%通知（v0 不逐型解析，任意通知→debounce
+  重拉 list-windows 全量兜底，%output 洪流显式忽略）。考卷真 tmux 打
+  （自建一次性考试会话，不碰用户 dsh/na），钉：列表同步/外部扰动推送
+  （new-window+rename）/通道内 select-window/干净收尸（不误杀会话）。
+  红先与调试战果：①`%begin` 裸 return 忘置 inBlock——块内数据全被当
+  噪声丢，考卷超时红；②tmux 控制模式输出转义：不可见字符按八进制
+  出线（\x1f→字面 \037），按原字节 split 永远切不开，name 全空——
+  补 tmuxUnescape（\NNN 八进制+\\ 还原）。两病皆考卷当场抓获。
+  待办：WS 桥开门（mountTmuxConnection 已备未挂）+客户端顶部覆盖条
+  React 插件=Step 2 收口。
