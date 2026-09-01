@@ -16,6 +16,10 @@ await build({
   outfile: 'public/bundle.js',
   target: ['es2019'],
   minify: true,
+  // React 唯一组件系统（2026-09-01 用户拍板）：jsx 走 runtime automatic，
+  // .tsx 面板插件直接写 JSX；终端渲染核在 ref 边界内保持自有命令式
+  // 帧调度（自有代码非黑盒，React 不进边界内=无双运行时竞态）。
+  jsx: 'automatic',
   define: { KFM_NZ_BUILD_TIME: JSON.stringify(new Date().toISOString()) },
 });
 

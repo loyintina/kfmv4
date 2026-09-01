@@ -14,6 +14,8 @@
   "dependencies": {
     "cordis": "4.0.0-rc.8",
     "node-pty-prebuilt-multiarch": "0.10.1-pre.5",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "ws": "^8.21.3"
   },
   "devDependencies": {
