@@ -202,6 +202,95 @@ check('⑬T11 拖动换序→推送顺序翻转（beta 到首位）',
       s13?.rt?.windows?.[0]?.name === 'beta',
       `order=${JSON.stringify(s13?.rt?.windows?.map((w) => w.name))}`);
 
+// ========== 附窗接线四钉（T2a/T2/T3/T3b，2026-09-01 用户二次仲裁）==========
+// 终端本体=裸 shell；标签条点选语义以 attached（终端是否 attach 在会话上）为条件：
+//   未附+点任意标签 → 注入 attach+select（整页切窗）
+//   已附+点非聚焦   → select 切窗（停 EXPANDED）
+//   已附+点聚焦     → 注入 Ctrl-B d detach → 回终端态
+// 观测：屏幕真话（__kfmNzTermScreen：状态行/TABMARK 标记）×钩子（attached）互证
+
+// 预埋：两窗各自屏幕标记（send-keys 经页面 shell 的 tmux CLI，服务器侧执行）
+const sh2 = (t) => page.evaluate((x) => window.__kfmNzTermInject?.(x), t);
+await sh2(`tmux send-keys -t kfm-exam-browser:alpha 'echo TABMARK-ALPHA && sleep 300' Enter\r`);
+await sh2(`tmux new-window -t kfm-exam-browser -n beta\r`);
+await sh2(`tmux send-keys -t kfm-exam-browser:beta 'echo TABMARK-BETA && sleep 300' Enter\r`);
+await sh2(`tmux set -w automatic-rename off -t kfm-exam-browser:alpha\r`);
+await sh2(`tmux set -w automatic-rename off -t kfm-exam-browser:beta\r`);
+await page.waitForTimeout(800);
+
+// 展开（T1）：此刻应 EXPANDED 且 attached=false（未附）
+await page.click('[data-tmux-tabs="HANDLE"]');
+await page.waitForTimeout(300);
+const sA = await tabs();
+check('⑭T2a前置：EXPANDED 且 attached=false（词汇表+附窗字段）',
+      sA.kind === 'EXPANDED' && sA.rt?.attached === false,
+      `kind=${sA.kind} attached=${sA.rt?.attached}`);
+
+// P-C：未附+点聚焦标签（alpha）→ attach+显示该窗（屏幕真话）
+const t0pc = Date.now();
+await page.click('[data-tmux-id="' + sA.rt.windows.find((w) => w.name === 'alpha').id + '"]');
+let pc = null, pcMs = -1;
+for (let i = 0; i < 30; i++) {
+  await page.waitForTimeout(150);
+  pc = await tabs();
+  const scr = await page.evaluate(() => window.__kfmNzTermScreen());
+  if (scr.includes('TABMARK-ALPHA') && scr.includes('kfm-exam-browser')) { pcMs = Date.now() - t0pc; break; }
+}
+const pcFinal = await tabs();
+check('P-C 未附点聚焦标签→attach（屏幕真话：状态行+标记）',
+      pc !== null && pcMs > 0 && pcFinal.rt?.attached === true && pcFinal.rt?.state === 'EXPANDED',
+      `attach+切窗 ${pcMs}ms attached=${pcFinal.rt?.attached}`);
+
+// T2/P-A：已附+点非聚焦 beta→select 切窗（屏幕真话 ≤800ms）
+const betaId = pcFinal.rt.windows.find((w) => w.name === 'beta').id;
+const t0pa = Date.now();
+await page.click(`[data-tmux-id="${betaId}"]`);
+let pa = null, paMs = -1;
+for (let i = 0; i < 16; i++) {
+  await page.waitForTimeout(100);
+  pa = await tabs();
+  const scr = await page.evaluate(() => window.__kfmNzTermScreen());
+  if (scr.includes('TABMARK-BETA')) { paMs = Date.now() - t0pa; break; }
+}
+const paFinal = await tabs();
+check('P-A 已附点非聚焦→切窗（屏幕 TABMARK-BETA）+停 EXPANDED+时序≤800ms',
+      pa !== null && paMs > 0 && paMs <= 800 && paFinal.rt?.attached === true && paFinal.kind === 'EXPANDED',
+      `切窗 ${paMs}ms kind=${paFinal.kind} attached=${paFinal.rt?.attached}`);
+
+// P-B：已附+点聚焦 beta→detach 回终端态（状态行消失+HANDLE+attached=false）
+const focusedNow = paFinal.rt.windows.find((w) => w.active);
+const t0pb = Date.now();
+await page.click(`[data-tmux-id="${focusedNow.id}"]`);
+let pb = null, pbMs = -1;
+for (let i = 0; i < 30; i++) {
+  await page.waitForTimeout(150);
+  pb = await tabs();
+  const scr = await page.evaluate(() => window.__kfmNzTermScreen());
+  if (!scr.includes('kfm-exam-browser') && pb.rt?.attached === false) { pbMs = Date.now() - t0pb; break; }
+}
+const pbScreen = await page.evaluate(() => window.__kfmNzTermScreen());
+check('P-B 已附点聚焦标签→detach 回终端态（状态行消失+HANDLE）',
+      pb !== null && pbMs > 0 && pbMs <= 1500 && pb.rt?.attached === false && pb.kind === 'HANDLE'
+        && !pbScreen.includes('kfm-exam-browser'),
+      `detach ${pbMs}ms attached=${pb.rt?.attached} kind=${pb.kind}`);
+
+// P-C2：脱附态再点非聚焦标签→重新 attach（T2a 门：进出自由）
+await page.click('[data-tmux-tabs="HANDLE"]');
+await page.waitForTimeout(300);
+const t0pc2 = Date.now();
+await page.click(`[data-tmux-id="${betaId}"]`);
+let pc2 = null, pc2Ms = -1;
+for (let i = 0; i < 30; i++) {
+  await page.waitForTimeout(150);
+  pc2 = await tabs();
+  const scr = await page.evaluate(() => window.__kfmNzTermScreen());
+  if (scr.includes('TABMARK-BETA') && scr.includes('kfm-exam-browser')) { pc2Ms = Date.now() - t0pc2; break; }
+}
+const pc2Final = await tabs();
+check('P-C2 脱附态点标签→重新 attach（进出自由）',
+      pc2 !== null && pc2Ms > 0 && pc2Final.rt?.attached === true && pc2Final.rt?.state === 'EXPANDED',
+      `re-attach ${pc2Ms}ms attached=${pc2Final.rt?.attached}`);
+
 // 清理考试会话（经页面 PTY）——崩卷也不残留
 try {
   await inject('tmux kill-session -t kfm-exam-browser\r');

@@ -171,6 +171,7 @@ function TmuxTabs(props: {
   dragId: string | null;
   onExpand: (v: boolean) => void;
   onSelect: (id: string) => void;
+  onChipClick: (w: TmuxWindow) => void;
   onNewConfirm: (name: string) => void;
   onCloseConfirm: (w: TmuxWindow) => void;
   onOverlayCancel: () => void;
@@ -246,7 +247,7 @@ function TmuxTabs(props: {
     createElement('div', {
       'data-tmux-win': w.name,
       'data-tmux-id': w.id,
-      onClick: (e: ReactMouseEvent) => chipClick(e, w),
+      onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onChipClick(w); },
       onPointerDown: (e: ReactPointerEvent) => onChipPointerDown(e, w),
       onPointerMove: onChipPointerMove,
       onPointerUp: onChipPointerUp,
@@ -277,6 +278,7 @@ export interface TmuxTabsRuntime {
   overlay: 'OVERLAY_NEW' | 'OVERLAY_CLOSE' | null;
   lastSelected: string;
   order: string[];
+  attached: boolean;
   history: Array<{ t: number; state: string; expanded: boolean; wins: number }>;
 }
 
@@ -304,6 +306,32 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
         const linkRef = useRef<TmuxLink | null>(null);
         const drag = useRef<{ id: string; x0: number; holdTimer?: ReturnType<typeof setTimeout>; dragging: boolean } | null>(null);
         const orderRef = useRef<string[]>([]);
+        // 附窗账本（清单 §二·b）：终端是否 attach 在会话上。注入通道=公共
+        // 契约钩子 __kfmNzTermInject（attach=tmux new-session -A；detach=Ctrl-B d）。
+        const attachedRef = useRef(false);
+        const termInject = (s2: string): void => {
+          (window as unknown as Record<string, unknown>).__kfmNzTermInject?.(s2);
+        };
+        const enterTmux = (w: TmuxWindow): void => {
+          linkRef.current?.select(w.id); // 会话当前窗=目标，attach 即显示
+          termInject(`tmux new-session -A -s ${session}\r`);
+          attachedRef.current = true;
+          setExpanded(true); // T2a/T3b 终点 EXPANDED
+        };
+        const leaveTmux = (): void => {
+          termInject('\u0002d'); // Ctrl-B d：TUI 运行中也安全
+          attachedRef.current = false;
+          setExpanded(false); // T3 终点 HANDLE（回终端视图）
+        };
+        const onChipClick = (w: TmuxWindow): void => {
+          // 清单 §二·b：附窗条件点选语义
+          if (attachedRef.current) {
+            if (w.active) leaveTmux(); // T3：点聚焦=detach 回终端态
+            else linkRef.current?.select(w.id); // T2：切窗，停 EXPANDED（P4）
+          } else {
+            enterTmux(w); // T2a/T3b：未附时点任意标签=attach 并显示
+          }
+        };
 
         useEffect(() => {
           const link = openTmuxLink(session, () => {
@@ -326,6 +354,7 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
           overlay: overlay === null ? null : overlay.kind === 'new' ? 'OVERLAY_NEW' : 'OVERLAY_CLOSE',
           lastSelected: linkRef.current?.lastSelected ?? '',
           order: [...orderRef.current],
+          attached: attachedRef.current,
           history: [...ring],
         };
         push({ t: Date.now(), state, expanded, wins: windows.length });
@@ -397,6 +426,7 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
           onExpand, onSelect, onNewConfirm, onCloseConfirm, onOverlayCancel,
           onChipPointerDown, onChipPointerMove, onChipPointerUp, onAskClose,
           onPlus: () => setOverlay({ kind: 'new' }),
+          onChipClick,
         });
       }
       const root = createRoot(slot);
