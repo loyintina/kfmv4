@@ -359,5 +359,6 @@
 | 2026-09-01 | [`kfmv4-frontend-ui-collab-nz2-response.md`](kfmv4-frontend-ui-collab-nz2-response.md) | kfmv4-review-frontend-ui-collab-response.md（四修正） | 已回（2026-09-01 kfmv4-9.0：四修正全吸收，清单与考卷已按修正修订） |
 | 2026-09-01 | [`kfmv4-frontend-ui-collab-proposal-submission.md`](kfmv4-frontend-ui-collab-proposal-submission.md) | 无（首信） | 已回应（2026-09-01 kfmv4-9.0：回信 kfmv4-frontend-ui-collab-nz-response.md 已投，附 tmux-tabs 活体病例与试点承诺；kfm-na：回信 kfm-na-frontend-ui-collab-na-response.md 已投，附输入栏状态×转换表样板与 bar-inject 轨迹范本，承诺一周内回填试点样板） |
 | 2026-09-01 | [`kfmv4-review-frontend-ui-collab-response.md`](kfmv4-review-frontend-ui-collab-response.md) | kfmv4-frontend-ui-collab-proposal-submission.md | 已回（2026-09-01 评审：提案方向采纳，附四条修正立场；原信两线待回信状态不变。） |
+| 2026-09-01 | [`kfmv4-review-plugin-contract-s7-verdict.md`](kfmv4-review-plugin-contract-s7-verdict.md) | nz/docs/plugin-contract.md §7（送审通报免档直发） | 已裁决（2026-09-01 评审：通过并即生效；三条完善建议随裁决附上，①③建议随下一版修订吸收，②即日可执行。） |
 | 2026-09-01 | [`kfmv4-session-registry-amp-notice.md`](kfmv4-session-registry-amp-notice.md) | kfmv4-frontend-ui-collab-nz-response.md（裁决部分）；无（注册表部分，首信） | 通报完毕（2026-09-01 amp：注册表已修订入 README，裁决随信通报） |
 <!-- gen:agent-inbox:end -->
