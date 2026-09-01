@@ -7,6 +7,7 @@
 import { build } from 'esbuild';
 import { createHash } from 'crypto';
 import { readFileSync, statSync, writeFileSync } from 'fs';
+import { gzipSync, brotliCompressSync, constants as zlibConstants } from 'node:zlib';
 
 await build({
   entryPoints: ['src/client/main.ts'],
@@ -33,4 +34,14 @@ const hash = createHash('sha256').update(readFileSync('public/bundle.js')).diges
 const html = readFileSync('public/index.html', 'utf8');
 const stamped = html.replace(/bundle\.js(\?v=[a-f0-9]{8})?/, `bundle.js?v=${hash}`);
 if (stamped !== html) writeFileSync('public/index.html', stamped);
-console.log(`[build] OK bundle.js ${size} bytes (v=${hash})`);
+
+// 编码协商预压缩（2026-09-01 bundle 增重插曲：慢隧道首载超考卷预算）：
+// gz/br 兄弟文件与 bundle 同生同灭，server 静态层见兄弟+客户端
+// Accept-Encoding 才伺服（无兄弟自动回退原文，旧资源不受影响）。
+// 实测 281KB→gzip 90KB/br 79KB（32%/28%）。
+const bundle = readFileSync('public/bundle.js');
+writeFileSync('public/bundle.js.gz', gzipSync(bundle, { level: 9 }));
+writeFileSync('public/bundle.js.br', brotliCompressSync(bundle, {
+  params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 11 },
+}));
+console.log(`[build] OK bundle.js ${size} bytes (v=${hash}) gzip=${gzipSync(bundle, { level: 9 }).length} br=${brotliCompressSync(bundle, { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 11 } }).length}`);

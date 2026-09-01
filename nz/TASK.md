@@ -1864,3 +1864,14 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   慢隧道首载可能超考卷 goto 预算（scrollback 首跑 0/5 瞬态，重跑全
   绿实证非代码回归）——后续缓解候选：服务器 gzip/分包/考卷超时放宽。
   下一刀：Step 2 tmux 标签条（顶部覆盖条，首个 React 插件）。
+- 2026-09-01 · **编码协商刀：bundle 传输 281KB→79KB**（build.mjs 预压缩
+  gz/br+server 静态 Accept-Encoding 协商；server.test.ts 三钉红先
+  →96/96 全绿）。背景：Step 1 后 bundle 85→281KB，慢隧道首载超考卷
+  预算（scrollback 首跑 0/5 瞬态）。方案=构建期预压缩（gzip -9 90KB/
+  br -11 79KB，零运行时压缩成本）+静态层按协商发兄弟文件+Vary；无
+  协商/无兄弟=原文零影响。验收：server 96/96（三钉：原文等字节/
+  gzip≤40%+Vary/br 优先更小）+nz-restart 闭环+线上 curl 实证
+  （content-encoding: br、78,682B）。待隧道恢复：手机回归+真机
+  transferSize C 档。运维附记：10:40 四 kimi 会话齐重启（非 OOM，
+  uptime 连续；15min 均值 2.39/4 核=多线并发的正常浪）；na 线 8021
+  隧道目标未起在刷 sshd 告警（na 需自查）。

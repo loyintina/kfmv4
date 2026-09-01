@@ -16,7 +16,7 @@
  */
 import { createServer, type Server } from 'node:http';
 import { readFile, stat, appendFile } from 'node:fs/promises';
-import { existsSync, unlinkSync } from 'node:fs';
+import { existsSync, unlinkSync, readFileSync } from 'node:fs';
 import { join, normalize, extname, resolve, sep, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Context } from 'cordis';
@@ -159,6 +159,23 @@ export function createNzServer(): Server {
         const NO_CACHE_BASE = new Set(['splash-core.js', 'kfm_term_core.js', 'kfm_term_core_bg.wasm']);
         const immutable = !NO_CACHE_BASE.has(basename(abs)) &&
           ['.ttf', '.woff2', '.wasm', '.js', '.css', '.png', '.svg', '.map'].includes(ext);
+        // 编码协商（2026-09-01 bundle 增重插曲）：构建期预压缩兄弟文件
+        // （bundle.js.gz/.br，build.mjs 同生同灭）按 Accept-Encoding 伺服；
+        // 无协商/无兄弟=原文，旧资源零影响。Vary 防中间层缓存串编。
+        // 原始字节直出不过 node 压缩（零运行时成本，压缩账全在构建期）。
+        let payload = buf;
+        const contentHeaders: Record<string, string> = {};
+        if (['.js', '.mjs', '.css', '.html', '.json', '.svg', '.map', '.wasm'].includes(ext)) {
+          contentHeaders.vary = 'Accept-Encoding';
+          const accept = String(req.headers['accept-encoding'] ?? '');
+          if (accept.includes('br') && existsSync(abs + '.br')) {
+            payload = readFileSync(abs + '.br');
+            contentHeaders['content-encoding'] = 'br';
+          } else if (accept.includes('gzip') && existsSync(abs + '.gz')) {
+            payload = readFileSync(abs + '.gz');
+            contentHeaders['content-encoding'] = 'gzip';
+          }
+        }
         res.writeHead(200, {
           'content-type': MIME[ext] ?? 'application/octet-stream',
           'last-modified': st.mtime.toUTCString(),
@@ -168,8 +185,9 @@ export function createNzServer(): Server {
           'cache-control': ext === '.html' || ext === '.json' || !immutable
             ? 'no-cache'
             : 'public, max-age=31536000, immutable',
+          ...contentHeaders,
         });
-        res.end(buf);
+        res.end(payload);
       })
       .catch(() => {
         res.writeHead(404).end('not found');

@@ -75,3 +75,67 @@ test('服务端 cordis 根总线：hello 见证在案，注册/清理链可复�
 });
 
 const flush0 = () => new Promise((r) => setTimeout(r, 0));
+
+// ========== 编码协商（2026-09-01 bundle 增重插曲：慢隧道首载超考卷预算，
+// 修法=构建期预压缩 .gz/.br + 静态服务按 Accept-Encoding 伺服）==========
+// 用 node:http 原始请求拿未解码字节——fetch(undici) 会透明解压，量不到线上级体积。
+
+import { get as httpGet } from 'node:http';
+import { readFileSync } from 'node:fs';
+
+interface RawResp { status?: number; headers: Record<string, string | string[] | undefined>; bytes: number }
+function rawGet(port: number, path: string, headers: Record<string, string>): Promise<RawResp> {
+  return new Promise((res, rej) => {
+    const req = httpGet({ host: '127.0.0.1', port, path, headers }, (r) => {
+      const chunks: Buffer[] = [];
+      r.on('data', (c: Buffer) => chunks.push(c));
+      r.on('end', () => res({ status: r.statusCode, headers: r.headers, bytes: Buffer.concat(chunks).length }));
+    });
+    req.on('error', rej);
+  });
+}
+
+group('server 编码协商（预压缩兄弟文件伺服）');
+
+test('无 Accept-Encoding → 原文，无 content-encoding', async () => {
+  const server = createNzServer();
+  const port = await listen(server);
+  try {
+    const r = await rawGet(port, '/bundle.js', {});
+    assert(r.status === 200, '应 200');
+    assert(!r.headers['content-encoding'], '无协商不得发 content-encoding');
+    const raw = readFileSync(new URL('../public/bundle.js', import.meta.url));
+    assert(r.bytes === raw.length, `应与原文等字节（${r.bytes} vs ${raw.length}）`);
+  } finally {
+    server.close();
+  }
+});
+
+test('Accept-Encoding: gzip → Content-Encoding: gzip + Vary + 体积≤原文 40%', async () => {
+  const server = createNzServer();
+  const port = await listen(server);
+  try {
+    const r = await rawGet(port, '/bundle.js', { 'accept-encoding': 'gzip' });
+    assert(r.status === 200, '应 200');
+    assert(r.headers['content-encoding'] === 'gzip', `应 content-encoding: gzip，实际 ${r.headers['content-encoding']}`);
+    const vary = String(r.headers.vary ?? '').toLowerCase();
+    assert(vary.includes('accept-encoding'), 'Vary 应含 accept-encoding');
+    const raw = readFileSync(new URL('../public/bundle.js', import.meta.url)).length;
+    assert(r.bytes <= raw * 0.4, `压缩体 ${r.bytes} 应≤原文 ${raw} 的 40%`);
+  } finally {
+    server.close();
+  }
+});
+
+test('Accept-Encoding: gzip, br → br 优先（体积再小一档）', async () => {
+  const server = createNzServer();
+  const port = await listen(server);
+  try {
+    const br = await rawGet(port, '/bundle.js', { 'accept-encoding': 'gzip, br' });
+    assert(br.headers['content-encoding'] === 'br', `br 在前应发 br，实际 ${br.headers['content-encoding']}`);
+    const gz = await rawGet(port, '/bundle.js', { 'accept-encoding': 'gzip' });
+    assert(br.bytes <= gz.bytes, `br (${br.bytes}) 应≤gzip (${gz.bytes})`);
+  } finally {
+    server.close();
+  }
+});
