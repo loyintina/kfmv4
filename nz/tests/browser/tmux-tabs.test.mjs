@@ -77,7 +77,7 @@ for (let i = 0; i < 24; i++) {
 check('④注入 new-window→推送刷新 beta 标签', s4?.rt?.windows?.some((w) => w.name === 'beta'),
       `wins=${JSON.stringify(s4?.rt?.windows?.map((w) => w.name))}`);
 
-// ⑤ 点 alpha 标签→select 发出+active 位翻转（推送回证）
+// ⑤ 点非聚焦 alpha 标签→select 发出+active 翻转+标签排必停 EXPANDED（P4）
 const alphaId = s4.rt.windows.find((w) => w.name === 'alpha').id;
 const chip = page.locator(`[data-tmux-id="${alphaId}"]`);
 await chip.click();
@@ -88,14 +88,29 @@ for (let i = 0; i < 20; i++) {
   const a = s5.rt?.windows?.find((w) => w.id === alphaId);
   if (a?.active === true) break;
 }
-check('⑤点 alpha 标签→select 发出+active 位翻转（推送回证）',
-      s5.rt?.lastSelected === alphaId && s5.rt?.windows?.find((w) => w.id === alphaId)?.active === true,
-      `lastSelected=${s5.rt?.lastSelected} target=${alphaId}`);
+check('⑤点非聚焦标签→select+active 翻转+停 EXPANDED（P4）',
+      s5.rt?.lastSelected === alphaId && s5.rt?.windows?.find((w) => w.id === alphaId)?.active === true
+        && s5.kind === 'bar',
+      `lastSelected=${s5.rt?.lastSelected} target=${alphaId} kind=${s5.kind}`);
 
 // ⑥ kernel 注册表在案
 const reg = await page.evaluate(() => window.__kfmNzKernel?.list?.() ?? null);
 check('⑥kernel 注册表在案（tmux-tabs 挂宪法契约）', Array.isArray(reg) && reg.includes('tmux-tabs'),
       `list=${JSON.stringify(reg)}`);
+
+// ⑦ 自观测环（2026-09-01 用户纠偏「自观测先于基建」）：历史环必须忠实
+// 记录形态迁移——handle→bar 推进可见；环末拍=当前事实，与实时 DOM
+// 互证（真相重取，不吃旧快照）
+const s7 = await tabs();
+const hist = s7.rt?.history ?? [];
+const kinds = hist.map((h) => h.kind);
+const domNow = await page.evaluate(() => document.querySelector('[data-tmux-tabs]')?.getAttribute('data-tmux-tabs') ?? null);
+const sawBar = kinds.includes('bar');
+const sawHandle = kinds.includes('handle');
+const lastMatchesDom = hist.length > 0 && hist[hist.length - 1].kind === domNow;
+check('⑦自观测环：形态迁移序列忠实（handle→bar 推进+末拍与实时 DOM 互证）',
+      sawBar && sawHandle && lastMatchesDom,
+      `kinds=${JSON.stringify(kinds.slice(-6))} last=${kinds.at(-1)} domNow=${domNow}`);
 
 // 清理考试会话（经页面 PTY，考卷进程不需要 tmux CLI）——崩卷也不残留
 try {

@@ -48,7 +48,7 @@
 
 - **单源 reducer**：五状态必须是代码中的显式状态枚举，所有转换走唯一
   transition 入口（from/to/trigger 记账）——禁止把状态散落在多个
-  useState 里（v1 教训：状态散落=不可观测）；
+  useState 里（v1 教训：状态散落=不可观测。v1 已回装观测环：渲染快照投影+与 DOM 互证，首跑即抓到 P4 违例——观测先于基建，用户纠偏 0901）；
 - **同步查询钩子**：`__kfmNzTmuxTabs()` 必须报完整机位：
   `{state, windows, activeId, expanded, overlay, lastSelected}`；
 - **转换环形缓冲**：最近 ≥50 条 `{from, to, trigger, t}` 随钩子可拉

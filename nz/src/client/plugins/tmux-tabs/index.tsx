@@ -9,7 +9,7 @@
  * 皮（React）：顶部覆盖条——默认收成 14px 小把手（零遮挡），点开 36px
  * 标签排，点标签=切窗并自动收起；无窗整条隐藏。
  */
-import { createElement, useCallback, useEffect, useRef, useState } from 'react';
+import { createElement, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { UiPlugin, UiPluginHandle } from '../../kernel/ui-kernel.js';
@@ -90,11 +90,15 @@ function TmuxTabs(props: {
 }): React.ReactElement {
   const [expanded, setExpanded] = useState(false);
   const { windows, onSelect } = props;
-  const pick = useCallback((e: ReactMouseEvent, id: string): void => {
-    e.stopPropagation();
-    onSelect(id);
-    setExpanded(false);
-  }, [onSelect]);
+  // 自观测环（2026-09-01 用户纠偏「自观测先于基建」）：每次渲染记账快照
+  // （时刻/事实形态/展开/窗数）进环形缓冲——v1 不重构内部也能被观测；
+  // 观测读数与 DOM 互证（考卷钉+真机 eval 直读）。
+  const kind = windows.length === 0 ? 'hidden' : expanded ? 'bar' : 'handle';
+  const snap = (window as unknown as Record<string, unknown>).__kfmNzTmuxTabsSnap as {
+    ring: Array<{ t: number; kind: string; expanded: boolean; wins: number }>;
+    push(s: { t: number; kind: string; expanded: boolean; wins: number }): void;
+  } | undefined;
+  if (snap) snap.push({ t: Date.now(), kind, expanded, wins: windows.length });
   if (windows.length === 0) return createElement('div', { 'data-tmux-tabs': 'hidden' });
   if (!expanded) {
     return createElement('div', {
@@ -120,7 +124,13 @@ function TmuxTabs(props: {
     key: w.id,
     'data-tmux-win': w.name,
     'data-tmux-id': w.id,
-    onClick: (e: ReactMouseEvent) => pick(e, w.id),
+    onClick: (e: ReactMouseEvent) => {
+      e.stopPropagation();
+      // 清单 T2/T3（P4）：点非聚焦标签=切窗且标签排必停 EXPANDED；
+      // 点聚焦标签=收起回把手（T3，无 select）
+      if (w.active) setExpanded(false);
+      else onSelect(w.id);
+    },
     style: {
       flex: '0 0 auto', padding: '3px 10px', borderRadius: '7px', fontSize: '12px',
       background: w.active ? BAR_ACCENT : 'rgba(51,65,85,0.85)',
@@ -135,6 +145,8 @@ export interface TmuxTabsRuntime {
   windows: TmuxWindow[];
   visible: boolean;
   lastSelected: string;
+  kind: string; // 事实形态投影：hidden | handle-or-bar（精细形态看 history 末拍）
+  history: Array<{ t: number; kind: string; expanded: boolean; wins: number }>;
 }
 
 export function createTmuxTabsPlugin(session: string): UiPlugin {
@@ -144,6 +156,13 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
       const runtimeRef: { current: TmuxTabsRuntime } = {
         current: { windows: [], visible: false, lastSelected: '' },
       };
+      // 自观测环（真源在插件侧，组件每渲染推一拍）
+      const ring: Array<{ t: number; kind: string; expanded: boolean; wins: number }> = [];
+      const push = (s: { t: number; kind: string; expanded: boolean; wins: number }): void => {
+        ring.push(s);
+        if (ring.length > 40) ring.shift();
+      };
+      (window as unknown as Record<string, unknown>).__kfmNzTmuxTabsSnap = { ring, push };
       function TabsApp(): React.ReactElement {
         const [windows, setWindows] = useState<TmuxWindow[]>([]);
         const linkRef = useRef<TmuxLink | null>(null);
@@ -156,6 +175,8 @@ export function createTmuxTabsPlugin(session: string): UiPlugin {
           windows,
           visible: windows.length > 0,
           lastSelected: linkRef.current?.lastSelected ?? '',
+          kind: windows.length === 0 ? 'hidden' : 'handle-or-bar',
+          history: ((window as unknown as Record<string, unknown>).__kfmNzTmuxTabsSnap as { ring: unknown[] } | undefined)?.ring ?? [],
         };
         return createElement(TmuxTabs, {
           windows,
