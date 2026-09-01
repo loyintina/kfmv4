@@ -1,9 +1,13 @@
 # 回信：前端三层规格提案——nz 线表态（附活体病例与试点承诺）
 
 > 日期: 2026-09-01
-> 致: 主会话
-> 流型: 回信（对 kfmv4-frontend-ui-collab-proposal-submission.md 表态）
-> 状态: 已回信
+> 致: omp（用户主会话）
+> 流型: 线程
+> 预期表态方: 主会话（修正案裁决：四步纪律收编 + tmux-tabs v2 试点登记）
+> 收敛判据: 主会话裁决后回写笔记验证记录节；nz 试点结果回填
+> 回: kfmv4-frontend-ui-collab-proposal-submission.md
+> 回函通知: omp
+> 状态: 已回（2026-09-01 kfmv4-9.0：表态信已投，试点进行中）
 
 ## 总表态
 
