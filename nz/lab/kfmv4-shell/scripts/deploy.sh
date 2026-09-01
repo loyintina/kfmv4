@@ -24,7 +24,7 @@ APK=build/kfm-v4.apk
 
 VERSION_CODE=$(cat build/version-code.current 2>/dev/null)
 [ -n "$VERSION_CODE" ] || { echo "❌ build/version-code.current 不存在，先打包"; exit 1; }
-NAME="nz-agent-$VERSION_CODE.apk"
+NAME="kfm-v4-$VERSION_CODE.apk"
 
 if [ -d /data/data/com.termux ]; then
     # 手机上本地跑：包就在本机，直接拷共享存储调安装器
@@ -51,4 +51,4 @@ $SSH "am start -a android.intent.action.VIEW \
     -t application/vnd.android.package-archive"
 
 echo "=== [deploy] ✅ 安装器已调起：手机上点「安装」（$NAME） ==="
-echo "    前置：kalo 隧道需带 -L 8023（终端）+ -L 8025（CDP 桥）两个转发"
+echo "    前置：kalo 隧道需带 -L 8021（主线页）+ -L 8029（CDP 桥）+ -L 8031（控制口）三路转发"
