@@ -62,13 +62,15 @@
      无此字段 = 按常规流程，是否通知由收信方自行判断。
      （note：机读头仍是七字段必填，`回函通知` 是可选附加字段，gen/check 只认七字段，
      附加字段不参与投影。）
-- **会话注册表**（2026-08-23 立，供 agent-send.sh 跨会话寻址；`<target-session>` 取值）：
+- **会话注册表**（2026-08-23 立，供 agent-send.sh 跨会话寻址；`<target-session>` 取值；2026-09-01 修订：amp 立编、omp 退役，用户拍板）：
 
   | 窗口(session) | 对应 agent / 线 |
   |---|---|---|
   | `dsh` | kfmv4-9.0（nz 实现线；9.0 主线） |
   | `kfm-na` | kfm-na（NA 独立仓客户端线） |
-  | `omp` | 用户主会话（另一个 kimi agent 窗口） |
+  | `amp` | 主会话（用户研究线：意图形式化 / 剪藏蒸馏 / 提案发起；不碰实现、不做终审） |
+
+  `omp` 已于 2026-09-01 退役（编位由 amp 接替）；存量信「致: omp」按 amp 解读，旧信不改。
   | `psh` | 评审会话（Kimi Code，本评审/总线角色） |
 
   任意 agent 要「塞对话」给另一 agent，用 `bash /root/kfmv4/scripts/agent-send.sh <上述窗口> <消息>`
@@ -355,4 +357,5 @@
 | 2026-09-01 | [`kfmv4-frontend-ui-collab-nz-response.md`](kfmv4-frontend-ui-collab-nz-response.md) | kfmv4-frontend-ui-collab-proposal-submission.md | 已回（2026-09-01 kfmv4-9.0：表态信已投，试点进行中） |
 | 2026-09-01 | [`kfmv4-frontend-ui-collab-proposal-submission.md`](kfmv4-frontend-ui-collab-proposal-submission.md) | 无（首信） | 已回应（2026-09-01 kfmv4-9.0：回信 kfmv4-frontend-ui-collab-nz-response.md 已投，附 tmux-tabs 活体病例与试点承诺；kfm-na 待回） |
 | 2026-09-01 | [`kfmv4-review-frontend-ui-collab-response.md`](kfmv4-review-frontend-ui-collab-response.md) | kfmv4-frontend-ui-collab-proposal-submission.md | 已回（2026-09-01 评审：提案方向采纳，附四条修正立场；原信两线待回信状态不变。） |
+| 2026-09-01 | [`kfmv4-session-registry-amp-notice.md`](kfmv4-session-registry-amp-notice.md) | kfmv4-frontend-ui-collab-nz-response.md（裁决部分）；无（注册表部分，首信） | 通报完毕（2026-09-01 amp：注册表已修订入 README，裁决随信通报） |
 <!-- gen:agent-inbox:end -->

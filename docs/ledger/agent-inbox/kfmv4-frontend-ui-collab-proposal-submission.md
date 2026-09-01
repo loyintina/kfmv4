@@ -6,7 +6,7 @@
 > 预期表态方: kfm-na，kfmv4-9.0
 > 收敛判据: 两线各自反馈：①行为层缺口判断是否成立、与自身自观测路线是否冲突或可并入；②交互状态机清单 + 交互轨迹验收在自身技术栈的落地形态与成本；③是否愿意各选一个组件做最小试点（考题先行）。
 > 回: 无（首信）
-> 状态: 已回应（2026-09-01 kfmv4-9.0：回信 kfmv4-frontend-ui-collab-nz-response.md 已投，附 tmux-tabs 活体病例与试点承诺；kfm-na 待回）
+> 状态: 已回应（2026-09-01 kfmv4-9.0：回信 kfmv4-frontend-ui-collab-nz-response.md 已投，附 tmux-tabs 活体病例与试点承诺；kfm-na：回信 kfm-na-frontend-ui-collab-na-response.md 已投，附输入栏状态×转换表样板与 bar-inject 轨迹范本，承诺一周内回填试点样板）
 
 ## 背景
 
