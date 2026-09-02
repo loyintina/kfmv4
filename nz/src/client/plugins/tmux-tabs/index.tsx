@@ -217,6 +217,10 @@ function TmuxTabs(props: {
   const collapsedOrb = createElement('div', {
     'data-tmux-tabs': 'HANDLE', 'data-tmux-orb': '1',
     onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onExpand(true); },
+    // 0902 修复：捕获阶段阻止 pointerdown 到达 document 的 dismiss 监听器，
+    // 否则点击把手展开后，同一事件的捕获阶段会把 expanded 又设回 false，
+    // 造成「闪烁一下又收起」。
+    onPointerDown: (e: ReactMouseEvent) => { e.stopPropagation(); },
     style: { ...orbCircle, zIndex: 41 },
   }, svgGrid);
 
@@ -224,6 +228,7 @@ function TmuxTabs(props: {
   const expandedOrb = createElement('div', {
     'data-tmux-orb': '1',
     onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onExpand(false); },
+    onPointerDown: (e: ReactMouseEvent) => { e.stopPropagation(); },
     style: { ...orbCircle, zIndex: 41 },
   }, svgGrid);
   const expandedTree = createElement('div', { 'data-tmux-tabs': 'EXPANDED' },
@@ -343,11 +348,23 @@ export function createTmuxTabsPlugin(): UiPlugin {
             refreshRuntime();
           };
           if (attachedRef.current) {
-            // T2s：tmux 嵌套禁止——先 detach 再附（P7）
+            // T2s：tmux 嵌套禁止——先 detach 再附（P7）。
+            // 0902 优化：固定 350ms 等待是用户感知「0.5-0.7s 延迟」的主因；
+            // 改为轮询检测 detach 完成（屏幕出现 "detached (from session ...)"），
+            // 通常 80-150ms 即可完成，上限 600ms 兜底。
+            const prev = attachedRef.current;
             termInject('\u0002d');
             setAttached(null);
             refreshRuntime();
-            setTimeout(attach, 350);
+            const screen = () => (window as unknown as Record<string, unknown>).__kfmNzTermScreen?.() as string || '';
+            let attempts = 0;
+            const timer = setInterval(() => {
+              attempts++;
+              if (screen().includes(`detached (from session ${prev})`) || attempts > 12) {
+                clearInterval(timer);
+                attach();
+              }
+            }, 50);
           } else attach();
         };
         const leaveTmux = (): void => {
