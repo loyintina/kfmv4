@@ -1,6 +1,7 @@
 /**
- * tests/browser/tmux-tabs.test.mjs — tmux 标签条 A 档考卷 v5（会话版，
- * 2026-09-02 用户四次仲裁：标签=服务器全部 tmux 会话）。
+ * tests/browser/tmux-tabs.test.mjs — tmux 标签条 A 档考卷 v6（会话版，
+ * 2026-09-02 用户五次仲裁：①标签=会话 ②＋建会话自动 attach ③展开态点
+ * 屏幕空白区域自动收起标签栏）。
  * 状态机蓝本=docs/tmux-tabs-v2-state-machine.md（0902 会话化修订）。
  * 劣化网络纪律：actUntil=幂等动作+状态轮询直到确认（守卫式：动作可能
  * 非幂等时先读态再动）。观测：屏幕真话×钩子全机位×服务器 tmux ls 互证。
@@ -62,28 +63,41 @@ const domHasDsh = await page.evaluate(() => !!document.querySelector('[data-tmux
 check('①T1 展开→会话表含 dsh（真实夹具）+EXPANDED', s1.state === 'EXPANDED' && s1.sessions?.includes('dsh') && domHasDsh,
       `state=${s1.state} sessions=${JSON.stringify(s1.sessions)} domDsh=${domHasDsh}`);
 
-// ② T4/T5 ＋建会话 kfm-exam-new：rt.sessions+服务器 tmux ls 双证+收起
+// ② T4/T5 ＋建会话 kfm-exam-new：自动 attach 并聚焦（0902 第五次仲裁）
 await page.click('[data-tmux-plus="1"]');
 await page.fill('[data-tmux-new-name]', 'kfm-exam-new');
 await page.click('[data-tmux-confirm="1"]');
 const ok2 = await actUntil(
   async () => {},
-  async () => (await rt()).sessions?.includes('kfm-exam-new'),
-  { tries: 1, settle: 6000, poll: 300 },
-);
-const s2 = await rt();
-const srv2 = serverSessions().includes('kfm-exam-new');
-check('②T5 ＋建会话→双证（rt.sessions+服务器）+收起 HANDLE',
-      ok2.ok && srv2 && s2.state === 'HANDLE' && s2.attached === null,
-      `rt=${JSON.stringify(s2.sessions)} srv=${srv2} state=${s2.state} attached=${s2.attached}`);
-
-// ③ T2 未附点标签→attach（状态行出现+附着指示落位+停 EXPANDED）
-// 守卫式：点标签=attach/detach 拨动非幂等——已附则只等屏幕，不点。
-const t03 = Date.now();
-const ok3 = await actUntil(
   async () => {
-    const r0 = await rt();
-    if (r0.attached === 'kfm-exam-new') return; // 已附未确认：不点（点了=detach）
+    const s = await screenText();
+    const r = await rt();
+    return r.sessions?.includes('kfm-exam-new') && r.attached === 'kfm-exam-new'
+           && s.includes('[kfm-exam-new]') && r.state === 'EXPANDED';
+  },
+  { tries: 1, settle: 8000, poll: 300 },
+);
+const srv2 = serverSessions().includes('kfm-exam-new');
+const s2 = await rt();
+check('②T5 ＋建会话→自动 attach 聚焦（双证+attached+state=EXPANDED）',
+      ok2.ok && srv2 && s2.state === 'EXPANDED' && s2.attached === 'kfm-exam-new',
+      `srv=${srv2} state=${s2.state} attached=${s2.attached}`);
+
+// ③ T3 点聚焦标签→detach 回终端态
+await page.click('[data-tmux-id="kfm-exam-new"]');
+const ok3 = await actUntil(
+  async () => {},
+  async () => { const s = await screenText(); const r = await rt(); return !s.includes('[kfm-exam-new]') && r.attached === null; },
+  { tries: 1, settle: 5000, poll: 300 },
+);
+const s3 = await rt();
+check('③T3 点聚焦→detach 回终端态（状态行消失+attached=null）',
+      ok3.ok && s3.attached === null, `attached=${s3.attached}`);
+
+// ④ T2 未附点标签→attach（状态行出现+附着指示落位+停 EXPANDED）
+const t04 = Date.now();
+const ok4 = await actUntil(
+  async () => {
     const kind = await page.evaluate(() => document.querySelector('[data-tmux-tabs]')?.getAttribute('data-tmux-tabs'));
     if (kind === 'HANDLE') { await page.click('[data-tmux-tabs="HANDLE"]'); await page.waitForTimeout(300); }
     try { await page.click('[data-tmux-id="kfm-exam-new"]', { timeout: 5000 }); } catch (e) {
@@ -97,22 +111,11 @@ const ok3 = await actUntil(
   async () => { const s = await screenText(); const r = await rt(); return s.includes('[kfm-exam-new]') && r.attached === 'kfm-exam-new'; },
   { tries: 2, settle: 6000, poll: 300 },
 );
-const ms3 = Date.now() - t03;
-const s3 = await rt();
-check('③T2 未附点标签→attach 进会话（状态行+attachedSession）≤8s+停 EXPANDED',
-      ok3.ok && s3.attached === 'kfm-exam-new' && s3.state === 'EXPANDED' && ms3 <= 8000,
-      `attach ${ms3}ms attached=${s3.attached} state=${s3.state}`);
-
-// ④ T3 点聚焦标签→detach 回终端态
-await page.click('[data-tmux-id="kfm-exam-new"]');
-const ok4 = await actUntil(
-  async () => {},
-  async () => { const s = await screenText(); const r = await rt(); return !s.includes('[kfm-exam-new]') && r.attached === null; },
-  { tries: 1, settle: 5000, poll: 300 },
-);
+const ms4 = Date.now() - t04;
 const s4 = await rt();
-check('④T3 点聚焦→detach 回终端态（状态行消失+attached=null）',
-      ok4.ok && s4.attached === null, `attached=${s4.attached}`);
+check('④T2 未附点标签→attach 进会话（状态行+attachedSession）≤8s+停 EXPANDED',
+      ok4.ok && s4.attached === 'kfm-exam-new' && s4.state === 'EXPANDED' && ms4 <= 8000,
+      `attach ${ms4}ms attached=${s4.attached} state=${s4.state}`);
 
 // ⑤ T2s 已附切换：附 kfm-exam-a → 点 kfm-exam-new → detach+attach 换名
 tmux(['new-session', '-d', '-s', 'kfm-exam-a']);
@@ -194,13 +197,27 @@ const s7 = await rt();
 check('⑦杀附着会话→附着清零+塌回 HANDLE', ok7.ok && s7.attached === null && s7.state === 'HANDLE',
       `attached=${s7.attached} state=${s7.state}`);
 
-// ⑧ kernel 注册表 + 自观测环词汇表 + 末拍互证
+// ⑧ T14 展开态点屏幕空白（backdrop）→收起回 HANDLE
+await page.click('[data-tmux-tabs="HANDLE"]');
+await page.waitForTimeout(300);
+await page.evaluate(() => { window.__backdropClickState = null; });
+await page.click('[data-tmux-backdrop="1"]');
+const ok8 = await actUntil(
+  async () => {},
+  async () => { const r = await rt(); return r.state === 'HANDLE' && !r.expanded; },
+  { tries: 1, settle: 3000, poll: 200 },
+);
+const dom8 = await page.evaluate(() => document.querySelector('[data-tmux-tabs]')?.getAttribute('data-tmux-tabs') ?? null);
+check('⑧T14 点屏幕空白→标签栏收起（state=HANDLE+dom=HANDLE）',
+      ok8.ok && dom8 === 'HANDLE', `state=${(await rt()).state} dom=${dom8}`);
+
+// ⑨ kernel 注册表 + 自观测环词汇表 + 末拍互证
 const reg = await page.evaluate(() => window.__kfmNzKernel?.list?.() ?? null);
-const s8 = await rt();
+const s9 = await rt();
 const hist = await page.evaluate(() => window.__kfmNzTmuxTabs?.().history ?? []);
 const states = hist.map((h) => h.state);
 const domNow = await page.evaluate(() => document.querySelector('[data-tmux-tabs]')?.getAttribute('data-tmux-tabs') ?? null);
-check('⑧kernel 注册表+自观测环词汇表统一+末拍互证',
+check('⑨kernel 注册表+自观测环词汇表统一+末拍互证',
       Array.isArray(reg) && reg.includes('tmux-tabs') && states.length > 0
         && states.every((st) => ['HANDLE', 'EXPANDED', 'OVERLAY_NEW', 'OVERLAY_CLOSE'].includes(st))
         && states[states.length - 1] === domNow,

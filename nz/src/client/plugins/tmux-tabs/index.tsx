@@ -226,7 +226,16 @@ function TmuxTabs(props: {
     onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onExpand(false); },
     style: { ...orbCircle, zIndex: 41 },
   }, svgGrid);
-  const expandedTree = createElement('div', { 'data-tmux-tabs': 'EXPANDED' }, expandedOrb, strip);
+  const expandedTree = createElement('div', { 'data-tmux-tabs': 'EXPANDED' },
+    // 0902 用户仲裁：展开后点屏幕空白区域 = 收起标签栏
+    createElement('div', {
+      'data-tmux-backdrop': '1',
+      onClick: () => onExpand(false),
+      style: { position: 'fixed', inset: 0, zIndex: 30, background: 'transparent' },
+    }),
+    expandedOrb,
+    strip,
+  );
 
   const base = createElement('div', { 'data-tmux-tabs-root': '1' },
     expanded ? expandedTree : collapsedOrb,
@@ -375,11 +384,14 @@ export function createTmuxTabsPlugin(): UiPlugin {
 
         const onNewConfirm = (name: string): void => {
           // 客户端先查重（tmux 拒绝重名=静默失败的静默源，0902 清单 T5）
-          if (name && !sessionsRef.current.some((s) => s.name === name)) linkRef.current?.newSession(name);
+          if (name && !sessionsRef.current.some((s) => s.name === name)) {
+            linkRef.current?.newSession(name);
+            // 0902 用户仲裁：建完应直接进入并聚焦到新会话，而非收起等再点
+            enterSession(name);
+          }
           overlayRef.current = null;
-          expandedRef.current = false;
           setOverlay(null);
-          setExpanded(false); // 新标签待选，收起回终端视图（T5/T6）
+          // 若重名/空名：保持展开态，让用户立即再操作；成功 attach 已由 enterSession 切 EXPANDED
           refreshRuntime();
         };
         const onCloseConfirm = (s: TmuxSessionInfo): void => {
