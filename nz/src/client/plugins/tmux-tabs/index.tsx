@@ -306,13 +306,16 @@ export function createTmuxTabsPlugin(): UiPlugin {
         const [sessions, setSessions] = useState<TmuxSessionInfo[]>([]);
         const [expanded, setExpanded] = useState(false);
         const [overlay, setOverlay] = useState<null | { kind: 'new' } | { kind: 'close'; target: TmuxSessionInfo }>(null);
+        const [attachedSession, setAttachedSession] = useState<string | null>(null);
         const linkRef = useRef<SessionsLink | null>(null);
         // 附着账本（清单 §二）：终端当前 attach 的会话名；null=终端态。
-        // 附着会话被杀（T9/外部）→ 列表推送无它 → 塌回终端态。
+        // 0902 修复：attached 同时维护 state（驱动 React 重渲染，标签聚焦
+        // 视觉立即更新）和 ref（钩子/逻辑立即读，避免异步陈旧）。
         const attachedRef = useRef<string | null>(null);
-        // 镜像 ref（0902 考卷⑤实锤：attach 只翻 ref 不动 useState=React
-        // bail-out 不重渲，render 快照钩子报陈旧值）——钩子改读镜像，
-        // ref-only 翻转处主动 refreshRuntime() 保钩子实时。
+        const setAttached = (name: string | null): void => {
+          attachedRef.current = name;
+          setAttachedSession(name);
+        };
         const expandedRef = useRef(false);
         const overlayRef = useRef<null | 'OVERLAY_NEW' | 'OVERLAY_CLOSE'>(null);
         const sessionsRef = useRef<TmuxSessionInfo[]>([]);
@@ -334,7 +337,7 @@ export function createTmuxTabsPlugin(): UiPlugin {
         const enterSession = (name: string): void => {
           const attach = (): void => {
             termInject(`tmux new-session -A -s ${name}\r`);
-            attachedRef.current = name;
+            setAttached(name);
             expandedRef.current = true;
             setExpanded(true);
             refreshRuntime();
@@ -342,14 +345,14 @@ export function createTmuxTabsPlugin(): UiPlugin {
           if (attachedRef.current) {
             // T2s：tmux 嵌套禁止——先 detach 再附（P7）
             termInject('\u0002d');
-            attachedRef.current = null;
+            setAttached(null);
             refreshRuntime();
             setTimeout(attach, 350);
           } else attach();
         };
         const leaveTmux = (): void => {
           termInject('\u0002d'); // Ctrl-B d：TUI 运行中也安全
-          attachedRef.current = null;
+          setAttached(null);
           // 0902 用户仲裁：T3 回终端态时标签排保持展开（选择态），但清掉
           // tmux 残留画面；随后 Ctrl-L 重绘 prompt，给用户「已彻底回来」
           // 的视觉暗示。
@@ -374,7 +377,7 @@ export function createTmuxTabsPlugin(): UiPlugin {
             setSessions([...link.sessions]);
             // 附着会话消失（被杀/外部）→ 塌回终端态
             if (attachedRef.current && !link.sessions.some((s) => s.name === attachedRef.current)) {
-              attachedRef.current = null;
+              setAttached(null);
               expandedRef.current = false;
               setExpanded(false);
               refreshRuntime();
@@ -422,6 +425,7 @@ export function createTmuxTabsPlugin(): UiPlugin {
 
         // 权威镜像（渲染腿）：useState 真值回写 ref + 刷钩子
         useEffect(() => {
+          attachedRef.current = attachedSession;
           expandedRef.current = expanded;
           sessionsRef.current = sessions;
           refreshRuntime();
@@ -451,7 +455,7 @@ export function createTmuxTabsPlugin(): UiPlugin {
         const onExpand = (v: boolean): void => { expandedRef.current = v; setExpanded(v); refreshRuntime(); };
 
         return createElement(TmuxTabs, {
-          sessions, expanded, attachedSession: attachedRef.current, overlay,
+          sessions, expanded, attachedSession, overlay,
           onExpand, onChipClick, onNewConfirm, onCloseConfirm, onOverlayCancel,
           onAskClose,
           onPlus: () => { overlayRef.current = 'OVERLAY_NEW'; setOverlay({ kind: 'new' }); refreshRuntime(); },
