@@ -156,17 +156,39 @@ function TmuxTabs(props: {
   // 输入状态随毛玻璃页开关清零（0901 考卷实锤：残留旧名→二次建同名）
   useEffect(() => { if (overlay?.kind === 'new') setNewName(''); }, [overlay?.kind]);
 
-  // 常驻把手（光球规格 32px 圆、左上）：点击=展开/收起切换。
-  // 收起态：把手即全部；展开态：把手仍在原位（收起开关），标签排从其右侧展开。
+  // 常驻把手（光球规格 32px 圆、左上）：展开/收起都渲染，通过 class 控制
+  // 旋转动画。收起态点击=展开；展开态点击=收起。
+  const svgGrid = createElement('svg', { width: 14, height: 14, viewBox: '0 0 14 14' },
+    createElement('rect', { x: 1, y: 1, width: 5, height: 5, fill: 'var(--kfm-ink-3)' }),
+    createElement('rect', { x: 8, y: 1, width: 5, height: 5, fill: 'var(--kfm-ink-3)' }),
+    createElement('rect', { x: 1, y: 8, width: 5, height: 5, fill: 'var(--kfm-ink-3)' }),
+    createElement('rect', { x: 8, y: 8, width: 5, height: 5, fill: 'var(--kfm-ink-3)' }));
+  const orbCircle = {
+    position: 'fixed' as const, top: 'calc(var(--sat, 0px) + 12px)', left: '12px',
+    width: '32px', height: '32px', borderRadius: '50%', background: BAR_BG,
+    border: `1px solid ${HAIRLINE}`, display: 'flex', alignItems: 'center',
+    justifyContent: 'center', cursor: 'pointer',
+    opacity: sessions.length === 0 ? 0.55 : 1,
+  };
+  const orb = createElement('div', {
+    'data-tmux-tabs': expanded ? 'EXPANDED' : 'HANDLE', 'data-tmux-orb': '1',
+    className: expanded ? 'kfm-expanded' : '',
+    onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onExpand(!expanded); },
+    onPointerDown: (e: ReactMouseEvent) => { e.stopPropagation(); },
+    style: { ...orbCircle, zIndex: 41 },
+  }, svgGrid);
 
-  // 展开排：从把手右侧展开（锚定关系），＋固定右端（新标签出现位）
-  const strip = expanded ? createElement('div', {
-    'data-tmux-tabs': 'EXPANDED',
+  // 常驻标签排：通过 class 控制伸出/收回动画（DOM 常驻，scaleX 变换）。
+  // ＋固定右端（新标签出现位）
+  const strip = createElement('div', {
+    'data-tmux-tabs': expanded ? 'EXPANDED' : 'COLLAPSED',
+    'data-tmux-strip': '1',
+    className: expanded ? 'kfm-expanded' : 'kfm-collapsed',
     style: {
       position: 'fixed', top: 'calc(var(--sat, 0px) + 12px)', left: '52px', right: '8px',
       height: '32px', background: BAR_BG, border: `1px solid ${HAIRLINE}`,
       display: 'flex', alignItems: 'center', gap: '6px', padding: '0 6px',
-      overflowX: 'auto', zIndex: 40,
+      overflowX: 'auto', zIndex: 40, transformOrigin: 'left center',
     },
     onClick: () => onExpand(false),
   },
@@ -199,52 +221,25 @@ function TmuxTabs(props: {
       border: `1px solid ${HAIRLINE}`, color: 'var(--kfm-ink)', cursor: 'pointer', fontSize: '14px',
     },
   }, '+'),
-  ) : null;
+  );
 
-  // 收起态把手（ vocabulary：HANDLE）
-  const svgGrid = createElement('svg', { width: 14, height: 14, viewBox: '0 0 14 14' },
-    createElement('rect', { x: 1, y: 1, width: 5, height: 5, fill: 'var(--kfm-ink-3)' }),
-    createElement('rect', { x: 8, y: 1, width: 5, height: 5, fill: 'var(--kfm-ink-3)' }),
-    createElement('rect', { x: 1, y: 8, width: 5, height: 5, fill: 'var(--kfm-ink-3)' }),
-    createElement('rect', { x: 8, y: 8, width: 5, height: 5, fill: 'var(--kfm-ink-3)' }));
-  const orbCircle = {
-    position: 'fixed' as const, top: 'calc(var(--sat, 0px) + 12px)', left: '12px',
-    width: '32px', height: '32px', borderRadius: '50%', background: BAR_BG,
-    border: `1px solid ${HAIRLINE}`, display: 'flex', alignItems: 'center',
-    justifyContent: 'center', cursor: 'pointer',
-    opacity: sessions.length === 0 ? 0.55 : 1,
-  };
-  const collapsedOrb = createElement('div', {
-    'data-tmux-tabs': 'HANDLE', 'data-tmux-orb': '1',
-    onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onExpand(true); },
-    // 0902 修复：捕获阶段阻止 pointerdown 到达 document 的 dismiss 监听器，
-    // 否则点击把手展开后，同一事件的捕获阶段会把 expanded 又设回 false，
-    // 造成「闪烁一下又收起」。
-    onPointerDown: (e: ReactMouseEvent) => { e.stopPropagation(); },
-    style: { ...orbCircle, zIndex: 41 },
-  }, svgGrid);
+  // 常驻 backdrop：展开后点屏幕空白区域 = 收起标签栏。
+  // pointerEvents=none：不拦截第一次点击，让终端/keybar 同步响应；
+  // 实际收起由 document pointerdown 捕获阶段处理（见 TabsApp useEffect）。
+  const backdrop = createElement('div', {
+    'data-tmux-backdrop': '1',
+    className: expanded ? 'kfm-expanded' : 'kfm-collapsed',
+    style: { position: 'fixed', inset: 0, zIndex: 30, background: 'transparent', pointerEvents: 'none' },
+  });
 
-  // 展开态：把手常驻 + 标签排（ vocabulary：EXPANDED）
-  const expandedOrb = createElement('div', {
-    'data-tmux-orb': '1',
-    onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onExpand(false); },
-    onPointerDown: (e: ReactMouseEvent) => { e.stopPropagation(); },
-    style: { ...orbCircle, zIndex: 41 },
-  }, svgGrid);
-  const expandedTree = createElement('div', { 'data-tmux-tabs': 'EXPANDED' },
-    // 0902 用户仲裁：展开后点屏幕空白区域 = 收起标签栏。
-    // pointerEvents=none：不拦截第一次点击，让终端/keybar 同步响应；
-    // 实际收起由 document pointerdown 捕获阶段处理（见 TabsApp useEffect）。
-    createElement('div', {
-      'data-tmux-backdrop': '1',
-      style: { position: 'fixed', inset: 0, zIndex: 30, background: 'transparent', pointerEvents: 'none' },
-    }),
-    expandedOrb,
+  const expandedTree = createElement('div', { 'data-tmux-tabs-tree': '1' },
+    backdrop,
+    orb,
     strip,
   );
 
   const base = createElement('div', { 'data-tmux-tabs-root': '1' },
-    expanded ? expandedTree : collapsedOrb,
+    expandedTree,
   );
   // 毛玻璃二级页（T4-T10）：覆盖在标签排之上（z=60>40），标签排留在
   // DOM 作毛玻璃后的实景。0901 考卷实锤：重构时早退分支被删=点＋无

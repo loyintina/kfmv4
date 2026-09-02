@@ -6,7 +6,7 @@
  */
 import { build } from 'esbuild';
 import { createHash } from 'crypto';
-import { readFileSync, statSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'fs';
+import { readFileSync, statSync, writeFileSync, readdirSync, mkdirSync, existsSync, copyFileSync } from 'fs';
 import { gzipSync, brotliCompressSync, constants as zlibConstants } from 'node:zlib';
 
 await build({
@@ -26,6 +26,11 @@ await build({
 
 const size = statSync('public/bundle.js').size;
 writeFileSync('public/build-info.json', JSON.stringify({ builtAt: new Date().toISOString() }));
+
+// tokens.css 单源拷贝（2026-09-02 设计 tokens 落地）：所有插件引用
+// var(--kfm-*)，禁止硬编码颜色/动画参数。未来主题切换只加
+// :root[data-theme="xxx"] 覆盖，不改组件。
+copyFileSync('src/client/tokens.css', 'public/tokens.css');
 
 // 缓存破坏：index.html 的 bundle 引用带内容哈希 —— 真机浏览器缓存旧包
 // 会让「修复实测」测到旧代码（8.8.3b 上浮被盖排查的干扰源之一）。

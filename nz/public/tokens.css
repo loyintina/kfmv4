@@ -57,16 +57,47 @@
 
 /* ── tmux-tabs 默认动画（BeautifulUI 逻辑：动效即解释，克制 100-350ms） ── */
 
-/* 标签排展开：从把手右侧滑入 + 淡入 */
-@keyframes kfm-tmux-strip-in {
-  from { opacity: 0; transform: translateX(-8px); }
-  to   { opacity: 1; transform: translateX(0); }
+/* 把手：常驻 DOM，展开时顺转 90 度，收回时逆转 90 度 */
+[data-tmux-orb] {
+  transition:
+    transform var(--kfm-dur-normal) var(--kfm-ease-out),
+    filter var(--kfm-dur-instant) var(--kfm-ease-out);
 }
-/* 标签排收起：向左滑出 + 淡出 */
-@keyframes kfm-tmux-strip-out {
-  from { opacity: 1; transform: translateX(0); }
-  to   { opacity: 0; transform: translateX(-8px); }
+[data-tmux-orb].kfm-expanded {
+  transform: rotate(90deg);
 }
+[data-tmux-orb]:hover {
+  filter: brightness(1.1);
+}
+[data-tmux-orb]:active {
+  transform: scale(0.96);
+}
+
+/* 标签排：常驻 DOM，伸出/收回用 scaleX + opacity transition。
+ * 选择器用独立的 [data-tmux-strip]：不能用 [data-tmux-tabs="EXPANDED"]，
+ * 否则 ①收起态属性变 COLLAPSED 后规则全失效（无过渡、scaleX 不应用）
+ * ②orb 展开时也带 EXPANDED 会被误加 transform-origin 旋转错位。 */
+[data-tmux-strip] {
+  transition:
+    transform var(--kfm-dur-normal) var(--kfm-ease-out),
+    opacity var(--kfm-dur-normal) var(--kfm-ease-out);
+  transform-origin: left center;
+}
+[data-tmux-strip].kfm-collapsed {
+  transform: scaleX(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* backdrop：显示/隐藏 */
+[data-tmux-backdrop] {
+  transition: opacity var(--kfm-dur-fast) var(--kfm-ease-out);
+}
+[data-tmux-backdrop].kfm-collapsed {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* 标签高亮切换 */
 [data-tmux-id] {
   transition:
@@ -77,22 +108,7 @@
 [data-tmux-id]:active {
   transform: scale(0.96);
 }
-/* 把手 hover/active */
-[data-tmux-orb] {
-  transition:
-    filter var(--kfm-dur-instant) var(--kfm-ease-out),
-    transform var(--kfm-dur-instant) var(--kfm-ease-out);
-}
-[data-tmux-orb]:hover {
-  filter: brightness(1.1);
-}
-[data-tmux-orb]:active {
-  transform: scale(0.96);
-}
-/* 标签排展开/收起动画（DOM 增删场景，用 animation 不用 transition） */
-[data-tmux-tabs="EXPANDED"] {
-  animation: kfm-tmux-strip-in var(--kfm-dur-normal) var(--kfm-ease-out) both;
-}
+
 /* 毛玻璃页弹出：opacity + scale */
 @keyframes kfm-tmux-overlay-in {
   from { opacity: 0; transform: scale(0.95); }
