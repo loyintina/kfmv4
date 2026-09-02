@@ -215,11 +215,16 @@ export class TermShell {
     this.cjkDrop = 0;
   }
 
-  /** 清当前可视屏（不清 scrollback 历史区）：detach 回终端态时把 tmux
+  /** 清屏（含当前屏幕+scrollback 历史区）：detach 回终端态时把 tmux
    *  残留内容一次性抹掉，随后 shell 重绘 prompt。 */
   clear() {
-    this.core.feed(this.enc.encode('\x1b[2J\x1b[H'));
+    // \x1b[2J=清当前屏，\x1b[3J=清 scrollback（xterm 扩展，rio-vt 支持），
+    // \x1b[H=光标归位。DOM 历史块同步清空，避免上滑时旧内容复现。
+    this.core.feed(this.enc.encode('\x1b[2J\x1b[3J\x1b[H'));
     this.rowCache = this.rowCache.map(() => '');
+    this.historyDiv.textContent = '';
+    this.histCount = 0;
+    this.histEvicted = 0;
     this.renderFrame();
   }
 

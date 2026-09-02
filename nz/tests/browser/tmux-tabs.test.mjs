@@ -204,11 +204,14 @@ const s7 = await rt();
 check('⑦杀附着会话→附着清零+塌回 HANDLE', ok7.ok && s7.attached === null && s7.state === 'HANDLE',
       `attached=${s7.attached} state=${s7.state}`);
 
-// ⑧ T14 展开态点屏幕空白（backdrop）→收起回 HANDLE
+// ⑧ T14 展开态点屏幕空白区域（backdrop 现在 pointerEvents=none，
+// 实际由 document pointerdown 捕获阶段收起）→收起回 HANDLE
 await page.click('[data-tmux-tabs="HANDLE"]');
 await page.waitForTimeout(300);
-await page.evaluate(() => { window.__backdropClickState = null; });
-await page.click('[data-tmux-backdrop="1"]');
+// 点 layout 容器空白处（不在标签栏内的屏幕区域）
+await page.click('#kfm-layer-layout', { timeout: 5000, force: true }).catch(() => {
+  console.log('[T14] layout click fallback to body');
+});
 const ok8 = await actUntil(
   async () => {},
   async () => { const r = await rt(); return r.state === 'HANDLE' && !r.expanded; },

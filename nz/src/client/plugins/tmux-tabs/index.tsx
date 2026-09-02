@@ -227,11 +227,12 @@ function TmuxTabs(props: {
     style: { ...orbCircle, zIndex: 41 },
   }, svgGrid);
   const expandedTree = createElement('div', { 'data-tmux-tabs': 'EXPANDED' },
-    // 0902 用户仲裁：展开后点屏幕空白区域 = 收起标签栏
+    // 0902 用户仲裁：展开后点屏幕空白区域 = 收起标签栏。
+    // pointerEvents=none：不拦截第一次点击，让终端/keybar 同步响应；
+    // 实际收起由 document pointerdown 捕获阶段处理（见 TabsApp useEffect）。
     createElement('div', {
       'data-tmux-backdrop': '1',
-      onClick: () => onExpand(false),
-      style: { position: 'fixed', inset: 0, zIndex: 30, background: 'transparent' },
+      style: { position: 'fixed', inset: 0, zIndex: 30, background: 'transparent', pointerEvents: 'none' },
     }),
     expandedOrb,
     strip,
@@ -355,10 +356,16 @@ export function createTmuxTabsPlugin(): UiPlugin {
           expandedRef.current = true;
           setExpanded(true);
           refreshRuntime();
+          // detach 后清屏：真机 tmux 客户端退出有延迟，分两次清（500ms
+          // 等退出 + 300ms 兜底），配合 ^L 让 readline 重绘 prompt。
           setTimeout(() => {
             (window as unknown as Record<string, unknown>).__kfmNzTermClear?.();
-            termInject('\u000c'); // ^L：readline 默认清屏并重绘当前行
-          }, 120);
+            termInject('\u000c');
+            setTimeout(() => {
+              (window as unknown as Record<string, unknown>).__kfmNzTermClear?.();
+              termInject('\u000c');
+            }, 300);
+          }, 500);
         };
         const onChipClick = (s: TmuxSessionInfo): void => {
           if (attachedRef.current === s.name) leaveTmux(); // T3
@@ -405,12 +412,14 @@ export function createTmuxTabsPlugin(): UiPlugin {
             if (isInsideTabs(e.target)) return;
             dismissIfScreenOp();
           };
-          document.addEventListener('pointerdown', onPointer, { passive: true });
-          document.addEventListener('wheel', onWheel, { passive: true });
+          // 捕获阶段：在事件到达终端/keybar 之前先收起标签栏（移除 backdrop），
+          // 这样用户第一次点击就能同步操作屏幕，不会「先收栏再点一次」。
+          document.addEventListener('pointerdown', onPointer, { passive: true, capture: true });
+          document.addEventListener('wheel', onWheel, { passive: true, capture: true });
           document.addEventListener('keydown', onKey);
           return () => {
-            document.removeEventListener('pointerdown', onPointer);
-            document.removeEventListener('wheel', onWheel);
+            document.removeEventListener('pointerdown', onPointer, { capture: true });
+            document.removeEventListener('wheel', onWheel, { capture: true });
             document.removeEventListener('keydown', onKey);
           };
         }, []);
