@@ -33,7 +33,7 @@ import android.webkit.WebViewClient;
 public class KeepAliveService extends Service {
     private static final String CHANNEL_ID = "kfmv4_keepalive";
     private static final int NOTIF_ID = 1;
-    private static final String TERM_URL = "http://127.0.0.1:8021/";
+    private static final String TERM_URL = "http://127.0.0.1:8032/current.html";
     private PowerManager.WakeLock mWakeLock;
     private WebView mObservingWeb;
 

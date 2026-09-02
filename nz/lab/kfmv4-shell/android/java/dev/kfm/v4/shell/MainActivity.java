@@ -36,8 +36,8 @@ import java.nio.charset.StandardCharsets;
  */
 public class MainActivity extends Activity {
 
-    private static final String TERM_URL = "http://127.0.0.1:8021/";
-    private static final String MARKS_URL = TERM_URL + "__boot-marks";
+    private static final String TERM_URL = "http://127.0.0.1:8032/current.html";
+    private static final String MARKS_URL = "http://127.0.0.1:8021/__boot-marks";
 
     /** 点击（onCreate）墙钟——全程启动账的零点 */
     private long t0;
