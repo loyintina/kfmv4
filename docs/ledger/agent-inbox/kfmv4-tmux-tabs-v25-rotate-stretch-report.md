@@ -91,3 +91,22 @@ strip 加独立标识 `data-tmux-strip="1"`，CSS 规则改挂 `[data-tmux-strip
 3. 排障顺序对：先读数（transform/opacity 实测）再分层（DOM 新/CSS 旧）后定性（href 无哈希），没走「再重启试试」的弯路。
 
 **待用户**：重开一次 NZ-Agent（划掉再开，让 WebView 拉新 index.html），我再走 8026 把三条 C 档判据（把手旋转/伸出收回/收起无残留）实测收口。
+
+---
+
+## 8. 真机 C 档收口（2026-09-02 晚，8026 实验台实测，全绿）
+
+用户重开 NZ-Agent 后，全部判据在真机实测通过（cdp-device eval 只读读数 + 真实 click 驱动）：
+
+| 判据 | 真机读数 | 结果 |
+|---|---|---|
+| 新 CSS 生效 | `tokens.css?v=6bf734db`、`[data-tmux-strip]` 规则在 | ✅ |
+| 收起基线（无残留） | strip `matrix(0,0,0,1,0,0)`=scaleX(0)、opacity 0 | ✅ |
+| 展开·把手旋转 | orb `matrix(0,1,-1,0,0,0)`=rotate(90°)，origin 圆心 `16.91px 16.91px` | ✅ |
+| 展开·标签排伸出 | strip opacity 1、transform none（scaleX 回到 1） | ✅ |
+| 收回·逆转回正 | orb transform none | ✅ |
+| 收回·无残留 | strip 回 `matrix(0,0,0,1,0,0)`、opacity 0 | ✅ |
+
+**遗憾一笔**：真机截图存证未获——`Page.captureScreenshot` 默认与 `fromSurface:false` 两路均 35s 无返回，设备不产帧（屏幕熄灭/App 退后台的典型特征，与 P1 首睁时 App 新前台截图即成的对照吻合）。不挡收口：三条判据的真机读数已足证，截图下次亮屏补拍。
+
+**排障插曲入账**：8026 初查不通时走 8022 逐段体检——服务器 relay ✅、kalo 隧道 ✅（手机 curl 8028 收到 DIAL）、断点=NZ-Agent 进程死亡（uptime 15h 排除重启；Termux hidepid 下排除法结论）。另有自知噪音两笔：探针 curl 被 relay 当控制信道白发一次 DIAL、`waitingClients` 留过我两个排队客户端——relay 控制口来者不拒+客户端无超时，记账不挡路。
