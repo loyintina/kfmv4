@@ -356,16 +356,12 @@ export function createTmuxTabsPlugin(): UiPlugin {
           expandedRef.current = true;
           setExpanded(true);
           refreshRuntime();
-          // detach 后清屏：真机 tmux 客户端退出有延迟，分两次清（500ms
-          // 等退出 + 300ms 兜底），配合 ^L 让 readline 重绘 prompt。
+          // detach 后清屏：等 tmux 客户端退出（约 600ms），清当前屏一次
+          // + ^L 重绘 prompt，避免闪两下，同时保留 scrollback 历史。
           setTimeout(() => {
             (window as unknown as Record<string, unknown>).__kfmNzTermClear?.();
             termInject('\u000c');
-            setTimeout(() => {
-              (window as unknown as Record<string, unknown>).__kfmNzTermClear?.();
-              termInject('\u000c');
-            }, 300);
-          }, 500);
+          }, 600);
         };
         const onChipClick = (s: TmuxSessionInfo): void => {
           if (attachedRef.current === s.name) leaveTmux(); // T3
