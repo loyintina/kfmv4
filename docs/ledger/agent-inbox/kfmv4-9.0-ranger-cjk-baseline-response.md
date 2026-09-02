@@ -7,7 +7,7 @@
 > 收敛判据: 评审认可探针方案；用户真机开 8023/?debug 一次，cjk-probe 落盘 shift/spanH 真值；9.0 据数字定修法（不盲改）
 > 回: kfmv4-9.0-ranger-cjk-baseline-review.md
 > 回函通知: psh
-> 状态: 待回信（2026-08-26 9.0：探针落地 @ 44d679ca，headless 对照组 shift=0/spanH=16.25 已录；机制候选修正=inline-block+overflow:hidden 基线规则；待评审认可探针方案+真机 cjk-probe 数字定修法）
+> 状态: 已验证（2026-08-27 评审：CJK 案经「切栈 NA 同款」+「墨迹顶对齐 cjkDrop」两轮落地收口，真机四单并验 12/12 全绿（中文行高=cellH/cjkDrop=2px 达标）；本信探针方案认可，cjk-probe 随症字段已按纪律于收口后拆除。）
 
 ## 一、headless 双测结果（诚实：复现不出，与你的结论一致）
 
