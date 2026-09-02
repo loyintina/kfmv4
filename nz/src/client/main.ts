@@ -111,13 +111,12 @@ const uiKernel = createUiKernel({ host: document.body, debug: debugOn });
   plugins: { reactSmoke: reactSmokePlugin },
 };
 
-// tmux 标签条（宪法 §6 Step 2 client 侧）：首个内核 React 插件。会话名
-// ?tmuxSession= 可指（缺省 'dsh'——用户主工作会话）；无 tmux 整条隐藏。
+// tmux 标签条（宪法 §6 Step 2 client 侧）：0902 四次仲裁标签=服务器全部
+// tmux 会话（会话表轮询），?tmuxSession 参数退役。
 // 槽位落 overlay 层（z=300 层系正主，create 自动开回 pointerEvents）——
 // 挂 body 会被 layout 层（z=100）整面盖住（tmux-tabs ③考卷实锤）。
-const tmuxSession = new URLSearchParams(location.search).get('tmuxSession') ?? 'dsh';
 const tmuxContainer = host.create(rootCtx, { kind: 'overlay', owner: 'tmux-tabs', slot: 'tmux-tabs' });
-uiKernel.mount('tmux-tabs', createTmuxTabsPlugin(tmuxSession), tmuxContainer.el);
+uiKernel.mount('tmux-tabs', createTmuxTabsPlugin(), tmuxContainer.el);
 
 // ========== 热更自刷（前端腿：build → 页面自动换血，会话靠续命 attach 不断） ==========
 // boot 记当前 builtAt，10s 轮询 /build-info.json（build.mjs 每次构建重写），

@@ -26,7 +26,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import type { Server, IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import type { Context } from 'cordis';
-import { TmuxControl } from './tmux-connection.js';
+import { TmuxControl, listSessions, tmuxSessionCmd } from './tmux-connection.js';
 
 type Msg =
   | { t: 'open'; command?: string; cols?: number; rows?: number }
@@ -38,7 +38,10 @@ type Msg =
   | { t: 'tmux-open'; session: string }
   | { t: 'tmux-select'; session: string; id: string }
   | { t: 'tmux-close'; session: string }
-  | { t: 'tmux-cmd'; session: string; cmd: string };
+  | { t: 'tmux-cmd'; session: string; cmd: string }
+  | { t: 'tmux-sessions-open' }
+  | { t: 'tmux-session-new'; name: string }
+  | { t: 'tmux-session-kill'; name: string };
 
 export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): void {
   const wss = new WebSocketServer({ noServer: true });
@@ -56,8 +59,16 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
     const subs = new Map<string, () => void>();
     /** 本连接开的 tmux 控制通道（socket 断开统一收尸，session 不死） */
     const tmuxes = new Map<string, TmuxControl>();
+    /** 会话表轮询器（0902 标签=会话；变化才推，3s 一拍） */
+    let sessionsTimer: ReturnType<typeof setInterval> | undefined;
+    let sessionsSig = '';
     const send = (m: Record<string, unknown>) => {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m));
+    };
+    const sessionsTick = async (): Promise<void> => {
+      const sessions = await listSessions();
+      const sig = JSON.stringify(sessions);
+      if (sig !== sessionsSig) { sessionsSig = sig; send({ t: 'tmux-sessions', sessions }); }
     };
 
     const subscribe = (id: string) => {
@@ -74,7 +85,8 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
       subs.set(id, () => { offOut(); offExit(); });
     };
 
-    ws.on('message', (raw: Buffer) => {
+    ws.on('message', (raw: Buffer): void => {
+      void (async () => {
       let m: Msg;
       try {
         m = JSON.parse(raw.toString()) as Msg;
@@ -147,9 +159,33 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
           if (c) { tmuxes.delete(m.session); c.close(); }
           break;
         }
+        // 会话表（0902 标签=会话）：开轮询（幂等）+会话级管理命令。
+        // 命令完成后立刻补一拍，不等下个 3s 周期。
+        case 'tmux-sessions-open': {
+          if (sessionsTimer) break; // 幂等
+          void sessionsTick();
+          sessionsTimer = setInterval(() => { void sessionsTick(); }, 3000);
+          break;
+        }
+        case 'tmux-session-new': {
+          const name = m.name.trim().slice(0, 64);
+          if (!name || /[.:]/.test(name)) { send({ t: 'error', message: `会话名非法：${name}` }); break; }
+          const r = await tmuxSessionCmd(['new-session', '-d', '-s', name]);
+          if (!r.ok) send({ t: 'error', message: `new-session 失败：${r.err}` });
+          await sessionsTick();
+          break;
+        }
+        case 'tmux-session-kill': {
+          const name = m.name.trim().slice(0, 64);
+          const r = await tmuxSessionCmd(['kill-session', '-t', name]);
+          if (!r.ok) send({ t: 'error', message: `kill-session 失败：${r.err}` });
+          await sessionsTick();
+          break;
+        }
         default:
           send({ t: 'error', message: '未知帧型' });
       }
+      })();
     });
 
     ws.on('close', () => {
@@ -157,6 +193,7 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
       subs.clear();
       for (const c of tmuxes.values()) c.close();
       tmuxes.clear();
+      if (sessionsTimer) { clearInterval(sessionsTimer); sessionsTimer = undefined; }
     });
   });
 

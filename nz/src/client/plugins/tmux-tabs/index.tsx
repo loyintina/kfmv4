@@ -1,51 +1,53 @@
 /**
- * src/client/plugins/tmux-tabs/index.tsx — tmux 标签条 v2（宪法 §6 Step 2
- * client 侧；状态机清单 docs/tmux-tabs-v2-state-machine.md，2026-09-01
- * 用户签收后实现）。
+ * src/client/plugins/tmux-tabs/index.tsx — tmux 标签条 v2.1（宪法 §6 Step 2
+ * client 侧；状态机清单 docs/tmux-tabs-v2-state-machine.md）。
  *
- * 状态机（清单 §一/§二；state 由本组件唯一推导=可观测单源）：
- *   HIDDEN（无 tmux）↔ HANDLE（收起把手）↔ EXPANDED（标签排）
- *   EXPANDED → OVERLAY_NEW（＋建窗毛玻璃）：确认=T5/T6、取消/点罩层=T7
- *   EXPANDED → OVERLAY_CLOSE（×关窗毛玻璃）：确认=T9、取消/点罩层=T10
- * 环境事件：E1 visible 即补连；E2 毛玻璃卡锚 sat+18vh 避让键盘；E4 推送校准。
- * 可观测：__kfmNzTmuxTabs() 报全机位（state/windows/activeId/expanded/
- * overlay/lastSelected/order/history）+ 自观测环 40 拍。
+ * 0902 用户四次仲裁：**标签从「窗」改回「会话」**——真机使用实锤，用户
+ * 心智模型里标签=服务器上的 tmux 会话（amp/dsh/kfm-na/psh），而非单会话
+ * 内的窗。数据源=服务器会话表轮询（tmux ls，3s 拍、变化才推）；窗级
+ * TmuxControl 控制通道标签条不再使用（模块保留归 term-contract）。
+ *
+ * 状态机（清单 §一；state 由本组件唯一推导=可观测单源）：
+ *   HANDLE（收起把手，常在）↔ EXPANDED（标签排）
+ *   EXPANDED → OVERLAY_NEW（＋建会话毛玻璃）：确认=T5/T6、取消=T7
+ *   EXPANDED → OVERLAY_CLOSE（×杀会话毛玻璃）：确认=T9、取消=T10
+ * 附着语义（清单 §二）：
+ *   点标签=attach 该会话（已附其他=先 detach 再附，T2s 嵌套禁止）；
+ *   点聚焦标签=detach 回终端态；聚焦指示=本终端附着的会话。
+ * 可观测：__kfmNzTmuxTabs() 报
+ *   {state, sessions, attachedSession, expanded, overlay, history}。
  */
 import { createElement, useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { UiPlugin, UiPluginHandle } from '../../kernel/ui-kernel.js';
 
-export interface TmuxWindow {
-  id: string;
+export interface TmuxSessionInfo {
   name: string;
-  active: boolean;
+  windows: number;
+  attached: boolean;
 }
 
 /** 状态机词汇表（docs/tmux-tabs-v2-state-machine.md §一，清单外名字禁止） */
 export type TmuxTabsState = 'HANDLE' | 'EXPANDED' | 'OVERLAY_NEW' | 'OVERLAY_CLOSE';
 
-// ========== 脑（纯 TS：WS 连接 + 重试 + 发帧 + 环境事件，不碰 DOM） ==========
+// ========== 脑（纯 TS：会话表 WS + 重试 + 发帧 + 环境事件，不碰 DOM） ==========
 
-export interface TmuxLink {
-  windows: TmuxWindow[];
-  linkUp: boolean;
-  lastSelected: string;
-  select(id: string): void;
-  cmd(cmd: string): void;
+export interface SessionsLink {
+  sessions: TmuxSessionInfo[];
+  newSession(name: string): void;
+  killSession(name: string): void;
   close(): void;
 }
 
-export function openTmuxLink(session: string, onUpdate: () => void): TmuxLink {
-  const state: TmuxLink = {
-    windows: [], linkUp: false, lastSelected: '',
-    select(id: string): void {
-      state.lastSelected = id;
-      ws?.send(JSON.stringify({ t: 'tmux-select', session, id }));
-      onUpdate();
+export function openSessionsLink(onUpdate: () => void): SessionsLink {
+  const state: SessionsLink = {
+    sessions: [],
+    newSession(name: string): void {
+      ws?.send(JSON.stringify({ t: 'tmux-session-new', name }));
     },
-    cmd(cmd: string): void {
-      ws?.send(JSON.stringify({ t: 'tmux-cmd', session, cmd: cmd.slice(0, 200) }));
+    killSession(name: string): void {
+      ws?.send(JSON.stringify({ t: 'tmux-session-kill', name }));
     },
     close(): void {
       disposed = true;
@@ -62,22 +64,16 @@ export function openTmuxLink(session: string, onUpdate: () => void): TmuxLink {
     if (disposed) return;
     const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/term`;
     ws = new WebSocket(url);
-    ws.onopen = () => ws!.send(JSON.stringify({ t: 'tmux-open', session }));
+    ws.onopen = () => ws!.send(JSON.stringify({ t: 'tmux-sessions-open' }));
     ws.onmessage = (ev) => {
-      let m: { t?: string; windows?: TmuxWindow[] };
+      let m: { t?: string; sessions?: TmuxSessionInfo[] };
       try { m = JSON.parse(String(ev.data)); } catch { return; }
-      if (m.t === 'tmux-state' && Array.isArray(m.windows)) {
-        state.windows = m.windows;
-        state.linkUp = true;
+      if (m.t === 'tmux-sessions' && Array.isArray(m.sessions)) {
+        state.sessions = m.sessions;
         onUpdate();
-      } else if (m.t === 'tmux-exit') {
-        state.windows = [];
-        state.linkUp = false;
-        onUpdate();
-        scheduleRetry();
       }
     };
-    ws.onclose = () => { state.linkUp = false; onUpdate(); scheduleRetry(); };
+    ws.onclose = () => { onUpdate(); scheduleRetry(); };
     ws.onerror = () => { try { ws?.close(); } catch { /* 重试腿接管 */ } };
   };
   const scheduleRetry = (): void => {
@@ -93,23 +89,6 @@ export function openTmuxLink(session: string, onUpdate: () => void): TmuxLink {
   document.addEventListener('visibilitychange', onVis);
   connect();
   return state;
-}
-
-// ========== 拖动换序的脑（纯 TS 几何：乐观排序 → swap 命令串） ==========
-
-/** 选择排序归位：当前顺序 → 期望顺序的最少 swap-window 串 */
-export function swapsFor(current: TmuxWindow[], desiredIds: string[]): string[] {
-  const cur = current.map((w) => w.id);
-  const cmds: string[] = [];
-  for (let i = 0; i < desiredIds.length; i++) {
-    const want = desiredIds[i];
-    const at = cur.indexOf(want);
-    if (at < 0 || at === i) continue;
-    const displaced = cur[i];
-    cmds.push(`swap-window -s ${want} -t ${displaced}`);
-    [cur[i], cur[at]] = [cur[at], cur[i]];
-  }
-  return cmds;
 }
 
 // ========== 皮（React 组件） ==========
@@ -160,30 +139,25 @@ function OverlayPage(props: {
 }
 
 function TmuxTabs(props: {
-  windows: TmuxWindow[];
+  sessions: TmuxSessionInfo[];
   expanded: boolean;
-  overlay: null | { kind: 'new' } | { kind: 'close'; target: TmuxWindow };
-  dragId: string | null;
+  attachedSession: string | null;
+  overlay: null | { kind: 'new' } | { kind: 'close'; target: TmuxSessionInfo };
   onExpand: (v: boolean) => void;
-  onSelect: (id: string) => void;
+  onChipClick: (s: TmuxSessionInfo) => void;
   onNewConfirm: (name: string) => void;
-  onCloseConfirm: (w: TmuxWindow) => void;
+  onCloseConfirm: (s: TmuxSessionInfo) => void;
   onOverlayCancel: () => void;
-  onChipPointerDown: (e: ReactPointerEvent, w: TmuxWindow) => void;
-  onChipPointerMove: (e: ReactPointerEvent) => void;
-  onChipPointerUp: (e: ReactPointerEvent) => void;
-  onAskClose: (w: TmuxWindow) => void;
+  onAskClose: (s: TmuxSessionInfo) => void;
   onPlus: () => void;
 }): React.ReactElement {
-  const { windows, expanded, overlay, dragId, onExpand, onSelect, onNewConfirm, onCloseConfirm, onOverlayCancel, onChipPointerDown, onChipPointerMove, onChipPointerUp, onAskClose, onPlus, onChipClick } = props;
+  const { sessions, expanded, attachedSession, overlay, onExpand, onChipClick, onNewConfirm, onCloseConfirm, onOverlayCancel, onAskClose, onPlus } = props;
   const [newName, setNewName] = useState('');
-  // 输入状态随毛玻璃页开关清零（0901 考卷实锤：残留旧名→二次建同名窗）
+  // 输入状态随毛玻璃页开关清零（0901 考卷实锤：残留旧名→二次建同名）
   useEffect(() => { if (overlay?.kind === 'new') setNewName(''); }, [overlay?.kind]);
 
   // 常驻把手（光球规格 32px 圆、左上）：点击=展开/收起切换。
   // 收起态：把手即全部；展开态：把手仍在原位（收起开关），标签排从其右侧展开。
-  // 注意：data-tmux-tabs 标记必须在「可见且可点击」的元素本体上
-  // （0901 考卷实锤：标记落在零尺寸包装层=Playwright 判不可见）。
 
   // 展开排：从把手右侧展开（锚定关系），＋固定右端（新标签出现位）
   const strip = expanded ? createElement('div', {
@@ -196,26 +170,23 @@ function TmuxTabs(props: {
     },
     onClick: () => onExpand(false),
   },
-  windows.map((w) => createElement('div', { key: w.id, style: { display: 'flex', alignItems: 'center', gap: '4px', flex: '0 0 auto' } },
+  sessions.map((s) => createElement('div', { key: s.name, style: { display: 'flex', alignItems: 'center', gap: '4px', flex: '0 0 auto' } },
     createElement('div', {
-      'data-tmux-win': w.name,
-      'data-tmux-id': w.id,
-      onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onChipClick(w); },
-      onPointerDown: (e: ReactPointerEvent) => onChipPointerDown(e, w),
-      onPointerMove: onChipPointerMove,
-      onPointerUp: onChipPointerUp,
+      'data-tmux-win': s.name,
+      'data-tmux-id': s.name,
+      onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onChipClick(s); },
       style: {
         padding: '3px 8px', borderRadius: '7px', fontSize: '12px',
-        background: w.active ? BAR_ACCENT : 'rgba(51,65,85,0.85)',
-        color: w.active ? '#fff' : '#cbd5e1', cursor: 'pointer', whiteSpace: 'nowrap',
-        touchAction: 'none', opacity: dragId === w.id ? 0.5 : 1,
+        background: attachedSession === s.name ? BAR_ACCENT : 'rgba(51,65,85,0.85)',
+        color: attachedSession === s.name ? '#fff' : '#cbd5e1', cursor: 'pointer', whiteSpace: 'nowrap',
         display: 'flex', alignItems: 'center', gap: '6px',
       },
-    }, w.name),
+    }, s.name, createElement('span', {
+      style: { fontSize: '10px', opacity: 0.65 },
+    }, `·${s.windows}`)),
     createElement('span', {
-      'data-tmux-close': w.name,
-      onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onAskClose(w); },
-      onPointerDown: (e: ReactPointerEvent) => e.stopPropagation(),
+      'data-tmux-close': s.name,
+      onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onAskClose(s); },
       style: { color: '#8A93A3', cursor: 'pointer', fontSize: '12px', lineHeight: 1 },
     }, '×'),
   )),
@@ -241,7 +212,7 @@ function TmuxTabs(props: {
     width: '32px', height: '32px', borderRadius: '50%', background: BAR_BG,
     border: `1px solid ${HAIRLINE}`, display: 'flex', alignItems: 'center',
     justifyContent: 'center', cursor: 'pointer',
-    opacity: windows.length === 0 ? 0.55 : 1,
+    opacity: sessions.length === 0 ? 0.55 : 1,
   };
   const collapsedOrb = createElement('div', {
     'data-tmux-tabs': 'HANDLE', 'data-tmux-orb': '1',
@@ -267,13 +238,13 @@ function TmuxTabs(props: {
     return createElement('div', { 'data-tmux-tabs-root': '1' },
       expandedTree,
       createElement(OverlayPage, {
-        title: '新窗口',
+        title: '新会话',
         onConfirm: () => onNewConfirm(newName.trim()),
         onCancel: onOverlayCancel,
       }, createElement('input', {
         'data-tmux-new-name': '1', autoFocus: true, value: newName,
         onChange: (e: React.ChangeEvent<HTMLInputElement>) => setNewName(e.target.value),
-        placeholder: '窗口名（留空=跟随程序）',
+        placeholder: '会话名（留空=自动编号）',
         style: {
           background: 'none', border: `1px solid ${HAIRLINE}`, color: '#F5F7FA',
           padding: '8px 10px', fontSize: '14px', outline: 'none', borderRadius: 0,
@@ -285,7 +256,7 @@ function TmuxTabs(props: {
     return createElement('div', { 'data-tmux-tabs-root': '1' },
       expandedTree,
       createElement(OverlayPage, {
-        title: `关闭 '${overlay.target.name}'？`,
+        title: `关闭会话 '${overlay.target.name}'？`,
         onConfirm: () => onCloseConfirm(overlay.target),
         onCancel: onOverlayCancel,
       }),
@@ -297,183 +268,141 @@ function TmuxTabs(props: {
 // ========== 插件装配（契约签名：mount(slot, ctx) → handle） ==========
 
 export interface TmuxTabsRuntime {
-  state: TmuxTabsState | 'OVERLAY_NEW' | 'OVERLAY_CLOSE';
-  windows: TmuxWindow[];
-  activeId: string | null;
+  state: TmuxTabsState;
+  sessions: TmuxSessionInfo[];
+  attachedSession: string | null;
   expanded: boolean;
   overlay: 'OVERLAY_NEW' | 'OVERLAY_CLOSE' | null;
-  lastSelected: string;
-  order: string[];
-  attached: boolean;
-  history: Array<{ t: number; state: string; expanded: boolean; wins: number }>;
+  history: Array<{ t: number; state: string; expanded: boolean; n: number }>;
 }
 
-export function createTmuxTabsPlugin(session: string): UiPlugin {
+export function createTmuxTabsPlugin(): UiPlugin {
   return {
     id: 'tmux-tabs',
     stateMachine: 'docs/tmux-tabs-v2-state-machine.md',
     mount(slot: HTMLElement): UiPluginHandle {
       const runtimeRef: { current: TmuxTabsRuntime } = {
-        current: { state: 'HANDLE', windows: [], activeId: null, expanded: false, overlay: null, lastSelected: '', order: [], history: [] },
+        current: { state: 'HANDLE', sessions: [], attachedSession: null, expanded: false, overlay: null, history: [] },
       };
-      // 自观测环（观测先于基建）：状态名直引清单词汇（修正三）
-      const ring: Array<{ t: number; state: string; expanded: boolean; wins: number }> = [];
-      const push = (s: { t: number; state: string; expanded: boolean; wins: number }): void => {
+      // 自观测环（观测先于基建）：状态名直引清单词汇
+      const ring: Array<{ t: number; state: string; expanded: boolean; n: number }> = [];
+      const push = (s: { t: number; state: string; expanded: boolean; n: number }): void => {
         ring.push(s);
         if (ring.length > 40) ring.shift();
       };
       (window as unknown as Record<string, unknown>).__kfmNzTmuxTabsSnap = { ring, push };
-      const dbg: Record<string, number> = { down: 0, move: 0, dragmove: 0, reorder: 0, swap: 0, up: 0 };
-      (window as unknown as Record<string, unknown>).__kfmNzTmuxTabsDbg = dbg;
 
       function TabsApp(): React.ReactElement {
-        const [windows, setWindows] = useState<TmuxWindow[]>([]);
+        const [sessions, setSessions] = useState<TmuxSessionInfo[]>([]);
         const [expanded, setExpanded] = useState(false);
-        const [overlay, setOverlay] = useState<null | { kind: 'new' } | { kind: 'close'; target: TmuxWindow }>(null);
-        const [dragId, setDragId] = useState<string | null>(null);
-        const linkRef = useRef<TmuxLink | null>(null);
-        const drag = useRef<{ id: string; x0: number; holdTimer?: ReturnType<typeof setTimeout>; dragging: boolean; startWindows: TmuxWindow[] } | null>(null);
-        const orderRef = useRef<string[]>([]);
-        // 附窗账本（清单 §二·b）：终端是否 attach 在会话上。注入通道=公共
-        // 契约钩子 __kfmNzTermInject（attach=tmux new-session -A；detach=Ctrl-B d）。
-        const attachedRef = useRef(false);
-        // 拖动收尾的点击穿透抑制：换序重渲染挪动芯片，松手合成 click 会落在
-        // 别的芯片上=重排却附带切窗。完成拖动后 400ms 内忽略芯片点选。
-        const suppressClickUntil = useRef(0);
+        const [overlay, setOverlay] = useState<null | { kind: 'new' } | { kind: 'close'; target: TmuxSessionInfo }>(null);
+        const linkRef = useRef<SessionsLink | null>(null);
+        // 附着账本（清单 §二）：终端当前 attach 的会话名；null=终端态。
+        // 附着会话被杀（T9/外部）→ 列表推送无它 → 塌回终端态。
+        const attachedRef = useRef<string | null>(null);
+        // 镜像 ref（0902 考卷⑤实锤：attach 只翻 ref 不动 useState=React
+        // bail-out 不重渲，render 快照钩子报陈旧值）——钩子改读镜像，
+        // ref-only 翻转处主动 refreshRuntime() 保钩子实时。
+        const expandedRef = useRef(false);
+        const overlayRef = useRef<null | 'OVERLAY_NEW' | 'OVERLAY_CLOSE'>(null);
+        const sessionsRef = useRef<TmuxSessionInfo[]>([]);
         const termInject = (s2: string): void => {
           (window as unknown as Record<string, unknown>).__kfmNzTermInject?.(s2);
         };
-        const enterTmux = (w: TmuxWindow): void => {
-          linkRef.current?.select(w.id); // 会话当前窗=目标，attach 即显示
-          termInject(`tmux new-session -A -s ${session}\r`);
-          attachedRef.current = true;
-          setExpanded(true); // T2a/T3b 终点 EXPANDED
+        const deriveState = (): TmuxTabsState =>
+          overlayRef.current === 'OVERLAY_NEW' ? 'OVERLAY_NEW'
+            : overlayRef.current === 'OVERLAY_CLOSE' ? 'OVERLAY_CLOSE'
+              : expandedRef.current ? 'EXPANDED' : 'HANDLE';
+        const refreshRuntime = (): void => {
+          runtimeRef.current = {
+            state: deriveState(), sessions: sessionsRef.current,
+            attachedSession: attachedRef.current, expanded: expandedRef.current,
+            overlay: overlayRef.current, history: [...ring],
+          };
+          push({ t: Date.now(), state: runtimeRef.current.state, expanded: expandedRef.current, n: sessionsRef.current.length });
+        };
+        const enterSession = (name: string): void => {
+          const attach = (): void => {
+            termInject(`tmux new-session -A -s ${name}\r`);
+            attachedRef.current = name;
+            expandedRef.current = true;
+            setExpanded(true);
+            refreshRuntime();
+          };
+          if (attachedRef.current) {
+            // T2s：tmux 嵌套禁止——先 detach 再附（P7）
+            termInject('\u0002d');
+            attachedRef.current = null;
+            refreshRuntime();
+            setTimeout(attach, 350);
+          } else attach();
         };
         const leaveTmux = (): void => {
           termInject('\u0002d'); // Ctrl-B d：TUI 运行中也安全
-          attachedRef.current = false;
+          attachedRef.current = null;
+          expandedRef.current = false;
           setExpanded(false); // T3 终点 HANDLE（回终端视图）
+          refreshRuntime();
         };
-        const onChipClick = (w: TmuxWindow): void => {
-          if (Date.now() < suppressClickUntil.current) return; // 拖动收尾穿透（见上）
-          // 清单 §二·b：附窗条件点选语义
-          if (attachedRef.current) {
-            if (w.active) leaveTmux(); // T3：点聚焦=detach 回终端态
-            else linkRef.current?.select(w.id); // T2：切窗，停 EXPANDED（P4）
-          } else {
-            enterTmux(w); // T2a/T3b：未附时点任意标签=attach 并显示
-          }
+        const onChipClick = (s: TmuxSessionInfo): void => {
+          if (attachedRef.current === s.name) leaveTmux(); // T3
+          else enterSession(s.name); // T2/T2s
         };
 
         useEffect(() => {
-          const link = openTmuxLink(session, () => {
-            setWindows([...link.windows]);
-            orderRef.current = link.windows.map((w) => w.id);
+          const link = openSessionsLink(() => {
+            sessionsRef.current = [...link.sessions];
+            setSessions([...link.sessions]);
+            // 附着会话消失（被杀/外部）→ 塌回终端态
+            if (attachedRef.current && !link.sessions.some((s) => s.name === attachedRef.current)) {
+              attachedRef.current = null;
+              expandedRef.current = false;
+              setExpanded(false);
+              refreshRuntime();
+            }
           });
           linkRef.current = link;
           return () => link.close();
         }, []);
 
-        const state: TmuxTabsState | 'OVERLAY_NEW' | 'OVERLAY_CLOSE' =
-          overlay?.kind === 'new' ? 'OVERLAY_NEW'
-            : overlay?.kind === 'close' ? 'OVERLAY_CLOSE'
-              : expanded ? 'EXPANDED' : 'HANDLE';
-        const activeId = windows.find((w) => w.active)?.id ?? null;
+        // 权威镜像（渲染腿）：useState 真值回写 ref + 刷钩子
+        useEffect(() => {
+          expandedRef.current = expanded;
+          sessionsRef.current = sessions;
+          refreshRuntime();
+        });
+        useEffect(() => { overlayRef.current = overlay === null ? null : overlay.kind === 'new' ? 'OVERLAY_NEW' : 'OVERLAY_CLOSE'; refreshRuntime(); }, [overlay]);
 
-        runtimeRef.current = {
-          state, windows, activeId, expanded,
-          overlay: overlay === null ? null : overlay.kind === 'new' ? 'OVERLAY_NEW' : 'OVERLAY_CLOSE',
-          lastSelected: linkRef.current?.lastSelected ?? '',
-          order: [...orderRef.current],
-          attached: attachedRef.current,
-          history: [...ring],
-        };
-        push({ t: Date.now(), state, expanded, wins: windows.length });
-
-        // ---- 拖动（T11）：按住 300ms 起拖，本地乐观排序，松手发 swap 串 ----
-        const onChipPointerDown = (e: ReactPointerEvent, w: TmuxWindow): void => {
-          dbg.down++;
-          if (windows.length < 2) return;
-          const x0 = e.clientX;
-          drag.current = { id: w.id, x0, dragging: false, startWindows: [...windows] };
-          drag.current.holdTimer = setTimeout(() => {
-            if (drag.current?.id === w.id) { drag.current.dragging = true; setDragId(w.id); }
-          }, 300);
-        };
-        const onChipPointerMove = (e: ReactPointerEvent): void => {
-          dbg.move++;
-          const d = drag.current;
-          if (!d?.dragging) return;
-          dbg.dragmove++;
-          // 悬停目标 = 指针下方的其他标签（几何判定，皮只上报）
-          const bar = e.currentTarget.closest('[data-tmux-tabs="EXPANDED"]');
-          const chips = [...(bar?.querySelectorAll('[data-tmux-id]') ?? [])];
-          const over = chips.find((el) => {
-            const r = (el as HTMLElement).getBoundingClientRect();
-            return e.clientX >= r.left && e.clientX <= r.right;
-          }) as HTMLElement | undefined;
-          const overId = over?.getAttribute('data-tmux-id');
-          if (!overId || overId === d.id) return;
-          setWindows((prev) => {
-            const from = prev.findIndex((w) => w.id === d.id);
-            const to = prev.findIndex((w) => w.id === overId);
-            if (from < 0 || to < 0 || from === to) return prev;
-            const next = [...prev];
-            const [m] = next.splice(from, 1);
-            next.splice(to, 0, m);
-            orderRef.current = next.map((w) => w.id);
-            dbg.reorder++;
-            return next;
-          });
-        };
-        const onChipPointerUp = (): void => {
-          const d = drag.current;
-          dbg.up++;
-          drag.current = null;
-          setDragId(null);
-          if (!d?.dragging) return;
-          suppressClickUntil.current = Date.now() + 400; // 拖动收尾穿透抑制
-          // 乐观排序 → swap 串（脑层几何）。基线=起手时服务器顺序
-          // （本地已被乐观排序污染，直接对比恒得零——0901 考卷 dbg 实锤）。
-          // 服务器推送为准（P5）。
-          const cmds = swapsFor(d.startWindows, orderRef.current);
-          dbg.swap += cmds.length;
-          for (const c of cmds) linkRef.current?.cmd(c);
-        };
-
-        // ---- 动作（转换的底层语义） ----
         const onNewConfirm = (name: string): void => {
-          if (name) {
-            linkRef.current?.cmd(`new-window -n ${name}`);
-            linkRef.current?.cmd('set -w automatic-rename off'); // 当前窗=新窗，名字钉死
-          } else {
-            linkRef.current?.cmd('new-window');
-          }
+          // 客户端先查重（tmux 拒绝重名=静默失败的静默源，0902 清单 T5）
+          if (name && !sessionsRef.current.some((s) => s.name === name)) linkRef.current?.newSession(name);
+          overlayRef.current = null;
+          expandedRef.current = false;
           setOverlay(null);
-          setExpanded(false); // 新窗聚焦在前，收起回终端视图（T5/T6）
+          setExpanded(false); // 新标签待选，收起回终端视图（T5/T6）
+          refreshRuntime();
         };
-        const onCloseConfirm = (w: TmuxWindow): void => {
-          linkRef.current?.cmd(`kill-window -t ${w.id}`);
-          setOverlay(null); // T9；最后一张→会话结束→HIDDEN（语义自洽）
+        const onCloseConfirm = (s: TmuxSessionInfo): void => {
+          linkRef.current?.killSession(s.name);
+          overlayRef.current = null;
+          setOverlay(null); // T9
+          refreshRuntime();
         };
-        const onOverlayCancel = (): void => setOverlay(null); // T7/T10
-        const onAskClose = (w: TmuxWindow): void => setOverlay({ kind: 'close', target: w });
-        const onExpand = (v: boolean): void => setExpanded(v);
-        const onSelect = (id: string): void => linkRef.current?.select(id);
+        const onOverlayCancel = (): void => { overlayRef.current = null; setOverlay(null); refreshRuntime(); }; // T7/T10
+        const onAskClose = (s: TmuxSessionInfo): void => { overlayRef.current = 'OVERLAY_CLOSE'; setOverlay({ kind: 'close', target: s }); refreshRuntime(); };
+        const onExpand = (v: boolean): void => { expandedRef.current = v; setExpanded(v); refreshRuntime(); };
 
         return createElement(TmuxTabs, {
-          windows, expanded, overlay, dragId,
-          onExpand, onSelect, onNewConfirm, onCloseConfirm, onOverlayCancel,
-          onChipPointerDown, onChipPointerMove, onChipPointerUp, onAskClose,
-          onPlus: () => setOverlay({ kind: 'new' }),
-          onChipClick,
+          sessions, expanded, attachedSession: attachedRef.current, overlay,
+          onExpand, onChipClick, onNewConfirm, onCloseConfirm, onOverlayCancel,
+          onAskClose,
+          onPlus: () => { overlayRef.current = 'OVERLAY_NEW'; setOverlay({ kind: 'new' }); refreshRuntime(); },
         });
       }
       const root = createRoot(slot);
       root.render(createElement(TabsApp));
       // 判卷钩子（观测基建，公共契约）
       (window as unknown as Record<string, unknown>).__kfmNzTmuxTabs = () => runtimeRef.current;
-      (window as unknown as Record<string, unknown>).__kfmNzTmuxTabsDbgGet = () => dbg;
       return {
         unmount: () => {
           root.unmount();

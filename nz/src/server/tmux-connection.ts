@@ -187,3 +187,38 @@ export class TmuxControl {
 export function mountTmuxConnection(ctx: Context): void {
   ctx.provide('tmuxControlOpen', (opts: TmuxControlOpts) => new TmuxControl(opts));
 }
+
+// ========== 会话表（0902 用户拍板：标签=会话；标签条改用本服务） ==========
+
+import { execFile } from 'node:child_process';
+
+export interface TmuxSessionInfo {
+  name: string;
+  windows: number;
+  attached: boolean;
+}
+
+const SESSIONS_FMT = '#{session_name}\x1f#{session_windows}\x1f#{session_attached}';
+
+/** 全服务器会话表快照（一次 exec；无会话服务器=空表不视为错） */
+export function listSessions(tmuxBin = 'tmux'): Promise<TmuxSessionInfo[]> {
+  return new Promise((resolve) => {
+    execFile(tmuxBin, ['ls', '-F', SESSIONS_FMT], { timeout: 4000 }, (err, stdout) => {
+      if (err) return resolve([]);
+      const sessions = String(stdout).split('\n').filter(Boolean).map((l) => {
+        const parts = tmuxUnescape(l).split('\x1f');
+        return { name: parts[0] ?? '', windows: Number(parts[1]) || 0, attached: parts[2] === '1' };
+      }).filter((s) => s.name !== '');
+      resolve(sessions);
+    });
+  });
+}
+
+/** 会话级管理命令（new-session/kill-session；argv 直传不走 shell，无注入面） */
+export function tmuxSessionCmd(args: string[], tmuxBin = 'tmux'): Promise<{ ok: boolean; err?: string }> {
+  return new Promise((resolve) => {
+    execFile(tmuxBin, args, { timeout: 4000 }, (err, _stdout, stderr) => {
+      resolve(err ? { ok: false, err: String(stderr || err).slice(0, 200) } : { ok: true });
+    });
+  });
+}

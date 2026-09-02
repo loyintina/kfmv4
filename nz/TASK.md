@@ -221,8 +221,8 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
 | fgwatch 轻量监视 | 页面注入 20 行段（visibilitychange/诱饵 focus-blur/vv resize → beacon `/debug/ime-log`，tag=`fgwatch`） | bg→fg/焦点/键盘起落事件序列回放（键盘三案定罪主力） | 事件级精确、无像素；页面 reload 即失效需重注 | 后台可用（冻结期事件排队，唤醒后落盘） |
 | 帧级 tracer | 页面注入 `setInterval 50ms` 记 vv/ime/rows/容器几何 → window 环形缓冲 | 时序症多帧演化（单帧快照会骗人，runaway 教训制度化） | 冻结期不推进、读数出长条，唤醒后判读 | 后台可埋（读数要唤醒） |
 | 合成键盘 | `NzNative.ime(true/false)` + `NzNative.tap(x*dpr,y*dpr)` | 真键盘弹/收、纯后台复现「真键盘切后台」类场景 | **输入连接建立后才真弹**（合成 tap 失灵谜窗口期）；合成点击后立刻切后台会诱「假自弹」（WebView 挂起 showSoftInput），判别靠事件序列 | 后台可用 |
-| tmux-tabs 判卷钩子 | 页内 `__kfmNzTmuxTabs()` / `__kfmNzTmuxTabsDbgGet()` / `__kfmNzTmuxTabsSnap.ring` | 组件全机位（state/windows/attached/expanded/overlay/order/lastSelected）+拖动 dbg 六环计数（down/move/dragmove/reorder/swap/up）+40 拍状态环 | reducer 单源直读；ring 仅 40 拍（dump 要看尾部） | 后台可用 |
-| 单症探针族 | `tests/browser/probe-{click,collapse,attach,drag,push}.mjs`（headless） | 考卷红后的单症深挖：几何/hit-target 实测、状态演化采样、cmd→推送延迟测量、dbg 逐环读数+tmux 服务器真值互证 | 一次性诊断件，随症增删（登记防「存在过但没人知道」）；非回归门 | 服务器本地 |
+| tmux-tabs 判卷钩子 | 页内 `__kfmNzTmuxTabs()` / `__kfmNzTmuxTabsSnap.ring` | 组件全机位（0902 会话版：state/sessions/attachedSession/expanded/overlay/history）+40 拍状态环 | 钩子读 ref 镜像+主动刷新（0902 修复：render 快照在 ref-only 翻转时报陈旧值）；ring 仅 40 拍（dump 要看尾部） | 后台可用 |
+| 单症探针族 | `tests/browser/probe-{click,collapse,attach,drag,push,t2s,kfmv4-geom,kfmv4-ime}.mjs`（headless） | 考卷红后的单症深挖：几何/hit-target 实测、状态演化采样、cmd→推送延迟测量、事件到达计数+tmux 服务器真值互证 | 一次性诊断件，随症增删（登记防「存在过但没人知道」）；非回归门 | 服务器本地 |
 
 **判卷层选择纪律**（C4 对拍换来）：可打印串/文本类断言浏览器层可判；
 **定位类序列（CUP/CHA）必须 Rust 层判**——CoreFeed 与活体 PTY 共享
@@ -1932,3 +1932,22 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   （带 ring 尾/fn 引用/rootCount，二次挂载侦测）。工作树收口：server 侧
   mountTmuxConnection 接线（HEAD 一直悬空欠账，runtime 早已用）+
   build.mjs server-hash 看门狗（31s 重载死循环案制度化）一并入账。
+- 2026-09-02 · **tmux-tabs v2.1 会话化：标签从「窗」改回「会话」**（0902
+  用户四次仲裁，真机使用实锤：用户心智模型=服务器上的会话 amp/dsh/
+  kfm-na/psh，而非单会话内的窗；此前「只有一个 kimi 标签」=dsh 会话里
+  跑 kimi 的窗，UI 忠实但口径错位）。状态机清单 §〇 增量修订+考卷 v5
+  重写（9/9）。server：ws-bridge 新三帧（tmux-sessions-open/-
+  session-new/-session-kill）+每连接 3s 会话表轮询（变化才推，命令后
+  立刻补拍）；tmux-connection 增 listSessions/tmuxSessionCmd（argv 直
+  传无 shell 注入面）；标签条不再用窗级 TmuxControl（模块保留归
+  term-contract）。client：标签=会话（附窗数徽记），点标签=attach
+  （已附其他=先 detach 再附 T2s，tmux 嵌套禁止→P7 新禁令），＋=new
+  -session（客户端先查重），×=kill-session（确认页拦截不变），杀附着
+  会话→塌回 HANDLE；拖动 T11 随会话化退役；?tmuxSession 参数退役。
+  两个新教训入册：①**钩子快照陈旧案**——attach 只翻 ref 不动 useState
+  =React bail-out 不重渲，render 快照钩子报旧值（探针 clicks=1 而
+  attachedSession 纹丝不动实锤）→钩子改 ref 镜像+ref-only 翻转处主动
+  refreshRuntime()；②考卷 ⑦ 假绿——塌回断言在未附状态下天然成立，
+  补硬证据前置钉（附着指示+状态行双在才准塌回断言）。回归：v5 9/9
+  （③attach 653ms，⑤T2s 换名，⑥双证，⑧词汇表末拍互证）；浏览器核心
+  卷+node 套件见下一行记录。
