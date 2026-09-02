@@ -1,0 +1,123 @@
+/**
+ * tokens.css — kfm-nz 设计 tokens 单源
+ *
+ * 职责：颜色/字体/动画时长/曲线统一变量，所有插件引用本文件变量，
+ * 禁止硬编码。未来主题切换只需加 :root[data-theme="xxx"] 覆盖。
+ *
+ * 命名规范：--kfm-{类别}-{名称}
+ */
+
+:root {
+  /* ── 颜色：深色默认（对齐 BeautifulUI 深色套） ── */
+  --kfm-page: #17181a;
+  --kfm-canvas: #1c1d1f;
+  --kfm-surface: #232427;
+  --kfm-inset: #1f2022;
+  --kfm-hover: #2a2b2e;
+  --kfm-hover-2: #313236;
+
+  --kfm-ink: #f2f3f4;
+  --kfm-ink-2: #a5a8ad;
+  --kfm-ink-3: #6c6f75;
+
+  --kfm-line: #3a3b3f;
+  --kfm-line-strong: #62656b;
+
+  --kfm-accent: #0a84ff;
+  --kfm-green: #30d158;
+  --kfm-orange: #ff9f0a;
+  --kfm-red: #ff453a;
+
+  /* tmux-tabs 专用 */
+  --kfm-bar-bg: rgba(10,16,32,0.92);
+  --kfm-chip-bg: rgba(51,65,85,0.85);
+  --kfm-overlay-bg: rgba(2,6,16,0.45);
+
+  /* ── 字体 ── */
+  --kfm-font-mono: ui-monospace, Menlo, Consolas, monospace;
+  --kfm-font-sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+
+  /* ── 动画时长 ── */
+  --kfm-dur-instant: 80ms;   /* 触觉反馈：按压、hover */
+  --kfm-dur-fast: 150ms;     /* 小元素状态：标签高亮、icon 切换 */
+  --kfm-dur-normal: 250ms;   /* 面板展开/收起、毛玻璃弹出 */
+  --kfm-dur-slow: 350ms;     /* 复杂入场：多元素序列动画 */
+
+  /* ── 缓动曲线 ── */
+  --kfm-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --kfm-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --kfm-ease-sharp: cubic-bezier(0.22, 0.61, 0.25, 1);
+
+  /* ── 间距/圆角 ── */
+  --kfm-radius-sm: 6px;
+  --kfm-radius-md: 8px;
+  --kfm-radius-lg: 11px;
+  --kfm-radius-xl: 14px;
+}
+
+/* ── tmux-tabs 默认动画（BeautifulUI 逻辑：动效即解释，克制 100-350ms） ── */
+
+/* 标签排展开：从把手右侧滑入 + 淡入 */
+@keyframes kfm-tmux-strip-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+/* 标签排收起：向左滑出 + 淡出 */
+@keyframes kfm-tmux-strip-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-8px); }
+}
+/* 标签高亮切换 */
+[data-tmux-id] {
+  transition:
+    background-color var(--kfm-dur-fast) var(--kfm-ease-sharp),
+    color var(--kfm-dur-fast) var(--kfm-ease-sharp),
+    transform var(--kfm-dur-instant) var(--kfm-ease-out);
+}
+[data-tmux-id]:active {
+  transform: scale(0.96);
+}
+/* 把手 hover/active */
+[data-tmux-orb] {
+  transition:
+    filter var(--kfm-dur-instant) var(--kfm-ease-out),
+    transform var(--kfm-dur-instant) var(--kfm-ease-out);
+}
+[data-tmux-orb]:hover {
+  filter: brightness(1.1);
+}
+[data-tmux-orb]:active {
+  transform: scale(0.96);
+}
+/* 标签排展开/收起动画（DOM 增删场景，用 animation 不用 transition） */
+[data-tmux-tabs="EXPANDED"] {
+  animation: kfm-tmux-strip-in var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+/* 毛玻璃页弹出：opacity + scale */
+@keyframes kfm-tmux-overlay-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+[data-tmux-overlay] {
+  animation: kfm-tmux-overlay-in var(--kfm-dur-normal) var(--kfm-ease-spring) both;
+}
+
+/* 未来主题切换示例（现在不启用）：
+:root[data-theme="light"] {
+  --kfm-page: #fafafb;
+  --kfm-canvas: #f1f2f3;
+  --kfm-surface: #fff;
+  --kfm-inset: #f7f8f9;
+  --kfm-hover: #f4f5f6;
+  --kfm-hover-2: #e7e9eb;
+  --kfm-ink: #1f2124;
+  --kfm-ink-2: #62656b;
+  --kfm-ink-3: #9a9da3;
+  --kfm-line: #d9dbe0;
+  --kfm-line-strong: #b0b3b8;
+  --kfm-accent: #007aff;
+  --kfm-green: #34c759;
+  --kfm-orange: #ff9500;
+  --kfm-red: #ff3b30;
+}
+*/

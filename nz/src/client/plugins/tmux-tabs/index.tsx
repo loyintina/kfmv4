@@ -93,14 +93,14 @@ export function openSessionsLink(onUpdate: () => void): SessionsLink {
 
 // ========== 皮（React 组件） ==========
 
-const BAR_BG = 'rgba(10,16,32,0.92)';
-const BAR_ACCENT = '#3B82F6';
-const HAIRLINE = '#232833';
+const BAR_BG = 'var(--kfm-bar-bg)';
+const BAR_ACCENT = 'var(--kfm-accent)';
+const HAIRLINE = 'var(--kfm-line)';
 
 function btnStyle(primary: boolean): React.CSSProperties {
   return {
-    background: 'none', border: `1px solid ${primary ? '#F5F7FA' : HAIRLINE}`,
-    color: primary ? '#F5F7FA' : '#8A93A3', padding: '6px 16px', fontSize: '13px',
+    background: 'none', border: `1px solid ${primary ? 'var(--kfm-ink)' : HAIRLINE}`,
+    color: primary ? 'var(--kfm-ink)' : 'var(--kfm-ink-3)', padding: '6px 16px', fontSize: '13px',
     cursor: 'pointer', borderRadius: 0,
   };
 }
@@ -118,7 +118,7 @@ function OverlayPage(props: {
     onClick: onCancel,
     style: {
       position: 'fixed', inset: 0, zIndex: 60,
-      background: 'rgba(2,6,16,0.45)', backdropFilter: 'blur(14px)',
+      background: 'var(--kfm-overlay-bg)', backdropFilter: 'blur(14px)',
       WebkitBackdropFilter: 'blur(14px)', pointerEvents: 'auto',
     },
   }, createElement('div', {
@@ -126,11 +126,11 @@ function OverlayPage(props: {
     style: {
       position: 'absolute', left: '50%', transform: 'translateX(-50%)',
       top: 'calc(var(--sat, 0px) + 18vh)', width: 'min(78vw, 320px)',
-      background: 'rgba(10,14,20,0.96)', border: `1px solid ${HAIRLINE}`,
+      background: 'var(--kfm-bar-bg)', border: `1px solid ${HAIRLINE}`,
       padding: '18px 16px', display: 'flex', flexDirection: 'column', gap: '12px',
     },
   },
-  createElement('div', { style: { color: '#F5F7FA', fontSize: '14px', letterSpacing: '0.04em' } }, title),
+  createElement('div', { style: { color: 'var(--kfm-ink)', fontSize: '14px', letterSpacing: '0.04em' } }, title),
   children ?? null,
   createElement('div', { style: { display: 'flex', gap: '10px', justifyContent: 'flex-end' } },
     createElement('button', { 'data-tmux-cancel': '1', onClick: onCancel, style: btnStyle(false) }, '取消'),
@@ -176,9 +176,9 @@ function TmuxTabs(props: {
       'data-tmux-id': s.name,
       onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onChipClick(s); },
       style: {
-        padding: '3px 8px', borderRadius: '7px', fontSize: '12px',
-        background: attachedSession === s.name ? BAR_ACCENT : 'rgba(51,65,85,0.85)',
-        color: attachedSession === s.name ? '#fff' : '#cbd5e1', cursor: 'pointer', whiteSpace: 'nowrap',
+        padding: '3px 8px', borderRadius: 'var(--kfm-radius-md)', fontSize: '12px',
+        background: attachedSession === s.name ? BAR_ACCENT : 'var(--kfm-chip-bg)',
+        color: attachedSession === s.name ? 'var(--kfm-ink)' : 'var(--kfm-ink-2)', cursor: 'pointer', whiteSpace: 'nowrap',
         display: 'flex', alignItems: 'center', gap: '6px',
       },
     }, s.name, createElement('span', {
@@ -187,7 +187,7 @@ function TmuxTabs(props: {
     createElement('span', {
       'data-tmux-close': s.name,
       onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onAskClose(s); },
-      style: { color: '#8A93A3', cursor: 'pointer', fontSize: '12px', lineHeight: 1 },
+      style: { color: 'var(--kfm-ink-3)', cursor: 'pointer', fontSize: '12px', lineHeight: 1 },
     }, '×'),
   )),
   createElement('div', {
@@ -196,17 +196,17 @@ function TmuxTabs(props: {
     style: {
       marginLeft: 'auto', flex: '0 0 auto', width: '26px', height: '24px',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      border: `1px solid ${HAIRLINE}`, color: '#F5F7FA', cursor: 'pointer', fontSize: '14px',
+      border: `1px solid ${HAIRLINE}`, color: 'var(--kfm-ink)', cursor: 'pointer', fontSize: '14px',
     },
   }, '+'),
   ) : null;
 
   // 收起态把手（ vocabulary：HANDLE）
   const svgGrid = createElement('svg', { width: 14, height: 14, viewBox: '0 0 14 14' },
-    createElement('rect', { x: 1, y: 1, width: 5, height: 5, fill: '#8A93A3' }),
-    createElement('rect', { x: 8, y: 1, width: 5, height: 5, fill: '#8A93A3' }),
-    createElement('rect', { x: 1, y: 8, width: 5, height: 5, fill: '#8A93A3' }),
-    createElement('rect', { x: 8, y: 8, width: 5, height: 5, fill: '#8A93A3' }));
+    createElement('rect', { x: 1, y: 1, width: 5, height: 5, fill: 'var(--kfm-ink-3)' }),
+    createElement('rect', { x: 8, y: 1, width: 5, height: 5, fill: 'var(--kfm-ink-3)' }),
+    createElement('rect', { x: 1, y: 8, width: 5, height: 5, fill: 'var(--kfm-ink-3)' }),
+    createElement('rect', { x: 8, y: 8, width: 5, height: 5, fill: 'var(--kfm-ink-3)' }));
   const orbCircle = {
     position: 'fixed' as const, top: 'calc(var(--sat, 0px) + 12px)', left: '12px',
     width: '32px', height: '32px', borderRadius: '50%', background: BAR_BG,
@@ -261,7 +261,7 @@ function TmuxTabs(props: {
         onChange: (e: React.ChangeEvent<HTMLInputElement>) => setNewName(e.target.value),
         placeholder: '会话名（留空=自动编号）',
         style: {
-          background: 'none', border: `1px solid ${HAIRLINE}`, color: '#F5F7FA',
+          background: 'none', border: `1px solid ${HAIRLINE}`, color: 'var(--kfm-ink)',
           padding: '8px 10px', fontSize: '14px', outline: 'none', borderRadius: 0,
         },
       })),
