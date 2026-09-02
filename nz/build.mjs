@@ -32,12 +32,17 @@ writeFileSync('public/build-info.json', JSON.stringify({ builtAt: new Date().toI
 // :root[data-theme="xxx"] 覆盖，不改组件。
 copyFileSync('src/client/tokens.css', 'public/tokens.css');
 
-// 缓存破坏：index.html 的 bundle 引用带内容哈希 —— 真机浏览器缓存旧包
-// 会让「修复实测」测到旧代码（8.8.3b 上浮被盖排查的干扰源之一）。
+// 缓存破坏：index.html 的 bundle/tokens 引用带内容哈希 —— 真机浏览器缓存旧包
+// 会让「修复实测」测到旧代码（8.8.3b 上浮被盖排查的干扰源之一；
+// 2026-09-02 真机实证：bundle 有哈希 tokens.css 没有 → WebView 旧 CSS 配新 JS，
+// 收起态 scaleX(0) 规则缺失标签排常显）。
 // 哈希随内容变才变，不造成无意义 churn。
 const hash = createHash('sha256').update(readFileSync('public/bundle.js')).digest('hex').slice(0, 8);
+const cssHash = createHash('sha256').update(readFileSync('public/tokens.css')).digest('hex').slice(0, 8);
 const html = readFileSync('public/index.html', 'utf8');
-const stamped = html.replace(/bundle\.js(\?v=[a-f0-9]{8})?/, `bundle.js?v=${hash}`);
+const stamped = html
+  .replace(/bundle\.js(\?v=[a-f0-9]{8})?/, `bundle.js?v=${hash}`)
+  .replace(/tokens\.css(\?v=[a-f0-9]{8})?/, `tokens.css?v=${cssHash}`);
 if (stamped !== html) writeFileSync('public/index.html', stamped);
 
 // 编码协商预压缩（2026-09-01 bundle 增重插曲：慢隧道首载超考卷预算）：
