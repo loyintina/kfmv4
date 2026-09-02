@@ -667,6 +667,7 @@ export function applyTermBundle(ctx: Context): void {
         card.inputToBottom(); // 注入=落字：回底纪律同 kb/IME
         bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
       };
+      win.__kfmNzTermClear = () => shell.clear();
       win.__kfmNzTermScreen = () => shell.screenText();
       // 画布重画眼（2026-08-28 用户拍板）：后台不产帧时的像素眼，
       // 原理/保真边界见 shell.canvasShot 注释。返 dataURL（空串=失败）。

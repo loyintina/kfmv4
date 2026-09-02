@@ -1,7 +1,8 @@
 /**
- * tests/browser/tmux-tabs.test.mjs — tmux 标签条 A 档考卷 v6（会话版，
- * 2026-09-02 用户五次仲裁：①标签=会话 ②＋建会话自动 attach ③展开态点
- * 屏幕空白区域自动收起标签栏）。
+ * tests/browser/tmux-tabs.test.mjs — tmux 标签条 A 档考卷 v7（会话版，
+ * 2026-09-02 用户六次仲裁：①标签=会话 ②＋建会话自动 attach ③展开态点
+ * 屏幕空白区域自动收起标签栏 ④点聚焦标签回终端态时标签排保持展开 ⑤
+ * detach 后清屏重绘 prompt ⑥操作屏幕即收起标签栏）。
  * 状态机蓝本=docs/tmux-tabs-v2-state-machine.md（0902 会话化修订）。
  * 劣化网络纪律：actUntil=幂等动作+状态轮询直到确认（守卫式：动作可能
  * 非幂等时先读态再动）。观测：屏幕真话×钩子全机位×服务器 tmux ls 互证。
@@ -83,16 +84,22 @@ check('②T5 ＋建会话→自动 attach 聚焦（双证+attached+state=EXPANDE
       ok2.ok && srv2 && s2.state === 'EXPANDED' && s2.attached === 'kfm-exam-new',
       `srv=${srv2} state=${s2.state} attached=${s2.attached}`);
 
-// ③ T3 点聚焦标签→detach 回终端态
+// ③ T3 点聚焦标签→detach 回终端态，标签排保持展开（EXPANDED），
+// 屏幕 tmux 状态行消失（清屏+^L 重绘 prompt）
 await page.click('[data-tmux-id="kfm-exam-new"]');
 const ok3 = await actUntil(
   async () => {},
-  async () => { const s = await screenText(); const r = await rt(); return !s.includes('[kfm-exam-new]') && r.attached === null; },
+  async () => {
+    const s = await screenText();
+    const r = await rt();
+    return !s.includes('[kfm-exam-new]') && r.attached === null && r.state === 'EXPANDED';
+  },
   { tries: 1, settle: 5000, poll: 300 },
 );
 const s3 = await rt();
-check('③T3 点聚焦→detach 回终端态（状态行消失+attached=null）',
-      ok3.ok && s3.attached === null, `attached=${s3.attached}`);
+check('③T3 点聚焦→detach 回终端态（attached=null+state=EXPANDED+tmux状态行消失）',
+      ok3.ok && s3.attached === null && s3.state === 'EXPANDED',
+      `attached=${s3.attached} state=${s3.state}`);
 
 // ④ T2 未附点标签→attach（状态行出现+附着指示落位+停 EXPANDED）
 const t04 = Date.now();
@@ -211,13 +218,27 @@ const dom8 = await page.evaluate(() => document.querySelector('[data-tmux-tabs]'
 check('⑧T14 点屏幕空白→标签栏收起（state=HANDLE+dom=HANDLE）',
       ok8.ok && dom8 === 'HANDLE', `state=${(await rt()).state} dom=${dom8}`);
 
-// ⑨ kernel 注册表 + 自观测环词汇表 + 末拍互证
+// ⑨ T15 操作屏幕：展开后键盘输入→收起回 HANDLE
+// （点击终端区域已由 T14/backdrop 覆盖；T15 验证「敲键盘」这条路径）
+await page.click('[data-tmux-tabs="HANDLE"]');
+await page.waitForTimeout(300);
+await page.keyboard.press('a');
+const ok9 = await actUntil(
+  async () => {},
+  async () => { const r = await rt(); return r.state === 'HANDLE' && !r.expanded; },
+  { tries: 1, settle: 3000, poll: 200 },
+);
+const dom9 = await page.evaluate(() => document.querySelector('[data-tmux-tabs]')?.getAttribute('data-tmux-tabs') ?? null);
+check('⑨T15 键盘输入→标签栏收起（state=HANDLE+dom=HANDLE）',
+      ok9.ok && dom9 === 'HANDLE', `state=${(await rt()).state} dom=${dom9}`);
+
+// ⑩ kernel 注册表 + 自观测环词汇表 + 末拍互证
 const reg = await page.evaluate(() => window.__kfmNzKernel?.list?.() ?? null);
-const s9 = await rt();
+const s10 = await rt();
 const hist = await page.evaluate(() => window.__kfmNzTmuxTabs?.().history ?? []);
 const states = hist.map((h) => h.state);
 const domNow = await page.evaluate(() => document.querySelector('[data-tmux-tabs]')?.getAttribute('data-tmux-tabs') ?? null);
-check('⑨kernel 注册表+自观测环词汇表统一+末拍互证',
+check('⑩kernel 注册表+自观测环词汇表统一+末拍互证',
       Array.isArray(reg) && reg.includes('tmux-tabs') && states.length > 0
         && states.every((st) => ['HANDLE', 'EXPANDED', 'OVERLAY_NEW', 'OVERLAY_CLOSE'].includes(st))
         && states[states.length - 1] === domNow,

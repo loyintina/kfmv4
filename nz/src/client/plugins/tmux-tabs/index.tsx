@@ -349,9 +349,16 @@ export function createTmuxTabsPlugin(): UiPlugin {
         const leaveTmux = (): void => {
           termInject('\u0002d'); // Ctrl-B d：TUI 运行中也安全
           attachedRef.current = null;
-          expandedRef.current = false;
-          setExpanded(false); // T3 终点 HANDLE（回终端视图）
+          // 0902 用户仲裁：T3 回终端态时标签排保持展开（选择态），但清掉
+          // tmux 残留画面；随后 Ctrl-L 重绘 prompt，给用户「已彻底回来」
+          // 的视觉暗示。
+          expandedRef.current = true;
+          setExpanded(true);
           refreshRuntime();
+          setTimeout(() => {
+            (window as unknown as Record<string, unknown>).__kfmNzTermClear?.();
+            termInject('\u000c'); // ^L：readline 默认清屏并重绘当前行
+          }, 120);
         };
         const onChipClick = (s: TmuxSessionInfo): void => {
           if (attachedRef.current === s.name) leaveTmux(); // T3
@@ -372,6 +379,40 @@ export function createTmuxTabsPlugin(): UiPlugin {
           });
           linkRef.current = link;
           return () => link.close();
+        }, []);
+
+        // 0902 用户仲裁：选择态（EXPANDED）下点/滚/敲键盘等「开始操作屏幕」
+        // 行为 = 收起标签栏；事件源在标签栏组件内部（把手/标签/+/×/毛玻璃）
+        // 时不收起。
+        useEffect(() => {
+          const dismissIfScreenOp = (): void => {
+            if (!expandedRef.current || overlayRef.current) return;
+            expandedRef.current = false;
+            setExpanded(false);
+            refreshRuntime();
+          };
+          const isInsideTabs = (target: EventTarget | null): boolean =>
+            !!(target instanceof HTMLElement && target.closest('[data-tmux-tabs-root]'));
+          const onPointer = (e: PointerEvent): void => {
+            if (!isInsideTabs(e.target)) dismissIfScreenOp();
+          };
+          const onWheel = (e: WheelEvent): void => {
+            if (!isInsideTabs(e.target)) dismissIfScreenOp();
+          };
+          const onKey = (e: KeyboardEvent): void => {
+            if (!expandedRef.current || overlayRef.current) return;
+            if (['Control', 'Alt', 'Shift', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock'].includes(e.key)) return;
+            if (isInsideTabs(e.target)) return;
+            dismissIfScreenOp();
+          };
+          document.addEventListener('pointerdown', onPointer, { passive: true });
+          document.addEventListener('wheel', onWheel, { passive: true });
+          document.addEventListener('keydown', onKey);
+          return () => {
+            document.removeEventListener('pointerdown', onPointer);
+            document.removeEventListener('wheel', onWheel);
+            document.removeEventListener('keydown', onKey);
+          };
         }, []);
 
         // 权威镜像（渲染腿）：useState 真值回写 ref + 刷钩子

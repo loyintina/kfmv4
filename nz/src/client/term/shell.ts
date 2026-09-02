@@ -215,6 +215,14 @@ export class TermShell {
     this.cjkDrop = 0;
   }
 
+  /** 清当前可视屏（不清 scrollback 历史区）：detach 回终端态时把 tmux
+   *  残留内容一次性抹掉，随后 shell 重绘 prompt。 */
+  clear() {
+    this.core.feed(this.enc.encode('\x1b[2J\x1b[H'));
+    this.rowCache = this.rowCache.map(() => '');
+    this.renderFrame();
+  }
+
   /** 往容器里填文本：宽字符逐个裁进 2×cellW 固定格（inline-block 裁切），
    * 窄字符走自然文本。cellW 未量出时退化为纯文本（首帧前不裁）。 */
   private appendTextCells(parent: HTMLElement, text: string) {

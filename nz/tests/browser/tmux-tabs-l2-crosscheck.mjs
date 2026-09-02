@@ -67,14 +67,42 @@ check('L1 浏览器钩子：建会话后自动 attach（state=EXPANDED, attached
 check('L2 服务端真值：tmux ls 显示 SESS attached=1',
       l2, `line=${l2Line ?? 'MISSING'} all=${JSON.stringify(serverLines)}`);
 
-// 点屏幕空白（backdrop）收起
-await page.click('[data-tmux-backdrop="1"]');
-await page.waitForTimeout(300);
-const r3 = await rt();
-const dom3 = await page.evaluate(() => document.querySelector('[data-tmux-tabs]')?.getAttribute('data-tmux-tabs') ?? null);
-check('L1b backdrop 收起：state=HANDLE, expanded=false, dom=HANDLE',
-      r3.state === 'HANDLE' && !r3.expanded && dom3 === 'HANDLE',
-      `state=${r3.state} expanded=${r3.expanded} dom=${dom3}`);
+// 点聚焦标签：detach 回终端态，但标签排保持展开（EXPANDED），屏幕清掉 tmux 状态行
+await page.click(`[data-tmux-id="${SESS}"]`);
+const l1c = await (async () => {
+  const end = Date.now() + 5000;
+  while (Date.now() < end) {
+    const s = await screen();
+    const r = await rt();
+    if (r.attached === null && r.state === 'EXPANDED' && !s.includes(`[${SESS}]`)) return { ok: true, r, s };
+    await page.waitForTimeout(250);
+  }
+  return { ok: false, r: await rt(), s: await screen() };
+})();
+const serverLines2 = serverSessions();
+const l2Line2 = serverLines2.find(l => l.startsWith(SESS + ' '));
+const l2b = l2Line2 ? l2Line2.split(' ')[1] === '0' : false;
+
+check('L1c 浏览器钩子：点聚焦标签→detach 后标签排仍展开（state=EXPANDED, attached=null, tmux状态行消失）',
+      l1c.ok, JSON.stringify({ attached: l1c.r?.attached, state: l1c.r?.state, screenHas: l1c.s?.includes(`[${SESS}]`) }));
+
+check('L2b 服务端真值：detach 后 SESS attached=0',
+      l2b, `line=${l2Line2 ?? 'MISSING'} all=${JSON.stringify(serverLines2)}`);
+
+// 操作屏幕：键盘输入→收起标签栏
+await page.keyboard.press('b');
+const l1d = await (async () => {
+  const end = Date.now() + 3000;
+  while (Date.now() < end) {
+    const r = await rt();
+    if (r.state === 'HANDLE' && !r.expanded) return { ok: true, r };
+    await page.waitForTimeout(200);
+  }
+  return { ok: false, r: await rt() };
+})();
+const dom4 = await page.evaluate(() => document.querySelector('[data-tmux-tabs]')?.getAttribute('data-tmux-tabs') ?? null);
+check('L1d 浏览器钩子：键盘输入→标签栏收起（state=HANDLE, dom=HANDLE）',
+      l1d.ok && dom4 === 'HANDLE', `state=${l1d.r?.state} dom=${dom4}`);
 
 // 清理
 for (const line of serverSessions()) {

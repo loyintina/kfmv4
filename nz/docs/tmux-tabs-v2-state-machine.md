@@ -4,10 +4,12 @@
 > 主会话"前端三层规格"提案的 nz 侧验证样本）。
 > 语义来源：用户三轮仲裁后的确认稿（2026-09-01）+ **第四次仲裁（2026-09-02
 > 用户拍板：标签从「窗」改回「会话」）**+ **第五次仲裁（同日：＋建会话后
-> 自动 attach 并聚焦；展开态点屏幕空白区域自动收起标签栏）**。
+> 自动 attach 并聚焦；展开态点屏幕空白区域自动收起标签栏）**+ **第六次仲裁
+> （同日：点聚焦标签回终端态时标签排保持展开；操作屏幕即收起标签栏；
+> detach 后清屏重绘 prompt 以消除 tmux 残留画面的视觉暗示）**。
 > 纪律：**清单用户签收 → 每条转换一颗考卷钉 → 实现 → 变异抽检**。
-> 状态：**已签收（0902 会话语义+第五次仲裁用户当面拍板）**。
-> 考卷蓝本：tests/browser/tmux-tabs.test.mjs（v6，会话版）。
+> 状态：**已签收（0902 第六次仲裁用户当面拍板）**。
+> 考卷蓝本：tests/browser/tmux-tabs.test.mjs（v7，会话版）。
 
 ## 〇、0902 会话化仲裁（对 0901 稿的增量）
 
@@ -46,7 +48,7 @@
 | T1 | `HANDLE` | 点把手 | `EXPANDED` | 无（纯 UI） |
 | T2 | `EXPANDED` | 点**非聚焦**标签（未附） | `EXPANDED`（附着指示落位） | 注入 `tmux new-session -A -s <名>` attach |
 | T2s | `EXPANDED` | 点**非聚焦**标签（已附其他） | `EXPANDED` | 注入 Ctrl-B d → 350ms 后 attach 新会话（嵌套禁止：tmux 客户端内不能再 attach） |
-| T3 | `EXPANDED` | 点**聚焦**标签 | `HANDLE` | 注入 Ctrl-B d detach → 回终端态 |
+| T3 | `EXPANDED` | 点**聚焦**标签 | `EXPANDED` | 注入 Ctrl-B d detach → 回终端态；**标签排保持展开**（选择态），并清屏+`^L` 重绘 prompt，抹掉 tmux 残留画面 |
 | T4 | `EXPANDED` | 点 `＋` | `OVERLAY_NEW` | 无（输入框自动聚焦） |
 | T5 | `OVERLAY_NEW` | 输入名字+确认 | `EXPANDED`（已聚焦新会话） | `new-session -d -s <名>` + 立即 `enterSession(name)` attach（重名=tmux 拒绝；客户端先查重静默去重） |
 | T6 | `OVERLAY_NEW` | 空名字+确认 | `EXPANDED`（已聚焦新会话） | `new-session -d` + 立即 attach 该新会话（tmux 自动编号命名） |
@@ -55,6 +57,7 @@
 | T9 | `OVERLAY_CLOSE` | 确认 | `EXPANDED`（少一标签） | `kill-session -t <名>`；杀的是附着会话→终端回终端态+塌回 HANDLE |
 | T10 | `OVERLAY_CLOSE` | 取消 / 点罩层空白 | `EXPANDED`（原状） | 无（零副作用） |
 | T14 | `EXPANDED` | 点屏幕空白区域（标签排外） | `HANDLE` | 无（纯 UI，backdrop 收起） |
+| T15 | `EXPANDED` | 操作屏幕（点终端/keybar、滚动、键盘输入等，事件源不在标签栏组件内） | `HANDLE` | 无（纯 UI，document 全局监听收起） |
 | T12 | 任意 | 通道断 / WS 假死 | 数据停更（状态保持） | 3s 重试腿持续；重试成功→恢复推送 |
 | T13 | 数据断 | 重试成功 | 恢复推送 | 无 |
 
@@ -90,16 +93,17 @@ E4 服务器推送校准——推送源从 tmux-state 改为 tmux-sessions）。
 ＋/× SVG 线脚；展开收起 180ms；毛玻璃页键盘避让）。
 标签副文本：会话窗数徽记（`<名>·<窗数>`，纯文本微字）。
 
-## 六、考卷映射（v6，每条转换一颗钉）
+## 六、考卷映射（v7，每条转换一颗钉）
 
 | 钉 | 验证转换 | 手段 |
 |---|---|---|
 | ① | T1 + 会话表渲染 | 展开→标签含 dsh/amp（真实夹具会话） |
 | ② | T4/T5 | ＋→输名→确认→自动 attach（state=EXPANDED+attached=name+屏幕含状态行） |
-| ③ | T3 点聚焦 | 点聚焦标签→detach 回终端态 |
+| ③ | T3 点聚焦 | 点聚焦标签→detach 回终端态，**标签排仍展开（state=EXPANDED）**，屏幕 tmux 状态行消失 |
 | ④ | T2 未附点标签 | 点探针会话标签→状态行出现+attached=true |
 | ⑤ | T2s 已附切换 | 附 A 点 B→先 detach 后 attach（状态行换名） |
 | ⑥ | T8/T9 | ×→确认页拦截→确认→双证消失 |
 | ⑦ | T9 杀附着会话 | 附着时 inject kill-session→塌回 HANDLE |
 | ⑧ | T14 点屏幕空白 | 展开后点 `[data-tmux-backdrop]`→收起回 HANDLE |
-| ⑨ | kernel 注册+词汇表 | kernel list + ring 状态名全在枚举内+末拍互证 |
+| ⑨ | T15 操作屏幕 | 展开后在终端/keybar 滚动或键盘输入→收起回 HANDLE |
+| ⑩ | kernel 注册+词汇表 | kernel list + ring 状态名全在枚举内+末拍互证 |
