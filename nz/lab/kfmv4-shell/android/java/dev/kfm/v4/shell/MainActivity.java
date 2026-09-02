@@ -90,6 +90,20 @@ public class MainActivity extends Activity {
         // 根布局背景=主题底色：页面首绘前无一帧白
         root.setBackground(new android.graphics.drawable.ColorDrawable(0xFF09080D));
 
+        // 键盘适配（2026-09-02 输入栏劈开案）：壳是 edge-to-edge（上面刚关了
+        // decorFits），API 30+ 上 adjustResize 不再生效，系统退回 adjustPan
+        // 整窗上推——ai-input-bar(fixed bottom:0) 悬到页面中间，内容上下两截
+        // （真机截图定罪）。修法=IME insets 自管：键盘弹起给根布局垫
+        // ime.bottom，WebView 实高缩短 → innerHeight/vv 随缩，页面按 Via
+        // 同语义重排（输入栏贴键盘顶，不动 8.x 半死躯体一行代码）。
+        root.setOnApplyWindowInsetsListener((v, insets) -> {
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                android.graphics.Insets ime = insets.getInsets(android.view.WindowInsets.Type.ime());
+                v.setPadding(0, 0, 0, ime.bottom);
+            }
+            return insets;
+        });
+
         termWeb = new WebView(this);
         configWeb(termWeb);
         termWeb.addJavascriptInterface(new NzNative(), "NzNative");

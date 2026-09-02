@@ -36,6 +36,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density|fontScale">
             <!-- configChanges 全集=国产 ROM 实锤坑对策（kfm-na 2026-08-13
                  android-activity#196），一个都不许删；singleTask=单实例
