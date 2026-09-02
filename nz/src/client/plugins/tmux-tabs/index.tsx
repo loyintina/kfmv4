@@ -414,8 +414,11 @@ export function createTmuxTabsPlugin(): UiPlugin {
             setExpanded(false);
             refreshRuntime();
           };
+          // 0902 修复：把手内部是 svg 图标，svg 不是 HTMLElement 而是
+          // SVGElement，原判定会把点击把手误判为「外部点击」→ 触发 dismiss
+          // → 展开后瞬间收起 → 闪烁。改用 Element 父类覆盖 svg/HTMLElement。
           const isInsideTabs = (target: EventTarget | null): boolean =>
-            !!(target instanceof HTMLElement && target.closest('[data-tmux-tabs-root]'));
+            !!(target instanceof Element && target.closest('[data-tmux-tabs-root]'));
           const onPointer = (e: PointerEvent): void => {
             if (!isInsideTabs(e.target)) dismissIfScreenOp();
           };
