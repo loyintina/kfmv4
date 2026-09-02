@@ -74,3 +74,20 @@ strip 加独立标识 `data-tmux-strip="1"`，CSS 规则改挂 `[data-tmux-strip
 ## 6. 顺带入账
 
 - `bb64ed1a` kfm-v4 shell 端口直配（8021→8032/current.html）补提交——上轮真机验收通过但漏了「改动即提交」，本次补上。
+
+---
+
+## 7. 真机 C 档跟进（2026-09-02 晚，实验台自验）：缓存破坏漏网抓出现行
+
+**经过**：用户开 NZ-Agent 后走 8026 实验台自验。第一读就不对——收起态 strip 实测 `transform:none / opacity:1`（应为 scaleX(0)/0），但 DOM 类名 `kfm-collapsed` 在、`[data-tmux-strip]` 元素在（新 JS）、bundle 哈希 `d973b495`（新包）。**JS 新 + CSS 旧 = tokens.css 缓存漏网铁证**：`build.mjs` 只给 bundle.js 盖内容哈希，tokens.css 是裸 `./tokens.css` 引用，WebView 按启发式缓存留了今晨 v2.4 的旧 CSS。
+
+**判读路径**：真机读数异常 → 对比 DOM 类名与 stylesheet 规则（扫 `document.styleSheets` 无任何 `[data-tmux-strip]` 规则）→ 看 link href 无哈希 → 定性缓存而非实现。全程没动用户活会话（只读 evaluate）。
+
+**修法**：`build.mjs` 给 tokens.css 同盖内容哈希（`tokens.css?v=6bf734db`），与 bundle 同机制（`nz@待补哈希`）。回归 animation-check 全断言绿 + tmux-tabs 11/11。
+
+**教训入账**：
+1. **新增静态资源引用时，缓存破坏必须与引用同天落地**——bundle 有哈希 tokens 没有，就是「机制存在但覆盖面靠记忆」的破口。以后 index.html 新增任何 `<link>/<script>` 静态引用，先问一句「它有哈希吗」。
+2. **真机 C 档价值实证**：headless 全绿照样真机红（headless 每次全新无缓存，永远测不到这类）。「多路验证必有一路最贴近用户体验」的纪律再次兑现。
+3. 排障顺序对：先读数（transform/opacity 实测）再分层（DOM 新/CSS 旧）后定性（href 无哈希），没走「再重启试试」的弯路。
+
+**待用户**：重开一次 NZ-Agent（划掉再开，让 WebView 拉新 index.html），我再走 8026 把三条 C 档判据（把手旋转/伸出收回/收起无残留）实测收口。
