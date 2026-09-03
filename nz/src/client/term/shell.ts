@@ -9,9 +9,11 @@
  * `{text}\x1f{runs}`，runs = `start,fg,bg,attrs;` 重复；start 是
  * **UTF-8 字节下标**（CJK 3 字节，JS 侧须按字节切而非 UTF-16 下标）。
  * 属性字母串 b/i/u/s/v/d/h：bold/italic/underline/strikeout/inverse/dim/hidden。
+ * bold 语义 = bold-is-bright（2026-09-03 用户拍板）：不画粗、映射亮色，
+ * 见 palette.ts boldBrightToken 注释的完整因果。
  */
 import type { TermCoreHandle } from '../term-core.js';
-import { tokenToCss, TERM_FG, TERM_BG } from './palette.js';
+import { tokenToCss, boldBrightToken, TERM_FG, TERM_BG } from './palette.js';
 
 /** 终端字体栈 = NA 同款（2026-08-26 用户拍板，nz-font-adapt-review；
  *  NaMain 主（用户商业字体，ASCII/Latin；私有勿提交，见 index.html
@@ -144,6 +146,11 @@ export class TermShell {
     el.style.cssText =
       `position:relative;background:${TERM_BG};color:${TERM_FG};` +
       `font:${fs}px/1.25 ${TERM_FONT_STACK};` +
+      // bold-is-bright 双保险（2026-09-03 用户拍板）：bold 已改映射亮色
+      // （见 appendSeg），但任何路径漏进来的 fontWeight:bold 也不许 Chromium
+      // 合成加粗——NaMain/NaCJK 单字重（400），合成加粗把像素 CJK 糊成
+      // 2px 毛边。容器级一处，所有后代 span 继承生效。
+      `font-synthesis:none;` +
       `user-select:text;-webkit-user-select:text;overflow:hidden;`;
     this.historyDiv = document.createElement('div');
     el.appendChild(this.historyDiv);
@@ -312,14 +319,21 @@ export class TermShell {
       const [fg, bg, attrs] = style.split(',');
       const span = document.createElement('span');
       const inverse = attrs.includes('v');
-      const fgCss = tokenToCss(fg, 'fg');
+      const bold = attrs.includes('b');
+      // bold-is-bright（2026-09-03 用户拍板）：bold 不画粗、前景映射亮一
+      // 档（0-7→8-15、默认 fg→亮白、bright/256/RGB 不变，纯函数在
+      // palette.ts boldBrightToken）。病灶=NaMain/NaCJK 单字重，Chromium
+      // 合成加粗把像素 CJK 糊成 2px 毛边；映射先于 inverse 互换（ECMA-48
+      // 惯例：bold 只染前景色本身）。
+      const fgCss = tokenToCss(bold ? boldBrightToken(fg) : fg, 'fg');
       const bgCss = tokenToCss(bg, 'bg');
       // inverse：fg/bg 互换（默认色也参与换）
       const effFg = inverse ? (bgCss ?? TERM_BG) : fgCss;
       const effBg = inverse ? (fgCss ?? TERM_FG) : bgCss;
       if (effFg) span.style.color = effFg;
       if (effBg) span.style.background = effBg;
-      if (attrs.includes('b')) span.style.fontWeight = 'bold';
+      // 不再设 fontWeight='bold'（见上 bold-is-bright 注释）；容器级
+      // font-synthesis:none 兜底任何漏网 bold 也不被合成加粗。
       if (attrs.includes('i')) span.style.fontStyle = 'italic';
       const deco = [attrs.includes('u') ? 'underline' : '', attrs.includes('s') ? 'line-through' : '']
         .filter(Boolean).join(' ');

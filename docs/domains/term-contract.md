@@ -76,6 +76,33 @@ c4_wide_char_at_row_end_wraps_whole（nz/term-core） 绿；浏览器层不钉�
 为准，不以墨迹为准**（DejaVu 缺字也画 tofu 的教训）。盲文 U+2800 区靠此链救。
 na：`prefer_cjk()`；nz：双字体栈 NaMain/NaCJK（文件直接复用 na 的）。
 
+### C6. bold 语义 = bold-is-bright（2026-09-03 nz 首义，用户拍板）
+
+bold（SGR 1）**不画粗、映射亮一档**（ECMA-48 惯例），并全局禁合成加粗。
+病灶：两线终端字体均单字重（nz NaMain/NaCJK 只有 400），Chromium 合成
+加粗把像素 CJK 糊成 2px 毛边、中文难认——bold 的视觉强调改走亮色。
+
+映射表（只染前景，背景不受 bold 影响）：
+
+| 输入 | 映射后 |
+|---|---|
+| 索引色 0-7（30-37 / idx0-7） | bright 8-15（查 C1 表亮档） |
+| 默认前景 | 亮白（#FFFFFF，C1 #15） |
+| 已是 bright（90-97 / idx8-15） | 不变（不二次提亮） |
+| 256 色（idx16-255）/ RGB 直设 | 不变 |
+
+配套：渲染容器 `font-synthesis:none`——任何路径漏进来的 bold 字重也
+不被合成加粗（双保险）。
+
+- nz 实现（2026-09-03 落地）：`palette.ts boldBrightToken()`（纯函数，
+  A 档钉 tests/palette-bold-bright.test.ts 6 题）+ `shell.ts appendSeg`
+  删 fontWeight='bold' 改映射 + 容器级 font-synthesis:none；browser 钉
+  term-bold-bright.test.mjs 4/4（1;31→#FF5555 / 1m→#FFFFFF /
+  1;94→#60A5FA 不变 / 容器 fontSynthesis=none，computed fontWeight 均 400）
+- na 现状：**无 bold 消费点**（src 无 BOLD 引用），待跟进对齐——na 落地
+  时须按本表映射并各自落考题
+- 登记原因：两线首次定义 bold 语义，防偷偷分叉
+
 ## 非冻结（登记为有意分歧，勿强求一致）
 
 视口防御层（nz 特有）/ 墨迹顶对齐补偿 cjkDrop（nz 特有）/ 触摸注入形态

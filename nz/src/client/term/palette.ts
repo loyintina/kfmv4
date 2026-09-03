@@ -37,6 +37,27 @@ function indexedHex(n: number): string {
   return `#${g.toString(16).padStart(2, '0').repeat(3)}`;
 }
 
+/** bold→亮色映射（bold-is-bright，2026-09-03 用户拍板，两线首次定义
+ *  bold 语义，term-contract 已登记）：bold 不画粗、改亮一档。
+ *  因果：NaMain/NaCJK 都只有 400 单字重，Chromium 合成加粗把像素 CJK
+ *  糊成 2px 毛边、中文难认——bold 的视觉强调改走 ECMA-48 惯例的亮色。
+ *  只作用于前景 token（bold 从不染背景）：
+ *    索引色 0-7（含 Black..White 命名与 idx0-7）→ bright 8-15；
+ *    默认前景 Foreground → 亮白 BrightWhite；
+ *    已是 bright（90-97 / idx8-15 / Bright*）→ 不变；
+ *    256 色（idx16-255）/ RGB 直设色 → 不变。
+ *  纯函数，A 档单测直钉（tests/palette-bold-bright.test.ts）。 */
+export function boldBrightToken(token: string): string {
+  if (token === 'Foreground') return 'BrightWhite';
+  if (token in NAMED_HEX) return token.startsWith('Bright') ? token : `Bright${token}`;
+  const idx = /^idx(\d+)$/.exec(token);
+  if (idx) {
+    const n = Number(idx[1]);
+    if (n < 8) return `idx${n + 8}`;
+  }
+  return token; // idx8-255 / rgb / 未知：不变
+}
+
 /** token → CSS 颜色；null = 用默认（Foreground/Background 走主题默认）。 */
 export function tokenToCss(token: string, kind: 'fg' | 'bg'): string | null {
   if (token === 'Foreground' || token === 'Background') return null;

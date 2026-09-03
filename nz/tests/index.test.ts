@@ -19,6 +19,7 @@ import './bridge-heartbeat.test.ts';
 import './term-core-shared.test.ts';
 import './keymap.test.ts';
 import './cdp-relay.test.ts';
+import './palette-bold-bright.test.ts';
 import { runAll } from './runner.ts';
 
 await runAll();
