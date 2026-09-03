@@ -15,6 +15,12 @@ whenToUse: 当任务涉及把知乎 MHT（或类似网页 MHT）剪藏入库、�
   即为坏图。**坏图绝不喂上下文**（见 kimi-code 用户级 skill `zhihu-mht-image`）。
 - **真正的图源在 page_1.html 的 `<img src>` 里**——坏的是下载字节，URL 是好着的。
   从 page_1.html 抠 URL → 去 `picx.zhimg.com` 重新下载。
+- **懒加载图的真 URL 在 `data-actualsrc`**（2026-09-03 实测）：知乎"另存为"后，
+  未进入视口的图 `src` 是 `data:image/svg+xml` 占位（800×600 等空白尺寸），
+  page_1.html 里没有任何真 URL 可抠——**唯一线索是 img 标签的
+  `data-actualsrc="https://picx?\.zhimg.com/..._720w.jpg"`**。抓图前先
+  `grep -oE 'data-actualsrc="[^"]*' page_1.html`，与 src 清单合并去重，
+  否则文中"贴一张图"处会静默丢图。
 
 ## 流程
 
