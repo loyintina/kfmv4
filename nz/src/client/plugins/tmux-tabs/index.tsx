@@ -192,25 +192,36 @@ function TmuxTabs(props: {
     },
     onClick: () => onExpand(false),
   },
-  sessions.map((s) => createElement('div', { key: s.name, style: { display: 'flex', alignItems: 'center', gap: '4px', flex: '0 0 auto' } },
+  sessions.map((s) => createElement('div', { key: s.name, style: { display: 'flex', alignItems: 'center', flex: '0 0 auto' } },
     createElement('div', {
       'data-tmux-win': s.name,
       'data-tmux-id': s.name,
       onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onChipClick(s); },
       style: {
-        padding: '3px 8px', borderRadius: 'var(--kfm-radius-md)', fontSize: '12px',
+        padding: '3px 6px 3px 8px', borderRadius: 'var(--kfm-radius-md)', fontSize: '12px',
         background: attachedSession === s.name ? BAR_ACCENT : 'var(--kfm-chip-bg)',
         color: attachedSession === s.name ? 'var(--kfm-ink)' : 'var(--kfm-ink-2)', cursor: 'pointer', whiteSpace: 'nowrap',
         display: 'flex', alignItems: 'center', gap: '6px',
       },
-    }, s.name, createElement('span', {
-      style: { fontSize: '10px', opacity: 0.65 },
-    }, `·${s.windows}`)),
-    createElement('span', {
-      'data-tmux-close': s.name,
-      onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onAskClose(s); },
-      style: { color: 'var(--kfm-ink-3)', cursor: 'pointer', fontSize: '12px', lineHeight: 1 },
-    }, '×'),
+    },
+      s.name,
+      // 窗口数仅 >1 时显示（常态单窗口，·1 是纯噪音，2026-09-03 用户拍板）
+      s.windows > 1 ? createElement('span', {
+        style: { fontSize: '10px', opacity: 0.65 },
+      }, `·${s.windows}`) : null,
+      // × 收进标签内部右端（2026-09-03 用户拍板）：标签=统一整体，
+      // 控制不游离于视觉之外。stopPropagation 防触发整签切换。
+      createElement('span', {
+        'data-tmux-close': s.name,
+        onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onAskClose(s); },
+        style: {
+          // 聚焦态蓝底上 ink-3 对比度太低（实测发虚），跟随签文字色
+          color: attachedSession === s.name ? 'var(--kfm-ink)' : 'var(--kfm-ink-3)',
+          opacity: attachedSession === s.name ? 0.75 : 1,
+          cursor: 'pointer', fontSize: '12px', lineHeight: 1, padding: '2px', margin: '-2px',
+        },
+      }, '×'),
+    ),
   )),
   createElement('div', {
     'data-tmux-plus': '1',
