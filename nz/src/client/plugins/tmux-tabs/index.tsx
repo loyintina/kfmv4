@@ -216,6 +216,9 @@ function TmuxTabs(props: {
       }, `·${s.windows}`) : null,
       // × 收进标签内部右端（2026-09-03 用户拍板）：标签=统一整体，
       // 控制不游离于视觉之外。stopPropagation 防触发整签切换。
+      // × 右移防误触（同日二拍）：margin 左分量 -4→+4，× 整体右移 8px，
+      // 名字到 × glyph 视觉距离 6→14px；右缘不变（距 chip 右 12px 不贴边）；
+      // 热区技巧保留（padding 4 + 右/上/下 margin -4）。
       createElement('span', {
         'data-tmux-close': s.name,
         onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onAskClose(s); },
@@ -223,7 +226,7 @@ function TmuxTabs(props: {
           // 聚焦态蓝底上 ink-3 对比度太低（实测发虚），跟随签文字色
           color: attachedSession === s.name ? 'var(--kfm-ink)' : 'var(--kfm-ink-3)',
           opacity: attachedSession === s.name ? 0.75 : 1,
-          cursor: 'pointer', fontSize: '12px', lineHeight: 1, padding: '4px', margin: '-4px',
+          cursor: 'pointer', fontSize: '12px', lineHeight: 1, padding: '4px', margin: '-4px -4px -4px 4px',
         },
       }, '×'),
     ),
