@@ -285,4 +285,36 @@ _（下一条 term 相关修改从这里继续记）_
   字段就把断源路径钉死；②闩锁类自愈机制的到期分支必须先问「现状
   几何还成立吗」，到期≠该退。
 
+### 2026-09-03 中文贴顶根治（cjkDrop 坐标系 + 盒高基准，用户验收「效果还可以」）
+
+- **现象**：中文 ink 贴行顶、英文居中，tmux 绿条状态行最刺眼（像素实测：
+  中文距绿顶 0/距底 9，英文 5~6/4）。
+- **定罪链**（全程真机 8026，未靠猜）：截图实锤 → DOM 定量（盒顶在行顶
+  上方 -1.55px）→ line-height 九值参数扫描 → 像素 ink 分析闭环。
+- **双病灶**：①inline-block 宽字 span 盒高基准错——必须用行的 computed
+  line-height（rowLH），用 cellH（行 div 高，真机 16.25≠行盒 12.5）或
+  继承值都会 baseline 对齐错位 3.55px；②cjkDrop 度量跨坐标系——真机
+  WebView **textZoom 0.8**：getComputedStyle/getBoundingClientRect 报
+  缩放后值（10.4px），canvas 与 DOM 内联样式在「指定坐标系」（13px）。
+  用 computed font 量出差 1px，写进 DOM top 再打 8 折，渲染效果仅
+  0.8px=修了像没修。改 `cv.font = this.el.style.font`（inline 指定值），
+  差 2px 足额生效。
+- **验收**：cjk-inktop 5/5（新④钉 spanLH===rowLH）+ 五卷全绿；真机
+  像素 ink 分析：中文距绿顶 0→4/距底 5，英文 6/7，残差 2 物理 px
+  （0.6css）目检不可辨；用户真眼确认。
+- **新观测手段入库**：①**像素 ink 分析法**——CDP 截图按 x 分段统计
+  ink 像素距背景行顶/底的物理 px，是 ink 级对齐 bug 的终裁尺
+  （DOM rect 只能量盒、量不到 ink）；②**live 页 DOM 实验**——真机
+  像素验证只能在 live 页做（spare=顶层 splash WebView 不参与合成，
+  captureScreenshot 必超时），改 DOM 后要抢在终端重渲染前截图
+  （活终端 renderFrame 会盖回实验值，top=3 第一次采样就这么废的）；
+  ③canvasShot 边界：按 rect+middle baseline 重画，**量不了 ink**，
+  ink 级问题只能真截图。
+- **纪律产出**：①跨坐标系传值是隐形杀手——凡真机度量，先问「这个
+  API 报的是指定坐标系还是缩放后坐标系」（textZoom/zoom 存在时
+  computed/rect≠canvas≠内联）；②「同源度量」的同源指坐标系同源，
+  不是 API 名字看起来像同源——上轮「computed font 同源」恰恰是
+  跨坐标系的错源；③参数扫描 + 像素终裁的组合比单帧 DOM 读数可靠，
+  单帧会骗人（ranger runaway 教训的再次兑现）。
+
 _（下一条 term 相关修改从这里继续记）_
