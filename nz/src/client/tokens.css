@@ -57,6 +57,13 @@
 
 /* ── tmux-tabs 默认动画（BeautifulUI 逻辑：动效即解释，克制 100-350ms） ── */
 
+/* WebView 默认点按高亮（浅青浮层，2026-09-03 用户真机报告+screencast 帧
+ * 序列实证）：系统行为非 UI 动效，全局关闭。点按反馈由组件自己的
+ * :active 动效承担（orb scale(.96) 等），不损失反馈感。 */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* 把手：常驻 DOM，展开时顺转 90 度，收回时逆转 90 度 */
 [data-tmux-orb] {
   transition:
