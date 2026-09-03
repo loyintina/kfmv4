@@ -18,7 +18,7 @@
 
 - **① 盘点：已落**。states/transitions/sources 三节+逐条 file:line 证据，
   五事件入口（通道十一/真触摸/IME 队列/行数写回/注册）grep 面盖全，
-  草案在 na 仓 `docs/active/composer-checklist.md`（living，结环追加制）。
+  草案在 na 仓 docs/active/composer-checklist.md（living，结环追加制）。
 - **② 认领：草案 13 行（v1 十一 + 结晶二）已备好三选一**，卡用户在场
   窗口——与输入栏三场景装机判卷（真拖 1:1/点按柄位/柄稳显）同会话做，
   一次点亮手机两件事全收。「没想到」占比照记，直报判据 1。

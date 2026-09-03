@@ -40,7 +40,7 @@
 
 ### 观测证据
 
-脚本 `tests/browser/tmux-tabs-handle-debug.mjs` 注入事件日志，真实点击把手时记录到：
+脚本 `nz/tests/browser/tmux-tabs-handle-debug.mjs` 注入事件日志，真实点击把手时记录到：
 
 ```json
 { "phase": "capture", "type": "pointerdown", "target": "svg", "inside": false }
@@ -103,11 +103,11 @@ const isInsideTabs = (target: EventTarget | null): boolean =>
 
 | 脚本 | 用途 |
 |---|---|
-| `tests/browser/tmux-tabs-handle-debug.mjs` | 注入事件日志，观测把手点击的 target/inside 判定 |
-| `tests/browser/tmux-tabs-handle-flash-repro.mjs` | 反复点击把手，检测 EXPANDED/HANDLE 回弹 |
-| `tests/browser/tmux-tabs-first-attach-latency.mjs` | 测量第一次 attach 已存在会话的延迟 |
-| `tests/browser/tmux-tabs-new-session-latency.mjs` | 测量新建会话并 attach 的延迟 |
-| `tests/browser/tmux-tabs-expand-latency.mjs` | 测量把手展开延迟 |
+| `nz/tests/browser/tmux-tabs-handle-debug.mjs` | 注入事件日志，观测把手点击的 target/inside 判定 |
+| `nz/tests/browser/tmux-tabs-handle-flash-repro.mjs` | 反复点击把手，检测 EXPANDED/HANDLE 回弹 |
+| `nz/tests/browser/tmux-tabs-first-attach-latency.mjs` | 测量第一次 attach 已存在会话的延迟 |
+| `nz/tests/browser/tmux-tabs-new-session-latency.mjs` | 测量新建会话并 attach 的延迟 |
+| `nz/tests/browser/tmux-tabs-expand-latency.mjs` | 测量把手展开延迟 |
 
 ---
 

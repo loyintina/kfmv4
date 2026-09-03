@@ -30,7 +30,7 @@
 | 8021 | kfmv4 8.x 主线（`dist/server/index.js`） |
 | 8022 / 8024 | sshd |
 | 8023 | nz 终端服务器 |
-| 8025 / 8026 / **8028** | **现有 cdp-relay 三口**（桥 / 客户端 / 控制——`scripts/cdp-relay.ts` 单进程三监听） |
+| 8025 / 8026 / **8028** | **现有 cdp-relay 三口**（桥 / 客户端 / 控制——`nz/scripts/cdp-relay.ts` 单进程三监听） |
 | 8027 | kalo overlay |
 
 **关键修正**：relay 架构是三口不是一对（P1 落地时的拓扑：桥 8025 ← kalo -L、客户端 8026 服务器本机、控制 8028 ← kalo -L）。notice 候选 8028/8029 中 **8028 已被现 relay 控制口占用**。

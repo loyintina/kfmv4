@@ -36,7 +36,7 @@
 
 ## 修复内容
 
-### `src/client/term/shell.ts`
+### `nz/src/client/term/shell.ts`
 
 `TermShell.clear()` 升级为清屏+清 scrollback：
 
@@ -52,7 +52,7 @@ this.renderFrame();
 - `ESC[2J` 清当前屏；`ESC[3J` 清 scrollback（rio-vt 支持）；`ESC[H` 光标归位。
 - 同时清空历史区 DOM，避免上滑复现旧内容。
 
-### `src/client/plugins/tmux-tabs/index.tsx`
+### `nz/src/client/plugins/tmux-tabs/index.tsx`
 
 - **backdrop**: `pointer-events: none`，不再拦截第一次点击。
 - **收起逻辑**: 改到 `document.addEventListener('pointerdown', ..., { capture: true })` 捕获阶段。事件到达终端/keybar 之前先移除标签栏，用户第一次点击即同步操作屏幕。
@@ -69,10 +69,10 @@ this.renderFrame();
 
 | 路径 | 工具 | 数据来源 | 判断标准 |
 |---|---|---|---|
-| L1 自动化考卷 | `tests/browser/tmux-tabs.test.mjs` | Playwright 驱动 DOM + `__kfmNzTmuxTabs`/`__kfmNzTermScreen` 钩子 | 11 颗钉全部通过 |
-| L2 服务端真值 | `tests/browser/tmux-tabs-l2-crosscheck.mjs` | `tmux ls -F '#{session_name} #{session_attached}'` | attach/detach 前后 attached=1/0 |
-| L3 控制台钩子 | `tests/browser/tmux-tabs-l3-console-crosscheck.mjs` | `window.__kfmNzTermClear()` + `__kfmNzTermScreen()` | 清屏后探测文本消失、提示符仍在 |
-| **L4 贴近用户体验** | `tests/browser/tmux-tabs-render-shot.mjs` | **Playwright `page.screenshot()` 真实渲染 PNG** | attach 后截图含 tmux 内容；detach 后截图不含 tmux 内容 |
+| L1 自动化考卷 | `nz/tests/browser/tmux-tabs.test.mjs` | Playwright 驱动 DOM + `__kfmNzTmuxTabs`/`__kfmNzTermScreen` 钩子 | 11 颗钉全部通过 |
+| L2 服务端真值 | `nz/tests/browser/tmux-tabs-l2-crosscheck.mjs` | `tmux ls -F '#{session_name} #{session_attached}'` | attach/detach 前后 attached=1/0 |
+| L3 控制台钩子 | `nz/tests/browser/tmux-tabs-l3-console-crosscheck.mjs` | `window.__kfmNzTermClear()` + `__kfmNzTermScreen()` | 清屏后探测文本消失、提示符仍在 |
+| **L4 贴近用户体验** | `nz/tests/browser/tmux-tabs-render-shot.mjs` | **Playwright `page.screenshot()` 真实渲染 PNG** | attach 后截图含 tmux 内容；detach 后截图不含 tmux 内容 |
 | 回归 | bottom-anchor / scrollback / keybar-click / term-hooks / `npm test` | 既有考卷 | 零红 |
 
 ## 验证结果

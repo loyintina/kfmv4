@@ -24,18 +24,18 @@
 
 ## 修改内容
 
-### client: `src/client/plugins/tmux-tabs/index.tsx`
+### client: `nz/src/client/plugins/tmux-tabs/index.tsx`
 
 - `onNewConfirm`：非重名会话创建成功后，立即调用 `enterSession(name)`，完成 `new-session -A -s <name>` 注入 + `attachedRef` 落位 + 标签排保持 `EXPANDED`。
 - 展开态增加全屏透明 `data-tmux-backdrop` 层（zIndex=30，低于把手 z=41 / 标签排 z=40），点击该层触发 `onExpand(false)` 收起回 `HANDLE`。
 
-### spec: `docs/tmux-tabs-v2-state-machine.md`
+### spec: `nz/docs/tmux-tabs-v2-state-machine.md`
 
 - T5/T6 终点由 `HANDLE` 改为 `EXPANDED`（自动 attach 聚焦）。
 - 新增 T14：`EXPANDED` → 点屏幕空白 → `HANDLE`。
 - 考卷映射升级为 v6，新增 ⑧ 覆盖 T14。
 
-### test: `tests/browser/tmux-tabs.test.mjs`
+### test: `nz/tests/browser/tmux-tabs.test.mjs`
 
 - v6：钉 ② 验证自动 attach（state=EXPANDED / attached=name / 屏幕含状态行）。
 - 钉 ③ 改为 T3 点聚焦 detach。

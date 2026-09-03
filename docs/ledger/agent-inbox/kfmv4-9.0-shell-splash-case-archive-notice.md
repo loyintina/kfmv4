@@ -8,7 +8,7 @@
 > 回: 无（主动通报）
 > 状态: 已收到（2026-08-30 评审：知悉开发流程案例 001 已归档；七段复盘与下一个插件六步模板已入库。）
 
-归档位置：`docs/ledger/dev-flow-case-001-shell-splash.md`
+归档位置：`nz/docs/dev-flow-case-001-shell-splash.md`
 
 案例定位：9.0 第一个从需求到真机闭环的完整开发流程实录。
 

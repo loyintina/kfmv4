@@ -93,7 +93,7 @@ strip 加独立标识 `data-tmux-strip="1"`，CSS 规则改挂 `[data-tmux-strip
 
 **判读路径**：真机读数异常 → 对比 DOM 类名与 stylesheet 规则（扫 `document.styleSheets` 无任何 `[data-tmux-strip]` 规则）→ 看 link href 无哈希 → 定性缓存而非实现。全程没动用户活会话（只读 evaluate）。
 
-**修法**：`build.mjs` 给 tokens.css 同盖内容哈希（`tokens.css?v=6bf734db`），与 bundle 同机制（`nz@待补哈希`）。回归 animation-check 全断言绿 + tmux-tabs 11/11。
+**修法**：`build.mjs` 给 tokens.css 同盖内容哈希（`tokens.css?v=6bf734db`），与 bundle 同机制（`nz@263e2353`）。回归 animation-check 全断言绿 + tmux-tabs 11/11。
 
 **教训入账**：
 1. **新增静态资源引用时，缓存破坏必须与引用同天落地**——bundle 有哈希 tokens 没有，就是「机制存在但覆盖面靠记忆」的破口。以后 index.html 新增任何 `<link>/<script>` 静态引用，先问一句「它有哈希吗」。

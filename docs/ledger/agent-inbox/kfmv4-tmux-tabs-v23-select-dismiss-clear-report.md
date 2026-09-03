@@ -25,7 +25,7 @@
 
 ## 修改内容
 
-### `src/client/plugins/tmux-tabs/index.tsx`
+### `nz/src/client/plugins/tmux-tabs/index.tsx`
 
 - `leaveTmux`：
   - 终点由 `HANDLE` 改为 `EXPANDED`（标签排保持展开）。
@@ -35,18 +35,18 @@
   - 当标签栏展开且事件源不在 `[data-tmux-tabs-root]` 内时收起。
   - overlay 弹出时禁用（避免毛玻璃输入期误收）。
 
-### `src/client/term/shell.ts`
+### `nz/src/client/term/shell.ts`
 
 - 新增 `TermShell.clear()`：
   - 向 wasm 核 feed `\x1b[2J\x1b[H`（清屏+光标归位）。
   - 清空行缓存，调用 `renderFrame()`。
   - 不清 scrollback 历史区。
 
-### `src/client/plugins/term/index.ts`
+### `nz/src/client/plugins/term/index.ts`
 
 - 暴露公共钩子 `__kfmNzTermClear()`，供 tmux-tabs / 控制台脚本调用。
 
-### `docs/tmux-tabs-v2-state-machine.md`
+### `nz/docs/tmux-tabs-v2-state-machine.md`
 
 - T3 终点改为 `EXPANDED`，并注明清屏+`^L` 行为。
 - 新增 T15：操作屏幕 → `HANDLE`。
@@ -54,9 +54,9 @@
 
 ### 测试
 
-- `tests/browser/tmux-tabs.test.mjs` 升 v7：钉 ③ 验证 T3 标签排展开+清屏；钉 ⑨ 验证 T15 键盘输入收起。
-- `tests/browser/tmux-tabs-l2-crosscheck.mjs`：L1+L2 互证，新增 detach 后服务端 `tmux ls` attached=0 验证。
-- `tests/browser/tmux-tabs-l3-console-crosscheck.mjs`：L3 控制台钩子验证 `__kfmNzTermClear()+^L` 清屏并重绘 prompt。
+- `nz/tests/browser/tmux-tabs.test.mjs` 升 v7：钉 ③ 验证 T3 标签排展开+清屏；钉 ⑨ 验证 T15 键盘输入收起。
+- `nz/tests/browser/tmux-tabs-l2-crosscheck.mjs`：L1+L2 互证，新增 detach 后服务端 `tmux ls` attached=0 验证。
+- `nz/tests/browser/tmux-tabs-l3-console-crosscheck.mjs`：L3 控制台钩子验证 `__kfmNzTermClear()+^L` 清屏并重绘 prompt。
 
 ## 多路径验证结果
 

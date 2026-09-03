@@ -86,7 +86,7 @@ const timer = setInterval(() => {
 
 ### 4.1 把手闪烁
 
-- **复现方式**: 在 `tests/browser/tmux-tabs.test.mjs` 的 T1/T14 反复展开/收起路径中，原有实现偶发 `state=EXPANDED→HANDLE→EXPANDED` 一帧回弹。
+- **复现方式**: 在 `nz/tests/browser/tmux-tabs.test.mjs` 的 T1/T14 反复展开/收起路径中，原有实现偶发 `state=EXPANDED→HANDLE→EXPANDED` 一帧回弹。
 - **修复后**: L1 考卷 11/11、L4 截图考卷 6/6 连续展开/收起无回弹。
 
 ### 4.2 切换延迟

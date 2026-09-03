@@ -38,7 +38,7 @@
 }
 ```
 
-- `build.mjs` 已加拷贝逻辑：`tokens.css` → `public/tokens.css`
+- `build.mjs` 已加拷贝逻辑：`tokens.css` → `nz/public/tokens.css`
 - `index.html` 已通过 `<link rel="stylesheet">` 引入
 - 未来主题切换只需加 `:root[data-theme="light"]` 覆盖，不改组件
 
@@ -83,7 +83,7 @@ tmux-tabs 所有硬编码颜色/圆角已替换为 tokens 变量：
 | term-hooks | 6/6 绿 |
 | `npm test` | 104 通过 / 0 失败 |
 
-动画专项检查 `tests/browser/tmux-tabs-animation-check.mjs`：
+动画专项检查 `nz/tests/browser/tmux-tabs-animation-check.mjs`：
 - tokens.css 已加载 ✅
 - `kfm-tmux-*` keyframes 已加载 ✅
 - 把手 transition 已生效 ✅

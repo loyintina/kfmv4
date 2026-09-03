@@ -27,7 +27,7 @@
 
 | 路径 | 层级 | 内容 | 结果 |
 |---|---|---|---|
-| 自动化考卷 v6 | L1 | `tests/browser/tmux-tabs.test.mjs` DOM 驱动行为规格 | **10/10** |
+| 自动化考卷 v6 | L1 | `nz/tests/browser/tmux-tabs.test.mjs` DOM 驱动行为规格 | **10/10** |
 | 浏览器钩子 + 服务端真值 | L1+L2 | `tmux-tabs-l2-crosscheck.mjs`：钩子读态 + `tmux ls -F '#{session_name} #{session_attached}'` 互证 | **3/3** |
 | 回归三卷 + npm85 | L1 | bottom-anchor 10/10、scrollback 5/5、keybar-click 20/20、term-hooks 6/6、npm 104/0 | 全绿 |
 

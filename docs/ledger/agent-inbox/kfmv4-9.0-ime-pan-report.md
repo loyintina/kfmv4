@@ -43,7 +43,7 @@ NzNative.tap 真触摸驱动真键盘，WS 字节计数+逐 150ms 采样：
 
 ## 验收（自验收口径）
 
-- A 档 `tests/browser/ime-pan.test.mjs` **8/8**（red-first 实过：武装 bug 版 ②③④ 红、修复后全绿）——覆盖：真缩窗不进 IME 且行列跟随（bottom-anchor ④语义）/mock 弹键盘扳机命中+卡身缩 271px+行列不动/键盘开着打字纪律/ALT 平移底行露出（st=255）/收键盘行列全程不动/退出 TUI 行列=基线；
+- A 档 `nz/tests/browser/ime-pan.test.mjs` **8/8**（red-first 实过：武装 bug 版 ②③④ 红、修复后全绿）——覆盖：真缩窗不进 IME 且行列跟随（bottom-anchor ④语义）/mock 弹键盘扳机命中+卡身缩 271px+行列不动/键盘开着打字纪律/ALT 平移底行露出（st=255）/收键盘行列全程不动/退出 TUI 行列=基线；
 - 六卷（10+5+19+6+4+9）+ npm90 + rust9 零回退（bottom-anchor ④b-d vv mock 无聚焦序曲=武装闸判别旁证，全绿）；
 - **真机 mock 验收**（experiments/verify-ime-pan-device.mjs，attach dsh 同款场景）：三段字节增量 **16,093 / 11,070 / 17,148**（kimi 心跳 ~2-3KB/s 量级），对照真键盘 423,004 / 308,137 / 712,996 = **数量级根治**；rows 恒 44∈[44,44] 格网未动；ALT 平移 st=257.8 底行露键盘上方。
 
