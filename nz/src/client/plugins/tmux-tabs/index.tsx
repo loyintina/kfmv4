@@ -185,8 +185,13 @@ function TmuxTabs(props: {
     'data-tmux-strip': '1',
     className: expanded ? 'kfm-expanded' : 'kfm-collapsed',
     style: {
-      position: 'fixed', top: 'calc(var(--sat, 0px) + 12px)', left: '52px', right: '8px',
+      // 胶囊形态+宽度随内容（2026-09-03 用户拍板）：圆把手配胶囊行，
+      // max-content 动态 hug 标签群，超长才封顶滚动；origin 左中保证
+      // 伸出动画仍从把手右缘展开。
+      position: 'fixed', top: 'calc(var(--sat, 0px) + 12px)', left: '52px',
+      width: 'max-content', maxWidth: 'calc(100vw - 68px)',
       height: '32px', background: BAR_BG, border: `1px solid ${HAIRLINE}`,
+      borderRadius: 'var(--kfm-radius-pill)',
       display: 'flex', alignItems: 'center', gap: '6px', padding: '0 6px',
       overflowX: 'auto', zIndex: 40, transformOrigin: 'left center',
     },
@@ -227,7 +232,9 @@ function TmuxTabs(props: {
     'data-tmux-plus': '1',
     onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onPlus(); },
     style: {
-      marginLeft: 'auto', flex: '0 0 auto', width: '26px', height: '24px',
+      // 圆形+跟队尾（2026-09-03 用户拍板）：摘掉 marginLeft:auto 不再钉
+      // 行尾，贴最后一个标签右侧——新标签就出现在它左边（浏览器标签页同款）。
+      flex: '0 0 auto', width: '24px', height: '24px', borderRadius: '50%',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       border: `1px solid ${HAIRLINE}`, color: 'var(--kfm-ink)', cursor: 'pointer', fontSize: '14px',
     },

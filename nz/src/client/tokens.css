@@ -53,6 +53,7 @@
   --kfm-radius-md: 8px;
   --kfm-radius-lg: 11px;
   --kfm-radius-xl: 14px;
+  --kfm-radius-pill: 999px; /* 胶囊（标签行/圆形钮，2026-09-03 用户拍板） */
 }
 
 /* ── tmux-tabs 默认动画（BeautifulUI 逻辑：动效即解释，克制 100-350ms） ── */
