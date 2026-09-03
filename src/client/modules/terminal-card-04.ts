@@ -169,6 +169,23 @@ function clearSettleTimers(tc: CardInstance<TerminalCardMeta>) {
   }
 }
 
+/** settle 期输出缓冲调度：空闲 80ms 批冲一次（去抖），硬上限 150ms 必冲
+ * （防长输出流永远等不到空闲）。恢复自 65e9536b——4249be85 删定义漏改
+ * 638 行调用点，19494539 revert 又把死调用带回（na 线 pre-push tsc 挡出）。 */
+function scheduleSettleFlush(tc: CardInstance<TerminalCardMeta>, term: Terminal) {
+  if (tc.meta._settleFlushTimer) clearTimeout(tc.meta._settleFlushTimer);
+  tc.meta._settleFlushTimer = setTimeout(() => {
+    flushTmuxSettleBuffer(tc, term);
+    clearSettleTimers(tc);
+  }, 80);
+  if (!tc.meta._settleFlushMaxTimer) {
+    tc.meta._settleFlushMaxTimer = setTimeout(() => {
+      flushTmuxSettleBuffer(tc, term);
+      clearSettleTimers(tc);
+    }, 150);
+  }
+}
+
 function tcard(card: CardInstance): CardInstance<TerminalCardMeta> {
   return card as CardInstance<TerminalCardMeta>;
 }

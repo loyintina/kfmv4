@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 88511279 · 生成于 2026-09-03 -->
+<!-- 基准 commit 13d97b4a · 生成于 2026-09-03 -->
 
 # 代码清单（机械层）
 
@@ -36,12 +36,12 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（32 文件 · 8646 行）
+## floating-card（32 文件 · 8663 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/generated/scripts-catalog.ts | 1445 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
-| src/client/modules/terminal-card-04.ts | 946 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
+| src/client/modules/terminal-card-04.ts | 963 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/cards/plugins/role.card.ts | 793 | — |
 | src/client/cards/plugins/session.card.ts | 612 | — |
@@ -725,4 +725,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 343 文件 · 58097 行 · 跨域边 284 条
+合计 343 文件 · 58114 行 · 跨域边 284 条
