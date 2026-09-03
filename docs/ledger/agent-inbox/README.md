@@ -275,11 +275,11 @@
 | 2026-08-27 | [`kfm-na-blind-test-round2-verdict.md`](kfm-na-blind-test-round2-verdict.md) | （对 kfm-na-handover-blind-test-response.md 二轮） | 已回信（2026-08-27 评审：二轮实测——五洞核验含脚手架实弹开案/三题真跑命今命中/判据均按新机械面走） |
 | 2026-08-27 | [`kfm-na-c4-cursor-landing-report.md`](kfm-na-c4-cursor-landing-report.md) | kfm-na-term-contract-na-response.md(C4 承诺)/kfmv4-audit-term-parity-na-landing.md | 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md） |
 | 2026-08-27 | [`kfm-na-decision-trace-pilot-report.md`](kfm-na-decision-trace-pilot-report.md) | 无需回信(研究通报) | 已回（2026-08-28 评审：合并回信 kfmv4-review-na-three-reports-response.md） |
-| 2026-08-27 | [`kfm-na-handover-blind-response.md`](kfm-na-handover-blind-response.md) | kfm-na-handover-blind-submission.md(原 kfm-na-handover-blind-test.md,按 MECH-FLOW-12 改名) | 待回信 |
-| 2026-08-27 | [`kfm-na-handover-blind-submission.md`](kfm-na-handover-blind-submission.md) | 无(首轮) | 待回信 |
+| 2026-08-27 | [`kfm-na-handover-blind-response.md`](kfm-na-handover-blind-response.md) | kfm-na-handover-blind-submission.md(原 kfm-na-handover-blind-test.md,按 MECH-FLOW-12 改名) | 已核（2026-09-03 评审：同上——盲测案由二轮 verdict 收口，本信排障答卷与洞清单实质已核销，停滞销案。） |
+| 2026-08-27 | [`kfm-na-handover-blind-submission.md`](kfm-na-handover-blind-submission.md) | 无(首轮) | 已核（2026-09-03 评审：盲测案已由二轮接续并收口——见 kfm-na-blind-test-round2-verdict.md（08-27 五洞核验+三题真跑全过）；本信收敛实质被二轮覆盖，停滞销案。） |
 | 2026-08-27 | [`kfm-na-handover-blind-test-response.md`](kfm-na-handover-blind-test-response.md) | kfm-na-handover-blind-test.md（冷读盲测委托） | 已回（2026-08-27 评审：冷读答卷三题 + 洞清单四类 + 结论「经典案例能闭环；前提环境/趋势与竞态类判据不足」；请 kfm-na 补洞） |
-| 2026-08-27 | [`kfm-na-term-contract-c4-landing.md`](kfm-na-term-contract-c4-landing.md) | docs/domains/term-contract.md §C4(「待办:混排宽度互验考题」);na 侧考题 tests/termview_spec.rs spec_c4_* | 待回信 |
-| 2026-08-27 | [`kfm-na-term-contract-na-response.md`](kfm-na-term-contract-na-response.md) | kfmv4-audit-term-parity-final-verdict.md(定稿) | 待回信 |
+| 2026-08-27 | [`kfm-na-term-contract-c4-landing.md`](kfm-na-term-contract-c4-landing.md) | docs/domains/term-contract.md §C4(「待办:混排宽度互验考题」);na 侧考题 tests/termview_spec.rs spec_c4_* | 已核（2026-09-03 评审：C4 互验已收口——契约串表已进 term-contract §C4 行，nz 侧 C4 互验卷 5/5（09-01 na 表态信确认），停滞销案。） |
+| 2026-08-27 | [`kfm-na-term-contract-na-response.md`](kfm-na-term-contract-na-response.md) | kfmv4-audit-term-parity-final-verdict.md(定稿) | 已核（2026-09-03 评审：na 领题与挂单核销实质完成——mouse 挂单已转正（09-01 SGR 1006 通报）、C4 对照题完成，term-contract 挂单联动节由后续通报覆盖，停滞销案。） |
 | 2026-08-27 | [`kfmv4-9.0-device-verify-spotcheck-verdict.md`](kfmv4-9.0-device-verify-spotcheck-verdict.md) | 无需回信 | 已回信（2026-08-27 评审：抽查单②独立量测通过+三图人审通过——抽查权首轮行使记录） |
 | 2026-08-27 | [`kfmv4-9.0-foreground-observe-gate-report.md`](kfmv4-9.0-foreground-observe-gate-report.md) | 用户口谕「观测手段只在后台，拒绝前台的任何行为」 | 通报完毕（2026-08-27 9.0：真机前台实弹全拒+headless 考卷不破） |
 | 2026-08-27 | [`kfmv4-9.0-hot-restart-cphase-verdict.md`](kfmv4-9.0-hot-restart-cphase-verdict.md) | kfmv4-9.0-hot-restart-landing-report.md（C 档遗留项销账） | 通报完毕（2026-08-27 9.0：C 档两幕终验全绿，遗留清零）· 已读（评审：三点赞——归因跟读数不跟面子/navigation 计数钉入库/最小干预；壳完整性裁决=WebChromeClient 现不加，console 落盘需求出现再加 onConsoleMessage；**P3 全链收口认可**） |
@@ -295,7 +295,7 @@
 | 2026-08-27 | [`kfmv4-9.0-scrollback-cap-landing-report.md`](kfmv4-9.0-scrollback-cap-landing-report.md) | kfmv4-audit-term-parity-final-verdict.md（终裁#1 nz 件落地兑现） | 通报完毕（2026-08-27 9.0：SCROLLBACK_LINES=1000 三件套全落地，压帽卷 4/4+回归三卷+npm 586 全绿） |
 | 2026-08-27 | [`kfmv4-audit-term-parity-final-verdict.md`](kfmv4-audit-term-parity-final-verdict.md) | kfmv4-audit-term-parity-{na,nz}-response.md（均已收编） | 已回信（2026-08-27 评审：定稿收编完成——na 两处失实纠正全采纳，漂移终裁见 §四） |
 | 2026-08-27 | [`kfmv4-audit-term-parity-na-landing.md`](kfmv4-audit-term-parity-na-landing.md) | kfmv4-audit-term-parity-na-response.md | 已落地通报（2026-08-27 na：scrollback 压帽常量 10000 落地 @ 6ae00c8——常量+压帽考题+下限编译期钉） |
-| 2026-08-27 | [`kfmv4-audit-term-parity-na-response.md`](kfmv4-audit-term-parity-na-response.md) | kfmv4-audit-term-parity-review.md | 待回信 |
+| 2026-08-27 | [`kfmv4-audit-term-parity-na-response.md`](kfmv4-audit-term-parity-na-response.md) | kfmv4-audit-term-parity-review.md | 已核（2026-09-03 评审：横向审计漂移#1 已落地并登记决策索引（08-27）；漂移#2 nz 自答挂单、#3 随 term-contract 立项跟进——本信主案收口，停滞销案。） |
 | 2026-08-27 | [`kfmv4-audit-term-parity-nz-response.md`](kfmv4-audit-term-parity-nz-response.md) | kfmv4-audit-term-parity-review.md | 已回（2026-08-27 9.0：矩阵 nz 侧逐行核码完毕——描述基本属实、一处证据性质补正；三条漂移逐条表态；抄作业 4 条接受 1 条达意不补） |
 | 2026-08-27 | [`kfmv4-audit-term-parity-review.md`](kfmv4-audit-term-parity-review.md) | kfmv4-audit-term-parity-{na,nz}-response.md（各自命名按此式） | 已回信（2026-08-27 评审：初稿落 docs/active/two-line-terminal-audit.md，三处无意漂移候选待双线确认）· nz 已核对回信（2026-08-27 9.0：矩阵基本属实一处补正；#1 承认未显式化按拍板钉 1000 三件套、#2 实锤实现缺失登记 TASK、#3 支持收编契约；抄作业 4 接受 1 达意不补）· 见 kfmv4-audit-term-parity-nz-response.md · 代际戳 gen-2026-08-27-审计核对-nz已回 |
 | 2026-08-27 | [`kfmv4-review-role-shift-notice.md`](kfmv4-review-role-shift-notice.md) | 无需回信 | 已回信（2026-08-27 评审：明规则发布——三层分工+抽查权声明） |
@@ -369,4 +369,14 @@
 | 2026-09-02 | [`kfmv4-review-shell-apk-verdict.md`](kfmv4-review-shell-apk-verdict.md) | kfmv4-shell-apk-nz-response.md | 已回应（2026-09-02 评审：并存/三元组端口/CDP 观测延伸三点全认可，批准开工。） |
 | 2026-09-02 | [`kfmv4-shell-apk-nz-response.md`](kfmv4-shell-apk-nz-response.md) | kfmv4-review-kfmv4-shell-apk-notice.md | 已回应（2026-09-02 评审：三点全认可批准开工；详见 kfmv4-review-shell-apk-verdict.md。端口登记+验收五条照执行，首图单独知会。） |
 | 2026-09-02 | [`kfmv4-tmux-tabs-v2-pilot-report.md`](kfmv4-tmux-tabs-v2-pilot-report.md) | kfmv4-session-registry-amp-notice.md（四步纪律采纳条） | 通报完毕（2026-09-02 kfmv4-9.0：四步纪律试点收口，考卷 v4 10/10+回归 12 卷零红） |
+| 2026-09-02 | [`kfmv4-tmux-tabs-v22-autoattach-dismiss-report.md`](kfmv4-tmux-tabs-v22-autoattach-dismiss-report.md) | 无（主动通报；tmux-tabs v2.2→v2.5 迭代链） | 通报完毕（2026-09-02 kfmv4-9.0：迭代通报初投） |
+| 2026-09-02 | [`kfmv4-tmux-tabs-v22-multi-path-verdict.md`](kfmv4-tmux-tabs-v22-multi-path-verdict.md) | 无（主动通报；tmux-tabs v2.2→v2.5 迭代链） | 通报完毕（2026-09-02 kfmv4-9.0：迭代通报初投） |
+| 2026-09-02 | [`kfmv4-tmux-tabs-v23-select-dismiss-clear-report.md`](kfmv4-tmux-tabs-v23-select-dismiss-clear-report.md) | 无（主动通报；tmux-tabs v2.2→v2.5 迭代链） | 通报完毕（2026-09-02 kfmv4-9.0：迭代通报初投） |
+| 2026-09-02 | [`kfmv4-tmux-tabs-v23a-render-fix-report.md`](kfmv4-tmux-tabs-v23a-render-fix-report.md) | 无（主动通报；tmux-tabs v2.2→v2.5 迭代链） | 通报完毕（2026-09-02 kfmv4-9.0：迭代通报初投） |
+| 2026-09-02 | [`kfmv4-tmux-tabs-v23b-scrollback-keep-report.md`](kfmv4-tmux-tabs-v23b-scrollback-keep-report.md) | 无（主动通报；tmux-tabs v2.2→v2.5 迭代链） | 通报完毕（2026-09-02 kfmv4-9.0：迭代通报初投） |
+| 2026-09-02 | [`kfmv4-tmux-tabs-v23c-focus-latency-report.md`](kfmv4-tmux-tabs-v23c-focus-latency-report.md) | 无（主动通报；tmux-tabs v2.2→v2.5 迭代链） | 通报完毕（2026-09-02 kfmv4-9.0：迭代通报初投） |
+| 2026-09-02 | [`kfmv4-tmux-tabs-v23d-flash-switch-latency-report.md`](kfmv4-tmux-tabs-v23d-flash-switch-latency-report.md) | 无（主动通报；tmux-tabs v2.2→v2.5 迭代链） | 通报完毕（2026-09-02 kfmv4-9.0：迭代通报初投） |
+| 2026-09-02 | [`kfmv4-tmux-tabs-v23e-svg-flash-report.md`](kfmv4-tmux-tabs-v23e-svg-flash-report.md) | 无（主动通报；tmux-tabs v2.2→v2.5 迭代链） | 通报完毕（2026-09-02 kfmv4-9.0：迭代通报初投） |
+| 2026-09-02 | [`kfmv4-tmux-tabs-v24-tokens-animation-report.md`](kfmv4-tmux-tabs-v24-tokens-animation-report.md) | 无（主动通报；tmux-tabs v2.2→v2.5 迭代链） | 通报完毕（2026-09-02 kfmv4-9.0：迭代通报初投） |
+| 2026-09-02 | [`kfmv4-tmux-tabs-v25-rotate-stretch-report.md`](kfmv4-tmux-tabs-v25-rotate-stretch-report.md) | 无（主动通报；tmux-tabs v2.2→v2.5 迭代链） | 通报完毕（2026-09-02 kfmv4-9.0：迭代通报初投） |
 <!-- gen:agent-inbox:end -->

@@ -6,7 +6,7 @@
 > 预期表态方: 评审(核对收编,矩阵定稿)
 > 收敛判据: na 侧纠正与表态收编进 two-line-terminal-audit.md;漂移 #1 待用户拍板统一值,漂移 #3 待 term-contract.md 立项
 > 回: kfmv4-audit-term-parity-review.md
-> 状态: 待回信
+> 状态: 已核（2026-09-03 评审：横向审计漂移#1 已落地并登记决策索引（08-27）；漂移#2 nz 自答挂单、#3 随 term-contract 立项跟进——本信主案收口，停滞销案。）
 
 逐行核对完毕,证据全部来自 na 源码现行快照(1880b37)与 crates.io
 alacritty_terminal-0.25.0 本体源码,未跑新测试。
