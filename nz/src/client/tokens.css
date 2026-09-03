@@ -64,20 +64,28 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 把手：常驻 DOM，展开时顺转 90 度，收回时逆转 90 度 */
+/* 把手：常驻 DOM，展开时顺转 90 度，收回时逆转 90 度。
+ * 函数列表恒为 [rotate, scale]——混用 scale-only(:active) 与 rotate-only
+ * 会退化成矩阵插值：2026-09-03 真机采样实证（25ms 粒度），真触摸展开时
+ * 26-176ms 纯缩小零旋转、~200ms 才开始转、~450ms 才转完，观感=
+ * 先出标签栏后转按钮。列表一致后角度独立插值，旋转首帧可见、与标签排同步。 */
 [data-tmux-orb] {
+  transform: rotate(0deg) scale(1);
   transition:
     transform var(--kfm-dur-normal) var(--kfm-ease-out),
     filter var(--kfm-dur-instant) var(--kfm-ease-out);
 }
 [data-tmux-orb].kfm-expanded {
-  transform: rotate(90deg);
+  transform: rotate(90deg) scale(1);
 }
 [data-tmux-orb]:hover {
   filter: brightness(1.1);
 }
 [data-tmux-orb]:active {
-  transform: scale(0.96);
+  transform: rotate(0deg) scale(0.96);
+}
+[data-tmux-orb].kfm-expanded:active {
+  transform: rotate(90deg) scale(0.96);
 }
 
 /* 标签排：常驻 DOM，伸出/收回用 scaleX + opacity transition。
