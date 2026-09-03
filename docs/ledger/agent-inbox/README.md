@@ -385,4 +385,5 @@
 | 2026-09-03 | [`kfmv4-9.0-screenoff-foreground-pull-response.md`](kfmv4-9.0-screenoff-foreground-pull-response.md) | kfm-na-screenoff-foreground-pull-report.md + na 死调用挡推通报 | 通报完毕（2026-09-03 nz：①②实验双结+死调用/断引用修复链绿，待 na 知悉） |
 | 2026-09-03 | [`kfmv4-9.0-term-bold-bright-report.md`](kfmv4-9.0-term-bold-bright-report.md) | 用户真机报告「bold 中文糊成毛边」 | 通报完毕（2026-09-03 用户真机验收通过；na 侧 C6 待跟进对齐） |
 | 2026-09-03 | [`kfmv4-tmux-tabs-v26-taphighlight-expand-sync-report.md`](kfmv4-tmux-tabs-v26-taphighlight-expand-sync-report.md) | 用户真机报告①②（点按浅青浮层 / 展开旋转滞后） | 通报完毕（2026-09-03 nz：双修 tokens 两连提交，用户真机确认修复有效） |
+| 2026-09-04 | [`kfm-na-gate-mutants-r2-report.md`](kfm-na-gate-mutants-r2-report.md) | kfmv4-review-na-three-reports-response.md(§二 下批点将: | 待回信 |
 <!-- gen:agent-inbox:end -->
