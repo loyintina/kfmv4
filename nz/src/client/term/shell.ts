@@ -200,13 +200,14 @@ export class TermShell {
     // canvas 同栈量两侧 actualBoundingBoxAscent，差值=宽字 span 的下移
     // 量（appendTextCells 里 position:relative;top 挪视觉、不动布局、
     // 不碰行高亮背景）。clamp 0-3 防异常字体度量带飞。
-    // 2026-09-03 修：度量字体必须与渲染同源——旧版拼 opts.fontSize??13，
-    // 真机实际渲染 10.4px（CSS 换算），13px 下 ascent 差 2px、10.4px 下
-    // 差 1px，补偿翻倍致中文过压。改从已渲染行取 computedStyle.font，
-    // 钉-量同拍（度量与渲染同栈同字号）。
+    // 2026-09-03 再修（像素级实证）：canvas 与 DOM 内联同属「指定坐标系」，
+    // getComputedStyle/getBoundingClientRect 报的是 WebView textZoom(0.8)
+    // 缩放后的值——用 computed font(10.4px) 量出差 1px，写进 DOM top 后
+    // 渲染只剩 0.8px 效果，中文仍贴顶 0（像素实测）。el.style.font 是
+    // inline 指定值(13px)，与 canvas 同坐标系，差 2px 写入 top 即自洽。
     const cv = document.createElement('canvas').getContext('2d');
     if (cv) {
-      cv.font = getComputedStyle(this.rowDivs[0]).font;
+      cv.font = this.el.style.font || `${this.opts.fontSize ?? 13}px ${TERM_FONT_STACK}`;
       const ascA = cv.measureText('A').actualBoundingBoxAscent;
       const ascC = cv.measureText('中').actualBoundingBoxAscent;
       this.cjkDrop = Math.max(0, Math.min(3, +(ascC - ascA).toFixed(2)));
