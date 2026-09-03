@@ -270,6 +270,45 @@ public class MainActivity extends Activity {
                 mark("ime-hide");
             });
         }
+
+        /** 软件层截屏（na 线提案 2026-09-03，实验②）：LAYER_TYPE_SOFTWARE
+         *  强制软件光栅后 webView.draw(canvas)。实测边界：前台 DOM 活、
+         *  canvas 黑（软件光栅不吃 canvas/WebGL）；后台=冻结帧（隐藏态
+         *  光栅不再推进，DOM 变化不反映，setWebLifecycleState 也救不回）。
+         *  拍完恢复原层类型，不常驻 SOFTWARE。返回 PNG base64，失败 null。 */
+        @JavascriptInterface
+        public String softShot() {
+            final String[] out = { null };
+            final java.util.concurrent.CountDownLatch latch =
+                    new java.util.concurrent.CountDownLatch(1);
+            runOnUiThread(() -> {
+                int origLayer = termWeb.getLayerType();
+                try {
+                    int w = termWeb.getWidth(), h = termWeb.getHeight();
+                    termWeb.setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null);
+                    android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(
+                            w, h, android.graphics.Bitmap.Config.ARGB_8888);
+                    termWeb.draw(new android.graphics.Canvas(bmp));
+                    java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+                    bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, bos);
+                    bmp.recycle();
+                    out[0] = android.util.Base64.encodeToString(
+                            bos.toByteArray(), android.util.Base64.NO_WRAP);
+                    mark("soft-shot-" + bos.size());
+                } catch (Throwable t) {
+                    mark("soft-shot-err");
+                } finally {
+                    termWeb.setLayerType(origLayer, null);
+                    latch.countDown();
+                }
+            });
+            try {
+                latch.await(5, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (InterruptedException ie) {
+                return null;
+            }
+            return out[0];
+        }
     }
 
     /** 幂等摘层：removeView+destroy+入账，各路（complete 回报/bye 硬摘/
