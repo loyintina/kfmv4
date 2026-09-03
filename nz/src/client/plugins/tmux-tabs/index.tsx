@@ -203,7 +203,7 @@ function TmuxTabs(props: {
       'data-tmux-id': s.name,
       onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onChipClick(s); },
       style: {
-        padding: '3px 6px 3px 8px', borderRadius: 'var(--kfm-radius-md)', fontSize: '12px',
+        padding: '5px 12px 5px 14px', borderRadius: 'var(--kfm-radius-md)', fontSize: '12px',
         background: attachedSession === s.name ? BAR_ACCENT : 'var(--kfm-chip-bg)',
         color: attachedSession === s.name ? 'var(--kfm-ink)' : 'var(--kfm-ink-2)', cursor: 'pointer', whiteSpace: 'nowrap',
         display: 'flex', alignItems: 'center', gap: '6px',
@@ -223,7 +223,7 @@ function TmuxTabs(props: {
           // 聚焦态蓝底上 ink-3 对比度太低（实测发虚），跟随签文字色
           color: attachedSession === s.name ? 'var(--kfm-ink)' : 'var(--kfm-ink-3)',
           opacity: attachedSession === s.name ? 0.75 : 1,
-          cursor: 'pointer', fontSize: '12px', lineHeight: 1, padding: '2px', margin: '-2px',
+          cursor: 'pointer', fontSize: '12px', lineHeight: 1, padding: '4px', margin: '-4px',
         },
       }, '×'),
     ),
