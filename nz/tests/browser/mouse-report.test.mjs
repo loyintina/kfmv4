@@ -129,6 +129,22 @@ await page.waitForTimeout(300);
 const touchFrames2 = await frames();
 const t65 = touchFrames2.filter(d => d.includes('\x1b[<65;'));
 check('⑥b 触摸上滑拖拽→合成 65 帧（拖回新内容）', t65.length > 0, `65帧=${t65.length}`);
+// ⑦⑧ 幽灵光标案（2026-09-03 用户拍板）：nz 发滚轮事件=用户滚屏浏览
+// → DOM 光标层抑制（kimi 滚屏 ?25h 真光标在网格中间乱跳=文本里多跳
+// 灰块）；tap（btn0 点按）= 交互动作 → 恢复。
+const curDisp = () => page.evaluate(() => document.querySelector('.nz-term-cursor').style.display);
+const d7 = await curDisp();
+check('⑦滚屏浏览(已发64/65帧)→DOM光标层抑制', d7 === 'none', `display=${d7}`);
+await page.evaluate(() => {
+  const el = window.__kfmNzTermScroll().getContainer();
+  const r = el.getBoundingClientRect();
+  const mk = (type) => new PointerEvent(type, { pointerType: 'touch', clientX: r.left + r.width / 2, clientY: r.top + 200, bubbles: true, cancelable: true });
+  el.dispatchEvent(mk('pointerdown'));
+  el.dispatchEvent(mk('pointerup'));
+});
+await page.waitForTimeout(300);
+const d8 = await curDisp();
+check('⑧tap(btn0点按)→DOM光标层恢复', d8 === 'block', `display=${d8}`);
 // ④ detach 回行模式 → 滚轮零鼠标帧 + 本地滚动照旧。
 // detach 走服务端命令（两次真红教训：打字 detach 依赖 copy-mode 状态——
 // 在 copy-mode 里被键位吞、不在则清场 q 污染命令行拼出 qtmux，都不确定）

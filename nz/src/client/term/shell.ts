@@ -116,6 +116,17 @@ export class TermShell {
   /** 滚动主导权归插件集中状态机（8.8.3c 纪律）：false 时（用户上滑中）
    * 光标 nearest 兜底也歇火——否则新输出会把视口拽回底（跟底翻车态）。 */
   autoScroll = true;
+  /** TUI 滚屏浏览光标抑制（2026-09-03 幽灵光标案，用户拍板方案 2）：
+   *  nz 向 TUI 发出滚轮事件（SGR 64/65）= 用户在浏览 TUI 内容——此时
+   *  对端滚屏模式的真光标（?25h）停在网格中间随输出乱跳，画出来就是
+   *  文本里「多跳一个灰色块」。浏览期间不画 DOM 光标层；tap（SGR btn0）
+   *  与任意输入（inputToBottom 汇入点：打字/keybar/IME/inject）恢复。 */
+  private cursorSuppressed = false;
+  cursorSuppress(on: boolean): void {
+    if (this.cursorSuppressed === on) return;
+    this.cursorSuppressed = on;
+    this.renderFrame(); // 立即生效，不等下一帧输出
+  }
   /** 渲染健康统计（?debug 骨架常驻字段源：frames/rowsPainted/scrolls——
    * scrolls = nearest 兜底实际滚动次数；rp/sc 突增 = 重绘或滚动挤兑） */
   readonly stats = { frames: 0, rowsPainted: 0, scrolls: 0 };
@@ -413,7 +424,7 @@ export class TermShell {
     // 背景 boot 页）一起滚（实测：每敲一字全页从头往下滚、闪烁）。
     // nearest 语义手写：光标已在视野内就一动不动。autoScroll=false
     // （用户上滑中）兜底歇火。
-    const showCursor = this.cellW > 0 && this.core.cursor_visible() && rowInGrid;
+    const showCursor = this.cellW > 0 && this.core.cursor_visible() && rowInGrid && !this.cursorSuppressed;
     if (this.cursorEl.parentElement !== this.el) this.el.appendChild(this.cursorEl);
     if (showCursor) {
       this.cursorEl.style.display = 'block';

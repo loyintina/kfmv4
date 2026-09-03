@@ -455,6 +455,9 @@ export function applyTermBundle(ctx: Context): void {
         if (card.atBottom) scrollEl.scrollTop = scrollEl.scrollHeight;
       };
       card.inputToBottom = () => {
+        // 任意输入（打字/keybar/IME/inject 全汇入此）= 回到交互态 →
+        // 恢复 DOM 光标层（幽灵光标案；ALT 下也要恢复，故在禁滚判断前）
+        shell.cursorSuppress(false);
         if (card.core.alt_screen()) return; // ALT 禁滚：回底会推 scrollTop
         card.atBottom = true;
         shell.autoScroll = true;
@@ -484,6 +487,10 @@ export function applyTermBundle(ctx: Context): void {
       const mouseActive = () => (card.core.mouse_mode() & 1) !== 0;
       const sgrMouse = (btn: number, col: number, row: number, release: boolean) => {
         if (!card.sessionId) return;
+        // 滚轮事件（64/65）= 用户在 TUI 里滚屏浏览 → 抑制 DOM 光标层
+        // （幽灵光标案：kimi 滚屏 ?25h 真光标在网格中间乱跳）；tap（btn0
+        // 点按）= 交互动作 → 恢复。release 帧不翻转（按压已定性）。
+        if (!release) shell.cursorSuppress(btn === 64 || btn === 65);
         bridge.input(card.sessionId, `\x1b[<${btn};${col};${row}${release ? 'm' : 'M'}`);
       };
       scrollEl.addEventListener('wheel', (e) => {
