@@ -28,7 +28,8 @@ import { loadTermCoreShared, type TermCoreGlue, type TermCoreHandle } from '../.
 import { TermShell, TERM_FONT_STACK } from '../../term/shell.js';
 import { TermWsBridge } from '../../term/bridge.js';
 import { mapText } from '../../term/keymap.js';
-import { KEYBAR_H, MOD_ALT, MOD_CTRL, MOD_SHIFT, mountKeybar } from '../../term/keybar.js';
+import { KEYBAR_H, MOD_ALT, MOD_CTRL, MOD_SHIFT } from '../../term/keybar.js';
+import { mountKeybar } from '../../term/KeybarApp.js';
 
 const COLS = 80;
 const ROWS = 24;
@@ -639,6 +640,9 @@ export function applyTermBundle(ctx: Context): void {
       // 起随容器钉 vv 同步上浮，条带自身不再追 vv（判尺/过渡帧/双基准
       // 打架那套随布局重构退役）。生灭随容器（owner 死容器摘=子树同摘）。
       // pointer-events:auto 防层根 none 拦截。
+      // 2026-09-03 迁皮（keybar-v3-state-machine.md 装配方案 A）：mountKeybar
+      // 现由 term/KeybarApp.tsx 提供（reactMount 桥接），KeybarHandle 形状
+      // 不变——下方 takeMods/syncMods 调用点零改动。
       const barStripEl = document.createElement('div');
       barStripEl.style.cssText = `position:absolute;left:0;right:0;bottom:0;height:${KEYBAR_H}px;pointer-events:auto;`;
       container.el.appendChild(barStripEl);
@@ -646,6 +650,8 @@ export function applyTermBundle(ctx: Context): void {
         send: (bytes) => { if (card.sessionId) { card.inputToBottom(); bridge.input(card.sessionId, bytes); } },
         appCursor: () => card.core.app_cursor(),
       });
+      // K8：宿主 ctx 摘时卸 React 根（清 listener/重复定时器+摘 DOM）
+      ctx.effect(() => () => keybar.unmount());
       // 一次性粘滞联动：落字前读走修饰位（有则 mapText 变换 + 灭灯）
       const takeMods = (text: string): string => {
         const bits = keybar.mods.take();

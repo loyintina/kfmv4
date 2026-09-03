@@ -33,6 +33,14 @@
   --kfm-chip-bg: rgba(51,65,85,0.85);
   --kfm-overlay-bg: rgba(2,6,16,0.45);
 
+  /* keybar 专用（docs/keybar-v3-state-machine.md §五 token 收编映射）：
+   * 0903 用户拍板——栏底/键面背景透明化（融进终端画布 TERM_BG #000000，
+   * 只浮文字）；点亮色原值收编为 token（点亮时色块从黑底浮现=唯一可见
+   * 键面）。键字色取 --kfm-ink-2 档，点亮字色取 --kfm-ink 档。 */
+  --kfm-key-ink: var(--kfm-ink-2);
+  --kfm-key-on-bg: #3d5a99;
+  --kfm-key-on-ink: var(--kfm-ink);
+
   /* ── 字体 ── */
   --kfm-font-mono: ui-monospace, Menlo, Consolas, monospace;
   --kfm-font-sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
@@ -54,6 +62,25 @@
   --kfm-radius-lg: 11px;
   --kfm-radius-xl: 14px;
   --kfm-radius-pill: 999px; /* 胶囊（标签行/圆形钮，2026-09-03 用户拍板） */
+}
+
+/* ── keybar 皮（迁皮件，颜色/圆角/字体唯一来源；结构尺寸在组件 inline） ── */
+
+/* 栏底透明（0903 拍板：栏融进终端纯黑画布，不再是灰色条块） */
+[data-kfm-keybar] {
+  background: transparent;
+}
+/* 键面常态透明+只浮文字；圆角/字体走 token（圆角常态不可见，点亮色块用） */
+[data-kfm-keybar] [data-kfm-key] {
+  background: transparent;
+  color: var(--kfm-key-ink);
+  font-family: var(--kfm-font-mono);
+  border-radius: var(--kfm-radius-sm);
+}
+/* 修饰键粘滞点亮（ARMED）：色块从黑底浮现=唯一可见键面 */
+[data-kfm-keybar] [data-kfm-key][data-armed] {
+  background: var(--kfm-key-on-bg);
+  color: var(--kfm-key-on-ink);
 }
 
 /* ── tmux-tabs 默认动画（BeautifulUI 逻辑：动效即解释，克制 100-350ms） ── */

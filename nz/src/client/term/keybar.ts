@@ -16,8 +16,12 @@
  * ④ 键位序按 KEYS 表（与 NA KEYS 逐格对齐，键序有考题盯）。
  * 浏览器侧特有一条：按键**不得抢焦点**——焦点离开诱饵 textarea 软键盘就
  * 收（pointerdown preventDefault 拦默认焦点转移，按下即触发不等抬手）。
+ *
+ * 2026-09-03 迁皮（清单 docs/keybar-v3-state-machine.md）：DOM 生成与样式
+ * 已迁 React 皮（term/KeybarApp.tsx，装配方案 A），本文件只留骨——KEYS
+ * 键表/MOD 位值/ModifierState/REPEAT 常量/KEYBAR_H/接口形状，纯逻辑原样。
  */
-import { keySeq, type KeyId } from './keymap.js';
+import type { KeyId } from './keymap.js';
 
 /** 栏高（CSS px，两排）：终端容器底部要预留这么高（见 term 插件装配） */
 export const KEYBAR_H = 84;
@@ -31,9 +35,9 @@ export const MOD_SHIFT = 4;
  *  在输入文字内部快速跳转）。仅方向键——ESC/ENTER/HOME 等重复无意义
  *  且有副作用。手感：按下即发一次，按住 400ms 起每 65ms 重复
  *  （≈15 字/秒，与桌面终端键重复节奏同档）。 */
-const REPEAT_KEYS = new Set<KeyId>(['up', 'down', 'left', 'right']);
-const REPEAT_DELAY_MS = 400;
-const REPEAT_INTERVAL_MS = 65;
+export const REPEAT_KEYS = new Set<KeyId>(['up', 'down', 'left', 'right']);
+export const REPEAT_DELAY_MS = 400;
+export const REPEAT_INTERVAL_MS = 65;
 
 export interface KeyDef {
   label: string;
@@ -94,103 +98,7 @@ export interface KeybarHandle {
 }
 
 /**
- * 装按键栏：parent = 条带容器（调用方摆好位置/高度——两区模型起栏在
- * 容器流内，bottom 钉输入行上方）；本函数把两排七列铺满 parent。
- * 容器生灭随宿主（父容器摘=子树同摘）。
+ * DOM 皮已迁 React：mountKeybar 现由 term/KeybarApp.tsx 提供（reactMount
+ * 桥接，装配方案 A），返回同款 KeybarHandle。IME 四层防线 listener 语义、
+ * 方向键长按重复机时序逐行随皮迁移，参数全引本文件常量。
  */
-export function mountKeybar(parent: HTMLElement, hooks: KeybarHooks): KeybarHandle {
-  const mods = new ModifierState();
-  const bar = document.createElement('div');
-  bar.className = 'kfm-term-keybar';
-  bar.style.cssText = 'position:absolute;inset:0;'
-    + 'display:grid;grid-template-rows:1fr 1fr;grid-template-columns:repeat(7,1fr);'
-    + 'gap:2px;padding:2px;background:#1a1a20;box-sizing:border-box;'
-    + 'user-select:none;-webkit-user-select:none;touch-action:none;';
-
-  const modButtons = new Map<number, HTMLElement>();
-  for (const row of KEYS) {
-    for (const def of row) {
-      const b = document.createElement('div');
-      b.textContent = def.label;
-      b.style.cssText = 'display:flex;align-items:center;justify-content:center;'
-        + 'font:12px/1 ui-monospace,Menlo,Consolas,monospace;color:#c8c8d4;'
-        + 'background:#26262e;border-radius:6px;min-width:0;';
-      const onPress = (e: Event) => {
-        // 拦默认行为保焦点：焦点离开诱饵 textarea = 软键盘收摊
-        e.preventDefault();
-        if (def.mod) {
-          mods.toggle(def.mod);
-          handle.syncMods();
-        } else if (def.direct) {
-          const seq = keySeq(def.direct, hooks.appCursor());
-          if (seq) hooks.send(seq);
-        }
-      };
-      // pointerdown 按下即触发（Termux 手感）；preventDefault 后 click 不发，
-      // 不重复挂 click。touchstart 的默认滚动由 touch-action:none 拦。
-      b.addEventListener('pointerdown', onPress);
-      // 长按重复（仅方向键，REPEAT_KEYS）：按下已发一次，按住
-      // REPEAT_DELAY_MS 后每 REPEAT_INTERVAL_MS 重发；抬手/取消/滑出即停。
-      // appCursor 每次实时读（重复期间对端可能翻 ?1h）。
-      if (def.direct && REPEAT_KEYS.has(def.direct)) {
-        const direct = def.direct;
-        let delay: number | undefined;
-        let tick: number | undefined;
-        const fire = () => {
-          const seq = keySeq(direct, hooks.appCursor());
-          if (seq) hooks.send(seq);
-        };
-        const stop = () => {
-          if (delay !== undefined) { clearTimeout(delay); delay = undefined; }
-          if (tick !== undefined) { clearInterval(tick); tick = undefined; }
-        };
-        b.addEventListener('pointerdown', () => {
-          stop(); // 防御：同一按钮异常重复按下不叠定时器
-          delay = window.setTimeout(() => {
-            tick = window.setInterval(fire, REPEAT_INTERVAL_MS);
-          }, REPEAT_DELAY_MS);
-        });
-        b.addEventListener('pointerup', stop);
-        b.addEventListener('pointercancel', stop);
-        b.addEventListener('pointerleave', stop);
-      }
-      // 点按钮 ≠ 点终端：click 冒泡到容器会触发「聚焦 IME 诱饵」→ 手机
-      // 软键盘被召唤（2026-08-24 两痛点①，button-ime-tui-overflow-review）。
-      // pointerdown 的 preventDefault 拦不住 click 派发（实测穿透），
-      // 在按钮上把 click 冒泡断掉——点按钮=发按键字节，不激活 IME。
-      b.addEventListener('click', (e) => e.stopPropagation());
-      if (def.mod) modButtons.set(def.mod, b);
-      bar.appendChild(b);
-    }
-  }
-  // 原生召唤防线（2026-08-31 真机实锤，dbg-keybar-ime-summon）：Chromium
-  // 安卓的 ShowImeIfNeeded——tap 结束只要焦点元素可编辑就召回 IME，不管
-  // 点在页面哪里。诱饵 textarea 永久持焦（IME 输入靠它），于是点键栏也
-  // 被原生层弹键盘——JS 层的 click stopPropagation（防 JS 召唤）拦不住
-  // 原生召唤。preventDefault touchstart 取消整个 tap 手势的默认行为
-  // （含 ShowImeIfNeeded）；挂在 bar 上冒泡全覆盖——按钮+缝隙通吃。
-  // 按键由 pointerdown 触发（按下即发），防 touchstart 不伤按键逻辑。
-  bar.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
-  // 缝隙兜底：点在按钮间隙的 click 会冒泡到终端容器→kb.focus()→JS 召唤。
-  bar.addEventListener('click', (e) => e.stopPropagation());
-  parent.appendChild(bar);
-
-  const handle: KeybarHandle = {
-    el: bar,
-    mods,
-    updateBottom() {
-      // 无操作（两区模型：栏在容器流内钉输入行上方，键盘弹起随容器底
-      // 同步上浮——不再需要按 vv 重算）。历史见 keybar-float 五轮讨伐。
-    },
-    syncMods() {
-      const bits = mods.peek();
-      for (const [bit, el] of modButtons) {
-        const on = (bits & bit) !== 0;
-        el.style.background = on ? '#3d5a99' : '#26262e';
-        el.style.color = on ? '#ffffff' : '#c8c8d4';
-      }
-    },
-  };
-  handle.updateBottom();
-  return handle;
-}
