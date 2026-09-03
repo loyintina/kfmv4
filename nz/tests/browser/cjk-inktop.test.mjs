@@ -44,12 +44,17 @@ const r = await page.evaluate(() => {
   const ascA = cv.measureText('A').actualBoundingBoxAscent;
   const ascC = cv.measureText('中').actualBoundingBoxAscent;
   const w0 = cv.measureText('0').width;
+  // 行 div = .nz-term 的直接子 div（span.parentElement 可能是样式 span）
+  let rowDiv = sp.parentElement;
+  while (rowDiv && rowDiv.parentElement !== term) rowDiv = rowDiv.parentElement;
   return {
     found: true,
     top: parseFloat(sp.style.top || '0'),
     ascA: +ascA.toFixed(2), ascC: +ascC.toFixed(2),
     spanW: +sp.getBoundingClientRect().width.toFixed(2),
     cellW: +w0.toFixed(2),
+    spanLH: sp.style.lineHeight,
+    rowLH: rowDiv ? getComputedStyle(rowDiv).lineHeight : '',
   };
 });
 
@@ -61,6 +66,11 @@ if (r.found) {
         `ascC=${r.ascC} ascA=${r.ascA} top=${r.top} → 残余=${eff.toFixed(2)}px`);
   check('③中文仍 2 cell 宽（spanW≈2×cellW）', Math.abs(r.spanW - 2 * r.cellW) <= 1,
         `spanW=${r.spanW} 2×cellW=${(2 * r.cellW).toFixed(2)}`);
+  // ④ 2026-09-03 真机贴顶案：inline-block 盒高基准必须是行的 computed
+  // line-height（用 cellH/继承值会让 baseline 对齐错位，盒顶偏上贴顶）。
+  // 真机扫描实证：span lh=行 computed lh → rel≈0.05；lh=cellH → -2.55。
+  check('④盒高基准=行 computed line-height', r.spanLH === r.rowLH,
+        `spanLH=${r.spanLH} rowLH=${r.rowLH}`);
 }
 
 await browser.close();

@@ -105,6 +105,10 @@ export class TermShell {
   private histCount = 0;
   private cellW = 0;
   private cellH = 0;
+  /** 行的 computed line-height（measure() 缓存）：宽字 span 的盒高基准。
+   *  2026-09-03 真机扫描实证：span 显式 lh=行 computed lh 时 baseline
+   *  对齐 rel≈0；用 cellH(行 div 高,与行盒不一致) 或继承值都会错位贴顶。 */
+  private rowLH = '';
   /** CJK 墨迹顶对齐补偿 px（measure() 量出；宽字 span 下移量，见 measure 注释） */
   private cjkDrop = 0;
   private enc = new TextEncoder();
@@ -196,13 +200,19 @@ export class TermShell {
     // canvas 同栈量两侧 actualBoundingBoxAscent，差值=宽字 span 的下移
     // 量（appendTextCells 里 position:relative;top 挪视觉、不动布局、
     // 不碰行高亮背景）。clamp 0-3 防异常字体度量带飞。
+    // 2026-09-03 修：度量字体必须与渲染同源——旧版拼 opts.fontSize??13，
+    // 真机实际渲染 10.4px（CSS 换算），13px 下 ascent 差 2px、10.4px 下
+    // 差 1px，补偿翻倍致中文过压。改从已渲染行取 computedStyle.font，
+    // 钉-量同拍（度量与渲染同栈同字号）。
     const cv = document.createElement('canvas').getContext('2d');
     if (cv) {
-      cv.font = `${this.opts.fontSize ?? 13}px ${TERM_FONT_STACK}`;
+      cv.font = getComputedStyle(this.rowDivs[0]).font;
       const ascA = cv.measureText('A').actualBoundingBoxAscent;
       const ascC = cv.measureText('中').actualBoundingBoxAscent;
       this.cjkDrop = Math.max(0, Math.min(3, +(ascC - ascA).toFixed(2)));
     }
+    // 行 line-height 缓存（宽字 span 盒高基准，见 rowLH 字段注释）
+    this.rowLH = getComputedStyle(this.rowDivs[0]).lineHeight;
   }
 
   /** 字格缓存作废（字体晚到自适应，2026-08-24 真机图A 列截断修复）：
@@ -213,6 +223,7 @@ export class TermShell {
     this.cellW = 0;
     this.cellH = 0;
     this.cjkDrop = 0;
+    this.rowLH = '';
   }
 
   /** 清当前可视屏（不清 scrollback 历史区）：detach 回终端态时把 tmux
@@ -245,7 +256,12 @@ export class TermShell {
         // position:relative+top=cjkDrop：CJK 墨迹顶比 Latin 高 1-2px
         // （字形 em 方设计，非行盒问题），整盒下移对齐英文 ink 顶；
         // 挪视觉不动布局，行高亮背景（外层样式 span）不受影响。
+        // 2026-09-03 修：inline-block 盒高基准必须是行的 computed
+        // line-height（rowLH），不是 cellH（行 div 高，两者在真机上
+        // 16.25 vs 12.5 不一致）——真机扫描实证 lh=rowLH 时 baseline
+        // 对齐 rel≈0.05，用 cellH 反而贴顶 -2.55。
         w.style.cssText = `display:inline-block;width:${2 * this.cellW}px;overflow:hidden;white-space:pre;`
+          + (this.rowLH ? `line-height:${this.rowLH};` : '')
           + (this.cjkDrop > 0 ? `position:relative;top:${this.cjkDrop}px;` : '');
         w.textContent = ch;
         parent.appendChild(w);
