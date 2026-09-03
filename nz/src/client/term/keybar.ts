@@ -27,6 +27,14 @@ export const MOD_CTRL = 1;
 export const MOD_ALT = 2;
 export const MOD_SHIFT = 4;
 
+/** 可长按重复的直发键（2026-09-03 用户拍板：方向键长按循环发送，
+ *  在输入文字内部快速跳转）。仅方向键——ESC/ENTER/HOME 等重复无意义
+ *  且有副作用。手感：按下即发一次，按住 400ms 起每 65ms 重复
+ *  （≈15 字/秒，与桌面终端键重复节奏同档）。 */
+const REPEAT_KEYS = new Set<KeyId>(['up', 'down', 'left', 'right']);
+const REPEAT_DELAY_MS = 400;
+const REPEAT_INTERVAL_MS = 65;
+
 export interface KeyDef {
   label: string;
   /** 直接键：发 keySeq(id, appCursor)；修饰键：翻粘滞位 */
@@ -121,6 +129,31 @@ export function mountKeybar(parent: HTMLElement, hooks: KeybarHooks): KeybarHand
       // pointerdown 按下即触发（Termux 手感）；preventDefault 后 click 不发，
       // 不重复挂 click。touchstart 的默认滚动由 touch-action:none 拦。
       b.addEventListener('pointerdown', onPress);
+      // 长按重复（仅方向键，REPEAT_KEYS）：按下已发一次，按住
+      // REPEAT_DELAY_MS 后每 REPEAT_INTERVAL_MS 重发；抬手/取消/滑出即停。
+      // appCursor 每次实时读（重复期间对端可能翻 ?1h）。
+      if (def.direct && REPEAT_KEYS.has(def.direct)) {
+        const direct = def.direct;
+        let delay: number | undefined;
+        let tick: number | undefined;
+        const fire = () => {
+          const seq = keySeq(direct, hooks.appCursor());
+          if (seq) hooks.send(seq);
+        };
+        const stop = () => {
+          if (delay !== undefined) { clearTimeout(delay); delay = undefined; }
+          if (tick !== undefined) { clearInterval(tick); tick = undefined; }
+        };
+        b.addEventListener('pointerdown', () => {
+          stop(); // 防御：同一按钮异常重复按下不叠定时器
+          delay = window.setTimeout(() => {
+            tick = window.setInterval(fire, REPEAT_INTERVAL_MS);
+          }, REPEAT_DELAY_MS);
+        });
+        b.addEventListener('pointerup', stop);
+        b.addEventListener('pointercancel', stop);
+        b.addEventListener('pointerleave', stop);
+      }
       // 点按钮 ≠ 点终端：click 冒泡到容器会触发「聚焦 IME 诱饵」→ 手机
       // 软键盘被召唤（2026-08-24 两痛点①，button-ime-tui-overflow-review）。
       // pointerdown 的 preventDefault 拦不住 click 派发（实测穿透），

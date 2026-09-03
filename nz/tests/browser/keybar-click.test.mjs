@@ -86,6 +86,30 @@ const touchGuard = await page.evaluate(() => {
 results.push({ name: '键栏 touchstart 默认行为已防（原生召唤 ShowImeIfNeeded 断源）',
   ok: touchGuard.ok === true, detail: JSON.stringify(touchGuard) });
 
+// ⑥ 方向键长按重复（2026-09-03 用户拍板）：按住 ← 1.2s（400ms 延迟+约
+// 12 次 65ms 重复）应左移多格。行为级判据：键入 'abcdef' 光标在尾，
+// 长按 ← 后输入 X——重复生效=X 落行首（'Xabcdef'）；若只走一次=
+// 'abcdeXf'（旧行为必红）。合成 PointerEvent 驱动，真实时钟计时。
+await page.evaluate(() => document.querySelector('textarea.kfm-term-kb')?.focus());
+await page.keyboard.type('abcdef', { delay: 15 });
+await page.waitForTimeout(300);
+const hold = await page.evaluate(async () => {
+  const btn = [...document.querySelectorAll('.kfm-term-keybar > div')].find(d => d.textContent === '←');
+  if (!btn) return { ok: false, why: 'no left btn' };
+  btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+  await new Promise(r => setTimeout(r, 1200));
+  btn.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
+  return { ok: true };
+});
+await page.waitForTimeout(200);
+await page.keyboard.type('X', { delay: 10 });
+await page.waitForTimeout(500);
+const lineTxt = await page.evaluate(() => window.__kfmNzTermScreen ? window.__kfmNzTermScreen() : '');
+const movedMulti = /Xabcdef/.test(lineTxt);
+const movedOnce = /abcdeXf/.test(lineTxt);
+results.push({ name: '长按←1.2s 重复左移多格（X 落行首≠单次）', ok: hold.ok && movedMulti && !movedOnce,
+  detail: `hold=${JSON.stringify(hold)} 命中行=${(lineTxt.split('\n').find(l => l.includes('X')) || '').slice(-40)}` });
+
 await browser.close();
 const { allOk } = summarize(results);
 process.exit(allOk ? 0 : 1);
