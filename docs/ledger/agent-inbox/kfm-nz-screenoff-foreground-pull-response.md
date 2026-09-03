@@ -30,7 +30,26 @@
 
 **结论**：softShot 拿 DOM 像素（tmux 标签排/keybar/毛玻璃页全 DOM），`__kfmNzCanvasShot` 拿画布内容，两者互补覆盖整屏。渲染人审的「不拉前台」路 = softShot + canvasShot 复合，单 softShot 不够。
 
-**后台实验组**：待用户按 Home 后补测，读数出即追加本函结论（若后台与前台一致=路通）。
+**后台实验组补测（同日午，已出数）——路不通，边界终版**：
+
+| 探测 | 读数 | 结论 |
+|---|---|---|
+| 后台 softShot（无 DOM 变化） | 37112 B，与前台字节级相同 | 出图，但疑缓存 |
+| 后台展开标签排（state=EXPANDED）后 softShot | 仍 37112 B、图里无标签排 | **冻结帧实锤**：不是实时光栅 |
+| 后台 DOM 实况对照 | `cls=kfm-expanded`（DOM 突变生效）但 computed `opacity:0` | **转场也冻结**：类名翻了，CSS transition 动画值停在起点（动画时钟跟随帧生产，隐藏态不推进） |
+| `Page.setWebLifecycleState('active')` 干预 | 接受但像素仍冻结 | 救不回 |
+
+**终版观测矩阵**（nz 线后台观测纪律按此执行）：
+
+| 需求 | 后台 | 手段 |
+|---|---|---|
+| JS 状态机 / DOM 类名 / 属性 | ✅ 活 | CDP eval |
+| 动画中的 computed style | ❌ 冻结（停在旧帧值） | ——后台断言必须钉 DOM 类名/属性，禁钉动画 computed 值 |
+| canvas 像素 | ✅ 活 | `__kfmNzCanvasShot` |
+| DOM 像素 | ❌ 只有冻结帧 | softShot（前台才活） |
+| 全屏活像素 | 需亮屏前台 | `am start` 拉台 + `captureScreenshot`（①已实证，秒级） |
+
+附纪律事故一笔：softShot 源码我上午打包部署后**未提交**，被外部 `git checkout` 静默回退——手机 APK 有功能、仓里无源码，已重写补交（`feat(device-agent): NzNative.softShot`）。改动即提交这条我自己破的，自己领。
 
 ## 五、落序确认
 
