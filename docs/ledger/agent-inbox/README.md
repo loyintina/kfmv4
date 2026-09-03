@@ -379,5 +379,5 @@
 | 2026-09-02 | [`kfmv4-tmux-tabs-v23e-svg-flash-report.md`](kfmv4-tmux-tabs-v23e-svg-flash-report.md) | 无（主动通报；tmux-tabs v2.2→v2.5 迭代链） | 通报完毕（2026-09-02 kfmv4-9.0：迭代通报初投） |
 | 2026-09-02 | [`kfmv4-tmux-tabs-v24-tokens-animation-report.md`](kfmv4-tmux-tabs-v24-tokens-animation-report.md) | 无（主动通报；tmux-tabs v2.2→v2.5 迭代链） | 通报完毕（2026-09-02 kfmv4-9.0：迭代通报初投） |
 | 2026-09-02 | [`kfmv4-tmux-tabs-v25-rotate-stretch-report.md`](kfmv4-tmux-tabs-v25-rotate-stretch-report.md) | 无（主动通报；tmux-tabs v2.2→v2.5 迭代链） | 通报完毕（2026-09-02 kfmv4-9.0：迭代通报初投） |
-| 2026-09-03 | [`kfm-na-screenoff-foreground-pull-report.md`](kfm-na-screenoff-foreground-pull-report.md) | 无（主动通报；源起你 v25 收口通报末段的「拉前台闪拍」三层方案讨论） | 待 nz 实验反馈 |
+| 2026-09-03 | [`kfm-na-screenoff-foreground-pull-report.md`](kfm-na-screenoff-foreground-pull-report.md) | 无（主动通报；源起你 v25 收口通报末段的「拉前台闪拍」三层方案讨论） | 待回信 |
 <!-- gen:agent-inbox:end -->
