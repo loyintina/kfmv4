@@ -1,0 +1,461 @@
+# ai-chat A1 · AI 接通最小闭环设计清单（行为层规格 + 实现清单）
+
+> 这是什么：AI 专题（TASK.md §0.7）A1 阶段「AI 接通最小闭环」的设计清单——
+> 一条真实模型通路 + 一个能对话的最小界面（say hello 级）。照此可实现。
+> 语义来源：已拍板决策（通路方案 Z / BeautifulUI 最小集 / na 方法论三层分离
+> + echo 夹具 / nz 身份=key 不出服务器）+ na 接入决策
+> （kfm-na `docs/active/ai-presence.md` D10/D11/§四协议契约/R1-R7 风险清单）
+> + kfmv4 协议层源码（`src/shared/chat-protocol/`）与直连实现
+> （`src/server/ai/chat.ts`）。
+> 纪律：**清单用户签收 → 考题先行（红先）→ 实现 → 变异抽检**；
+> 全程 agent 保有测试与 API 调试可见能力（§五）。
+> 状态：**已签收**（2026-09-04 用户拍板，§八六条异议全部裁决）。
+> 考卷蓝本：A 档 `tests/ai-*.test.ts`（na fixture 当判卷基准）+
+> B 档 `tests/browser/ai-chat.test.mjs`（echo 脑驱动全链）+
+> C 档真机（真 provider 发一条收流式）。
+> 仲裁记录（2026-09-04 用户拍板）：
+> ① 简版投影新写、不搬 tool-compaction 整树 ✅；
+> ② BeautifulUI 三件定性重写、逐词 blur 不搬只搬光标 ✅；
+> ③ model picker 保留极简版，**默认 = Kimi 官方（api.kimi.com/coding/v1）
+>    + 模型 `kimi-k2.7-code`**（用户拍板：官方渠道用此名可通，C 档实测验证，
+>    不通则凭 §4.3 API 调试落盘定位再议）✅；
+> ④ 配置直读 `~/.kfmv4/`（providers.json + .env），`NZ_AI_CONFIG_DIR` 可覆盖 ✅；
+> ⑤ kfmv4 routes.ts 不搬，错误语义靠 fixture 钉住 ✅；
+> ⑥ run 薄层登记表保留（内存 Map + 封顶缓冲 + 5min 淘汰，保页面切换补流）✅。
+
+## 〇、范围与边界（什么做、什么不做）
+
+**A1 = 一条真实流式对话闭环**：页面发一条消息 → nz server 直连 provider
+（OpenAI 兼容端点）→ SSE 九事件流回 → 界面逐字上屏 → 可取消 → 错误入流。
+
+| 做 | 不做（A1 边界，越界=返工源） |
+|---|---|
+| nz server 薄层 `/ai/chat/*`（start/stream/cancel 三端点） | 工具调用（tool_use 事件只容忍忽略，不执行不渲染） |
+| 协议层四件原样搬 + 简版投影（§一） | 会话持久化（无 session-store、无落盘会话文件；run 只在内存） |
+| BeautifulUI 词汇重写的对话 UI（§三） | markdown 渲染（纯文本气泡，代码块原样等宽） |
+| echo 夹具脑（断网可开发，B 档判卷腿） | 多会话/历史列表（单会话，刷新即清空） |
+| 取消 / 重连补流（server 侧 run 缓冲 + cursor） | 8.x 重件：run-manager / session-store / tools / permissions / eyes 一件不搬 |
+| 观测闭环（server /tmp 日志 + `__kfmNzAiChat()` 钩） | 光球/浮层/眼睛/手（na 期 0④、nz A2/A3 的活） |
+
+**模型通路**：provider 直连（方案 Z）。A1 默认两路可测：Kimi 卡
+（`api.kimi.com/coding/v1`，model `kimi-for-coding-highspeed`）与智谱卡
+（`open.bigmodel.cn/api/coding/paas/v4`，model `glm-5.3-flash`）——双 provider
+方言差异是 na 已实锤的考场（每帧 role 重复 / usage 双份 / 401 错误体异形），
+单 provider 接通不算闭环。
+
+## 一、数据类型
+
+### 1.1 九事件协议：直接搬，不重新定义
+
+**结论：原样搬运 kfmv4 `src/shared/chat-protocol/` 的 `events.ts`（44 行）、
+`messages.ts`（42 行）、`reducer.ts`（121 行）、`block-idx.ts`（23 行）
+四件到 `nz/src/shared/chat-protocol/`。** 理由：
+
+- 四件全部**零依赖纯 TS**（逐个核实：events/messages 无 import；reducer 只
+  引同目录两件；block-idx 无 import）——搬 = 复制，无拖拽。
+- 九事件协议是 na/kfmv4 双端已跑通的真协议，na 的 probe fixture（44/40 事件
+  真流实录）是它的判卷基准；nz 另起一套 = 自造第三份协议，违背「双端共享
+  消除漂移」的 v8 教训。
+- `block-idx.ts`（BAR-106 核心）A1 虽无工具块，但 23 行零成本，且 reducer
+  的索引连续性语义依赖它——一起搬，防 A3 接工具时再补。
+
+事件全集（照 `events.ts`，词汇表即协议）：
+`message_start` / `content_block_start{index,blockType:text|tool_use,toolUseId?,toolName?}` /
+`content_block_delta{index,deltaType:text_delta|thinking_delta|input_json_delta,deltaText}` /
+`content_block_stop{index}` / `tool_result{…}` / `message_stop` / `done` /
+`error{content}` / `rule_warning{content}`。
+block 布局：`index=0` 恒为 text（**thinking + 正文同块混排，靠 deltaType
+分流**——chat.ts 历史教训：曾拆两 block 导致 `textBlocks[0].text` 永远为空）；
+tool_use 从 1 起连续编号。
+
+**`to-openai-messages.ts`（308 行）不全量搬**——它 import 整个
+`../tool-compaction/` 树（compactToolInput/Result、bash 归一化、todo 标注、
+MUT_BURST_GAP……），恰是「8.x 重件」里最重的一族。A1 新写简版
+（`nz/src/shared/chat-protocol/to-openai-messages.ts`，约 70 行），**只保留
+三条有事故教训的规则**：
+
+1. **ts 前缀只盖 user 消息**（BAR-TS-MIMIC-01：assistant 盖前缀 = AI 学成
+   自己的行文格式复读；A1 无 ts 字段也要把这条写进结构，防后补时踩雷）；
+2. **客户端产物占位符不进载荷**（`[错误: …]` / `[未收到回复，请重试]` 整条
+   过滤——本地事故记录不是对话内容，上行污染「最近的自己」；
+   `[已取消]` 不过滤，是对话信号）；
+3. **空壳 assistant 一律丢弃**（无 tool_calls 且正文空 → 严格端点 kimi 400
+   「assistant must not be empty」，BAR-PROVIDER-02）。
+
+### 1.2 消息核形状（na `ai_chat.rs` 简版 + reasoning 归位 R3）
+
+client 侧对话状态 = 共享 reducer 的直接产物，不自造第二份状态：
+
+```ts
+interface AiChatState {
+  messages: ChatMessage[];   // shared/chat-protocol/messages.ts 原类型
+  msgIdx: number;            // reducer cursor：当前流式消息索引，-1 = 无活跃
+  phase: 'IDLE' | 'WAITING' | 'STREAMING';  // §三运行机
+}
+```
+
+- 流式 = 事件逐条 `applyEvent` 进同一份 messages（原地 mutate，reducer 语义）；
+  半截尾巴（组件卸载/页面切走时 run 未终结）由 server 侧 run 缓冲 + attach
+  补流兜住，client 不发明第二份缓存。
+- **reasoning 归位 R3**（na 风险清单 R3，kfmv4 陷阱 10，必须进规格）：
+  显示层规则——text 空且 reasoning 非空 → **reasoning 归位为正文显示**
+  （灰一档 `--kfm-ink-2` 以示思考性质）；text 非空 → 正文显示 text，
+  reasoning 收进可展开的「思考」折叠区（A1 折叠区可只做一个 `<details>`，
+  无动画）。归位只发生在显示层，reducer 数据不动（`block.reasoning` 与
+  `block.text` 始终分字段存）。
+- **工具事件容忍忽略**：`tool_use` / `tool_result` / `rule_warning` /
+  `input_json_delta` 事件到达时 reducer 照常归约（数据在），UI 不渲染
+  tool/rule_warning 块——但不许抛错、不许断流（A3 前的生态位占位）。
+
+### 1.3 providers 配置格式 + .env 代字 fuse
+
+**配置源：A1 直读 kfmv4 数据目录 `~/.kfmv4/providers.json` + `~/.kfmv4/.env`**
+（服务器同机，零重复配置；`NZ_AI_CONFIG_DIR` 环境变量可整体换目录，
+9.0 收口再议迁移——见 §八④）。条目格式（照 kfmv4 现状实录）：
+
+```json
+[{ "id": "Kimi", "name": "Kimi",
+   "baseUrl": "https://api.kimi.com/coding/v1",
+   "apiKey": "${KFM_PROVIDER_KIMI}",
+   "models": ["kimi-for-coding", "kimi-for-coding-highspeed", "k3", "k3-256k"] }]
+```
+
+代字 fuse 语义（复刻 kfmv4 `env-store.ts` `resolveKey`，照 na `providers.rs`）：
+
+- `apiKey = "${VAR}"` → **process.env 优先，`.env` 文件其次**（.env 行格式 =
+  冻结契约：`KEY=VALUE`、`#` 注释、可选成对引号；mtime 缓存，保存即生效）；
+- 变量缺失 → **error 事件人话**（报变量名），**绝不裸发代字**（fuse = 引线，
+  断在 server，不烧到上游）；
+- 明文 key（旧习惯）原样使用；
+- **env 变量名必须带 provider 区分，且显式写死在 providers.json 条目里**——
+  禁止用 `envNameForProvider` 从 id 自动派生。na 401 事故实录：智谱卡与聚光
+  卡曾共用 `${KFM_PROVIDER_KEY}`（中文 id 经派生函数全塌缩成同名代字），
+  .env 里存的是聚光的 key → 智谱 401「令牌已过期」，排查半天。nz 的考题
+  必须含这条回归（§六 A6）。
+
+provider 匹配（BAR-PROVIDER-MATCH-01）：按 id 或 name 匹配，**无静默回退**，
+匹配不上 → error 事件（静默回退 providers[0] = 数据污染源，kfmv4 实锤）。
+
+### 1.4 错误语义全集（判卷基准 = na error fixture 实录）
+
+| 情形 | 行为 | 出处 |
+|---|---|---|
+| 参数非法（缺 messages / 空 messages） | HTTP 400 `{error}` | probe-error-cases ②③ |
+| provider 不存在 / 代字缺失 | HTTP 200 立即返 runId + **SSE error 事件人话**（配置错误 → error 事件，**不抛异常不 500**） | probe-error-cases ① |
+| 上游非 200（4xx/5xx） | error 事件 `API 请求失败: <status> — <body 前 300 字>`（**截断 300 字**；完整错误体只落 server /tmp 日志） | chat.ts:337 |
+| 网络层失败（fetch 抛） | 重试 2 次（2s/4s 线性退避）→ error 事件 `网络错误…` | chat.ts:303-327 |
+| 上游流内错误块（`chunk.error` / `type:'error'`，无 choices） | error 事件 `模型服务错误：…`（**不许静默结束**） | chat.ts:385-389 |
+| 用户取消 | error 事件 `已取消` **入流收尾**（取消也是对话信号，不许静默断流） | chat.ts:284 |
+| 双路 401 方言 | Kimi `{error:{message,type}}` / 智谱 `{error:{code:"401",message}}`（code 是字符串）——统一取 message | upstream-error-cases |
+| 不存在 runId 挂 stream | 直接 `__end__`，不 404 | probe-error-cases ④ |
+
+SSE 分帧（与 kfmv4 逐字节一致，B/C 档对拍基准）：帧 =
+`data: {"index":N,"event":{...}}\n\n`（index = 重连 cursor）；**无 `event:`
+行**；终结帧 = `data: {"type":"__end__"}`。
+
+## 二、文件组织（na 三层分离落到 nz）
+
+三层分离：纯逻辑零 IO / 脑插座接口（start/cancel/attach）/ IO 装配。
+echo 夹具脑与 direct 脑同接口，换脑零改动。
+
+### 2.1 server 侧新增
+
+```
+nz/src/shared/chat-protocol/          ← 协议层（双端共享，纯逻辑零 IO）
+  events.ts  messages.ts  reducer.ts  block-idx.ts     ← kfmv4 原样复制四件
+  to-openai-messages.ts               ← A1 简版新写（§1.1，~70 行）
+nz/src/server/ai/
+  sse-parser.ts        ← 纯逻辑：feed(chunk)→frames。碎喂/粘包/半帧/CRLF/
+                         注释行/[DONE] 容忍（na SseParser 同语义；
+                         chat.ts 的 buffer split('\n') 逐行法为参照实现）
+  openai-translator.ts ← 纯逻辑：上游 chunk JSON → StreamEvent[]。
+                         方言全容忍（role 每帧重复 / 空 delta:{} /
+                         choices:[] usage 帧 / system_fingerprint 有无 /
+                         未知字段）；usage 只记账不进事件流；
+                         reasoning_content → thinking_delta
+  providers.ts         ← loadProviders + resolveKey 代字 fuse
+                         （env-store 精简复刻：parseEnv/loadEnvFile/resolveKey，
+                         mtime 缓存；无 upsertEnvVar——A1 不写配置）
+  brain.ts             ← 脑插座接口 + 两个脑 + run 登记表：
+                         interface BrainEndpoint {
+                           start(req): RunHandle            // 开 run，吐事件流
+                           cancel(runId): boolean           // 尽力而为
+                           attach(runId, from): 事件流       // 回放[from:]+尾随
+                         }
+                         · DirectApiBrain：fetch 直连 provider（IO），
+                           组装 requestBody（model/messages/stream/
+                           stream_options.include_usage），AbortSignal 透传，
+                           TTFB/first-delta/usage 落观测日志
+                         · EchoBrain：回放 nz/tests/fixtures/ai-chat/ 的
+                           probe-*.sse（真流 fixture 当节目单），pace 节奏
+                           注入（默认 5ms/事件，可配 0=尽快），取消→
+                           error '已取消' 收尾，attach 历史后缀回放
+                         · run 登记表（内存 Map）：events 缓冲（封顶 1 万条）、
+                           cursor、done 后 5min 淘汰、同会话新 start 取代旧
+                           run——这是薄层不是 8.x run-manager（无落盘、无
+                           会话档案、无权限钩子）
+  route.ts             ← IO 装配：mountAiChatRoutes() 把三端点接进
+                         src/server/index.ts 的 raw http handler（静态服务
+                         分支之前；nz 无 express，kfmv4 routes.ts 不可直接
+                         搬——见 §八⑤）：
+                           POST /ai/chat/start   body{messages,model?,provider?}
+                           GET  /ai/chat/:runId/stream?from=N
+                           POST /ai/chat/:runId/cancel
+                         脑选择：provider === 'echo' → EchoBrain
+                         （B 档/断网开发走 HTTP 全链，无需换进程）；
+                         NZ_AI_BRAIN=echo → 全局强制 echo（真 key 也不直连）
+  index.ts 改动        ← 一行：mountAiChatRoutes() 挂进请求处理链
+```
+
+### 2.2 client 侧新增（插件，守 plugin-contract）
+
+```
+nz/src/client/plugins/ai-chat/
+  index.tsx            ← UiPlugin：id 'ai-chat'，
+                         stateMachine: 'docs/ai-chat-a1-design.md'（契约 §7
+                         机检锚点）；挂法照 tmux-tabs 先例：main.ts 里
+                         host.create(overlay) + uiKernel.mount
+  chat-link.ts         ← 脑（纯 TS，不碰 DOM 框架）：SSE client（fetch +
+                         ReadableStream，不用 EventSource——要带 method/
+                         自定义头，且 cursor 查询参数自己控）、cursor 跟踪
+                         （R2：信封 index 必须跟踪）、reducer 驱动
+                         AiChatState、断线重连 attach from cursor、
+                         观测环（≥50 拍 {t,type,idx}）
+  ui/
+    message-list.tsx   ← 皮：消息列表（chat.tsx 词汇重写）
+    streaming-text.tsx ← 皮：流式气泡（streaming-text.tsx 词汇重写）
+    prompt-bar.tsx     ← 皮：输入栏（prompt-bar.tsx 裁剪重写）
+nz/tests/fixtures/ai-chat/   ← 从 kfm-na 借六份（原样复制，~28KB）：
+  upstream-kimi-k2.7-highspeed-20260830.sse   ← A 档 translator 判卷输入
+  upstream-glm-5.3-flash-20260830.sse         ← 同上，第二路方言
+  upstream-error-cases-20260830.txt           ← 双路 401 实录
+  probe-kimi-k3-256k-20260830.sse             ← 九事件标准答案（44 事件）+
+                                                EchoBrain 节目单甲
+  probe-glm-5.3-flash-20260830.sse            ← 第二路互证（40 事件）+ 节目单乙
+  probe-error-cases-20260830.txt              ← kfmv4 错误语义实录
+```
+
+注意两族 fixture 的分工（诚实登记，防误用）：`upstream-*` 是**原生端点**
+直连实录（translator 的输入）；`probe-*` 是 **kfmv4 服务端**吐出的九事件
+流（reducer/echo 的判卷基准）。两族模型不同（k3-256k vs k2.7-highspeed）、
+内容不同，**只能对拍形状，不能逐帧对拍内容**。
+
+## 三、UI 设计
+
+### 3.0 总体形态
+
+常驻 orb（右上，避开左上 tmux orb）= AI 页切换钮 + 运行指示灯（闲暗 /
+STREAMING 亮，静态换色零常动帧）；点按 → 全屏 AI 页（消息列表 + 底部
+prompt-bar）↔ 终端。页面切走 run 不死（server 缓冲），切回自动 attach
+补流——与 tmux-tabs 的「socket 断开会话不死」同哲学。
+
+### 3.1 BeautifulUI 三件搬运清单（诚实定性：是重写，不是搬源码）
+
+三件剪藏件全部是**自运行演示组件**（chat.tsx = Phase 定时器剧本；
+streaming-text.tsx = 假 token 循环播放；prompt-bar.tsx = AUTO_STEPS 自动
+表演 + glimm 依赖），不存在「接入数据源即用」的搬运形态。实际工作 =
+**借视觉词汇与结构，重写为数据驱动组件**（MIT 许可，无版权问题）：
+
+| 件 | 借 | 裁 |
+|---|---|---|
+| chat.tsx（187 行） | 三段结构（头部/消息区/composer）、用户气泡右对齐软块、`fade-up` 入场动画 | Phase 剧本定时器、假数据、tabs、三个 action 钮、Section 组件 |
+| streaming-text.tsx（207 行） | 流式中光标（竖条闪烁）、完成后行动条浮现的骨架思路 | 假 TOKENS 循环、SourceChip/SOURCES 来源 chips、follow-ups、四个 ACTION_ICONS；**逐词 blur 入场动画不搬**——WORD_MS 55 是假节奏，真流是 token 不是词，按 delta 驱动逐词动画既不对拍真节奏又有每词一次 animation 的渲染成本；A1 正文直接渲染 + 光标，动画后置 |
+| prompt-bar.tsx（669 行） | composer 外壳（边框聚焦态 / 圆角 / 发送钮配色）、**自动长高 textarea 方案**（隐藏 measure span 量宽 + scrollHeight 定高 + min 28/max 100） | **glimm 彩虹扫光**（glimm 依赖 09-03 已裁决不搬）、AUTO_STEPS 自动表演、@ 数据源菜单（SOURCES/BRANDS/附件）、/ 命令菜单、听写钮、expanded 双栏 grid（手机窄屏直接竖排）；model picker **保留极简版**（数据来自 `GET /ai/providers` 只出 id/name/models，理由见 §八③） |
+
+### 3.2 Tailwind → tokens 翻译方法
+
+nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
+
+- **颜色/阴影/圆角/动画时长 → tokens.css `--kfm-*` 语义变量**，皮文件出现
+  十六进制色值 = 钉红；**结构尺寸**（padding/gap/字号/宽高）留组件 inline，
+  不受禁令管。
+- tokens.css 新增 `ai-chat` 专用段（学 keybar/tmux-tabs 专用段先例）：
+  `--kfm-field: #2b2c2f`（BeautifulUI dark field，气泡/输入框底）、
+  `--kfm-accent-ink: #7ec0ff`、`--kfm-accent-tint: rgba(61,154,255,0.16)`、
+  `--kfm-shadow-hairline/card/raised`（照 BeautifulUI globals.css 深色段
+  原值收编）。**存量 token 一律不改**——注意 nz 现有 `--kfm-line: #3a3b3f`
+  与 BeautifulUI dark `--line: #2e3033` 不一致（nz 的 line 更像 BU 的
+  line-strong），新段按 BU 原值收编新 token，不回头「修正」存量
+  （存量已被 keybar/tmux-tabs 占用，改 = 视觉事故）。
+- 选择器照既有形态：`[data-kfm-aichat] …` 挂在 tokens.css，组件只标
+  data 属性。
+
+### 3.3 交互状态机（清单体例；词汇表唯一真源）
+
+**状态枚举**：
+
+| 状态机 | 状态 | 含义 |
+|---|---|---|
+| 页面机 | `TERMINAL` | 终端页（orb 常驻可见） |
+| 〃 | `AI_PAGE` | 全屏 AI 对话页 |
+| 运行机 | `IDLE` | 无活跃 run，输入栏可发 |
+| 〃 | `WAITING` | 已发送、未收首事件（用户消息已入格） |
+| 〃 | `STREAMING` | 事件流到达中（发送钮 = 停止钮） |
+| 菜单机 | `CLOSED` / `MODEL_OPEN` | 模型选择器（挂在 prompt-bar 内） |
+
+**转换表**（手势与环境事件同列）：
+
+| # | 起点 | 触发 | 终点 | 底层动作 |
+|---|---|---|---|---|
+| A1 | `TERMINAL` | 点 orb | `AI_PAGE` | 纯 UI；有活跃 run → attach from cursor 补流 |
+| A2 | `AI_PAGE` | 点收起 / 系统返回 | `TERMINAL` | 纯 UI；run 不死（server 缓冲） |
+| A3 | `IDLE` | 输入非空 + 发送 | `WAITING` | 用户消息入格 → POST /ai/chat/start |
+| A4 | `WAITING` | 首个 SSE 事件 | `STREAMING` | cursor 起记，reducer 起约 |
+| A5 | `STREAMING` | delta 事件 | `STREAMING` | applyEvent 原地 mutate → 重渲染气泡 |
+| A6 | `STREAMING`/`WAITING` | `done` | `IDLE` | 收流（半截尾巴兜底：reasoning 归位 R3 生效） |
+| A7 | `STREAMING`/`WAITING` | `error` 事件 | `IDLE` | 错误文案入流为消息内容（不是 toast） |
+| A8 | `STREAMING`/`WAITING` | 点停止钮 | `IDLE` | POST cancel → error `已取消` 入流收尾 |
+| A9 | 任意 | 通道断（fetch 流断/页面回前台） | 原状保持 | 重连 attach from cursor 补流；补不上 → error 事件入流 |
+| A10 | `CLOSED` ↔ `MODEL_OPEN` | 点模型钮 / 选定 / Escape | 互转 | 数据源 = GET /ai/providers（只出 id/name/models） |
+
+**禁止条款**：
+
+- **P1** 禁止：key 出服务器——client bundle / 网络载荷 / 观测钩 /
+  server 日志任何一处出现 apiKey = 钉红；`/ai/providers` 不出 apiKey；
+  上游 Authorization 头只活在 DirectApiBrain 内。
+- **P2** 禁止：流式期间并发第二 run——`WAITING`/`STREAMING` 中发送钮
+  恒为停止钮（A8）；server 侧同会话新 start 取代旧 run 兜底。
+- **P3** 禁止：配置/上游错误走 HTTP 500 或未捕获异常到 client——一律
+  error 事件入流（§1.4 表即法）。
+- **P4** 禁止：上游错误体超 300 字进 error 事件（完整体只落 /tmp 日志）。
+- **P5** 禁止：取消后静默断流——必须有 `已取消` error 事件入流收尾。
+- **P6** 禁止：每 delta 重建消息 DOM——streaming 气泡节点身份稳定
+  （React key 稳定），delta 只追加文本；整条列表重挂载 = 钉红。
+- **P7** 禁止：皮内硬编码样式字面量（颜色/阴影/圆角/时长全走 `--kfm-*`，
+  keybar P5 同款）。
+- **P8** 禁止：工具类事件（tool_use/tool_result/rule_warning）到达时抛错
+  或断流——容忍忽略，不渲染。
+- **P9** 词汇表强制统一：`TERMINAL`/`AI_PAGE`/`IDLE`/`WAITING`/`STREAMING`/
+  `CLOSED`/`MODEL_OPEN`，清单外状态名 = 规格外状态 ≈ bug 候选。
+
+## 四、观测与自测纪律（用户硬要求：全程能测试 + 看到 API 调试结果）
+
+### 4.1 echo 夹具脑断网开发
+
+- `provider: 'echo'` 经 HTTP 全链走 EchoBrain（回放 probe fixture，pace 可配）
+  ——B 档考卷与断网开发共用这一条腿，不需要任何真 key、不需要网络；
+- `NZ_AI_BRAIN=echo` 全局强制（真 key 在场也不直连，排障隔离层）；
+- echo 的节目单就是 na 抓的真流 fixture——**假数据的形状 = 真数据的形状**，
+  这是「fixture 驱动断网可开发」的全部含义。
+
+### 4.2 观测钩（随插件走，属公共契约，plugin-contract §2）
+
+`__kfmNzAiChat()` 同步报：
+
+```ts
+{
+  page: 'TERMINAL' | 'AI_PAGE',
+  run: { phase, runId, provider, model, cursor, deltas, chars, startedMs } | null,
+  messages: [{ role, blocks, chars }],        // 摘要，不回全文
+  lastEvents: [{ t, type, idx }],             // 环形 ≥50 拍
+  lastError: string | null,
+}
+```
+
+### 4.3 API 调试结果对 agent 可见（server 侧落盘，学 IME/BOOT_MARKS /tmp 先例）
+
+- **`/tmp/nz-ai-chat.log`（JSONL，env `NZ_AI_CHAT_LOG` 可覆盖）**，每个 run
+  逐拍落：`start{runId,provider,model,msgCount,bodyBytes}` →
+  `upstream-status{status,ttfbMs}` → `first-delta{atMs}` →
+  `done{deltas,chars,usage,ms}` / `error{kind,message≤300字}`。
+  **不落 key、不落完整消息正文**（摘要与计数足够判卷，正文在 UI/钩子里）。
+- `NZ_AI_DEBUG_BODY=1` 时请求/响应全文落 `/tmp/nz-ai-chat-body-<runId>.log`
+  （Authorization 头脱敏后）——深排障专用，默认关。
+- agent 后台观测姿势：`tail -f /tmp/nz-ai-chat.log`（server 真值，L2 互证腿）
+  + CDP 读 `__kfmNzAiChat()`（前端状态，L3 腿）——两条独立失败模式，
+  合 nz AGENTS.md 验证纪律。
+
+## 五、考卷映射
+
+### A 档 · 纯逻辑钉（判卷基准 = na fixture，红先）
+
+| 钉 | 验证 | 手段 |
+|---|---|---|
+| A1 | sse-parser：碎喂/粘包/半帧/CRLF/注释行/`[DONE]`/多 data 行 | 构造输入逐喂字节，断言帧序列 |
+| A2 | translator：`upstream-kimi` fixture → 九事件序列形状（start→block→deltas→stop→done）、thinking/text 分流正确 | fixture 全文过 translator，断言事件类型序列 + delta 归并 |
+| A3 | reasoning 归位 R3：text 空且 reasoning 非空 → 显示层归位正文 | translator+reducer 产物断言 |
+| A4 | 方言容忍：role 每帧重复（glm）/ `choices:[]` usage 帧（kimi）/ 空 `delta:{}` / system_fingerprint 有无 / 未知字段 | `upstream-glm` fixture 全绿 + 构造异形帧 |
+| A5 | 错误语义：双路 401 实录 → error 事件人话；非 200 截 300 字；配置错误 → error 事件不例外 | `upstream-error-cases` 实录回放 + 构造响应 |
+| A6 | 代字 fuse：env 优先 / .env 其次 / missingVar 人话 / 绝不裸发代字 / **中文 id 塌缩回归**（两条目显式不同 `${VAR}` 不串号） | providers.ts 直接喂临时 providers.json/.env |
+| A7 | reducer：probe fixture 44/40 事件 → messages 结构（流式混排/Error 收流成消息/工具事件容忍） | `probe-kimi`/`probe-glm` 全文过 reduceEvents |
+| A8 | 简版 to-openai-messages：ts 前缀只盖 user / 占位符过滤 / 空壳 assistant 丢弃 | 构造 messages 断言载荷 |
+
+变异抽检：thinking↔text 换轨必咬 A2/A3；归位删除必咬 A3；fuse 缺失裸发
+必咬 A6（照 na 变异双咬先例）。
+
+### B 档 · echo 脑驱动 UI 全链（Playwright headless）
+
+| 钉 | 验证转换 | 手段 |
+|---|---|---|
+| B1 | A1/A2 orb 往返 | 点 orb → AI_PAGE；收起 → TERMINAL；词汇表钉 |
+| B2 | A3→A6 发送-流式-完成 | echo 节目单回放 → 消息只增、delta 逐字上屏、done 收流 |
+| B3 | A8 取消 | 流式中点停止 → `已取消` 入流、回 IDLE |
+| B4 | A7 错误入流 | echo 错误节目 → error 文案成消息、页面不崩 |
+| B5 | P6 只增不重建 | streaming 期间气泡 DOM 节点身份断言（同一引用） |
+| B6 | P9 词汇表 | `__kfmNzAiChat()` ring 状态名 ⊆ 清单枚举 |
+| B7 | P1 key 不出服务器 | `/ai/providers` 响应 + 全链路载荷 grep 无 key 形态 |
+
+### C 档 · 真机
+
+| 钉 | 验证 | 手段 |
+|---|---|---|
+| C1 | 真 provider 发一条收流式（Kimi `kimi-for-coding-highspeed`） | 真机/实验台发「用一句话介绍你自己」，截图+CDP 读钩 |
+| C2 | 第二路方言实测（智谱 `glm-5.3-flash`） | 同尺 |
+| C3 | agent 后台观测闭环 | `/tmp/nz-ai-chat.log` 有 start/status/first-delta/done 全程 + `__kfmNzAiChat()` 读数互证 |
+
+### 回归属（不许弄红的现有卷）
+
+- `npm test`（tests/index.test.ts 全量：server / ws-bridge / term-connection /
+  tmux-connection / keymap / permission / ctx-kernel / host / plugtest / eyes /
+  card-types / palette-bold-bright / term-core-shared / bridge-heartbeat）；
+- browser 卷：`keybar-click`（21 钉）/ `tmux-tabs.test` / `ime-pan` /
+  `scrollback` / `term-hooks` / `kernel` / `bottom-anchor` / `cjk-*` 等——
+  A1 改动面（index.ts 加路由 + main.ts 加插件挂载）碰了任何一卷 = 红先立钉。
+
+## 六、验收判据（A1 DoD）
+
+1. **真机发一条消息收到真实流式回复**：Kimi 与智谱两路各一次，逐字上屏
+   可见（截图/CDP 证据），取消与错误各演一次；
+2. **agent 可后台观测全过程**：`/tmp/nz-ai-chat.log` 全程记录（TTFB/首
+   delta/usage/错误）+ `__kfmNzAiChat()` 报全机位，两腿互证一致；
+3. A/B 档考卷全绿 + 变异抽检双咬；
+4. 回归属现有卷零回退。
+
+## 七、工作量预估
+
+| 块 | 估 |
+|---|---|
+| 协议层四件复制 + 简版投影 + A 档钉 | 1 天 |
+| server 薄层（sse-parser/translator/providers/brain×2/route）+ A 档钉 | 2 天 |
+| echo 夹具 + fixture 借用 + B 档考卷 | 0.5–1 天 |
+| client 插件（chat-link 脑 + 三件皮重写 + orb/页面） | 2 天 |
+| C 档真机双路 + 观测闭环 + 通报 | 0.5 天 |
+| **合计** | **约 5.5–6 天** |
+
+## 八、异议与备选（读源码后的诚实登记，签收时逐条拍板）
+
+1. **`to-openai-messages.ts` 全量搬不动**（与拍板决策的偏差，最大一条）：
+   它 import 整个 `tool-compaction/` 树——那是比 run-manager 更重的 8.x
+   重件，且全部语义服务工具调用压缩，A1 无工具。本文取「简版新写、保留
+   三条事故规则」；备选 = 整树搬入（明确反对，违背「重件一件不搬」）。
+2. **BeautifulUI 三件是演示组件不是库组件**：「搬运」实为重写，工作量已
+   按重写估；streaming-text 的逐词 blur 动画建议 A1 不搬（假节奏对不上
+   真流 + 渲染成本），只搬光标。若用户要逐词动画，单独立项做「delta 驱动
+   的词边界缓冲层」，别在 A1 夹带。
+3. **prompt-bar 的 model picker 建议保留极简版**（数据来自
+   `/ai/providers`）：多 provider 方言差异需要真机实测通道，na 双路 live
+   对拍的价值已实锤；裁掉则默认固定 Kimi `kimi-for-coding-highspeed`，
+   换 provider 只能靠改请求。请拍板。
+4. **配置直读 `~/.kfmv4/`**（本清单取此）：零重复配置，但耦合 kfmv4 数据
+   目录；备选 = nz 自备 `~/.kfm-nz/`（na 的 deploy-ai-config.sh 模式，
+   多一次同步，key 双份落盘）。`NZ_AI_CONFIG_DIR` 覆盖机制两边通用，
+   9.0 收口再迁不迟。
+5. **kfmv4 `routes.ts` 不可搬**（express 形态，nz 是 raw node:http）：
+   与「新写薄层」拍板一致，无冲突；但意味着错误语义/cursor 语义只能靠
+   fixture 钉住（A5/A7/B 档），没有代码移植的捷径。chat.ts 可搬的实质
+   只有：SSE 逐行解析法、thinking+text 同块设计、网络重试参数、错误
+   文案模板——已全部落进 §一/§二，不需要更多。
+6. **run 登记表是薄层不是 run-manager**：内存 Map + 封顶缓冲 + 5min
+   淘汰，约百行；不做落盘、不做会话档案。若用户认为 A1 连 attach/重连
+   都不需要（纯 say hello），可再裁到「单 run 无缓冲」，但 B 档 A9 与
+   页面切换补流（A1 转换）随之消失——建议保留。
