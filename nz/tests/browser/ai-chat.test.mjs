@@ -17,13 +17,14 @@
  *   B10 composer 全局常驻（拍板①：TERMINAL 态存在可见；关态可发送 echo 全链）
  *   B11 焦点不打架（P12：点 composer 焦点落 composer 不被诱饵回抢；
  *       点终端焦点回落 IME 诱饵）
- *   B12 底部避让（P10 + 2026-09-04 同日二拍换序 + 同日三拍⑧：composer 钉
- *       最底贴软键盘/视口底，keybar 钉 composer 正上方——终端 scrollEl 预留
- *       总量不变；AI 页底=视口底盖住 keybar（终端/AI 两套逻辑），composer
- *       z43 在页之上钉底可用；B12c 键盘弹起 composer 底=键盘顶直接接触）
+ *   B12 底部避让（P10 + 2026-09-04 同日二拍换序⑦ + 三拍⑧ + 四拍⑨方案1：
+ *       composer 钉最底贴软键盘/视口底，keybar 钉 composer 正上方——终端
+ *       scrollEl 预留总量不变；AI 页底=composer 顶（面板落到输入栏上面，
+ *       盖住 keybar 且内容滚到底不被 composer 盖）；B12c 键盘弹起 composer
+ *       底=键盘顶直接接触；B12d 长内容滚到底末条不被 composer 盖）
  *   补流钉  A1 转换：run 进行中切出 AI 页再切回 → attach from=N 补流不丢帧
  *   P7  皮内零硬编码色值（源码 grep；变异抽检的靶子）
- *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件
+ *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见
  *
  * 慢流杠杆（B3/B5/补流需要确定性时间窗）：page.evaluate 设
  * window.__kfmNzAiChatTestLever = { echoPaceMs } → client 在 echo start 载荷
@@ -241,13 +242,15 @@ check('B9a 层级：AI 页开 → tmux orb+标签栏隐藏（display:none 不渲
 check('B9b 层级 z 序：AI orb ≥ composer > AI 页 > tmux orb（P10 不倒挂）',
       !!g9.page && !!g9.bar && !!g9.orb && g9.orb.z > g9.page.z && g9.bar.z > g9.page.z && g9.page.z > tmuxOrbZ,
       `aiOrb=${g9.orb?.z} bar=${g9.bar?.z} page=${g9.page?.z} tmuxOrb=${tmuxOrbZ}`);
-// B12b 拍板⑧（2026-09-04 同日三拍）：AI 页打开时 keybar 不应继续显示——
-// 终端逻辑与 AI 对话逻辑是两套，AI 页底=视口底把两排快捷键**盖住**；
-// composer 全局钉底不动（z43 在页之上），elementFromPoint 双探：keybar
-// 中心点被页接住（不可见不可点）、composer 输入框中心点仍被 composer 接住
-check('B12b AI 页盖住 keybar：页底=视口底 + keybar 中心点被页接住（不可点）+ composer 仍钉底可点',
+// B12b 拍板⑧+⑨（2026-09-04）：AI 页打开时 keybar 不应继续显示——终端逻辑
+// 与 AI 对话逻辑是两套，页盖住两排快捷键；方案1：页底=composer 顶（面板落到
+// 输入栏上面，内容滚动到底也不存在被 composer 盖的几何可能；keybar 在
+// composer 上方，页落到 composer 顶正好仍盖着它）。elementFromPoint 双探：
+// keybar 中心点被页接住（不可见不可点）、composer 输入框中心点仍被
+// composer 接住（z43 钉底可用）
+check('B12b AI 页落 composer 顶盖 keybar：页底=composer 顶 + keybar 中心点被页接住（不可点）+ composer 仍钉底可点',
       !!g9.page && !!g9.keybar && !!g9.bar
-      && Math.abs(g9.page.bottom - g9.ih) <= 2
+      && Math.abs(g9.page.bottom - g9.bar.top) <= 2
       && await page.evaluate(() => {
         const kb = document.querySelector('.kfm-term-keybar').getBoundingClientRect();
         const hit = document.elementFromPoint(kb.left + kb.width / 2, kb.top + kb.height / 2);
@@ -258,7 +261,7 @@ check('B12b AI 页盖住 keybar：页底=视口底 + keybar 中心点被页接�
         const hit = document.elementFromPoint(input.left + input.width / 2, input.top + input.height / 2);
         return !!hit && !!hit.closest('[data-kfm-aichat-bar]');
       }),
-      `page.bottom=${g9.page?.bottom.toFixed(1)}（视口底${g9.ih}） keybar=[${g9.keybar?.top.toFixed(1)},${g9.keybar?.bottom.toFixed(1)}] bar.bottom=${g9.bar?.bottom.toFixed(1)}`);
+      `page.bottom=${g9.page?.bottom.toFixed(1)} bar.top=${g9.bar?.top.toFixed(1)} keybar=[${g9.keybar?.top.toFixed(1)},${g9.keybar?.bottom.toFixed(1)}] bar.bottom=${g9.bar?.bottom.toFixed(1)}`);
 const shotOpen = join(SHOT_DIR, 'ai-chat-page-open-layering.png');
 await page.screenshot({ path: shotOpen });
 console.log('shot:', shotOpen);
@@ -408,6 +411,49 @@ const domErr = await page.evaluate(() => [...document.querySelectorAll('[data-ai
 check('B4 A7：error 文案成消息入流（不是 toast），页面不崩',
       r7.ok && typeof h7.lastError === 'string' && h7.lastError.length > 0 && domErr.includes('错误') && pageErrors.length === 0,
       `lastError="${String(h7.lastError).slice(0, 40)}" dom="…${domErr.slice(-30)}" pageErr=${pageErrors.length}`);
+
+// ========== B12d：长内容滚到底，末条消息不被钉底 composer 盖（拍板⑨方案1核心场景） ==========
+// 造滚动：echo 快节目再补 3 轮（此时已有 10+ 条消息，列表必超屏）→
+// 程序化滚到底 → 列表确可滚 + 末条消息底≤composer 顶（几何上不存在被盖
+// 可能）+ 末条底部命中点落在页内（不是 composer）→ 截图存证
+await setLever(2);
+await selectModel('echo::echo').catch(() => {});
+for (let i = 0; i < 3; i++) {
+  const lenI = (await hook())?.messages?.length ?? 0;
+  await actUntil(
+    () => sendViaComposer(`滚动钉 ${i} PONG`),
+    async () => { const h = await hook(); return h?.phase === 'IDLE' && (h?.messages?.length ?? 0) >= lenI + 2; },
+    { tries: 1, settle: 12000, poll: 150 },
+  );
+}
+const scrollPin = await page.evaluate(() => {
+  const list = document.querySelector('[data-aichat-list]');
+  const wrap = list?.parentElement; // 外层 wrap（listWrapRef）
+  const bar = document.querySelector('[data-kfm-aichat-bar]')?.getBoundingClientRect();
+  const last = [...document.querySelectorAll('[data-aichat-msg]')].at(-1);
+  if (!list || !wrap || !bar || !last) return null;
+  // 实际滚动件=溢出那件（list 自身 overflowY:auto 是 flex 受限的真滚动件，
+  // wrap 的 scrollHeight≈clientHeight 不溢出不滚）
+  const scroller = [list, wrap].find((el) => el.scrollHeight > el.clientHeight + 5) ?? null;
+  if (!scroller) return { scrollable: false };
+  scroller.scrollTop = scroller.scrollHeight; // 滚到底（程序化取确定性）
+  const lr = last.getBoundingClientRect();
+  const hit = document.elementFromPoint(lr.left + Math.min(lr.width / 2, 200), lr.bottom - 4);
+  return {
+    scrollable: true,
+    lastBottom: lr.bottom, barTop: bar.top,
+    hitInPage: !!hit && !!hit.closest('[data-kfm-aichat]'),
+    hitInBar: !!hit && !!hit.closest('[data-kfm-aichat-bar]'),
+  };
+});
+check('B12d 长内容滚到底：列表可滚 + 末条消息底=composer 顶上方（不被盖）+ 底部命中在页内',
+      !!scrollPin && scrollPin.scrollable
+      && scrollPin.lastBottom <= scrollPin.barTop + 2 && scrollPin.lastBottom > scrollPin.barTop - 60
+      && scrollPin.hitInPage && !scrollPin.hitInBar,
+      scrollPin ? `scrollable=${scrollPin.scrollable} lastBottom=${scrollPin.lastBottom?.toFixed(1)} barTop=${scrollPin.barTop?.toFixed(1)} hitPage=${scrollPin.hitInPage} hitBar=${scrollPin.hitInBar}` : '量测缺失');
+const shotScrolled = join(SHOT_DIR, 'ai-chat-page-scrolled-bottom.png');
+await page.screenshot({ path: shotScrolled });
+console.log('shot:', shotScrolled);
 
 // ========== 补流钉：A1 转换 run 进行中切出再切回 → attach from=N 不丢帧 ==========
 await setLever(40);

@@ -23,9 +23,10 @@
  *      +AI orb（z43）；AI 页开时 tmux orb+标签栏 display:none 隐藏（不是
  *      被盖）；同日二拍换序后垂直次序（从底到顶）= 软键盘 → composer →
  *      keybar → 内容，终端 scrollEl 底部预留两条同高（--kfm-aichat-
- *      composer-h 经 ResizeObserver 实测单源下发）；同日三拍⑧：AI 页
- *      底=视口底/键盘顶——终端与 AI 对话是两套逻辑，页开即盖住 keybar，
- *      composer z43 在页之上钉底可用。
+ *      composer-h 经 ResizeObserver 实测单源下发）；拍板⑧+⑨：AI 页盖住
+ *      keybar（终端与 AI 对话两套逻辑），页底=composer 顶（方案1——内容
+ *      滚到底也不被钉底 composer 盖；keybar 在 composer 上方，页落到
+ *      composer 顶正好仍盖着它；键盘弹起页底随 composer 一起上浮）。
  *
  * 观测钩（§4.2，公共契约）：__kfmNzAiChat() 同步报
  *   { page, menu, run{phase,runId,provider,model,cursor,deltas,chars,startedMs}|null,
@@ -103,6 +104,7 @@ export function createAiChatPlugin(): UiPlugin {
         const [page, setPage] = useState<PageState>('TERMINAL');
         const [menu, setMenu] = useState<MenuState>('CLOSED');
         const [closing, setClosing] = useState(false);
+        const [composerH, setComposerH] = useState(0);
         const [kbRise, setKbRise] = useState(0);
         const [, setTick] = useState(0);
         const listWrapRef = useRef<HTMLDivElement>(null);
@@ -141,14 +143,15 @@ export function createAiChatPlugin(): UiPlugin {
         }, []);
 
         // composer 高度 ResizeObserver 实测 → --kfm-aichat-composer-h 单源下发
-        // （终端 scrollEl 底部预留 + keybar 钉位同读此值；覆写 tokens.css
-        // 静态默认，插件摘除时还原——§3.0/P10。AI 页底=视口底后本组件不再
-        // 消费该值，纯做单源分发——拍板⑧）
+        // （终端 scrollEl 底部预留 + keybar 钉位读此 var；本组件消费同一实测
+        // 值做 AI 页底=composer 顶——拍板⑨方案1；覆写 tokens.css 静态默认，
+        // 插件摘除时还原——§3.0/P10）
         useEffect(() => {
           const el = barRef.current;
           if (!el) return;
           const apply = (): void => {
             const h = el.getBoundingClientRect().height;
+            setComposerH(h);
             document.documentElement.style.setProperty('--kfm-aichat-composer-h', `${h}px`);
           };
           apply();
@@ -237,10 +240,11 @@ export function createAiChatPlugin(): UiPlugin {
         if (page !== 'AI_PAGE' && !closing) return createElement('div', null, orb, bar);
 
         // 全屏 AI 页（z42：终端/tmux 控件之上、composer+orb 之下——P10 层序）：
-        // 头部 / 消息区（借 chat.tsx 结构）；页底=视口底/键盘顶（拍板⑧
-        // 2026-09-04 同日三拍：终端逻辑与 AI 对话逻辑是两套，AI 页打开时
-        // 把 keybar 两排快捷键**盖住**；composer 全局钉底不动，z43 在页
-        // 之上不被盖）
+        // 头部 / 消息区（借 chat.tsx 结构）；页底=composer 顶（拍板⑨方案1
+        // 2026-09-04：面板落到输入栏上面——内容在面板内滚动时底部文字不再
+        // 可能被钉底 composer 盖住，几何上不存在被盖可能；拍板⑧语义保持：
+        // keybar 钉在 composer 正上方，面板落到 composer 顶正好仍盖着它；
+        // 键盘弹起时面板底随 composer 一起上浮=键盘顶上的 composer 顶）
         return createElement('div', null,
           orb,
           bar,
@@ -249,7 +253,7 @@ export function createAiChatPlugin(): UiPlugin {
             className: closing ? 'kfm-closing' : '',
             style: {
               position: 'fixed', top: 0, left: 0, right: 0,
-              bottom: `${kbRise}px`,
+              bottom: `${composerH + kbRise}px`,
               zIndex: 42,
               background: 'var(--kfm-page)', color: 'var(--kfm-ink)',
               display: 'flex', flexDirection: 'column',
