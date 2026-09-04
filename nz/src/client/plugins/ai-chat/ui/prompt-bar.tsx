@@ -17,6 +17,8 @@
  * 常驻行置顶（标注「默认」，A2 观察项①销账：Kimi 无 kimi-k2.7-code
  * 但它是默认，切走也能点回来）；点定 model 才生效+收起（A10 语义）。
  * 下钻层级（drill）是 picker 内部 UI 态，不进菜单机词汇（P9 不加词）。
+ * 2026-09-04 拍板⑭：composer 回车=换行不发送（textarea 自然换行，不
+ * 拦截即 IME 守卫语义），发送唯一路径=发送按钮（流式期间仍是停止钮）。
  * P2：WAITING/STREAMING 中发送钮恒为停止钮（A8 入口）。
  */
 import { createElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -194,11 +196,10 @@ export function PromptBar(props: PromptBarProps): React.ReactElement {
     onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => setDraft(e.target.value),
     onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Escape' && menu === 'MODEL_OPEN') { onMenu('CLOSED'); return; } // A10
-      // Enter 发送（Shift+Enter 换行；IME 组词中 Enter 不发送——CJK 教训同款守卫）
-      if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-        e.preventDefault();
-        send();
-      }
+      // 拍板⑭（2026-09-04）：Enter=换行不发送——不拦截即 textarea 自然换行，
+      // IME 组词中 Enter 确认组词也不被拦（不拦截即守卫语义保留）；发送
+      // 唯一路径=发送按钮（「不然做发送按钮有什么用」）。终端 keybar 的
+      // ENTER 发 \r 是终端逻辑，不在此文件。
     },
     style: {
       width: '100%', minHeight: `${MIN_H}px`, resize: 'none', border: 'none', outline: 'none',

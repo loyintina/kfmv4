@@ -33,9 +33,11 @@
  *   B15 拍板⑬ picker 点菜单外即关+那一指动作同时生效（tmux-tabs T15
  *       同款：点终端区→菜单 CLOSED+诱饵同指聚焦；点 composer→菜单关+
  *       焦点同指进输入框；菜单内下钻不收回归）
+ *   B16 拍板⑭ composer 回车=换行不发送（draft 含 \n、run 未起），发送
+ *       唯一路径=发送按钮；多行内容发送后气泡换行保真
  *   补流钉  A1 转换：run 进行中切出 AI 页再切回 → attach from=N 补流不丢帧
  *   P7  皮内零硬编码色值（源码 grep；变异抽检的靶子）
- *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后 / 终端态发送自动开页 / picker 一级 / picker 二级默认行 / picker 点外即关前后
+ *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后 / 终端态发送自动开页 / picker 一级 / picker 二级默认行 / picker 点外即关前后 / 输入栏两行文字
  *
  * 慢流杠杆（B3/B5/补流需要确定性时间窗）：page.evaluate 设
  * window.__kfmNzAiChatTestLever = { echoPaceMs } → client 在 echo start 载荷
@@ -116,9 +118,10 @@ const setLever = (echoPaceMs) => page.evaluate((v) => { window.__kfmNzAiChatTest
 // A1/A2 同钮往返：orb 即唯一开关（2026-09-04 拍板②，返回按钮已删）
 const openAiPage = async () => page.click('[data-kfm-aichat-orb]', { timeout: 4000 }).catch(() => {});
 const closeAiPage = async () => page.click('[data-kfm-aichat-orb]', { timeout: 4000 }).catch(() => {});
+// 拍板⑭（2026-09-04）：composer 回车=换行不发送，发送唯一路径=发送按钮
 const sendViaComposer = async (text) => {
   await page.fill('[data-aichat-input]', text, { timeout: 4000 }).catch(() => {});
-  await page.press('[data-aichat-input]', 'Enter', { timeout: 4000 }).catch(() => {});
+  await page.click('[data-aichat-send]', { timeout: 4000 }).catch(() => {});
 };
 // 拍板⑫两级路由：先下钻 provider 再点 model 行（点 provider 只是下钻不收）
 const selectModel = async (row) => {
@@ -457,6 +460,35 @@ const drilledRows = await page.evaluate(() => document.querySelectorAll('[data-a
 check('B15c 回归：菜单内点 provider 下钻不收（MODEL_OPEN 保持 + 二级 model 行在场）',
       mB15c === 'MODEL_OPEN' && drilledRows === 2, `menu=${mB15c} modelRows=${drilledRows}`);
 await page.press('[data-aichat-input]', 'Escape').catch(() => {});
+
+// ========== B16：拍板⑭ composer 回车=换行不发送，发送唯一路径=发送按钮 ==========
+// 语义：AI 输入栏里 Enter=换行（textarea 自然换行，不拦截即 IME 组词守卫
+// 语义保留）；「不然做发送按钮有什么用」——发送只走发送钮（流式期间仍是
+// 停止钮，A8 不变）。只改 composer：终端 keybar 的 ENTER 发 \r 是终端逻辑
+// （keybar-click 21 钉看着），一个字不动。
+await setLever(2);
+const lenB16 = (await hook())?.messages?.length ?? 0;
+await page.fill('[data-aichat-input]', '第一行').catch(() => {});
+await page.press('[data-aichat-input]', 'Enter').catch(() => {});
+await page.keyboard.type('第二行').catch(() => {});
+await page.waitForTimeout(300);
+const draftB16 = await page.evaluate(() => document.querySelector('[data-aichat-input]')?.value ?? '');
+const hB16a = (await hook()) ?? {};
+check('B16a 拍板⑭：composer 按 Enter=换行不发送（draft 含 \\n 两行，run 未起 messages 不变）',
+      draftB16.includes('第一行\n第二行') && (hB16a.messages?.length ?? 0) === lenB16 && hB16a.phase !== 'WAITING' && hB16a.phase !== 'STREAMING',
+      `draft=${JSON.stringify(draftB16)} msgs=${hB16a.messages?.length}/${lenB16} phase=${hB16a.phase}`);
+const shotNl = join(SHOT_DIR, 'ai-chat-composer-multiline.png');
+await page.screenshot({ path: shotNl });
+console.log('shot:', shotNl);
+const r16 = await actUntil(
+  () => page.click('[data-aichat-send]').catch(() => {}),
+  async () => { const h = await hook(); return h?.phase === 'IDLE' && (h?.messages?.length ?? 0) >= lenB16 + 2; },
+  { tries: 1, settle: 12000, poll: 150 },
+);
+check('B16b 拍板⑭：点发送钮 → run 起消息入格收流（发送唯一路径=按钮，⑪自动开页联动）', r16.ok, `done=${r16.ok}`);
+const domB16 = await page.evaluate(() => [...document.querySelectorAll('[data-aichat-msg="user"]')].at(-1)?.textContent ?? '').catch(() => '');
+check('B16c 多行内容发送后换行保真（用户气泡 textContent 含 \\n，pre-wrap 渲染）',
+      domB16.includes('第一行\n第二行'), `dom=${JSON.stringify(domB16.slice(0, 40))}`);
 
 // ========== B13：拍板⑪ 发送后自动开页（TERMINAL 态发送等效点 orb） ==========
 // 语义：终端页面态在全局输入栏发送 = 主动说话意图 → 自动开页（滑入动画

@@ -94,6 +94,11 @@
 >    DOM 外→关菜单，**不许 preventDefault/stopPropagation**（下层动作
 >    照走）；菜单 DOM 内（下钻/选择/返回）与模型钮自身 toggle 豁免。
 >    菜单机词汇不变（CLOSED↔MODEL_OPEN，P9）✅。
+> 仲裁记录追加（2026-09-04 同日八拍，用户拍板，已签收）：
+> ⑭ **composer 回车=换行，不发送**（用户原话：不然做发送按钮有什么用）
+>    ——发送唯一路径=发送按钮（流式期间仍是停止钮，A8 语义不变）；
+>    textarea 自然换行，不拦截即 IME 组词守卫语义保留。只改 composer：
+>    终端 keybar 的 ENTER 发 \r 是终端逻辑，一个字不动 ✅。
 
 ## 〇、范围与边界（什么做、什么不做）
 
@@ -409,7 +414,7 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 |---|---|---|---|---|
 | A1 | `TERMINAL` | 点 orb / **composer 发送**（拍板⑪：发送=主动说话意图，等效点 orb 自动开页；反向不成立——AI_PAGE 态发送=页内发送，无转换） | `AI_PAGE` | 纯 UI；入场动画 translateY(-100%)→0（P11）；有活跃 run → attach from cursor 补流 |
 | A2 | `AI_PAGE` | 点 orb（**唯一开关，无返回按钮**） | `TERMINAL` | 纯 UI；收起动画 translateY(0)→-100% 播完才摘 DOM；run 不死（server 缓冲） |
-| A3 | `IDLE` | 输入非空 + 发送 | `WAITING` | 用户消息入格 → POST /ai/chat/start |
+| A3 | `IDLE` | 输入非空 + **点发送钮**（拍板⑭：composer 回车=换行不发送，发送唯一路径=按钮） | `WAITING` | 用户消息入格 → POST /ai/chat/start |
 | A4 | `WAITING` | 首个 SSE 事件 | `STREAMING` | cursor 起记，reducer 起约 |
 | A5 | `STREAMING` | delta 事件 | `STREAMING` | applyEvent 原地 mutate → 重渲染气泡 |
 | A6 | `STREAMING`/`WAITING` | `done` | `IDLE` | 收流（半截尾巴兜底：reasoning 归位 R3 生效） |
@@ -525,6 +530,7 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 | B13 | 发送后自动开页（拍板⑪） | TERMINAL 态 composer 发送 → 即转 AI_PAGE（等效点 orb）+ 滑入动画在场（token 杠杆取中间帧，page-in 负 ty）+ echo 全链收流 + 用户消息立即可见；反向钉：AI_PAGE 态发送 page 不往返；自动开页截图存证 |
 | B14 | picker 两级路由（拍板⑫） | 一级=provider 列表（数量=/ai/providers，当前 provider ✓ 可辨识，不出 model 行）→ 点 provider 下钻不收（返回钮在场）→ 二级=model 列表+server 默认模型常驻行（models[] 没有也合成置顶，标注「默认」）→ 点定默认行生效收起（btn 文案变）；二级当前 model 行 ✓ 可辨识；返回钮回一级仍 MODEL_OPEN；一级/二级截图存证 |
 | B15 | picker 点外即关+动作同发（拍板⑬，tmux-tabs T15 同款） | 菜单开→点终端区→CLOSED 且终端诱饵同指聚焦（双断言）；菜单开→点 composer→CLOSED 且焦点同指进输入框（前置断言防假绿）；菜单内点 provider 下钻不收（回归）；点外即关前后截图存证 |
+| B16 | composer 回车=换行不发送（拍板⑭） | 按 Enter → draft 含 \n 且 run 未起（messages 不变）；点发送钮 → run 起消息入格（发送唯一路径）；多行内容气泡换行保真（pre-wrap textContent 含 \n）；输入栏两行截图存证 |
 
 ### C 档 · 真机
 
