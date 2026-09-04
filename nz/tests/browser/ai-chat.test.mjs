@@ -35,9 +35,13 @@
  *       焦点同指进输入框；菜单内下钻不收回归）
  *   B16 拍板⑭ composer 回车=换行不发送（draft 含 \n、run 未起），发送
  *       唯一路径=发送按钮；多行内容发送后气泡换行保真
+ *   B17 拍板⑯ 标题栏压一行+标题即下拉（菜单机 CLOSED↔CONFIG_OPEN 新
+ *       词汇）：一行高期值+内容区顶=栏底；下拉开合+角色/会话两入口；
+ *       点入口出占位骨架一行「角色/会话配置·待接入」（不许发明完整
+ *       功能）；点外关闭+动作同发（⑬同款）
  *   补流钉  A1 转换：run 进行中切出 AI 页再切回 → attach from=N 补流不丢帧
  *   P7  皮内零硬编码色值（源码 grep；变异抽检的靶子）
- *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后 / 终端态发送自动开页 / picker 一级 / picker 二级默认行 / picker 点外即关前后 / 输入栏两行文字
+ *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后 / 终端态发送自动开页 / picker 一级 / picker 二级默认行 / picker 点外即关前后 / 输入栏两行文字 / 一行标题栏下拉（角色/会话两入口）
  *
  * 慢流杠杆（B3/B5/补流需要确定性时间窗）：page.evaluate 设
  * window.__kfmNzAiChatTestLever = { echoPaceMs } → client 在 echo start 载荷
@@ -63,7 +67,7 @@ const ECHO_TEXT = 'PONG';
 
 const PAGE_VOCAB = ['TERMINAL', 'AI_PAGE'];
 const RUN_VOCAB = ['IDLE', 'WAITING', 'STREAMING'];
-const MENU_VOCAB = ['CLOSED', 'MODEL_OPEN'];
+const MENU_VOCAB = ['CLOSED', 'MODEL_OPEN', 'CONFIG_OPEN'];
 // 大小写敏感：代字形必须是环境变量命名习惯（${WORD_WORD}，含下划线），
 // 防误伤 minify 模板串 ${u}/${E}
 const KEY_SHAPE = /apiKey|Bearer |\$\{[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\}|KFM_PROVIDER|\bsk-[a-z0-9]/;
@@ -494,6 +498,57 @@ check('B16b 拍板⑭：点发送钮 → run 起消息入格收流（发送唯�
 const domB16 = await page.evaluate(() => [...document.querySelectorAll('[data-aichat-msg="user"]')].at(-1)?.textContent ?? '').catch(() => '');
 check('B16c 多行内容发送后换行保真（用户气泡 textContent 含 \\n，pre-wrap 渲染）',
       domB16.includes('第一行\n第二行'), `dom=${JSON.stringify(domB16.slice(0, 40))}`);
+
+// ========== B17：拍板⑯ 标题栏压一行 + 标题即下拉（角色/会话占位骨架） ==========
+// 语义：①标题栏压成一行（原来太高）②标题字改成下拉框——里面放「角色」
+// 和「会话」两个入口，方便以后接入各种配置池；A1 阶段是占位骨架（词汇+
+// 交互立起来，内容后续接配置池），点击入口只出空态占位一行文案，不许
+// 发明完整功能。菜单机新增词汇 CLOSED↔CONFIG_OPEN（P9 唯一真源同步进
+// 设计清单 §3.3）；点外关闭+动作同发=⑬同款 passive 全局监听（豁免菜单
+// DOM 与下拉钮自身）。B16 发送后页已自动开（⑪），标题栏在场。
+const hdr = await page.evaluate(() => {
+  const h = document.querySelector('[data-aichat-header]');
+  const list = document.querySelector('[data-aichat-list]');
+  if (!h || !list) return null;
+  const hr = h.getBoundingClientRect();
+  const lr = list.getBoundingClientRect();
+  return { h: hr.height, bottom: hr.bottom, listTop: lr.top, btn: !!document.querySelector('[data-aichat-config-btn]') };
+});
+check('B17a 拍板⑯①：标题栏压成一行（高≤34px 不塌没）+ 内容区顶部=标题栏底（避让同步）+ 左侧下拉钮在场',
+      !!hdr && hdr.h <= 34 && hdr.h > 20 && Math.abs(hdr.listTop - hdr.bottom) <= 2 && hdr.btn,
+      hdr ? `h=${hdr.h.toFixed(1)} listTop=${hdr.listTop.toFixed(1)} bottom=${hdr.bottom.toFixed(1)} btn=${hdr.btn}` : '量测缺失（无 data-aichat-header）');
+await page.click('[data-aichat-config-btn]').catch(() => {});
+await page.waitForTimeout(300); // 等一帧上屏再截图（headless paint 教训）
+const mCfg = (await hook())?.menu;
+const entries = await page.evaluate(() => [...document.querySelectorAll('[data-aichat-config-entry]')].map((el) => `${el.getAttribute('data-aichat-config-entry')}:${el.textContent.trim()}`));
+check('B17b 拍板⑯②：点标题下拉钮 → CONFIG_OPEN（菜单机新词汇）+ 角色/会话两入口在场',
+      mCfg === 'CONFIG_OPEN' && entries.length === 2 && entries.some((e) => e === 'role:角色') && entries.some((e) => e === 'session:会话'),
+      `menu=${mCfg} entries=${JSON.stringify(entries)}`);
+const shotCfg = join(SHOT_DIR, 'ai-chat-config-dropdown.png');
+await page.screenshot({ path: shotCfg });
+console.log('shot:', shotCfg);
+await page.click('[data-aichat-config-entry="role"]').catch(() => {});
+await page.waitForTimeout(200);
+const phRole = await page.evaluate(() => document.querySelector('[data-aichat-config-placeholder]')?.textContent ?? '');
+const mRole = (await hook())?.menu;
+check('B17c 点「角色」→ 占位骨架一行「角色配置·待接入」（不许发明完整功能）+ 菜单 CLOSED',
+      phRole.includes('角色配置·待接入') && mRole === 'CLOSED', `ph="${phRole}" menu=${mRole}`);
+await page.click('[data-aichat-config-btn]').catch(() => {});
+await page.click('[data-aichat-config-entry="session"]').catch(() => {});
+await page.waitForTimeout(200);
+const phSess = await page.evaluate(() => document.querySelector('[data-aichat-config-placeholder]')?.textContent ?? '');
+check('B17c2 点「会话」→ 占位骨架一行「会话配置·待接入」+ 菜单 CLOSED',
+      phSess.includes('会话配置·待接入') && (await hook())?.menu === 'CLOSED', `ph="${phSess}"`);
+// B17d 点外关闭+动作同发（⑬同款）：菜单开点 composer → CLOSED + 焦点同指进输入框
+await page.click('[data-aichat-config-btn]').catch(() => {});
+const mCfgPre = (await hook())?.menu;
+await page.click('[data-aichat-input]').catch(() => {});
+await page.waitForTimeout(300);
+const mCfgPost = (await hook())?.menu;
+const fCfgIn = await page.evaluate(() => document.activeElement?.getAttribute('data-aichat-input') === '1');
+check('B17d 拍板⑯：配置菜单开点外（composer）→ CLOSED 且焦点同指进输入框（⑬同款动作同发）',
+      mCfgPre === 'CONFIG_OPEN' && mCfgPost === 'CLOSED' && fCfgIn,
+      `open=${mCfgPre} after=${mCfgPost} inputFocus=${fCfgIn}`);
 
 // ========== B13：拍板⑪ 发送后自动开页（TERMINAL 态发送等效点 orb） ==========
 // 语义：终端页面态在全局输入栏发送 = 主动说话意图 → 自动开页（滑入动画

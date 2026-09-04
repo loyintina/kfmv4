@@ -10,7 +10,9 @@
  * 由 index.tsx 装配进全局钉底条（[data-kfm-aichat-bar]，钉**最底**贴软键盘
  * /视口底，keybar 钉其正上方）——两态常驻可发送。
  *
- * 菜单机词汇（§3.3，P9 唯一真源）：CLOSED ↔ MODEL_OPEN。
+ * 菜单机词汇（§3.3，P9 唯一真源）：CLOSED ↔ MODEL_OPEN ↔ CONFIG_OPEN
+ * （拍板⑯：CONFIG_OPEN=标题栏「角色/会话」占位下拉，由 index.tsx 驱动，
+ * 本件只消费词汇做 Escape 关闭判定）。
  * 2026-09-04 拍板⑫ picker 两级路由：一级=provider 列表（当前 provider
  * 带 ✓），点 provider 下钻二级=该 provider 的 model 列表（带返回钮，
  * 下钻不收起）；server 下发的默认模型恒可见——不在 models[] 里就合成
@@ -26,7 +28,7 @@ import { createElement, useEffect, useLayoutEffect, useRef, useState } from 'rea
 import type { ProvidersInfo, RunPhase } from '../chat-link.js';
 
 /** 菜单机词汇（§3.3） */
-export type MenuState = 'CLOSED' | 'MODEL_OPEN';
+export type MenuState = 'CLOSED' | 'MODEL_OPEN' | 'CONFIG_OPEN';
 
 export interface PromptBarProps {
   phase: RunPhase;
@@ -197,7 +199,7 @@ export function PromptBar(props: PromptBarProps): React.ReactElement {
     placeholder: busy ? '回复生成中…' : '发消息给 AI…',
     onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => setDraft(e.target.value),
     onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Escape' && menu === 'MODEL_OPEN') { onMenu('CLOSED'); return; } // A10
+      if (e.key === 'Escape' && menu !== 'CLOSED') { onMenu('CLOSED'); return; } // A10（拍板⑯：关任意开着的菜单）
       // 拍板⑭（2026-09-04）：Enter=换行不发送——不拦截即 textarea 自然换行，
       // IME 组词中 Enter 确认组词也不被拦（不拦截即守卫语义保留）；发送
       // 唯一路径=发送按钮（「不然做发送按钮有什么用」）。终端 keybar 的

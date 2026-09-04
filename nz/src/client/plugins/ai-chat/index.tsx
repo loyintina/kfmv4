@@ -3,18 +3,19 @@
  * 2026-09-04 真机拍板交互改版；状态机清单 = docs/ai-chat-a1-design.md §3.3，
  * 契约 §7 机检锚点）。
  *
- * 三机七态十转换（词汇表唯一真源，清单外状态名禁止——P9）：
+ * 三机八态十一转换（词汇表唯一真源，清单外状态名禁止——P9）：
  *   页面机 TERMINAL ↔ AI_PAGE（A1/A2 点 orb——返回按钮已删，orb 即唯一
  *     开关；拍板⑪：TERMINAL 态 composer 发送等效 A1 自动开页，滑入动画
  *     照播，反向不成立；切走 run 不死——server 缓冲续命，切回 attach
  *     from cursor 补流，tmux-tabs 同哲学）；
  *   运行机 IDLE → WAITING → STREAMING → IDLE（chat-link 脑驱动，A3-A9）；
- *   菜单机 CLOSED ↔ MODEL_OPEN（picker 数据源 /ai/providers；拍板⑫两级
- *     路由——一级 provider 列表→点 provider 下钻二级 model 列表+server
- *     默认模型常驻行，点定 model 才收；下钻层级是 picker 内部 UI 态，
- *     不进菜单机词汇；拍板⑬：点菜单外任意处即关且那一指动作同时生效——
- *     document pointerdown 捕获阶段 passive 监听，不 preventDefault，
- *     tmux-tabs T15 同款）。
+ *   菜单机 CLOSED ↔ MODEL_OPEN ↔ CONFIG_OPEN（picker 数据源 /ai/providers；
+ *     拍板⑫两级路由——一级 provider 列表→点 provider 下钻二级 model 列表
+ *     +server 默认模型常驻行，点定 model 才收；下钻层级是 picker 内部 UI
+ *     态，不进菜单机词汇；拍板⑬：点菜单外任意处即关且那一指动作同时生效
+ *     ——document pointerdown 捕获阶段 passive 监听，不 preventDefault，
+ *     tmux-tabs T15 同款；拍板⑯：CONFIG_OPEN=标题栏「默认会话 ▾」下拉
+ *     出「角色/会话」两占位入口，选定=占位骨架一行+关菜单）。
  *
  * 形态（§3.0，2026-09-04 真机拍板四条+主会话裁定两条+同日二拍换序）：
  *   ① composer 全局化：从 AI 页拆出，钉中央终端页面**最底**全局常驻
@@ -109,6 +110,9 @@ export function createAiChatPlugin(): UiPlugin {
       function AiChatApp(): React.ReactElement {
         const [page, setPage] = useState<PageState>('TERMINAL');
         const [menu, setMenu] = useState<MenuState>('CLOSED');
+        // 拍板⑯：「角色/会话」占位骨架（null=不出占位行；选定入口后常驻，
+        // 占位行自身无关闭钮——功能未接入前的空态占位）
+        const [configPane, setConfigPane] = useState<'role' | 'session' | null>(null);
         const [closing, setClosing] = useState(false);
         const [composerH, setComposerH] = useState(0);
         const [kbRise, setKbRise] = useState(0);
@@ -264,11 +268,13 @@ export function createAiChatPlugin(): UiPlugin {
         // 监听，不 preventDefault/stopPropagation，下层焦点/点击照走。菜单
         // DOM 内（下钻/选择/返回）与模型钮自身（toggle 语义）豁免；菜单机
         // 词汇不变（CLOSED↔MODEL_OPEN，P9）
+        // 拍板⑯泛化：对任意开着的菜单生效（CLOSED 才短路），豁免加配置
+        // 下拉钮+配置菜单 DOM——点 composer 即关菜单且焦点同指进输入框。
         useEffect(() => {
-          if (menu !== 'MODEL_OPEN') return;
+          if (menu === 'CLOSED') return;
           const onPointer = (e: PointerEvent): void => {
             const t = e.target;
-            if (t instanceof Element && t.closest('[data-aichat-model-menu], [data-aichat-model-btn]')) return;
+            if (t instanceof Element && t.closest('[data-aichat-model-menu], [data-aichat-model-btn], [data-aichat-config-menu], [data-aichat-config-btn]')) return;
             onMenu('CLOSED');
           };
           document.addEventListener('pointerdown', onPointer, { passive: true, capture: true });
@@ -345,16 +351,65 @@ export function createAiChatPlugin(): UiPlugin {
               paddingTop: 'var(--sat, 0px)',
             },
           },
+          // 拍板⑯（2026-09-04）：①标题栏压成一行（padding 3+3+26 钮高≈32px，
+          // 旧 10+10+13 字≈37px）——返回按钮已删（拍板②：orb 即唯一开关）；
+          // ②标题字改下拉钮（「默认会话 ▾」占位名），点开=CONFIG_OPEN 出
+          // 「角色/会话」两占位入口，选定=占位骨架一行（内容后续接配置池，
+          // 不许发明完整功能）；点外/Escape 关=⑬同款 passive 捕获监听
           createElement('div', {
+            'data-aichat-header': '1',
             style: {
-              flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              // 返回按钮已删（拍板②：orb 即唯一开关）——头部只剩居中标题
-              padding: '10px 16px', borderBottom: '1px solid var(--kfm-aichat-line)',
+              position: 'relative', flexShrink: 0, display: 'flex', alignItems: 'center',
+              padding: '3px 10px', borderBottom: '1px solid var(--kfm-aichat-line)',
             },
           },
-          createElement('div', { style: { fontSize: '13px', color: 'var(--kfm-ink-2)' } },
-            'AI 对话'),
+          createElement('button', {
+            'data-aichat-config-btn': '1',
+            type: 'button',
+            onClick: () => onMenu(menu === 'CONFIG_OPEN' ? 'CLOSED' : 'CONFIG_OPEN'),
+            style: {
+              display: 'flex', alignItems: 'center', gap: '4px', height: '26px', padding: '0 6px',
+              border: 'none', background: 'none', cursor: 'pointer', borderRadius: 'var(--kfm-radius-md)',
+              fontSize: '13px', color: 'var(--kfm-ink-2)',
+            },
+          },
+          '默认会话',
+          createElement('svg', { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--kfm-ink-3)', strokeWidth: 2.4, strokeLinecap: 'round', strokeLinejoin: 'round' },
+            createElement('path', { d: 'M6 9l6 6 6-6' })),
           ),
+          menu === 'CONFIG_OPEN'
+            ? createElement('div', {
+                'data-aichat-config-menu': '1',
+                style: {
+                  position: 'absolute', left: '8px', top: '100%', marginTop: '4px', zIndex: 10,
+                  minWidth: '120px', background: 'var(--kfm-surface)',
+                  borderRadius: 'var(--kfm-radius-lg)', boxShadow: 'var(--kfm-shadow-raised)', padding: '4px',
+                },
+              },
+              ...(['role', 'session'] as const).map((k) =>
+                createElement('button', {
+                  key: k,
+                  'data-aichat-config-entry': k,
+                  type: 'button',
+                  onClick: () => { setConfigPane(k); onMenu('CLOSED'); },
+                  style: {
+                    display: 'flex', alignItems: 'center', width: '100%', padding: '6px 8px',
+                    border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
+                    borderRadius: 'var(--kfm-radius-sm)', fontSize: '12.5px', color: 'var(--kfm-ink)',
+                  },
+                }, k === 'role' ? '角色' : '会话')),
+              )
+            : null,
+          ),
+          configPane !== null
+            ? createElement('div', {
+                'data-aichat-config-placeholder': '1',
+                style: {
+                  flexShrink: 0, padding: '4px 12px', fontSize: '11.5px', color: 'var(--kfm-ink-3)',
+                  borderBottom: '1px solid var(--kfm-aichat-line)',
+                },
+              }, configPane === 'role' ? '角色配置·待接入' : '会话配置·待接入')
+            : null,
           createElement('div', {
             ref: listWrapRef,
             style: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' },
