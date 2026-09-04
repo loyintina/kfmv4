@@ -244,7 +244,9 @@ nz/tests/fixtures/ai-chat/   ← 从 kfm-na 借六份（原样复制，~28KB）�
 
 ### 3.0 总体形态
 
-常驻 orb（右上，避开左上 tmux orb）= AI 页切换钮 + 运行指示灯（闲暗 /
+常驻 orb（**屏幕右边缘垂直居中=右中**，2026-09-04 用户拍板自右上挪位——
+右上与顶部伸出的 tmux 标签排 max-content 宽度冲突；左上 tmux orb 不动）=
+AI 页切换钮 + 运行指示灯（闲暗 /
 STREAMING 亮，静态换色零常动帧）；点按 → 全屏 AI 页（消息列表 + 底部
 prompt-bar）↔ 终端。页面切走 run 不死（server 缓冲），切回自动 attach
 补流——与 tmux-tabs 的「socket 断开会话不死」同哲学。

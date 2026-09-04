@@ -8,9 +8,10 @@
  *   运行机 IDLE → WAITING → STREAMING → IDLE（chat-link 脑驱动，A3-A9）；
  *   菜单机 CLOSED ↔ MODEL_OPEN（picker 极简版，数据源 /ai/providers）。
  *
- * 形态（§3.0）：常驻 orb（右上，避开左上 tmux orb）= AI 页切换钮 + 运行
- * 指示灯（闲暗 / 活跃亮，静态换色零常动帧）；点按 → 全屏 AI 页（消息列表
- * + 底部 prompt-bar）↔ 终端。
+ * 形态（§3.0）：常驻 orb（屏幕右边缘垂直居中=右中，2026-09-04 用户拍板
+ * 自右上挪位——右上与顶部伸出的 tmux 标签排 max-content 宽度冲突）= AI 页
+ * 切换钮 + 运行指示灯（闲暗 / 活跃亮，静态换色零常动帧）；点按 → 全屏
+ * AI 页（消息列表 + 底部 prompt-bar）↔ 终端。
  *
  * 观测钩（§4.2，公共契约）：__kfmNzAiChat() 同步报
  *   { page, menu, run{phase,runId,provider,model,cursor,deltas,chars,startedMs}|null,
@@ -124,7 +125,8 @@ export function createAiChatPlugin(): UiPlugin {
         const onMenu = (next: MenuState): void => { menuRef.current = next; setMenu(next); refreshRuntime(); }; // A10
         const onSelect = (provider: string, model: string): void => { link.selection = { provider, model }; refreshRuntime(); };
 
-        // 常驻 orb（右上，避开左上 tmux orb）：AI 页切换钮 + 运行指示灯
+        // 常驻 orb（屏幕右中，2026-09-04 用户拍板自右上挪位——避开顶部
+        // tmux 标签排伸出区）：AI 页切换钮 + 运行指示灯
         const lit = link.state.phase !== 'IDLE';
         const orb = createElement('div', {
           'data-kfm-aichat-orb': '1',
@@ -132,7 +134,7 @@ export function createAiChatPlugin(): UiPlugin {
           onClick: (e: ReactMouseEvent) => { e.stopPropagation(); if (pageRef.current === 'AI_PAGE') closePage(); else openPage(); },
           onPointerDown: (e: ReactMouseEvent) => { e.stopPropagation(); },
           style: {
-            position: 'fixed', top: 'calc(var(--sat, 0px) + 12px)', right: '12px', zIndex: 41,
+            position: 'fixed', top: '50%', right: '12px', transform: 'translateY(-50%)', zIndex: 41,
             width: '32px', height: '32px', borderRadius: '50%',
             background: 'var(--kfm-bar-bg)', border: '1px solid var(--kfm-line)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
@@ -157,8 +159,8 @@ export function createAiChatPlugin(): UiPlugin {
           createElement('div', {
             style: {
               flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px',
-              // 左右 56px 让开常驻 orb 热区（左上 tmux orb / 右上 ai orb，z=41
-              // 压在本页 z=38 之上——B1c 考卷实锤：收起钮被 tmux orb 截点）
+              // 左右 56px 让开左上 tmux orb 热区（z=41 压在本页 z=38 之上——
+              // B1c 考卷实锤：收起钮被 tmux orb 截点；ai orb 已挪右中不占头部）
               padding: '10px 56px', borderBottom: '1px solid var(--kfm-aichat-line)',
             },
           },
