@@ -179,6 +179,9 @@ export interface BrainStartRequest {
   messages: ChatMessage[];
   model?: string;
   provider?: string;
+  /** echo 脑专用节奏注入（ms/事件，0-500 夹取；B 档慢流钉的确定性时间窗杠杆，
+   *  direct 脑忽略）。缺省走 EchoBrain opts / NZ_AI_ECHO_PACE_MS。 */
+  paceMs?: number;
 }
 
 export interface RunHandle {
@@ -213,6 +216,25 @@ const sleepMs = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ========== EchoBrain：回放 probe fixture 的假脑（B 档/断网开发腿） ==========
 
+/** echo 错误节目型号（B4 钉：error 事件入流的确定性全链触发，零网络）。 */
+export const ERROR_PROGRAM_MODEL = 'echo-error';
+
+function clampPace(v: number | undefined): number | undefined {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return undefined;
+  return Math.min(Math.max(Math.round(v), 0), 500);
+}
+
+/** 错误节目单：半截正文 → error 事件人流收尾（§1.4 上游非 200 人话同款形状）。 */
+function errorProgram(): StreamEvent[] {
+  return [
+    { type: 'message_start' },
+    { type: 'content_block_start', index: 0, blockType: 'text' },
+    { type: 'content_block_delta', index: 0, deltaType: 'text_delta', deltaText: '正在' },
+    { type: 'content_block_delta', index: 0, deltaType: 'text_delta', deltaText: '回答…' },
+    { type: 'error', content: 'API 请求失败: 401 — {"error":{"message":"令牌已过期或无效（echo 错误节目）"}}' },
+  ];
+}
+
 export class EchoBrain implements BrainEndpoint {
   private programCache: StreamEvent[] | null = null;
 
@@ -223,12 +245,12 @@ export class EchoBrain implements BrainEndpoint {
 
   start(req: BrainStartRequest): RunHandle {
     const run = this.registry.open({ provider: 'echo', model: req.model || 'echo' });
-    const pace = this.opts.paceMs ?? Number(process.env.NZ_AI_ECHO_PACE_MS ?? '5');
+    const pace = clampPace(req.paceMs) ?? this.opts.paceMs ?? Number(process.env.NZ_AI_ECHO_PACE_MS ?? '5');
     aiDebugLog({
       kind: 'start', runId: run.id, provider: 'echo', model: run.model,
       msgCount: req.messages.length, bodyBytes: 0,
     });
-    void this.pump(run, pace);
+    void this.pump(run, pace, req.model === ERROR_PROGRAM_MODEL ? errorProgram() : this.program());
     return { runId: run.id };
   }
 
@@ -253,9 +275,9 @@ export class EchoBrain implements BrainEndpoint {
     return this.programCache;
   }
 
-  private async pump(run: Run, paceMs: number): Promise<void> {
+  private async pump(run: Run, paceMs: number, program: StreamEvent[]): Promise<void> {
     try {
-      for (const ev of this.program()) {
+      for (const ev of program) {
         if (run.done) return; // 取消：「已取消」已由登记表入流收尾
         this.registry.push(run, ev);
         if (paceMs > 0) await sleepMs(paceMs);

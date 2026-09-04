@@ -65,7 +65,7 @@ export function mountAiChatRoutes(): (req: IncomingMessage, res: ServerResponse)
     // ---- GET /ai/providers：picker 数据源（§八③；P1 不出 key/baseUrl/代字） ----
     if (req.method === 'GET' && url === '/ai/providers') {
       const providers = loadProviders().map((p) => ({ id: p.id, name: p.name, models: p.models }));
-      providers.push({ id: 'echo', name: 'Echo（夹具回放）', models: ['echo'] });
+      providers.push({ id: 'echo', name: 'Echo（夹具回放）', models: ['echo', 'echo-error'] });
       sendJson(res, 200, { providers, default: { provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL } });
       return;
     }
@@ -89,6 +89,7 @@ export function mountAiChatRoutes(): (req: IncomingMessage, res: ServerResponse)
         messages,
         model: typeof body.model === 'string' ? body.model : undefined,
         provider: typeof body.provider === 'string' ? body.provider : undefined,
+        paceMs: typeof body.paceMs === 'number' ? body.paceMs : undefined,
       };
       const handle_ = brain.start(req_);
       sendJson(res, 200, { runId: handle_.runId, fromIndex: 0, done: false });

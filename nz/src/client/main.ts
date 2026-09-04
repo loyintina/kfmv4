@@ -21,6 +21,7 @@ import { applyTermBundle } from './plugins/term/index.js';
 import { createUiKernel } from './kernel/ui-kernel.js';
 import { reactSmokePlugin } from './kernel/react-adapter.js';
 import { createTmuxTabsPlugin } from './plugins/tmux-tabs/index.js';
+import { createAiChatPlugin } from './plugins/ai-chat/index.js';
 
 // ========== 内核件接线：宿主给盒子，手势管输入，broker 管卡类型户口 ==========
 const host = new RenderHost();
@@ -117,6 +118,11 @@ const uiKernel = createUiKernel({ host: document.body, debug: debugOn });
 // 挂 body 会被 layout 层（z=100）整面盖住（tmux-tabs ③考卷实锤）。
 const tmuxContainer = host.create(rootCtx, { kind: 'overlay', owner: 'tmux-tabs', slot: 'tmux-tabs' });
 uiKernel.mount('tmux-tabs', createTmuxTabsPlugin(), tmuxContainer.el);
+
+// ai-chat A1（设计 §2.2/§3.0）：常驻 orb（右上）+ 全屏 AI 页，槽位同落
+// overlay 层（tmux-tabs 同款教训：挂 body 会被 layout 层整面盖住）。
+const aiChatContainer = host.create(rootCtx, { kind: 'overlay', owner: 'ai-chat', slot: 'ai-chat' });
+uiKernel.mount('ai-chat', createAiChatPlugin(), aiChatContainer.el);
 
 // ========== 热更自刷（前端腿：build → 页面自动换血，会话靠续命 attach 不断） ==========
 // boot 记当前 builtAt，10s 轮询 /build-info.json（build.mjs 每次构建重写），

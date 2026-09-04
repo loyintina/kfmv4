@@ -41,6 +41,18 @@
   --kfm-key-on-bg: #3d5a99;
   --kfm-key-on-ink: var(--kfm-ink);
 
+  /* ai-chat 专用（docs/ai-chat-a1-design.md §3.2：BeautifulUI dark 段原值收编；
+   * §八登记——nz 存量 --kfm-line #3a3b3f 与 BU dark --line #2e3033 不一致，
+   * 新段按 BU 原值收编新 token（--kfm-aichat-line 族），不回改存量） */
+  --kfm-field: #2b2c2f;                 /* BU dark field：气泡/输入框底 */
+  --kfm-accent-ink: #7ec0ff;
+  --kfm-accent-tint: rgba(61,154,255,0.16);  /* = BU #3d9aff29 */
+  --kfm-aichat-line: #2e3033;           /* BU dark --line 原值 */
+  --kfm-aichat-line-strong: #3a3c40;    /* BU dark --line-strong 原值 */
+  --kfm-shadow-hairline: 0 0 0 1px var(--kfm-aichat-line);
+  --kfm-shadow-card: 0 0 0 1px var(--kfm-aichat-line), 0 1px 2px #0003, 0 2px 6px #0003;
+  --kfm-shadow-raised: 0 0 0 1px var(--kfm-aichat-line), 0 2px 10px #00000038;
+
   /* ── 字体 ── */
   --kfm-font-mono: ui-monospace, Menlo, Consolas, monospace;
   --kfm-font-sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
@@ -159,6 +171,61 @@
 }
 [data-tmux-overlay] {
   animation: kfm-tmux-overlay-in var(--kfm-dur-normal) var(--kfm-ease-spring) both;
+}
+
+/* ── ai-chat 皮（[data-kfm-aichat] 挂点；颜色/阴影/圆角/时长唯一来源，
+ * 结构尺寸留组件 inline——§3.2 翻译规则） ── */
+
+/* 消息入场 fade-up（借 chat.tsx 词汇：opacity+translateY，节点身份不动=P6 兼容） */
+@keyframes kfm-aichat-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+[data-kfm-aichat] [data-aichat-msg] {
+  animation: kfm-aichat-fade-up var(--kfm-dur-slow) var(--kfm-ease-out) both;
+}
+
+/* 流式光标（借 streaming-text.tsx 词汇：竖条闪烁；逐词 blur 不搬——§3.1 裁决） */
+@keyframes kfm-aichat-cursor-blink {
+  0%, 45% { opacity: 1; }
+  50%, 95% { opacity: 0; }
+  100% { opacity: 1; }
+}
+[data-kfm-aichat] [data-aichat-cursor] {
+  display: inline-block;
+  width: 2px;
+  height: 0.95em;
+  margin-left: 2px;
+  vertical-align: -0.12em;
+  border-radius: var(--kfm-radius-pill);
+  background: var(--kfm-ink);
+  animation: kfm-aichat-cursor-blink calc(var(--kfm-dur-slow) * 3) var(--kfm-ease-sharp) infinite;
+}
+
+/* 模型菜单弹出（借 prompt-bar.tsx pop-in 词汇） */
+@keyframes kfm-aichat-pop-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+[data-kfm-aichat] [data-aichat-model-menu] {
+  animation: kfm-aichat-pop-in var(--kfm-dur-fast) var(--kfm-ease-out) both;
+  transform-origin: bottom right;
+}
+
+/* composer 聚焦态：边框升档（借 prompt-bar.tsx focus-within 词汇） */
+[data-kfm-aichat] [data-aichat-composer] {
+  transition: border-color var(--kfm-dur-fast) var(--kfm-ease-out);
+}
+[data-kfm-aichat] [data-aichat-composer]:focus-within {
+  border-color: var(--kfm-aichat-line-strong) !important;
+}
+
+/* orb 运行指示灯：闲暗 / 活跃亮（静态换色零常动帧，§3.0） */
+[data-kfm-aichat-orb] {
+  transition: border-color var(--kfm-dur-fast) var(--kfm-ease-out);
+}
+[data-kfm-aichat-orb][data-aichat-lit="1"] {
+  border-color: var(--kfm-accent) !important;
 }
 
 /* 未来主题切换示例（现在不启用）：
