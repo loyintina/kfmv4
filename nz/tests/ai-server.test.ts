@@ -9,7 +9,8 @@
  *     SSE 分帧 {index,event} 与 probe-kimi fixture 逐帧互证（假数据的形状 =
  *     真数据的形状），终结帧 __end__；
  *   ②GET /ai/providers 形状：只出 id/name/models（P1：不出 apiKey/baseUrl/
- *     代字/已解 key），默认 = Kimi 官方 + kimi-k2.7-code（§八③）；
+ *     代字/已解 key），默认 = 智谱 + glm-5.3-flash（2026-09-04 拍板⑮，原
+ *     §八③ Kimi 默认被改）；
  *   ③run 登记表 attach 补流：中途断开重连 from=cursor 读到缓冲回放+尾随，
  *     断开不死 run（页面切换补流语义）；
  *   ④probe 错误语义实录钉：空 messages → 400（③）；非法 provider → 200 +
@@ -159,7 +160,7 @@ test('echo 全链：start → stream 九事件序列与 probe-kimi fixture 逐�
   });
 });
 
-test('/ai/providers：只出 id/name/models + 默认 Kimi 官方 kimi-k2.7-code，无 key 无代字', async () => {
+test('/ai/providers：只出 id/name/models + 默认 智谱 glm-5.3-flash（拍板⑮），无 key 无代字', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'nz-ai-prov-'));
   writeFileSync(join(dir, 'providers.json'), JSON.stringify([
     { id: 'Kimi', name: 'Kimi', baseUrl: 'https://api.kimi.com/coding/v1', apiKey: '${NZ_TEST_VISIBLE_KEY}', models: ['k3-256k'] },
@@ -180,8 +181,8 @@ test('/ai/providers：只出 id/name/models + 默认 Kimi 官方 kimi-k2.7-code�
           `picker 项只出 id/name/models，实际 ${keys.join(',')}`);
       }
       assert(json.providers.some((p) => p.id === 'echo'), '应含 echo 条目（断网开发/B 档腿）');
-      assert(json.default.provider === 'Kimi' && json.default.model === 'kimi-k2.7-code',
-        `默认 = Kimi 官方 + kimi-k2.7-code（§八③），实际 ${JSON.stringify(json.default)}`);
+      assert(json.default.provider === '智谱' && json.default.model === 'glm-5.3-flash',
+        `默认 = 智谱 + glm-5.3-flash（2026-09-04 拍板⑮），实际 ${JSON.stringify(json.default)}`);
       assert(!raw.includes('apiKey') && !raw.includes('baseUrl'), '不得出 apiKey/baseUrl 字段');
       assert(!raw.includes('sk-visible-secret-abc123') && !raw.includes('${'), '不得出已解 key 或代字（P1）');
     } finally {

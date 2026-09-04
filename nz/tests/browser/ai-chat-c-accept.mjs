@@ -1,7 +1,8 @@
 /**
  * A1 阶段四 C 档验收（C1/C2/C3 实验台腿）：headless 真 UI 全链 ——
- * C1 默认 Kimi 官方 kimi-k2.7-code 发一条短消息收真实流式（截图含 R3 归位）；
- * C2 智谱 glm-5.3-flash 同尺一条；
+ * C1 默认（2026-09-04 拍板⑮=智谱 glm-5.3-flash）发一条短消息收真实流式
+ * （截图含 R3 归位）；
+ * C2 picker 两级下钻选 Kimi kimi-k2.7-code 同尺一条（双路方言覆盖不掉）；
  * C3 钩子读数打印（与 /tmp/nz-ai-chat.log 对拍由调用方做）。
  * 观测手段：Playwright 驱动真 bundle（8023 实服）+ __kfmNzAiChat() 钩 + 像素截图。
  */
@@ -55,16 +56,20 @@ async function sendAndWait(text, tag) {
   return h;
 }
 
-// C1：Kimi 官方 kimi-k2.7-code（默认，不经 picker）
-await sendAndWait('用一句话介绍你自己', 'c1-kimi');
+// C1：默认（拍板⑮=智谱 glm-5.3-flash，不经 picker）
+await sendAndWait('用一句话介绍你自己', 'c1-zhipu-default');
 
-// C2：picker 选 智谱 glm-5.3-flash
+// C2：picker 两级路由（拍板⑫）下钻 Kimi → 选 kimi-for-coding-highspeed
+// （⑮后 kimi-k2.7-code 不再是默认、不在 Kimi models 列表→picker 不可达，
+// 这是拍板⑮明确接受的语义；Kimi 真通路腿走列表内 known-good 型号 §〇）
 await page.click('[data-aichat-model-btn]');
 await page.waitForSelector('[data-aichat-model-menu]');
-await page.click('[data-aichat-model-row="智谱::glm-5.3-flash"]');
+await page.click('[data-aichat-provider-row="Kimi"]');
+await page.waitForSelector('[data-aichat-model-row="Kimi::kimi-for-coding-highspeed"]');
+await page.click('[data-aichat-model-row="Kimi::kimi-for-coding-highspeed"]');
 await page.waitForFunction(() => window.__kfmNzAiChat()?.menu === 'CLOSED');
 console.log('picker 切后 btn =', await page.textContent('[data-aichat-model-btn]'));
-await sendAndWait('你好，一句话介绍自己', 'c2-zhipu');
+await sendAndWait('你好，一句话介绍自己', 'c2-kimi');
 
 await browser.close();
 console.log('=== C1/C2 实验台腿完成 ===');

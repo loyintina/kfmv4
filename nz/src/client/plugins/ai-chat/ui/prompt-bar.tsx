@@ -15,7 +15,8 @@
  * 带 ✓），点 provider 下钻二级=该 provider 的 model 列表（带返回钮，
  * 下钻不收起）；server 下发的默认模型恒可见——不在 models[] 里就合成
  * 常驻行置顶（标注「默认」，A2 观察项①销账：Kimi 无 kimi-k2.7-code
- * 但它是默认，切走也能点回来）；点定 model 才生效+收起（A10 语义）。
+ * 但它是默认；拍板⑮后默认=智谱 glm-5.3-flash 在列表内不触发合成，
+ * 合成机制保留防未来默认不在列表）；点定 model 才生效+收起（A10 语义）。
  * 下钻层级（drill）是 picker 内部 UI 态，不进菜单机词汇（P9 不加词）。
  * 2026-09-04 拍板⑭：composer 回车=换行不发送（textarea 自然换行，不
  * 拦截即 IME 守卫语义），发送唯一路径=发送按钮（流式期间仍是停止钮）。
@@ -110,8 +111,9 @@ export function PromptBar(props: PromptBarProps): React.ReactElement {
 
   // 二级：该 provider 的 model 列表 + server 默认模型常驻行（拍板⑫②——
   // 默认模型不在 models[] 就合成置顶常驻行，标注「默认」，切走也能点回来；
-  // A2 观察项①销账：Kimi models 无 kimi-k2.7-code 但它是默认）。返回钮回
-  // 一级（不收起）；点定 model 才生效+收起（A10 语义沿用）
+  // A2 观察项①销账案例=Kimi 无 kimi-k2.7-code；拍板⑮后默认=智谱在列表
+  // 内不触发合成，机制保留）。返回钮回一级（不收起）；点定 model 才生效
+  // +收起（A10 语义沿用）
   const drillProv = drill ? providers.find((p) => p.id === drill) : undefined;
   const level2 = drillProv
     ? (() => {

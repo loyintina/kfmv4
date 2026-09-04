@@ -34,9 +34,11 @@ import { SseParser } from './sse-parser.ts';
 import { OpenAiTranslator, errorEventFromHttp, type UsageRecord } from './openai-translator.ts';
 import { loadProviders, findProvider, resolveKey } from './providers.ts';
 
-/** 默认 provider/模型（§八③ 用户拍板：官方渠道此名可通，C 档实测验证） */
-export const DEFAULT_PROVIDER = 'Kimi';
-export const DEFAULT_MODEL = 'kimi-k2.7-code';
+/** 默认 provider/模型（2026-09-04 拍板⑮：智谱 glm-5.3-flash；原 §八③
+ *  Kimi 官方 kimi-k2.7-code 默认被改——picker 合成默认行机制保留，智谱
+ *  默认在 models 列表内不触发合成） */
+export const DEFAULT_PROVIDER = '智谱';
+export const DEFAULT_MODEL = 'glm-5.3-flash';
 
 const RUN_EVENT_CAP = 10_000;
 const RUN_DONE_TTL_MS = 5 * 60_000;

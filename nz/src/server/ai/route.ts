@@ -14,7 +14,7 @@
  *                                    不存在/已淘汰 runId → 直接 __end__ 不 404（probe ④）
  *   POST /ai/chat/:runId/cancel    → {ok}；error「已取消」入流收尾（P5）
  *   GET  /ai/providers             → picker 数据源：只出 id/name/models（P1 不出
- *                                    key/baseUrl）+ 默认 Kimi 官方 kimi-k2.7-code（§八③）
+ *                                    key/baseUrl）+ 默认 智谱 glm-5.3-flash（拍板⑮）
  *
  * 脑选择：provider === 'echo' → EchoBrain（B 档/断网开发走 HTTP 全链，无需
  * 换进程）；NZ_AI_BRAIN=echo → 全局强制 echo（真 key 在场也不直连，排障隔离层）。

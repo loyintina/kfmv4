@@ -18,7 +18,8 @@
 > ② BeautifulUI 三件定性重写、逐词 blur 不搬只搬光标 ✅；
 > ③ model picker 保留极简版，**默认 = Kimi 官方（api.kimi.com/coding/v1）
 >    + 模型 `kimi-k2.7-code`**（用户拍板：官方渠道用此名可通，C 档实测验证，
->    不通则凭 §4.3 API 调试落盘定位再议）✅；
+>    不通则凭 §4.3 API 调试落盘定位再议）✅——**后被同日九拍⑮改为
+>    智谱·glm-5.3-flash**；
 > ④ 配置直读 `~/.kfmv4/`（providers.json + .env），`NZ_AI_CONFIG_DIR` 可覆盖 ✅；
 > ⑤ kfmv4 routes.ts 不搬，错误语义靠 fixture 钉住 ✅；
 > ⑥ run 薄层登记表保留（内存 Map + 封顶缓冲 + 5min 淘汰，保页面切换补流）✅。
@@ -99,6 +100,13 @@
 >    ——发送唯一路径=发送按钮（流式期间仍是停止钮，A8 语义不变）；
 >    textarea 自然换行，不拦截即 IME 组词守卫语义保留。只改 composer：
 >    终端 keybar 的 ENTER 发 \r 是终端逻辑，一个字不动 ✅。
+> 仲裁记录追加（2026-09-04 同日九拍，用户拍板，已签收）：
+> ⑮ **默认 provider+model 改 = 智谱·glm-5.3-flash**（③的 Kimi 官方
+>    kimi-k2.7-code 默认被改）。glm-5.3-flash 在智谱 models 列表内 →
+>    picker 合成默认行机制不触发但保留（防未来默认不在列表）；
+>    kimi-k2.7-code 随之不再默认、不在 Kimi models 列表 → picker 不
+>    可达（拍板明确接受）。C 档双路腿随之换：C1=默认（智谱）不经
+>    picker，C2=下钻 Kimi 选列表内 kimi-for-coding-highspeed ✅。
 
 ## 〇、范围与边界（什么做、什么不做）
 
@@ -528,7 +536,7 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 | B12e0 | 被动 delta 不拽回（拍板⑩对照钉） | 上滚阅读中慢流式新 delta 到达 → 列表留在原地（st+ch<sh−40），不自动追底 |
 | B12e | 点输入栏追底（拍板⑩主钉） | 上滚态点输入栏 + mock vv 键盘上浮 → 列表追底锚定最新（st+ch≥sh−5，末条底贴 composer 顶）；触发前 stillUp 断言确在上滚态；上滚态+追底两截图存证 |
 | B13 | 发送后自动开页（拍板⑪） | TERMINAL 态 composer 发送 → 即转 AI_PAGE（等效点 orb）+ 滑入动画在场（token 杠杆取中间帧，page-in 负 ty）+ echo 全链收流 + 用户消息立即可见；反向钉：AI_PAGE 态发送 page 不往返；自动开页截图存证 |
-| B14 | picker 两级路由（拍板⑫） | 一级=provider 列表（数量=/ai/providers，当前 provider ✓ 可辨识，不出 model 行）→ 点 provider 下钻不收（返回钮在场）→ 二级=model 列表+server 默认模型常驻行（models[] 没有也合成置顶，标注「默认」）→ 点定默认行生效收起（btn 文案变）；二级当前 model 行 ✓ 可辨识；返回钮回一级仍 MODEL_OPEN；一级/二级截图存证 |
+| B14 | picker 两级路由（拍板⑫；默认=拍板⑮智谱 glm-5.3-flash） | 一级=provider 列表（数量=/ai/providers，当前 provider ✓ 可辨识，不出 model 行）→ 点 provider 下钻不收（返回钮在场）→ 二级=model 列表+默认模型行带「默认」标注（期值动态：默认在 models[] 内不合成——智谱现状 rows=2；不在则合成常驻行置顶——机制保留防未来）→ 点定默认行生效收起（btn 文案变）；二级当前 model 行 ✓ 可辨识；返回钮回一级仍 MODEL_OPEN；一级/二级截图存证 |
 | B15 | picker 点外即关+动作同发（拍板⑬，tmux-tabs T15 同款） | 菜单开→点终端区→CLOSED 且终端诱饵同指聚焦（双断言）；菜单开→点 composer→CLOSED 且焦点同指进输入框（前置断言防假绿）；菜单内点 provider 下钻不收（回归）；点外即关前后截图存证 |
 | B16 | composer 回车=换行不发送（拍板⑭） | 按 Enter → draft 含 \n 且 run 未起（messages 不变）；点发送钮 → run 起消息入格（发送唯一路径）；多行内容气泡换行保真（pre-wrap textContent 含 \n）；输入栏两行截图存证 |
 

@@ -109,7 +109,7 @@ export function createAiChatLink(onUpdate: () => void, env?: { page?: () => Page
         if (!res.ok) return;
         const info = (await res.json()) as ProvidersInfo;
         link.providersInfo = info;
-        // 默认 = Kimi 官方 + kimi-k2.7-code（§八③ 拍板，server 下发的 default）
+        // 默认 = server 下发的 default（2026-09-04 拍板⑮=智谱 glm-5.3-flash）
         if (info.default && !link.selection.provider) {
           link.selection = { provider: info.default.provider, model: info.default.model };
         } else if (!link.selection.provider && info.providers.length > 0) {

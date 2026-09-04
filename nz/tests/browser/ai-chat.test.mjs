@@ -331,10 +331,14 @@ check('B7b 观测钩无 key 形态', !KEY_SHAPE.test(hookText), '');
 check('B7c client bundle 无 key 形态', bundleClean, bundleDetail);
 check('B7d server /tmp 日志无 key 形态', logClean, logDetail);
 
-// ========== A10 菜单机 + picker 默认 Kimi/kimi-k2.7-code ==========
+// ========== A10 菜单机 + picker 默认 智谱/glm-5.3-flash（拍板⑮） ==========
 await actUntil(openAiPage, async () => (await hook())?.page === 'AI_PAGE');
+await page.waitForTimeout(300); // 等一帧上屏再截图（headless paint 教训）
 const defBtn = await page.evaluate(() => document.querySelector('[data-aichat-model-btn]')?.textContent ?? '').catch(() => '');
-check('A10a picker 默认 = Kimi 官方 + kimi-k2.7-code（§八③）', /kimi-k2\.7-code/.test(defBtn), `btn="${defBtn}"`);
+check('A10a picker 默认 = 智谱 + glm-5.3-flash（2026-09-04 拍板⑮，原 §八③ Kimi 默认被改）', /智谱/.test(defBtn) && /glm-5\.3-flash/.test(defBtn), `btn="${defBtn}"`);
+const shotDef = join(SHOT_DIR, 'ai-chat-picker-default-zhipu.png');
+await page.screenshot({ path: shotDef });
+console.log('shot:', shotDef);
 await page.click('[data-aichat-model-btn]').catch(() => {});
 const mOpen = (await hook())?.menu;
 check('A10b 点模型钮 → MODEL_OPEN', mOpen === 'MODEL_OPEN', `menu=${mOpen}`);
@@ -348,9 +352,10 @@ check('A10d 选定 echo（picker 可达断网腿）→ CLOSED', mSel === 'CLOSED
 
 // ========== B14：拍板⑫ picker 两级路由（一级 provider → 二级 model，默认模型常驻行） ==========
 // 数据语义：①当前选中 provider+model 两级都可辨识 ②server 下发的默认模型
-// 恒可见——Kimi 的 models 列表里没有 kimi-k2.7-code 但它是默认（A2 观察项
-// ①），二级页合成常驻行标注「默认」，切走也能点回来 ③点 provider=下钻
-// 不收起，点定 model 才生效+收起（A10 转换语义沿用）。菜单机词汇不变
+// 恒可见——二级页默认行必带「默认」标注；不在 models[] 里就合成常驻行置顶
+// （A2 观察项①的 Kimi 案例；拍板⑮后默认=智谱 glm-5.3-flash 在列表内→
+// 不合成，rows 期值动态算，合成机制保留防未来默认不在列表）③点 provider=
+// 下钻不收起，点定 model 才生效+收起（A10 转换语义沿用）。菜单机词汇不变
 // （CLOSED↔MODEL_OPEN，P9）——下钻层级是 picker 内部 UI 态，不进词汇表。
 const provJson = await page.evaluate(async () => await (await fetch('/ai/providers')).json()).catch(() => null);
 const defProvEntry = provJson?.providers?.find((p) => p.id === provJson.default?.provider);
@@ -383,7 +388,7 @@ const lvl2 = await page.evaluate(() => ({
   menuOpen: !!document.querySelector('[data-aichat-model-menu]'),
 }));
 const defRow = lvl2.rows.find((r) => r.row === `${provJson?.default?.provider}::${provJson?.default?.model}`);
-check('B14b 拍板⑫二级：点 Kimi 下钻（不收起，带返回钮）→ model 列表 + 默认模型 kimi-k2.7-code 常驻行（标注「默认」，models 列表没有也恒在）',
+check('B14b 拍板⑫二级：点默认 provider 下钻（不收起，带返回钮）→ model 列表 + 默认模型行带「默认」标注（期值动态：在列表内不合成、不在则合成置顶）',
       lvl2.menuOpen && lvl2.back && lvl2.provRows === 0 && !!defProvEntry
       && lvl2.rows.length === expectDefRows
       && !!defRow && defRow.def && defRow.badge,
@@ -394,8 +399,8 @@ console.log('shot:', shotL2);
 await page.click(`[data-aichat-model-row="${provJson?.default?.provider}::${provJson?.default?.model}"]`).catch(() => {});
 const mB14c = (await hook())?.menu;
 const btnB14c = await page.evaluate(() => document.querySelector('[data-aichat-model-btn]')?.textContent ?? '').catch(() => '');
-check('B14c 二级点定默认行 → 选中生效（btn=Kimi·kimi-k2.7-code）+ 收起（A10 语义沿用：点定 model 才收）',
-      mB14c === 'CLOSED' && /kimi-k2\.7-code/.test(btnB14c), `menu=${mB14c} btn="${btnB14c}"`);
+check('B14c 二级点定默认行 → 选中生效（btn=智谱·glm-5.3-flash）+ 收起（A10 语义沿用：点定 model 才收）',
+      mB14c === 'CLOSED' && /glm-5\.3-flash/.test(btnB14c), `menu=${mB14c} btn="${btnB14c}"`);
 await page.click('[data-aichat-model-btn]').catch(() => {});
 await page.click(`[data-aichat-provider-row="${provJson?.default?.provider ?? '__none__'}"]`).catch(() => {});
 await page.waitForTimeout(200);
