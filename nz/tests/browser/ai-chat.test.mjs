@@ -30,9 +30,12 @@
  *       → 点 provider 下钻（不收起）→ 二级 model 列表 + server 默认模型
  *       常驻行（标注「默认」，models 列表里没有也恒在——A2 观察项①销账）
  *       → 点定 model 才生效+收起（A10 语义沿用）；返回钮回一级
+ *   B15 拍板⑬ picker 点菜单外即关+那一指动作同时生效（tmux-tabs T15
+ *       同款：点终端区→菜单 CLOSED+诱饵同指聚焦；点 composer→菜单关+
+ *       焦点同指进输入框；菜单内下钻不收回归）
  *   补流钉  A1 转换：run 进行中切出 AI 页再切回 → attach from=N 补流不丢帧
  *   P7  皮内零硬编码色值（源码 grep；变异抽检的靶子）
- *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后 / 终端态发送自动开页 / picker 一级 / picker 二级默认行
+ *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后 / 终端态发送自动开页 / picker 一级 / picker 二级默认行 / picker 点外即关前后
  *
  * 慢流杠杆（B3/B5/补流需要确定性时间窗）：page.evaluate 设
  * window.__kfmNzAiChatTestLever = { echoPaceMs } → client 在 echo start 载荷
@@ -412,12 +415,57 @@ check('B14d 二级返回钮 → 回一级 provider 列表（仍 MODEL_OPEN 不�
 await page.press('[data-aichat-input]', 'Escape').catch(() => {});
 await selectModel('echo::echo').catch(() => {}); // 还原 echo 选中——后续发送全走 echo 夹具
 
+// ========== B15：拍板⑬ picker 点菜单外即关 + 那一指动作同时生效（tmux-tabs T15 同款） ==========
+// 语义：菜单开时点菜单外任意处 → 菜单关，且那一指的动作**同时**发生无感
+// （不 preventDefault/stopPropagation——下层焦点/打字/交互照走）；菜单 DOM
+// 内点击（下钻/选择/返回）与模型钮自身 toggle 原语义不受影响；菜单机词汇
+// 不变（CLOSED↔MODEL_OPEN，P9）。
+await actUntil(closeAiPage, async () => (await hook())?.page === 'TERMINAL');
+await page.waitForFunction(() => !document.querySelector('[data-kfm-aichat]'), null, { timeout: 4000 }).catch(() => {}); // 收起动画播完
+// B15a 主钉①：菜单开 → 点终端区 → 菜单 CLOSED + 终端 IME 诱饵同指获得焦点（动作同发双断言）
+await page.click('[data-aichat-model-btn]').catch(() => {});
+await page.waitForTimeout(300); // 等一帧上屏再截图（B14 同款——立即截图会捕到未绘制帧）
+const mB15open = (await hook())?.menu;
+const shotOut0 = join(SHOT_DIR, 'ai-chat-picker-outside-close-before.png');
+await page.screenshot({ path: shotOut0 });
+console.log('shot:', shotOut0);
+await page.mouse.click(450, 200).catch(() => {});
+await page.waitForTimeout(400);
+const mB15a = (await hook())?.menu;
+const fB15a = await page.evaluate(() => document.activeElement?.classList.contains('kfm-term-kb'));
+check('B15a 拍板⑬：菜单开点终端区 → 菜单 CLOSED 且终端诱饵同指获得焦点（动作同发无感）',
+      mB15open === 'MODEL_OPEN' && mB15a === 'CLOSED' && fB15a,
+      `open=${mB15open} after=${mB15a} decoyFocus=${fB15a}`);
+const shotOut1 = join(SHOT_DIR, 'ai-chat-picker-outside-close-after.png');
+await page.screenshot({ path: shotOut1 });
+console.log('shot:', shotOut1);
+// B15b 主钉②：菜单开 → 点 composer 输入框 → 菜单 CLOSED + 焦点同指进输入框
+await page.click('[data-aichat-model-btn]').catch(() => {});
+const mB15bOpen = (await hook())?.menu; // 前置：点输入框前菜单确在开态（防假绿——B15a 没收住时此点击=toggle 关）
+await page.click('[data-aichat-input]').catch(() => {});
+await page.waitForTimeout(300);
+const mB15b = (await hook())?.menu;
+const fB15b = await page.evaluate(() => document.activeElement?.getAttribute('data-aichat-input') === '1');
+check('B15b 拍板⑬：菜单开点 composer → 菜单 CLOSED 且焦点同指进输入框（动作同发）',
+      mB15bOpen === 'MODEL_OPEN' && mB15b === 'CLOSED' && fB15b, `open=${mB15bOpen} after=${mB15b} inputFocus=${fB15b}`);
+// B15c 回归：菜单内点 provider 下钻不收（菜单 DOM 内点击原语义不受影响）
+await page.click('[data-aichat-model-btn]').catch(() => {});
+await page.click('[data-aichat-provider-row="echo"]').catch(() => {});
+await page.waitForTimeout(300);
+const mB15c = (await hook())?.menu;
+const drilledRows = await page.evaluate(() => document.querySelectorAll('[data-aichat-model-row]').length);
+check('B15c 回归：菜单内点 provider 下钻不收（MODEL_OPEN 保持 + 二级 model 行在场）',
+      mB15c === 'MODEL_OPEN' && drilledRows === 2, `menu=${mB15c} modelRows=${drilledRows}`);
+await page.press('[data-aichat-input]', 'Escape').catch(() => {});
+
 // ========== B13：拍板⑪ 发送后自动开页（TERMINAL 态发送等效点 orb） ==========
 // 语义：终端页面态在全局输入栏发送 = 主动说话意图 → 自动开页（滑入动画
 // 照播），用户直接看到自己的消息和 AI 的流式回复，不需手动再点球；反向
 // 不成立——页开着发送就是页内发送，page 不往返。
-await actUntil(closeAiPage, async () => (await hook())?.page === 'TERMINAL');
-await page.waitForFunction(() => !document.querySelector('[data-kfm-aichat]'), null, { timeout: 4000 }).catch(() => {}); // 收起动画播完
+if ((await hook())?.page === 'AI_PAGE') { // B15 已收页时跳过（免空 toggler 往返）
+  await actUntil(closeAiPage, async () => (await hook())?.page === 'TERMINAL');
+  await page.waitForFunction(() => !document.querySelector('[data-kfm-aichat]'), null, { timeout: 4000 }).catch(() => {}); // 收起动画播完
+}
 await setDurToken('1200ms'); // 滑入中间帧确定性（B8 同款 token 杠杆）
 await setLever(2);
 const lenB13 = (await hook())?.messages?.length ?? 0;

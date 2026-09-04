@@ -86,6 +86,14 @@
 >    语义，二级点定 model 才收，点 provider 只是下钻不收）。菜单机词汇
 >    不变（CLOSED↔MODEL_OPEN，P9）——下钻层级是 picker 内部 UI 态，
 >    不进词汇表 ✅。
+> 仲裁记录追加（2026-09-04 同日七拍，用户拍板，已签收）：
+> ⑬ **picker 点菜单外任意处即关，且那一指的动作必须同时生效**（照
+>    tmux-tabs T15「操作屏幕即收起+动作同时」同款模式）：点终端=聚焦
+>    打字+菜单关、点消息区=交互+菜单关，两者同时发生无感。落地：菜单
+>    开时挂 document pointerdown 捕获阶段 passive 监听，事件源在菜单
+>    DOM 外→关菜单，**不许 preventDefault/stopPropagation**（下层动作
+>    照走）；菜单 DOM 内（下钻/选择/返回）与模型钮自身 toggle 豁免。
+>    菜单机词汇不变（CLOSED↔MODEL_OPEN，P9）✅。
 
 ## 〇、范围与边界（什么做、什么不做）
 
@@ -408,7 +416,7 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 | A7 | `STREAMING`/`WAITING` | `error` 事件 | `IDLE` | 错误文案入流为消息内容（不是 toast） |
 | A8 | `STREAMING`/`WAITING` | 点停止钮 | `IDLE` | POST cancel → error `已取消` 入流收尾 |
 | A9 | 任意 | 通道断（fetch 流断/页面回前台） | 原状保持 | 重连 attach from cursor 补流；补不上 → error 事件入流 |
-| A10 | `CLOSED` ↔ `MODEL_OPEN` | 点模型钮 / 选定 / Escape | 互转 | 数据源 = GET /ai/providers（只出 id/name/models）；拍板⑫两级路由：一级 provider 列表 → 点 provider 下钻二级 model 列表（下钻不收，返回钮回一级），二级点定 model 才选定收起；server 默认模型不在 models[] 就合成常驻行置顶（标注「默认」）；下钻层级是 picker 内部 UI 态，不进菜单机词汇 |
+| A10 | `CLOSED` ↔ `MODEL_OPEN` | 点模型钮 / 选定 / Escape / **点菜单外任意处**（拍板⑬：动作同发——document pointerdown 捕获阶段 passive 监听，不 preventDefault，菜单 DOM 内与模型钮豁免） | 互转 | 数据源 = GET /ai/providers（只出 id/name/models）；拍板⑫两级路由：一级 provider 列表 → 点 provider 下钻二级 model 列表（下钻不收，返回钮回一级），二级点定 model 才选定收起；server 默认模型不在 models[] 就合成常驻行置顶（标注「默认」）；下钻层级是 picker 内部 UI 态，不进菜单机词汇 |
 
 **禁止条款**：
 
@@ -516,6 +524,7 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 | B12e | 点输入栏追底（拍板⑩主钉） | 上滚态点输入栏 + mock vv 键盘上浮 → 列表追底锚定最新（st+ch≥sh−5，末条底贴 composer 顶）；触发前 stillUp 断言确在上滚态；上滚态+追底两截图存证 |
 | B13 | 发送后自动开页（拍板⑪） | TERMINAL 态 composer 发送 → 即转 AI_PAGE（等效点 orb）+ 滑入动画在场（token 杠杆取中间帧，page-in 负 ty）+ echo 全链收流 + 用户消息立即可见；反向钉：AI_PAGE 态发送 page 不往返；自动开页截图存证 |
 | B14 | picker 两级路由（拍板⑫） | 一级=provider 列表（数量=/ai/providers，当前 provider ✓ 可辨识，不出 model 行）→ 点 provider 下钻不收（返回钮在场）→ 二级=model 列表+server 默认模型常驻行（models[] 没有也合成置顶，标注「默认」）→ 点定默认行生效收起（btn 文案变）；二级当前 model 行 ✓ 可辨识；返回钮回一级仍 MODEL_OPEN；一级/二级截图存证 |
+| B15 | picker 点外即关+动作同发（拍板⑬，tmux-tabs T15 同款） | 菜单开→点终端区→CLOSED 且终端诱饵同指聚焦（双断言）；菜单开→点 composer→CLOSED 且焦点同指进输入框（前置断言防假绿）；菜单内点 provider 下钻不收（回归）；点外即关前后截图存证 |
 
 ### C 档 · 真机
 

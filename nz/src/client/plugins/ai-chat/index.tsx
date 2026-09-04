@@ -12,7 +12,9 @@
  *   菜单机 CLOSED ↔ MODEL_OPEN（picker 数据源 /ai/providers；拍板⑫两级
  *     路由——一级 provider 列表→点 provider 下钻二级 model 列表+server
  *     默认模型常驻行，点定 model 才收；下钻层级是 picker 内部 UI 态，
- *     不进菜单机词汇）。
+ *     不进菜单机词汇；拍板⑬：点菜单外任意处即关且那一指动作同时生效——
+ *     document pointerdown 捕获阶段 passive 监听，不 preventDefault，
+ *     tmux-tabs T15 同款）。
  *
  * 形态（§3.0，2026-09-04 真机拍板四条+主会话裁定两条+同日二拍换序）：
  *   ① composer 全局化：从 AI 页拆出，钉中央终端页面**最底**全局常驻
@@ -255,6 +257,23 @@ export function createAiChatPlugin(): UiPlugin {
         };
         const onMenu = (next: MenuState): void => { menuRef.current = next; setMenu(next); refreshRuntime(); }; // A10
         const onSelect = (provider: string, model: string): void => { link.selection = { provider, model }; refreshRuntime(); };
+
+        // 拍板⑬（2026-09-04）：picker 点菜单外任意处即关，且那一指的动作
+        // **同时**生效（点终端=聚焦打字+菜单关、点消息区=交互+菜单关，无感
+        // 同发）——tmux-tabs T15 同款：document pointerdown 捕获阶段 passive
+        // 监听，不 preventDefault/stopPropagation，下层焦点/点击照走。菜单
+        // DOM 内（下钻/选择/返回）与模型钮自身（toggle 语义）豁免；菜单机
+        // 词汇不变（CLOSED↔MODEL_OPEN，P9）
+        useEffect(() => {
+          if (menu !== 'MODEL_OPEN') return;
+          const onPointer = (e: PointerEvent): void => {
+            const t = e.target;
+            if (t instanceof Element && t.closest('[data-aichat-model-menu], [data-aichat-model-btn]')) return;
+            onMenu('CLOSED');
+          };
+          document.addEventListener('pointerdown', onPointer, { passive: true, capture: true });
+          return () => document.removeEventListener('pointerdown', onPointer, { capture: true });
+        }, [menu]);
 
         // 常驻 orb（屏幕右中，2026-09-04 用户拍板自右上挪位——避开顶部
         // tmux 标签排伸出区）：AI 页唯一开关 + 运行指示灯；z43 恒在 AI 页
