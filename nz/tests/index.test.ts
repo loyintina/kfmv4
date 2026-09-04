@@ -25,6 +25,7 @@ import './ai-translator.test.ts';
 import './ai-providers.test.ts';
 import './ai-reducer.test.ts';
 import './ai-projection.test.ts';
+import './ai-server.test.ts';
 import { runAll } from './runner.ts';
 
 await runAll();

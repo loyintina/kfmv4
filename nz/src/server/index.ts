@@ -64,6 +64,9 @@ import { mountTmuxConnection } from './tmux-connection.js';
 mountTmuxConnection(serverCtx);
 slog('tmux-connection 已挂服务端总线（tmux -C 结构化事实源）');
 
+// ai-chat A1 阶段二：脑插座装配（/ai/chat start/stream/cancel + /ai/providers）
+import { mountAiChatRoutes } from './ai/route.ts';
+
 // ========== 静态服务 ==========
 
 const MIME: Record<string, string> = {
@@ -91,7 +94,10 @@ export function resolveStatic(urlPath: string): string | null {
 }
 
 export function createNzServer(): Server {
+  // ai-chat A1 阶段二：/ai/chat 三端点 + /ai/providers（设计 §2.1，静态服务分支之前）
+  const handleAiChat = mountAiChatRoutes();
   return createServer((req, res) => {
+    if (handleAiChat(req, res)) return;
     // 诊断取证端点（IME 事件流探针，评审取证信）：?debug 客户端把
     // compositionstart/update/end + input + viewport 事件逐条 sendBeacon
     // 到此处，原样追加落盘——真实 IME 序列 headless 模拟不出，只能真机抓。
