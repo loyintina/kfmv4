@@ -14,7 +14,8 @@
  *                                    不存在/已淘汰 runId → 直接 __end__ 不 404（probe ④）
  *   POST /ai/chat/:runId/cancel    → {ok}；error「已取消」入流收尾（P5）
  *   GET  /ai/providers             → picker 数据源：只出 id/name/models（P1 不出
- *                                    key/baseUrl）+ 默认 智谱 glm-5.3-flash（拍板⑮）
+ *                                    key/baseUrl）+ 默认=总账投影（仲裁⑥，
+ *                                    缺项回落出厂 智谱 glm-5.3-flash=拍板⑮）
  *
  * 脑选择：provider === 'echo' → EchoBrain（B 档/断网开发走 HTTP 全链，无需
  * 换进程）；NZ_AI_BRAIN=echo → 全局强制 echo（真 key 在场也不直连，排障隔离层）。
@@ -25,8 +26,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import {
-  RunRegistry, EchoBrain, DirectApiBrain,
-  DEFAULT_PROVIDER, DEFAULT_MODEL,
+  RunRegistry, EchoBrain, DirectApiBrain, defaultFromLedger,
   type BrainEndpoint, type BrainStartRequest,
 } from './brain.ts';
 import { loadProviders } from './providers.ts';
@@ -66,7 +66,8 @@ export function mountAiChatRoutes(): (req: IncomingMessage, res: ServerResponse)
     if (req.method === 'GET' && url === '/ai/providers') {
       const providers = loadProviders().map((p) => ({ id: p.id, name: p.name, models: p.models }));
       providers.push({ id: 'echo', name: 'Echo（夹具回放）', models: ['echo', 'echo-error'] });
-      sendJson(res, 200, { providers, default: { provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL } });
+      // 默认 = 总账投影（仲裁⑥阶段三：读 active.json，缺项回落出厂拍板⑮）
+      sendJson(res, 200, { providers, default: defaultFromLedger() });
       return;
     }
 

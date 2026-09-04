@@ -127,7 +127,8 @@ export function createAiChatLink(onUpdate: () => void, env?: { page?: () => Page
         if (restored && state.phase === 'IDLE') {
           link.selection = restored;
         } else if (info.default && !link.selection.provider) {
-          // 默认 = server 下发的 default（2026-09-04 拍板⑮=智谱 glm-5.3-flash）
+          // 默认 = server 下发的 default（A2a 阶段三仲裁⑥起=激活总账投影，
+          // 空账回落出厂拍板⑮=智谱 glm-5.3-flash）
           link.selection = { provider: info.default.provider, model: info.default.model };
         } else if (!link.selection.provider && info.providers.length > 0) {
           link.selection = { provider: info.providers[0].id, model: info.providers[0].models[0] ?? '' };

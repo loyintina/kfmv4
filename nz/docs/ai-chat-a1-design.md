@@ -447,8 +447,8 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 
 | # | 起点 | 触发 | 终点 | 底层动作 |
 |---|---|---|---|---|
-| A1 | `TERMINAL` | 点 orb / **composer 发送**（拍板⑪：发送=主动说话意图，等效点 orb 自动开页；反向不成立——AI_PAGE 态发送=页内发送，无转换） | `AI_PAGE` | 纯 UI；入场动画 translateY(-100%)→0（P11）；有活跃 run → attach from cursor 补流 |
-| A2 | `AI_PAGE` | 点 orb（**唯一开关，无返回按钮**） | `TERMINAL` | 纯 UI；收起动画 translateY(0)→-100% 播完才摘 DOM；run 不死（server 缓冲） |
+| A1 | `TERMINAL` 或「池页开着盖住 AI 页」（当前顶层≠AI 页） | 点 orb（仲裁⑩修订：orb=AI 面板「置顶/关闭」切换器）/ **composer 发送**（拍板⑪：发送=主动说话意图，等效点 orb 自动开页；反向不成立——AI_PAGE 态发送=页内发送，无转换） | `AI_PAGE`（提顶） | 纯 UI；入场动画 translateY(-100%)→0（P11）；有活跃 run → attach from cursor 补流；**池页开着时 AI 页提到池页之上（池页不关，提顶档 `data-kfm-aichat-raised` 令池页降 41 让 AI 页 42 盖回池页上——config-pool-a2a 仲裁⑩用户修正稿，2026-09-05 阶段三实施）**；池页（重）开 → 提顶账清零（AI 页回到池页之下） |
+| A2 | `AI_PAGE`（当前顶层=AI 页：终端态开页，或池页上已提顶） | 点 orb（**唯一开关，无返回按钮**） | `TERMINAL` | 纯 UI；收起动画 translateY(0)→-100% 播完才摘 DOM；run 不死（server 缓冲）；**底下池页开着则池页复现（关 AI 是单页动作，不连带池页）** |
 | A3 | `IDLE` | 输入非空 + **点发送钮**（拍板⑭：composer 回车=换行不发送，发送唯一路径=按钮） | `WAITING` | 用户消息入格 → POST /ai/chat/start |
 | A4 | `WAITING` | 首个 SSE 事件 | `STREAMING` | cursor 起记，reducer 起约 |
 | A5 | `STREAMING` | delta 事件 | `STREAMING` | applyEvent 原地 mutate → 重渲染气泡 |
@@ -457,7 +457,7 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 | A8 | `STREAMING`/`WAITING` | 点停止钮 | `IDLE` | POST cancel → error `已取消` 入流收尾 |
 | A9 | 任意 | 通道断（fetch 流断/页面回前台） | 原状保持 | 重连 attach from cursor 补流；补不上 → error 事件入流 |
 | A10 | `CLOSED` ↔ `MODEL_OPEN` | 点模型钮 / 选定 / Escape / **点菜单外任意处**（拍板⑬：动作同发——document pointerdown 捕获阶段 passive 监听，不 preventDefault，菜单 DOM 内与模型钮豁免） | 互转 | 数据源 = GET /ai/providers（只出 id/name/models）；拍板⑫两级路由：一级 provider 列表 → 点 provider 下钻二级 model 列表（下钻不收，返回钮回一级），二级点定 model 才选定收起；server 默认模型不在 models[] 就合成常驻行置顶（标注「默认」）；下钻层级是 picker 内部 UI 态，不进菜单机词汇 |
-| A11 | `CLOSED` ↔ `CONFIG_OPEN` | 点标题下拉钮 / 选定入口 / Escape / **点菜单外任意处**（拍板⑯：⑬同款 passive 捕获监听泛化，豁免配置菜单 DOM 与下拉钮） | 互转 | 占位骨架：「角色/会话」两入口，选定=标题栏下出空态占位一行文案「角色配置·待接入」/「会话配置·待接入」+关菜单（内容后续接配置池，A1 不发明完整功能） |
+| A11 | `CLOSED` ↔ `CONFIG_OPEN` | 点标题下拉钮 / 选定入口 / Escape / **点菜单外任意处**（拍板⑯：⑬同款 passive 捕获监听泛化，豁免配置菜单 DOM 与下拉钮） | 互转 | A1 占位骨架（「角色配置·待接入」占位行）**已于 A2a 阶段三接真退役**（2026-09-05）：点「角色」=C12 路由真发→配置池页 prompt 池；点「会话」→session 池（config-pool-a2a §3.5，AI 页不收起池页盖其上）；菜单机词汇不变 |
 
 **禁止条款**：
 
@@ -567,7 +567,7 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 | B14 | picker 两级路由（拍板⑫；默认=拍板⑮智谱 glm-5.3-flash） | 一级=provider 列表（数量=/ai/providers，当前 provider ✓ 可辨识，不出 model 行）→ 点 provider 下钻不收（返回钮在场）→ 二级=model 列表+默认模型行带「默认」标注（期值动态：默认在 models[] 内不合成——智谱现状 rows=2；不在则合成常驻行置顶——机制保留防未来）→ 点定默认行生效收起（btn 文案变）；二级当前 model 行 ✓ 可辨识；返回钮回一级仍 MODEL_OPEN；一级/二级截图存证 |
 | B15 | picker 点外即关+动作同发（拍板⑬，tmux-tabs T15 同款） | 菜单开→点终端区→CLOSED 且终端诱饵同指聚焦（双断言）；菜单开→点 composer→CLOSED 且焦点同指进输入框（前置断言防假绿）；菜单内点 provider 下钻不收（回归）；点外即关前后截图存证 |
 | B16 | composer 回车=换行不发送（拍板⑭） | 按 Enter → draft 含 \n 且 run 未起（messages 不变）；点发送钮 → run 起消息入格（发送唯一路径）；多行内容气泡换行保真（pre-wrap textContent 含 \n）；输入栏两行截图存证 |
-| B17 | 标题栏一行+标题即下拉（拍板⑯，A11） | 标题栏高≤34px 不塌没+内容区顶=栏底（避让同步）+下拉钮在场；点下拉钮→CONFIG_OPEN+「角色/会话」两入口在场；点入口→占位骨架一行「角色/会话配置·待接入」+CLOSED；菜单开点 composer→CLOSED 且焦点同指进输入框（⑬同款动作同发）；下拉截图存证 |
+| B17 | 标题栏一行+标题即下拉（拍板⑯，A11） | 标题栏高≤34px 不塌没+内容区顶=栏底（避让同步）+下拉钮在场；点下拉钮→CONFIG_OPEN+「角色/会话」两入口在场；**B17c 入口接真（A2a 阶段三改卷，占位退役）：点「角色」→池页开+定位 prompt 池+占位元素不存在**；B17c2 orb 提顶（池页盖 AI 点球=AI 页上来）+点「会话」→池页切 session；菜单开点 composer→CLOSED 且焦点同指进输入框（⑬同款动作同发）；下拉截图存证 |
 | B18 | 标题栏不避挖孔屏（拍板⑰） | 注入 --sat=33px 模拟刘海地形（headless env=0 复现不了）→ AI 页顶=视口顶+标题栏顶=0 不随 sat 下移（一行期值恒≈33px）；对照钉：终端容器外壳 padding-top 仍随 sat 生效（edge-to-edge 链不回退）；sat 地形截图存证 |
 
 ### C 档 · 真机

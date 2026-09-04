@@ -18,7 +18,11 @@
  *   · pool/changed 推送（§1.6）：/ws/term 多路复用，推送到达 refetch 校准
  *     （C11/P7）；WS 断/回前台重连校准（C13）；
  *   · C12 标题栏入口路由（拍板⑯）：kfm-nz-pool-open 事件（detail.pool）——
- *     ai-chat 标题栏按钮接线=阶段三，本插件先把路由转换立起（B8 事件驱动）。
+ *     ai-chat 标题栏「角色/会话」按钮已接线（阶段三接真，占位退役）；
+ *     池页已开则转对应池（C3 形状）。
+ *   · orb 三态咬合（仲裁⑩阶段三）：AI 页被 orb 提到池页之上时 ai-chat 挂
+ *     data-kfm-aichat-raised（tokens.css 池页降 41 不关）；本插件手势门见
+ *     该属性即不响应（盖着的池页不吃右滑返回，B12b）。
  *
  * 观测钩（可观测性约束，公共契约）：
  *   __kfmNzPool() 报 {page,pool,pageState,editing,active,ring,lastEvents}；
@@ -122,7 +126,12 @@ export function createConfigPoolPlugin(ctx: Context): UiPlugin {
         layer: GestureLayer.PageSwipe,
         targetFilter: (target) => !target.closest(POOL_SWIPE_EXCLUDE),
         condition: () => {
-          if (core.state.page === 'POOL_OPEN') return true; // 池页内右滑返回（左滑裁决后不绑 §八⑦）
+          if (core.state.page === 'POOL_OPEN') {
+            // 仲裁⑩ orb 提顶档：AI 页盖在池页上时手势归 AI 页——盖着的池页
+            // 不吃右滑返回（隐藏池页不被误关，B12b 钉）
+            if (document.documentElement.hasAttribute('data-kfm-aichat-raised')) return false;
+            return true; // 池页内右滑返回（左滑裁决后不绑 §八⑦）
+          }
           if (document.documentElement.hasAttribute('data-kfm-aichat-open')) return false; // AI_PAGE 态（§1.2-2）
           const scroll = (window as unknown as Record<string, unknown>).__kfmNzTermScroll as (() => { alt?: boolean }) | undefined;
           if (scroll?.().alt === true) return false; // 终端 ALT/TUI 态（term 既有 alt_screen 判定）
@@ -163,12 +172,14 @@ export function createConfigPoolPlugin(ctx: Context): UiPlugin {
 
         // 层级规则（仲裁⑩/P10）：池页开时 documentElement 挂 data-kfm-pool-open
         // ——tokens.css 据此藏 tmux 控件 + 输入栏/光球升 45 恒顶档；关（含收起
-        // 动画尾巴）即复原。每次渲染都按当前态校正；cleanup 先摘（重挂/卸载
-        // 均复原，插件 unmount 另有兜底摘除）
+        // 动画尾巴）即复原。deps=页面机态：只在开/关翻转时落笔（cleanup 摘+
+        // 重挂），页内任意重渲染（C11 推送/激活/保存 bump）不产生 remove+add
+        // 抖动——那是 ai-chat 提顶账 observer 的触发面，不能被无关渲染误触
         useEffect(() => {
           document.documentElement.toggleAttribute('data-kfm-pool-open', core.state.page === 'POOL_OPEN');
           return () => document.documentElement.removeAttribute('data-kfm-pool-open');
-        });
+          // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [core.state.page]);
 
         // C2：机关、收起动画是呈现尾巴（translateX(0)→100% 播完才摘 DOM）。
         // 挂上 requestClose 桥——手势腿（装配层）与 × 钮同走此入口

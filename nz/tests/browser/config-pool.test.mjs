@@ -14,13 +14,18 @@
  *   B7  P4 密钥不明文（保存明文 → 载荷/DOM/钩子/池文件/日志 grep 全净，
  *       .env 600 落明文，回填=代字空输入）
  *   B8  C12 标题栏入口路由（拍板⑯）：kfm-nz-pool-open 事件 → POOL_OPEN 直达
- *       对应池 + AI 页不收起；占位文案仍在（按钮接真=阶段三，诚实登记）
+ *       对应池 + AI 页不收起；B8c 入口接真（阶段三）：标题栏点「角色」→ 池页
+ *       开+定位 prompt 池+占位元素退役；B8d orb 置顶/关闭切换器先咬
  *   B9  P6/P9 词汇表+观测钩+动画 token（ring 状态名 ⊆ 枚举/≥50 拍；
  *       动画时长跟随 --kfm-dur-normal；/tmp 夹具 nz-pool.log JSONL 互证）
  *   B10 C11/C13 推送校准（第二页 CRUD → 本页 pool/changed refetch；WS 断+
  *       回前台 → 重连 refetch）
  *   B11 P10/仲裁⑩ 层级（池页 z44 全屏；composer/orb 池页在场恒顶 z45；
  *       tmux 控件 display:none；C12 路径 AI 页 z42 在其下不收起）
+ *   B12 仲裁⑩ orb 三态（A2a 阶段三）：光球=AI 面板「置顶/关闭」切换器——
+ *       池页开着点球=AI 页提到池页上（池页降 41 不关）；提顶档右滑不关隐藏
+ *       池页；再点球=关 AI 页（池页复现 z44）；提顶档对无关重渲染稳定；
+ *       路由事件（C12 入口意图）把池页召回 AI 之上
  *
  * 跑法：node tests/browser/config-pool.test.mjs（自起隔离 server 实例：
  * NZ_AI_CONFIG_DIR=临时夹具、独立端口、NZ_POOL_LOG=夹具内——零接触真机
@@ -487,17 +492,31 @@ try {
     check('B8b C12 路径 AI 页不收起（池页关后 ai-chat 仍在 AI_PAGE）',
       aiStill?.page === 'AI_PAGE' && aiDom && aiBack?.page === 'AI_PAGE',
       `during=${aiStill?.page} dom=${aiDom} after=${aiBack?.page}`);
-    // 占位文案仍在：CONFIG_OPEN 下拉点「角色」→ 占位骨架行（接真=阶段三）
+    // 拍板⑯接真（A2a 阶段三）：占位退役——点「角色」= C12 路由真发（AI 页
+    // 开着 → 池页开+直达 prompt 池），占位骨架元素必须不存在
     await page.click('[data-aichat-config-btn]').catch(() => {});
     await sleep(300);
     await page.click('[data-aichat-config-entry="role"]').catch(() => {});
-    await sleep(300);
-    const placeholder = await page.evaluate(() => document.querySelector('[data-aichat-config-placeholder]')?.textContent ?? null);
-    check('B8c 标题栏占位文案仍在（入口按钮接真=阶段三，阶段二只接路由事件——诚实登记）',
-      typeof placeholder === 'string' && /待接入/.test(placeholder), `placeholder=${JSON.stringify(placeholder)}`);
-    // 留 AI 页关掉，回终端态
+    await sleep(500);
+    const hRole = await hook();
+    const phGone = await page.evaluate(() => !document.querySelector('[data-aichat-config-placeholder]'));
+    check('B8c 入口接真（拍板⑯占位退役）：标题栏点「角色」→ 池页开+定位 prompt 池 + 占位元素不存在',
+      hRole?.page === 'POOL_OPEN' && hRole?.pool === 'prompt' && phGone,
+      `pool=${hRole?.pool}/${hRole?.page} phGone=${phGone}`);
+    // orb 新逻辑收尾链（三态详钉=B12）：池页盖 AI → 点球=提顶（AI_PAGE 保持）
+    // → 再点球=关 AI（池页不关）→ 右滑关池页回全关
     await page.click('[data-kfm-aichat-orb]').catch(() => {});
-    await sleep(400);
+    await sleep(500);
+    const aiRaised = await aiHook();
+    await page.click('[data-kfm-aichat-orb]').catch(() => {});
+    await sleep(600);
+    const aiAfter = await aiHook();
+    const poolAfter = await hook();
+    await closePoolBySwipe();
+    const poolGone = await hook();
+    check('B8d orb 置顶/关闭切换器（仲裁⑩新逻辑）：池页盖 AI 点球=AI 页提上来（AI_PAGE 保持）→ 再点球=关 AI（池页不关）→ 右滑池页照关',
+      aiRaised?.page === 'AI_PAGE' && aiAfter?.page === 'TERMINAL' && poolAfter?.page === 'POOL_OPEN' && poolGone?.page === 'POOL_CLOSED',
+      `raise=${aiRaised?.page} close=${aiAfter?.page} pool=${poolAfter?.page}→${poolGone?.page}`);
   }
 
   // ========== B10：C11/C13 推送校准 ==========
@@ -607,6 +626,92 @@ try {
     check('B11b 池页关闭复原：orb 回 z43 档（inline 值），AI 页保持 AI_PAGE', restored.orb === '43' && restored.aiPage === 'AI_PAGE',
       JSON.stringify(restored));
     await page.click('[data-kfm-aichat-orb]').catch(() => {});
+  }
+
+  // ========== B12：仲裁⑩ orb 三态（A2a 阶段三接点；光球=AI 面板「置顶/关闭」切换器） ==========
+  // 语义（用户修正稿落地）：按**当前顶层**裁定——顶层=AI 页→点球=关（滑出）；
+  // 顶层≠AI 页（终端态或池页盖着 AI）→点球=AI 页提到最上层（池页开着不关，
+  // 提顶后盖在池页上）。z 咬合：提顶档池页降 41（tokens.css data-kfm-aichat-
+  // raised），层级仍严格 池页41 < AI 页42 < 输入栏+光球45 恒顶。
+  {
+    const gz = () => page.evaluate(() => {
+      const g = (s) => { const e = document.querySelector(s); return e ? Number(getComputedStyle(e).zIndex) : null; };
+      return { pool: g('[data-kfm-pool]'), ai: g('[data-kfm-aichat]'), orb: g('[data-kfm-aichat-orb]') };
+    });
+    const aiTopHit = () => page.evaluate(() => {
+      const hdr = document.querySelector('[data-aichat-header]');
+      if (!hdr) return null;
+      const r = hdr.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return hit ? !!hit.closest('[data-kfm-aichat]') : null;
+    });
+    // 基线：终端态点球 → AI 页开（态①「顶层≠AI 页→出现」，B1 已证不回退）
+    await page.click('[data-kfm-aichat-orb]').catch(() => {});
+    await sleep(500);
+    const t1 = await aiHook();
+    // 态② AI 页开着 C12 开池页（池页盖 AI，z44>42）→ 点球=AI 页提到池页上
+    await page.evaluate(() => (window).dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'basic' } })));
+    await sleep(500);
+    const t2PoolBefore = await hook();
+    const z2Before = await gz();
+    await page.click('[data-kfm-aichat-orb]').catch(() => {});
+    await sleep(500);
+    const t2Ai = await aiHook();
+    const t2Pool = await hook();
+    const z2After = await gz();
+    const hit2 = await aiTopHit();
+    await shot(page, 'b12-orb-raise-over-pool');
+    // 态③ 提顶档右滑：隐藏池页不被误关（手势 raised 门——AI 页盖着时手势归 AI 页）
+    await closePoolBySwipe();
+    const t3Pool = await hook();
+    // 态④ 再点球 → 关 AI 页（滑出），池页复现（z 回 44）仍 POOL_OPEN
+    await page.click('[data-kfm-aichat-orb]').catch(() => {});
+    await sleep(700);
+    const t4Ai = await aiHook();
+    const t4Pool = await hook();
+    const z4 = await gz();
+    const hit4 = await aiTopHit();
+    await shot(page, 'b12-pool-restored');
+    check('B12a 仲裁⑩ 态②：池页开着点球 → AI 页提到池页上（池页降 41/AI 42/球 45 恒顶；池页不关仍 POOL_OPEN；标题栏命中=AI 页真顶）',
+      t1?.page === 'AI_PAGE' && t2PoolBefore?.page === 'POOL_OPEN' && z2Before.pool === 44 && z2Before.ai === 42
+      && t2Ai?.page === 'AI_PAGE' && t2Pool?.page === 'POOL_OPEN'
+      && z2After.pool === 41 && z2After.ai === 42 && z2After.orb === 45 && hit2 === true,
+      `before=${JSON.stringify(z2Before)} after=${JSON.stringify(z2After)} hit=${hit2} pool=${t2Pool?.page}`);
+    check('B12b 态③：提顶档右滑不关隐藏池页（手势 raised 门——盖着的池页不吃右滑返回）',
+      t3Pool?.page === 'POOL_OPEN', `pool=${t3Pool?.page}`);
+    check('B12c 态④：再点球 → AI 页关（TERMINAL，AI DOM 摘除），池页复现 z44 仍 POOL_OPEN（关 AI 不连带池页；球 45 恒顶随池页在场）',
+      t4Ai?.page === 'TERMINAL' && t4Pool?.page === 'POOL_OPEN' && z4.pool === 44 && z4.ai === null && z4.orb === 45 && hit4 !== true,
+      `ai=${t4Ai?.page} pool=${t4Pool?.page} z=${JSON.stringify(z4)} hit=${hit4}`);
+    // —— 重来一轮验「提顶档稳定性 + 入口召回」（B12d/B12e） ——
+    await page.click('[data-kfm-aichat-orb]').catch(() => {});
+    await sleep(600);
+    await page.evaluate(() => (window).dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'basic' } })));
+    await sleep(500);
+    await page.click('[data-kfm-aichat-orb]').catch(() => {});
+    await sleep(500);
+    // B12d 无关重渲染（diag resync=fetchAll 校准 bump，非入口语义）不得误触提顶账
+    await page.evaluate(() => (window).__kfmNzPoolDiag?.resync?.());
+    await sleep(500);
+    const stD = await page.evaluate(() => ({
+      raised: document.documentElement.hasAttribute('data-kfm-aichat-raised'),
+      poolZ: Number(getComputedStyle(document.querySelector('[data-kfm-pool]')).zIndex),
+      hit: (() => { const hdr = document.querySelector('[data-aichat-header]'); const r = hdr.getBoundingClientRect(); return !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('[data-kfm-aichat]'); })(),
+    }));
+    check('B12d 提顶档稳定性：池页在场重渲染（路由 bump）不误清提顶账（AI 仍在池页上）',
+      stD.raised === true && stD.poolZ === 41 && stD.hit === true, JSON.stringify(stD));
+    // B12e 入口召回（C12 语义）：外发路由事件=入口意图 → 池页回 AI 之上
+    await page.evaluate(() => (window).dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'prompt' } })));
+    await sleep(500);
+    const stE = await page.evaluate(() => ({
+      raised: document.documentElement.hasAttribute('data-kfm-aichat-raised'),
+      poolZ: Number(getComputedStyle(document.querySelector('[data-kfm-pool]')).zIndex),
+      pool: (window).__kfmNzPool().pool,
+    }));
+    check('B12e 入口召回：路由事件（C12）把池页召回 AI 之上（提顶账清、池页 z44、切 prompt 池）',
+      stE.raised === false && stE.poolZ === 44 && stE.pool === 'prompt', JSON.stringify(stE));
+    // 收尾：右滑关池页回全关态（此刻池页在顶可滑）
+    await closePoolBySwipe();
+    check('B12-收 池页右滑关闭回全关态', await poolClosed());
   }
 
   check('⓪-尾 全程零页面异常', pageErrors.length === 0, pageErrors.slice(0, 3).join(' | '));

@@ -191,6 +191,52 @@ test('/ai/providers：只出 id/name/models + 默认 智谱 glm-5.3-flash（拍�
   });
 });
 
+test('A2a 阶段三 仲裁⑥：默认改读激活总账——/ai/providers default 与直连脑默认随账走，缺项回落出厂 智谱 glm-5.3-flash（拍板⑮）', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'nz-ai-ledger-def-'));
+  writeFileSync(join(dir, 'providers.json'), JSON.stringify([
+    { id: 'Kimi', name: 'Kimi', baseUrl: 'https://api.kimi.com/coding/v1', apiKey: '', models: ['k3-256k'] },
+  ]));
+  writeFileSync(join(dir, '.env'), 'KIMI_API_KEY=sk-ledger-default-exam\n');
+  await withEnv({ NZ_AI_CONFIG_DIR: dir }, async () => {
+    const server = createNzServer();
+    const port = await listen(server);
+    try {
+      const get_default = async () => {
+        const r = await fetch(`http://127.0.0.1:${port}/ai/providers`);
+        return (await r.json()) as { default: { provider: string; model: string } };
+      };
+      // ① 总账缺文件 → 纯出厂回落（拍板⑮出厂初值，语义等价迁移）
+      let d = await get_default();
+      assert(d.default.provider === '智谱' && d.default.model === 'glm-5.3-flash',
+        `空账应回落出厂 智谱/glm-5.3-flash，实际 ${JSON.stringify(d.default)}`);
+      // ② 总账在场 → 默认随账走（/pool/active 是唯一门，考卷直写文件=夹具播种）
+      writeFileSync(join(dir, 'active.json'), JSON.stringify({ providerId: 'Kimi', modelId: 'k3-256k', roleFile: '', sessionId: '' }));
+      await sleep(20); // mtime 缓存按 mtimeMs 失效，隔一拍防同毫秒撞缓存
+      d = await get_default();
+      assert(d.default.provider === 'Kimi' && d.default.model === 'k3-256k',
+        `总账在场 default 应随账（Kimi/k3-256k），实际 ${JSON.stringify(d.default)}`);
+      // ③ 直连脑默认 = 总账条目（离线证据：不显式带 provider/model 发起 →
+      //    总账条目不在 providers.json → error 人话点名总账条目，不点出厂智谱）
+      writeFileSync(join(dir, 'active.json'), JSON.stringify({ providerId: 'exam-ledger-prov', modelId: 'exam-ledger-model', roleFile: '', sessionId: '' }));
+      await sleep(20);
+      const { json } = await postStart(port, { messages: USER_HI });
+      const sse = await readSse(port, String(json.runId), 0);
+      const err = sse.frames.map((f) => f.event).find((e) => e.type === 'error');
+      assert(!!err && String(err.content ?? '').includes('exam-ledger-prov'),
+        `直连脑默认应来自总账（error 点名 exam-ledger-prov），实际 ${String(err?.content ?? '').slice(0, 80)}`);
+      assert(!String(err?.content ?? '').includes('智谱'), '不得回落出厂智谱（总账在场即随账）');
+      // ④ 部分缺项逐字段回落：modelId 空 → model 回落出厂、provider 仍随账
+      writeFileSync(join(dir, 'active.json'), JSON.stringify({ providerId: 'Kimi', modelId: '', roleFile: '', sessionId: '' }));
+      await sleep(20);
+      d = await get_default();
+      assert(d.default.provider === 'Kimi' && d.default.model === 'glm-5.3-flash',
+        `modelId 缺项应逐字段回落（Kimi/glm-5.3-flash），实际 ${JSON.stringify(d.default)}`);
+    } finally {
+      server.close();
+    }
+  });
+});
+
 test('attach 补流：中途断开重连 from=cursor 读到缓冲回放+尾随，断开不死 run', async () => {
   await withEnv({ NZ_AI_ECHO_PACE_MS: '10' }, async () => {
     const server = createNzServer();

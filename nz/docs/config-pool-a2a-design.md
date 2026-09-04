@@ -36,7 +36,10 @@
 >    **AI 面板内可召唤池页**（标题栏角色/会话入口开在 AI 页之上）；
 >    **光球新逻辑**：当前顶层=AI 面板→点球=关闭面板回终端；当前顶层
 >    不是 AI 面板→点球=把 AI 面板提到最上层出现（底下开着池页也不冲突）。
->    orb 从「开关」升级为「AI 面板的置顶/关闭切换器」✅。
+>    orb 从「开关」升级为「AI 面板的置顶/关闭切换器」✅
+>    （2026-09-05 阶段三实施注：提顶档=data-kfm-aichat-raised，池页降
+>    41 档让 AI 页 42 盖回池页上——防 z 倒挂且球/输入栏 45 恒顶不变；
+>    池页不关，orb 再点=关 AI 页池页复现；提顶档右滑不关盖着的池页）。
 
 ## 〇、范围与边界（什么做、什么不做）
 
@@ -359,9 +362,9 @@ interface PoolDescriptor {
 | 接点 | 现状 | A2a 动作 |
 |---|---|---|
 | picker 二级路由（拍板⑫） | `/ai/providers` 只读投影 | 数据语义不动；池页=全量管理、picker=快捷切换，同源互证进考卷（B4） |
-| picker 选中态 | client 内存（chat-link.ts:112-114），刷新即失 | 选中即写总账（POST /pool/active {providerId,modelId}），刷新后读总账复原——picker 第一次有了持久化（§八⑥联动） |
-| 标题栏「角色/会话」占位（拍板⑯） | 空态占位一行文案 | 接真：点「角色」→ POOL_OPEN+prompt 池；点「会话」→ POOL_OPEN+session 池；占位文案退役 |
-| server 默认 provider/model（拍板⑮） | brain.ts:40-41 写死 | 改读总账+出厂值回落（§2.4，§八⑥请拍板） |
+| picker 选中态 | client 内存（chat-link.ts:112-114），刷新即失 | 选中即写总账（POST /pool/active {providerId,modelId}），刷新后读总账复原——picker 第一次有了持久化（§八⑥联动）✅ 阶段二已接 |
+| 标题栏「角色/会话」占位（拍板⑯） | 空态占位一行文案 | 接真：点「角色」→ POOL_OPEN+prompt 池；点「会话」→ POOL_OPEN+session 池；占位文案退役 ✅ 阶段三已接（kfm-nz-pool-open 事件真发，B8c/B17c 钉） |
+| server 默认 provider/model（拍板⑮） | brain.ts:40-41 写死 | 改读总账+出厂值回落（§2.4，§八⑥请拍板）✅ 阶段三已接（defaultFromLedger，ai-server 新钉） |
 | A1 providers.ts 只读 fuse | loadProviders+resolveKey | 一行不动；写侧 fuse 在池层新增（§2.6） |
 
 ## 四、交互状态机（清单体例；词汇表唯一真源，宪法 §7 五要素）
@@ -540,3 +543,31 @@ JSONL 逐拍落 CRUD/守卫拦截/fuse 事件（不落明文 key 不落条目全
 10. **池页层级 z44 全屏独占**（composer/orb 隐藏）：拍板⑯只拍了入口
     路由没拍层级；本清单取「配置=沉浸任务」裁定。备选=池页与 AI 页
     同层互斥开关（关 AI 页才能开池页——多一次转换，反对）。请拍板。
+
+## 九、阶段三接点实施增补（2026-09-05 实施，清单正文不变只补账）
+
+阶段二遗留三接点一次收口，实施语义与钉位登记（考卷蓝本=§五，此处为
+增补针脚）：
+
+1. **orb 三态（仲裁⑩核心实施）**：光球=AI 面板「置顶/关闭」切换器，按
+   **当前顶层**裁定——顶层=AI 页→点球=关（滑出动画，底下池页复现）；
+   顶层≠AI 页（终端态或池页盖着 AI）→点球=AI 页提到最上层（池页不关）。
+   z 咬合实施：提顶档=ai-chat 挂 `data-kfm-aichat-raised`（监听 config-pool
+   的 `data-kfm-pool-open` 属性翻转清账），tokens.css 据此把池页降 **41**
+   档（层级仍严格 池页41<AI 页42<球45 恒顶，防倒挂）——仲裁⑩原文只定
+   相对序，41 档是实施取值；提顶档右滑不关盖着的池页（手势 condition
+   门 +1 条件，P1 族）。钉：config-pool B12a/b/c + B8d；ai-chat B17c2。
+   ai-chat 状态机 §3.3 A1/A2 语义按此修订（ai-chat-a1-design.md）。
+2. **标题栏入口接真（拍板⑯占位退役）**：点「角色」→`kfm-nz-pool-open`
+   {pool:'prompt'}；点「会话」→{pool:'session'}——池页已开转对应池
+   （C3 形状），AI 页不收起；`data-aichat-config-placeholder` 元素退役。
+   钉：config-pool B8c（池侧）+ ai-chat B17c/c2（按钮侧）。
+3. **brain.ts 默认改读总账（仲裁⑥收尾）**：DEFAULT_PROVIDER/MODEL 硬编码
+   → `defaultFromLedger()`：读 active.json（mtime 缓存直读），缺项逐字段
+   回落出厂初值（FACTORY 智谱/glm-5.3-flash=拍板⑮）；消费点两处=
+   DirectApiBrain.start 兜底 + `/ai/providers` default 投影。钉：ai-server
+   「默认改读激活总账」四腿（空账回落/随账/直连脑点名总账条目/逐字段回落）。
+4. **B 档增补**：config-pool 卷 38→43（B8c/B8d/B12a/b/c 五钉，B8 旧「占位
+   仍在」钉随接真退役）；ai-chat 卷 58→59（B17c/c2 改写+新增 B17-收，
+   B14c 默认断言改「随账走」动态期值——契约变迁=默认来源从出厂值改总账
+   投影，§3.5 表已同步）。

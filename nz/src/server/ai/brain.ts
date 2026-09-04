@@ -32,13 +32,26 @@ import type { ChatMessage } from '../../shared/chat-protocol/messages.ts';
 import { toOpenAiMessages } from '../../shared/chat-protocol/to-openai-messages.ts';
 import { SseParser } from './sse-parser.ts';
 import { OpenAiTranslator, errorEventFromHttp, type UsageRecord } from './openai-translator.ts';
-import { loadProviders, findProvider, resolveKey } from './providers.ts';
+import { loadProviders, findProvider, resolveKey, aiConfigDir } from './providers.ts';
+import { readActive } from '../pool/store.ts';
 
-/** 默认 provider/模型（2026-09-04 拍板⑮：智谱 glm-5.3-flash；原 §八③
- *  Kimi 官方 kimi-k2.7-code 默认被改——picker 合成默认行机制保留，智谱
- *  默认在 models 列表内不触发合成） */
-export const DEFAULT_PROVIDER = '智谱';
-export const DEFAULT_MODEL = 'glm-5.3-flash';
+/** 出厂初值（2026-09-04 拍板⑮：智谱 glm-5.3-flash；原 §八③ Kimi 官方
+ *  kimi-k2.7-code 默认被改）——激活总账缺项时的回落值，不再是直接默认：
+ *  A2a 阶段三仲裁⑥收尾，默认来源改读总账（design config-pool-a2a §2.4） */
+export const FACTORY_PROVIDER = '智谱';
+export const FACTORY_MODEL = 'glm-5.3-flash';
+
+/** 默认 provider/model = 激活总账投影：读 active.json（mtime 缓存直读，
+ *  /pool/active 唯一门写的账），缺项逐字段回落出厂初值；文件缺失/坏 JSON
+ *  = 四字段空壳 → 纯出厂。picker 选中等显式动作仍走 run 请求显式带
+ *  （请求级覆盖，不动总账）。 */
+export function defaultFromLedger(configDir?: string): { provider: string; model: string } {
+  const led = readActive(configDir ?? aiConfigDir());
+  return {
+    provider: led.providerId || FACTORY_PROVIDER,
+    model: led.modelId || FACTORY_MODEL,
+  };
+}
 
 const RUN_EVENT_CAP = 10_000;
 const RUN_DONE_TTL_MS = 5 * 60_000;
@@ -306,8 +319,11 @@ export class DirectApiBrain implements BrainEndpoint {
   ) {}
 
   start(req: BrainStartRequest): RunHandle {
-    const provider = req.provider || DEFAULT_PROVIDER;
-    const model = req.model || DEFAULT_MODEL;
+    // 默认随账走（仲裁⑥）：请求未显式带 provider/model → 读激活总账，
+    // 缺项回落出厂初值（拍板⑮）
+    const d = defaultFromLedger(this.opts.configDir);
+    const provider = req.provider || d.provider;
+    const model = req.model || d.model;
     const run = this.registry.open({ provider, model });
     void this.pump(run, req, provider, model);
     return { runId: run.id };

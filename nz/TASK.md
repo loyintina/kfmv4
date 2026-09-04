@@ -16,7 +16,19 @@
 
 - **当前阶段**：**9.0 终端体验线**（2026-09-03）。实验台 P0/P1/P3 已收口，
   8.8.4 tmux 标签条全链闭环，终端体验连日高频迭代（真机痛点驱动）。
-- **刚完成**：①**AI 专题 A1「AI 接通最小闭环」✅**（09-04 四阶段闭环）——
+- **刚完成**：①**AI 专题 A2a「配置池」✅**（09-05 三阶段闭环）——
+  设计清单签收（§八十条仲裁全裁决）→①server 统一池数据层（aaac5bb5，
+  /pool/* 路由族+激活总账+relied 守卫+fuse 写侧，A 档 22 钉，npm test
+  175）→②池框架 UI+B 档考卷（1f360a46，左滑三重判定+四池页+激活双态
+  +pool/changed 推送，B 档 38 钉，npm test 190）→③接点+C 档+文书（本笔）：
+  **orb 升级「AI 面板置顶/关闭切换器」**（仲裁⑩：按当前顶层裁定，池页
+  开着点球 AI 页盖上来池页不关，提顶档池页降 41）+**标题栏「角色/会话」
+  入口接真**（拍板⑯占位退役，直达 prompt/session 池）+**brain 默认读
+  总账**（仲裁⑥收尾，缺项回落出厂 智谱 glm-5.3-flash）；config-pool
+  B 档 43 钉+ai-chat 59 钉+npm test 191+browser 17 卷全绿，变异抽检双咬，
+  C 档 8026 真机实录（左滑/四池 CRUD/激活闭环/orb 三态/入口定位）。档案
+  dev-flow-case-006；通报 kfmv4-config-pool-a2a-accept-report。
+  ②**AI 专题 A1「AI 接通最小闭环」✅**（09-04 四阶段闭环）——
   设计清单签收（§八六条异议全裁决）→①协议层四件搬运+简版投影
   （2a79b427，A 档 8 钉 36 题）→②server 薄层 BrainEndpoint 插座+
   Echo/Direct 双脑+run 登记表（3ce53fc5）→③client 插件+BU 三件皮重写
@@ -29,17 +41,17 @@
   设计内，亮屏补流复验留 A2）。C 档结晶一真虫：畸形消息打崩 server
   →形状闸 400+未捕获异常兜底（回归钉入账）。npm test 155/155+
   browser 16 卷全绿；档案 dev-flow-case-005。
-  ②**Step 3 keybar 迁皮 ✅**（09-03 闭环，3bdcdfb1）——
+  ③**Step 3 keybar 迁皮 ✅**（09-03 闭环，3bdcdfb1）——
   状态机清单用户签收（0903 拍板：键面/栏底透明化+装配方案 A）→
   **现行 21 钉断言一字未改、原样跑绿 = 骨零改动的机器证明**→新三钉
   （㉒零硬编码/㉓观测钩 __kfmNzKeybar/㉔视觉白名单）18/18→**变异抽检**
   （皮内塞硬编码色值→㉒精确变红→还原）通过；browser 15 卷+npm test
   104 全绿；档案 dev-flow-case-004。透明键面+点亮色块真机待用户过目。
-  ③**bold-is-bright ✅**（09-03，57c6d9f0，用户拍板+真机验收）——
+  ④**bold-is-bright ✅**（09-03，57c6d9f0，用户拍板+真机验收）——
   bold 不画粗改映射亮色（ECMA-48），font-synthesis:none 双保险，
   亮色系 NA ANSI_16 同源零新造；npm test 110+browser 15 卷全绿；
   **两线首次定义 bold 语义，term-contract C6 登记（na 待跟进对齐）**。
-  ④此前已入账：8.8.4 tmux-tabs 全链闭环（档案 case-003）、真机体验
+  ⑤此前已入账：8.8.4 tmux-tabs 全链闭环（档案 case-003）、真机体验
   四连修、欠账清零。
 - **下一步**：**AI 专题 A2「AI 的眼（观测面标准化）」**（§0.7，动手前
   逐阶段讨论数据类型/文件组织/UI 并签收；先消化 A1 留的两条观察项）。
@@ -58,7 +70,7 @@
 
 ---
 
-## 0.7 AI 专题（2026-09-03 立项，用户拍板；A1 ✅ 已闭环）
+## 0.7 AI 专题（2026-09-03 立项，用户拍板；A1 ✅ / A2a ✅ 已闭环）
 
 > **一句话**：把 AI 接进 nz 自身——先接通，再让 AI 看见项目自身（日志/
 > 信息流/观测手段/终端状态/UI 状态），再让 AI 能操作项目自身；全程
@@ -70,6 +82,7 @@
 | 阶段 | 做什么 | 验收判据（开工前细化签收） | 状态 |
 |------|--------|---------------------------|------|
 | **A1 · AI 接通最小闭环** | 一条真实模型通路 + 一个能对话的最小界面（say hello 级）；**开工前先读 na 接入决策**（kfm-na `providers.rs`/`brain.rs`/`direct_brain.rs`/`conn.rs`）对齐边界：接什么 / 在哪跑 / 会话怎么管 | 真机发一条消息收到真实流式回复；agent 可后台观测 API 调试结果 | **✅（2026-09-04 四阶段闭环）**——清单签收（§八六条异议全裁决）→①协议层 2a79b427（A 档 8 钉 36 题）→②server 薄层 3ce53fc5（B 档雏形 8 钉+变异双咬）→③插件+皮 f145e76c（B 档 21/21+变异）→④orb 挪右中（09-04 拍板）+C 档双路真连（**Kimi 官方 kimi-k2.7-code 通=用户拍板验证成立**；智谱 glm-5.3-flash 通）+观测闭环互证+真机 echo/真消息。npm test 155+browser 全绿；档案 dev-flow-case-005；通报 kfmv4-ai-chat-a1-accept-report。留 A2 观察项：真机息屏流断补流路径亮屏复验（~~picker 补 kimi-k2.7-code 行~~——已于 2026-09-04 拍板⑫销账：picker 二级路由默认模型合成常驻行置顶标注「默认」） |
+| **A2a · 配置池（AI 的配置面）** | server 统一池数据层（/pool/* 路由族+激活总账 active.json+relied 守卫+密钥 fuse-on-save 写侧）+ 池框架（左滑进入/一池一页/顶栏标签行/PoolPage 接口/池注册表）+ 首批四池（基本/provider-model/agent-prompt/session）+ ai-chat 三接点（picker 同源写账/标题栏角色会话入口接真/brain 默认读总账）+ orb 升级「AI 面板置顶/关闭切换器」（仲裁⑩） | 真机左滑进池+四池 CRUD+激活闭环（池页切激活→不经 picker 发一条走新激活）+密钥零明文+orb 三态；A/B 档考卷全绿+变异抽检+回归属零回退（设计 §六 DoD） | **✅（2026-09-05 三阶段闭环）**——清单签收（§八十条仲裁全裁决）→①池数据层 aaac5bb5（A 档 22 钉，npm test 175）→②池框架 UI+B 档 1f360a46（B 档 38 钉+npm test 190）→③接点+C 档+文书（本笔：orb 三态/入口接真/brain 读总账，config-pool 43 钉+ai-chat 59 钉+npm test 191+browser 17 卷，C 档 8026 真机实录）。档案 dev-flow-case-006；通报 kfmv4-config-pool-a2a-accept-report |
 | **A2 · AI 的眼（观测面标准化）** | 散装 `__kfmNz*` 钩族/日志/信息流/终端状态/UI 状态 → 统一结构化观测面（吸收 8.9.1/8.9.2：状态可查询、事件流带版本+可回放、按需自插桩）；消费者从「人排障」变「AI」 | AI 经观测面答出「现在终端里是什么、UI 什么状态」，考卷可钉 | ⬜ |
 | **A3 · AI 的手（操作面）** | 实验台 inject/gate/热更/自重启 → AI 可调用的操作面（**权限边界先讨论再动手**） | AI 经操作面完成一次受控操作，留痕可回放 | ⬜ |
 
@@ -325,9 +338,9 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
 | 8.10.2 | 文件树卡 DOM 化（Obsidian 文件卡） | dsh ui-directory-picker | 无 | A+B+C：10–15 层不卡，截图 diff 为零 | ⬜ |
 | 8.10.3 | 文件编辑卡 + file-io | dsh fs 参考 | similar / pulldown-cmark / syntect 候选（实测驱动） | A+B+C：双态、跟随同步、点开全屏 | ⬜ |
 | 8.10.4 | engine/v2 退役核验 + 闭环 | 无 | 无 | A 档：引用扫描为零 + 构建通过 | ⬜ |
-| 8.11.1 | pool-system 数据层（基础四池 + workspaces 仅数据层） | dsh credentials/settings | 无 | A 档：池数据读写/持久化 | ⬜ |
-| 8.11.2 | 池卡容器 | dsh ui-settings | 无 | B+C：保留性考题 | ⬜ |
-| 8.11.3 | 七 tab 路由同一窗口 | dsh ui-settings | 无 | B+C：七 tab 实拍 | ⬜ |
+| 8.11.1 | pool-system 数据层（基础四池 + workspaces 仅数据层） | dsh credentials/settings | 无 | A 档：池数据读写/持久化 | ✅ 被 A2a 吸收（池数据层+激活总账+四池，见 §0.7 A2a 与 nz/docs/config-pool-a2a-design.md；workspaces 仅数据层概念仍留 9.0） |
+| 8.11.2 | 池卡容器 | dsh ui-settings | 无 | B+C：保留性考题 | ✅ 被 A2a 吸收（池框架=左滑全屏页+标签行+PoolPage 接口，形态按 §1.1 拍板） |
+| 8.11.3 | 七 tab 路由同一窗口 | dsh ui-settings | 无 | B+C：七 tab 实拍 | ✅ 被 A2a 吸收（「七 tab」拍板改「首批四池+池类可追加」，标签行=路由同一页） |
 | 8.11.4 | 卡片堆消解 + 最小全屏布局 + 闭环 | dsh ui-layout/ui-slots | 无 | A+B+C：堆卡全部有归宿 | ⬜ |
 | 8.12.1 | session-store 换心 | dsh session-persistence/projection | 共享 JSONL schema | A 档：旧会话 hash 对账迁移 | ⬜ |
 | 8.12.2 | tool-host + ledger-service + kfm-plugtest 转正 | dsh core/tools | hash 链 sha2+serde 薄自研 | A+B：工具调用对照、账只加不改、plugtest 可调用 | ⬜ |

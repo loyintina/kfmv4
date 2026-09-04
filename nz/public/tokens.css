@@ -284,14 +284,19 @@
 /* 层级规则（仲裁⑩用户修正稿，P10）：层级定死 终端/tmux < AI 页(z42) <
  * 池页(z44) < 输入栏+光球（恒顶）。池页开（data-kfm-pool-open）时：
  * tmux 控件 display:none（AI 页开时同款不渲染档）；输入栏+光球 inline
- * z43 压不过池页 44 → !important 升 45 档保「恒顶」与可点（AI 光球=
- * AI 面板开关语义不变，池页从标题栏入口/手势开时球都够得着） */
+ * z43 压不过池页 44 → !important 升 45 档保「恒顶」与可点。
+ * 仲裁⑩ orb 提顶档（A2a 阶段三）：光球把 AI 页提到池页之上时（AI 页开+
+ * 池页开+提顶账，属性由 ai-chat 挂），池页降 41 让位不关——层级仍严格
+ * 池页41 < AI 页42 < 球45 恒顶；orb 再点=关 AI 页，属性摘除池页复现 44 */
 :root[data-kfm-pool-open] [data-tmux-tabs-root] {
   display: none;
 }
 :root[data-kfm-pool-open] [data-kfm-aichat-orb],
 :root[data-kfm-pool-open] [data-kfm-aichat-bar] {
   z-index: 45 !important;
+}
+:root[data-kfm-aichat-open][data-kfm-aichat-raised] [data-kfm-pool] {
+  z-index: 41 !important;
 }
 
 /* 未来主题切换示例（现在不启用）：

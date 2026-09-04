@@ -4,10 +4,14 @@
  * 契约 §7 机检锚点）。
  *
  * 三机八态十一转换（词汇表唯一真源，清单外状态名禁止——P9）：
- *   页面机 TERMINAL ↔ AI_PAGE（A1/A2 点 orb——返回按钮已删，orb 即唯一
- *     开关；拍板⑪：TERMINAL 态 composer 发送等效 A1 自动开页，滑入动画
- *     照播，反向不成立；切走 run 不死——server 缓冲续命，切回 attach
- *     from cursor 补流，tmux-tabs 同哲学）；
+ *   页面机 TERMINAL ↔ AI_PAGE（A1/A2 点 orb——A2a 仲裁⑩修订：orb 从「开关」
+ *     升级「AI 面板置顶/关闭切换器」，按**当前顶层**裁定：顶层=AI 页→点球=
+ *     关面板（滑出动画，底下池页开着则池页复现）；顶层≠AI 页（终端态或池页
+ *     盖着 AI）→点球=AI 页提到最上层出现，池页不关（提顶档 data-kfm-aichat-
+ *     raised：池页降 41 让 AI 页 42 盖回池页上，球 45 恒顶）；拍板⑪：
+ *     TERMINAL 态 composer 发送等效 A1 自动开页，滑入动画照播，反向不成立；
+ *     切走 run 不死——server 缓冲续命，切回 attach from cursor 补流，
+ *     tmux-tabs 同哲学）；
  *   运行机 IDLE → WAITING → STREAMING → IDLE（chat-link 脑驱动，A3-A9）；
  *   菜单机 CLOSED ↔ MODEL_OPEN ↔ CONFIG_OPEN（picker 数据源 /ai/providers；
  *     拍板⑫两级路由——一级 provider 列表→点 provider 下钻二级 model 列表
@@ -110,9 +114,8 @@ export function createAiChatPlugin(): UiPlugin {
       function AiChatApp(): React.ReactElement {
         const [page, setPage] = useState<PageState>('TERMINAL');
         const [menu, setMenu] = useState<MenuState>('CLOSED');
-        // 拍板⑯：「角色/会话」占位骨架（null=不出占位行；选定入口后常驻，
-        // 占位行自身无关闭钮——功能未接入前的空态占位）
-        const [configPane, setConfigPane] = useState<'role' | 'session' | null>(null);
+        // 拍板⑯（A2a 阶段三接真）：「角色/会话」入口=C12 路由真发——占位
+        // 骨架随接真退役（config-pool-a2a-design §八⑨）
         const [closing, setClosing] = useState(false);
         const [composerH, setComposerH] = useState(0);
         const [kbRise, setKbRise] = useState(0);
@@ -120,6 +123,32 @@ export function createAiChatPlugin(): UiPlugin {
         const listWrapRef = useRef<HTMLDivElement>(null);
         const barRef = useRef<HTMLDivElement>(null);
         const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+        // 仲裁⑩（A2a 阶段三）：AI 页与池页同开时的**置顶账**——orb 把 AI 页
+        // 提到池页之上（raised=true；tokens.css 据此把池页降 41 档，AI 页 42
+        // 盖回池页上，球/输入栏 45 恒顶）。池页（重）开（C12 标题栏入口/事件
+        // 直达；C1 左滑被 AI_PAGE 手势门禁死不会发生）→ AI 页回到池页之下。
+        // 池页开闭经 config-pool 的层级闸属性 data-kfm-pool-open（跨插件 DOM
+        // 通道，与 tokens.css/手势门同源）——false→true 即清提顶账。
+        const aiRaisedRef = useRef(false);
+        useEffect(() => {
+          // C12 事件=入口意图（本插件标题栏按钮或外部路由同发）→ 池页召回
+          // AI 之上：清提顶账并强制重渲染（attr 由每渲染 effect 随 ref 摘除；
+          // 外部 dispatch 不经 React 事件，须手动触发渲染同步）
+          const onRoute = (): void => { aiRaisedRef.current = false; setTick((x) => x + 1); };
+          window.addEventListener('kfm-nz-pool-open', onRoute);
+          const mo = new MutationObserver(() => {
+            if (document.documentElement.hasAttribute('data-kfm-pool-open')) {
+              aiRaisedRef.current = false;
+              document.documentElement.removeAttribute('data-kfm-aichat-raised');
+            }
+          });
+          mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-kfm-pool-open'] });
+          return () => {
+            window.removeEventListener('kfm-nz-pool-open', onRoute);
+            mo.disconnect();
+            document.documentElement.removeAttribute('data-kfm-aichat-raised');
+          };
+        }, []);
 
         bump = () => { refreshRuntime(); setTick((x) => x + 1); };
         pageRef.current = page;
@@ -171,10 +200,17 @@ export function createAiChatPlugin(): UiPlugin {
         }, []);
 
         // 层级规则（拍板④+裁定⑤，P10）：AI 页打开时 tmux orb+标签栏
-        // display:none 隐藏（不渲染档，不是被盖）；机关即复显
+        // display:none 隐藏（不渲染档，不是被盖）；机关即复显。
+        // 仲裁⑩提顶档同步（每渲染收敛）：data-kfm-aichat-raised 只在
+        // 「AI 页开+池页开+AI 被提顶」三条件同真时在场——AI 收起/池页不在场
+        // 即摘（池页自然复现 z44 档）
         useEffect(() => {
-          document.documentElement.toggleAttribute('data-kfm-aichat-open', page === 'AI_PAGE');
-        }, [page]);
+          const doc = document.documentElement;
+          doc.toggleAttribute('data-kfm-aichat-open', page === 'AI_PAGE');
+          const raised = page === 'AI_PAGE' && aiRaisedRef.current && doc.hasAttribute('data-kfm-pool-open');
+          if (raised && !doc.hasAttribute('data-kfm-aichat-raised')) doc.setAttribute('data-kfm-aichat-raised', '');
+          if (!raised && doc.hasAttribute('data-kfm-aichat-raised')) doc.removeAttribute('data-kfm-aichat-raised');
+        });
 
         // 列表滚动纪律（term 8.8.3c 同哲学 + 拍板⑩）：
         //   真滚动件=[data-aichat-list]（wrap 是 flex 受限外壳不溢出，B12d
@@ -236,15 +272,20 @@ export function createAiChatPlugin(): UiPlugin {
           prevKbRiseRef.current = kbRise;
         }, [kbRise]);
 
-        // A1：TERMINAL → AI_PAGE；有活跃 run → attach from cursor 补流。
-        // 收起动画中途重开 = 作废摘除定时器、反播回滑入（动画归 CSS 类切换）
+        // A1（仲裁⑩修订）：AI 页提到最上层出现——终端态=开页；池页开着=
+        // 盖回池页上（raised 档，池页不关）。有活跃 run → attach from cursor
+        // 补流。收起动画中途重开 = 作废摘除定时器、反播回滑入（动画归 CSS
+        // 类切换）。已开页被池页盖住时再点球：page 不变（setPage 同值短路）
+        // 也要强制重渲染同步提顶档 → setTick。
         const openPage = (): void => {
           if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
           setClosing(false);
+          aiRaisedRef.current = document.documentElement.hasAttribute('data-kfm-pool-open');
           pageRef.current = 'AI_PAGE';
           setPage('AI_PAGE');
           link.resumeStream();
           refreshRuntime();
+          setTick((x) => x + 1);
         };
         // A2：AI_PAGE → TERMINAL（点 orb，唯一开关）；run 不死（server 缓冲）。
         // 机先转、收起动画是呈现尾巴：translateY(0)→-100% 播完才摘 DOM（§3.0）
@@ -252,6 +293,7 @@ export function createAiChatPlugin(): UiPlugin {
           link.suspendStream();
           menuRef.current = 'CLOSED';
           setMenu('CLOSED');
+          aiRaisedRef.current = false; // 关 AI 即清提顶账（池页开着自然复现 z44 档）
           pageRef.current = 'TERMINAL';
           setPage('TERMINAL');
           setClosing(true);
@@ -301,11 +343,19 @@ export function createAiChatPlugin(): UiPlugin {
         // 常驻 orb（屏幕右中，2026-09-04 用户拍板自右上挪位——避开顶部
         // tmux 标签排伸出区）：AI 页唯一开关 + 运行指示灯；z43 恒在 AI 页
         // （z42）之上——否则页盖住球关不掉（P10 硬约束）
+        // 仲裁⑩（A2a 阶段三）：球=AI 面板「置顶/关闭」切换器，按**当前顶层**
+        // 裁定——顶层=AI 页（终端态开页，或池页上已提顶）→关（滑出动画）；
+        // 顶层≠AI 页（终端态，或池页开着盖住 AI）→AI 页提到最上层（池页不关）
         const lit = link.state.phase !== 'IDLE';
         const orb = createElement('div', {
           'data-kfm-aichat-orb': '1',
           'data-aichat-lit': lit ? '1' : '0',
-          onClick: (e: ReactMouseEvent) => { e.stopPropagation(); if (pageRef.current === 'AI_PAGE') closePage(); else openPage(); },
+          onClick: (e: ReactMouseEvent) => {
+            e.stopPropagation();
+            const aiTop = pageRef.current === 'AI_PAGE'
+              && !(document.documentElement.hasAttribute('data-kfm-pool-open') && !aiRaisedRef.current);
+            if (aiTop) closePage(); else openPage();
+          },
           onPointerDown: (e: ReactMouseEvent) => { e.stopPropagation(); },
           style: {
             position: 'fixed', top: '50%', right: '12px', transform: 'translateY(-50%)', zIndex: 43,
@@ -409,7 +459,18 @@ export function createAiChatPlugin(): UiPlugin {
                   key: k,
                   'data-aichat-config-entry': k,
                   type: 'button',
-                  onClick: () => { setConfigPane(k); onMenu('CLOSED'); },
+                  onClick: () => {
+                    onMenu('CLOSED');
+                    // 拍板⑯接真（A2a 阶段三，占位退役 §八⑨）：入口=C12 路由
+                    // 真发——config-pool 监听 kfm-nz-pool-open：角色→prompt 池、
+                    // 会话→session 池；AI 页不收起池页盖其上（C12 语义=入口把
+                    // 池页召到 AI 之上：若当前 AI 提顶盖着池页，先清提顶账再
+                    // 发，池页即回 z44 档）。
+                    aiRaisedRef.current = false;
+                    window.dispatchEvent(new CustomEvent('kfm-nz-pool-open', {
+                      detail: { pool: k === 'role' ? 'prompt' : 'session' },
+                    }));
+                  },
                   style: {
                     display: 'flex', alignItems: 'center', width: '100%', padding: '6px 8px',
                     border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
@@ -419,15 +480,6 @@ export function createAiChatPlugin(): UiPlugin {
               )
             : null,
           ),
-          configPane !== null
-            ? createElement('div', {
-                'data-aichat-config-placeholder': '1',
-                style: {
-                  flexShrink: 0, padding: '4px 12px', fontSize: '11.5px', color: 'var(--kfm-ink-3)',
-                  borderBottom: '1px solid var(--kfm-aichat-line)',
-                },
-              }, configPane === 'role' ? '角色配置·待接入' : '会话配置·待接入')
-            : null,
           createElement('div', {
             ref: listWrapRef,
             style: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' },
@@ -450,6 +502,7 @@ export function createAiChatPlugin(): UiPlugin {
           link.close();
           root.unmount();
           document.documentElement.removeAttribute('data-kfm-aichat-open');
+          document.documentElement.removeAttribute('data-kfm-aichat-raised');
           delete (window as unknown as Record<string, unknown>).__kfmNzAiChat;
         },
       };
