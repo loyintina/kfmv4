@@ -117,6 +117,15 @@
 >    菜单机新增词汇 CLOSED↔CONFIG_OPEN（P9/§3.3 同步）；点外关闭+
 >    动作同发=⑬同款 passive 捕获监听泛化（豁免配置菜单 DOM 与下拉
 >    钮自身）✅。
+> 仲裁记录追加（2026-09-04 同日十一拍，用户拍板，已签收）：
+> ⑰ **AI 页标题栏不避挖孔屏/刘海**：AI 页（[data-kfm-aichat]）顶部
+>    不吃 --sat 垫（旧 paddingTop var(--sat) 删除——真机 sat≈37px 把
+>    标题栏垫成 60px+ 用户实测不对）；sat 链只服务终端容器
+>    edge-to-edge 拍板链（term/tmux-tabs 的 sat 消费一个字不动）；
+>    orb 右中垂直居中不吃 sat 不动。考卷地形：headless env(safe-
+>    area-inset-top)=0 复现不了刘海，注入 CSS --sat:33px 模拟，断言
+>    栏顶=0 不随 sat 下移 ✅（真机 CDP 8026 互证：sat=37px 下
+>    hdrTop=0 hdrH=32.9）。
 
 ## 〇、范围与边界（什么做、什么不做）
 
@@ -363,7 +372,9 @@ AI 页拆出，钉在中央终端页面**最底**全局常驻（TERMINAL/AI_PAGE
 （`[data-aichat-header]`，padding 3+3+26 钮高≈32px，内容区顶部=栏底
 避让同步）；标题字改下拉钮（占位名「默认会话 ▾」），点开=「角色」
 「会话」两占位入口——A1 阶段只出空态占位一行文案（词汇+交互立起来，
-内容后续接配置池）。
+内容后续接配置池）。**标题栏不避挖孔屏**（拍板⑰）：AI 页顶不吃
+--sat 垫，栏顶=视口顶恒一行高；sat 链只服务终端容器（edge-to-edge
+拍板链），orb 右中垂直居中不吃 sat。
 
 **入场动画**（拍板③）：AI 页整体自顶部向下平移入场
 （translateY(-100%)→0），收起反向（translateY(0)→-100%，播完才摘 DOM）；
@@ -557,6 +568,7 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 | B15 | picker 点外即关+动作同发（拍板⑬，tmux-tabs T15 同款） | 菜单开→点终端区→CLOSED 且终端诱饵同指聚焦（双断言）；菜单开→点 composer→CLOSED 且焦点同指进输入框（前置断言防假绿）；菜单内点 provider 下钻不收（回归）；点外即关前后截图存证 |
 | B16 | composer 回车=换行不发送（拍板⑭） | 按 Enter → draft 含 \n 且 run 未起（messages 不变）；点发送钮 → run 起消息入格（发送唯一路径）；多行内容气泡换行保真（pre-wrap textContent 含 \n）；输入栏两行截图存证 |
 | B17 | 标题栏一行+标题即下拉（拍板⑯，A11） | 标题栏高≤34px 不塌没+内容区顶=栏底（避让同步）+下拉钮在场；点下拉钮→CONFIG_OPEN+「角色/会话」两入口在场；点入口→占位骨架一行「角色/会话配置·待接入」+CLOSED；菜单开点 composer→CLOSED 且焦点同指进输入框（⑬同款动作同发）；下拉截图存证 |
+| B18 | 标题栏不避挖孔屏（拍板⑰） | 注入 --sat=33px 模拟刘海地形（headless env=0 复现不了）→ AI 页顶=视口顶+标题栏顶=0 不随 sat 下移（一行期值恒≈33px）；对照钉：终端容器外壳 padding-top 仍随 sat 生效（edge-to-edge 链不回退）；sat 地形截图存证 |
 
 ### C 档 · 真机
 

@@ -334,7 +334,9 @@ export function createAiChatPlugin(): UiPlugin {
         // 2026-09-04：面板落到输入栏上面——内容在面板内滚动时底部文字不再
         // 可能被钉底 composer 盖住，几何上不存在被盖可能；拍板⑧语义保持：
         // keybar 钉在 composer 正上方，面板落到 composer 顶正好仍盖着它；
-        // 键盘弹起时面板底随 composer 一起上浮=键盘顶上的 composer 顶）
+        // 键盘弹起时面板底随 composer 一起上浮=键盘顶上的 composer 顶）。
+        // 拍板⑰：页顶**不吃 --sat 垫**（不避挖孔屏/刘海——sat 链只服务
+        // 终端容器 edge-to-edge 拍板链，AI 页标题栏顶=视口顶恒一行高）
         return createElement('div', null,
           orb,
           bar,
@@ -348,7 +350,6 @@ export function createAiChatPlugin(): UiPlugin {
               background: 'var(--kfm-page)', color: 'var(--kfm-ink)',
               display: 'flex', flexDirection: 'column',
               fontFamily: 'var(--kfm-font-sans)',
-              paddingTop: 'var(--sat, 0px)',
             },
           },
           // 拍板⑯（2026-09-04）：①标题栏压成一行（padding 3+3+26 钮高≈32px，

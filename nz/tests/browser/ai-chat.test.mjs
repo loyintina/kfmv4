@@ -39,9 +39,13 @@
  *       词汇）：一行高期值+内容区顶=栏底；下拉开合+角色/会话两入口；
  *       点入口出占位骨架一行「角色/会话配置·待接入」（不许发明完整
  *       功能）；点外关闭+动作同发（⑬同款）
+ *   B18 拍板⑰ AI 页标题栏不避挖孔屏：注入 --sat=33px 模拟刘海地形
+ *       （headless env(safe-area-inset-top)=0 复现不了）→ AI 页顶=
+ *       视口顶+标题栏高不随 sat 增长（一行期值恒≈33px）；对照钉：终端
+ *       容器外壳 padding-top 仍随 sat 生效（edge-to-edge 链不动）
  *   补流钉  A1 转换：run 进行中切出 AI 页再切回 → attach from=N 补流不丢帧
  *   P7  皮内零硬编码色值（源码 grep；变异抽检的靶子）
- *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后 / 终端态发送自动开页 / picker 一级 / picker 二级默认行 / picker 点外即关前后 / 输入栏两行文字 / 一行标题栏下拉（角色/会话两入口）
+ *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后 / 终端态发送自动开页 / picker 一级 / picker 二级默认行 / picker 点外即关前后 / 输入栏两行文字 / 一行标题栏下拉（角色/会话两入口）/ sat=33px 下标题栏仍一行页顶贴视口顶
  *
  * 慢流杠杆（B3/B5/补流需要确定性时间窗）：page.evaluate 设
  * window.__kfmNzAiChatTestLever = { echoPaceMs } → client 在 echo start 载荷
@@ -549,6 +553,46 @@ const fCfgIn = await page.evaluate(() => document.activeElement?.getAttribute('d
 check('B17d 拍板⑯：配置菜单开点外（composer）→ CLOSED 且焦点同指进输入框（⑬同款动作同发）',
       mCfgPre === 'CONFIG_OPEN' && mCfgPost === 'CLOSED' && fCfgIn,
       `open=${mCfgPre} after=${mCfgPost} inputFocus=${fCfgIn}`);
+
+// ========== B18：拍板⑰ AI 页标题栏不避挖孔屏（sat 链只服务终端） ==========
+// 语义：AI 页（[data-kfm-aichat]）顶部不吃 --sat 垫——真机挖孔屏 sat≈30px
+// 会把标题栏垫到 60px+（用户实测不对）。headless 的 env(safe-area-inset-
+// top)=0 复现不了刘海地形，考卷注入 CSS 覆盖 --sat:33px 模拟，断言 AI 页
+// 标题栏高不随 sat 增长（一行期值恒≈33px）、页顶=视口顶；对照钉：终端
+// 容器外壳 padding-top 仍随 sat 生效（edge-to-edge 链一个字不动）。
+// 此时页开着（B17 序列后 AI_PAGE），标题栏在场。
+const geo18base = await page.evaluate(() => {
+  const pg = document.querySelector('[data-kfm-aichat]');
+  const hdr = document.querySelector('[data-aichat-header]');
+  if (!pg || !hdr) return null;
+  return { pageTop: pg.getBoundingClientRect().top, hdrTop: hdr.getBoundingClientRect().top, hdrH: hdr.getBoundingClientRect().height };
+});
+await page.evaluate(() => document.documentElement.style.setProperty('--sat', '33px'));
+await page.waitForTimeout(200); // 等一帧重排
+const geo18 = await page.evaluate(() => {
+  const pg = document.querySelector('[data-kfm-aichat]');
+  const hdr = document.querySelector('[data-aichat-header]');
+  const termShell = window.__kfmNzTermScroll?.().getContainer()?.parentElement ?? null;
+  if (!pg || !hdr || !termShell) return null;
+  return {
+    pageTop: pg.getBoundingClientRect().top,
+    hdrTop: hdr.getBoundingClientRect().top,
+    hdrH: hdr.getBoundingClientRect().height,
+    sat: getComputedStyle(document.documentElement).getPropertyValue('--sat').trim(),
+    termPadTop: getComputedStyle(termShell).paddingTop,
+  };
+});
+check('B18a 拍板⑰：注入 --sat=33px 模拟刘海 → AI 页顶=视口顶（top=0）+ 标题栏顶不随 sat 下移（栏顶=0，一行期值恒≈33px）',
+      !!geo18base && !!geo18 && geo18.sat === '33px' && geo18.pageTop === 0 && geo18.hdrTop === 0
+        && geo18.hdrH <= 34 && geo18.hdrH > 20 && Math.abs(geo18.hdrH - geo18base.hdrH) <= 1,
+      geo18 ? `sat=${geo18.sat} pageTop=${geo18.pageTop} hdrTop=${geo18.hdrTop} hdrH=${geo18.hdrH.toFixed(1)} baseH=${geo18base?.hdrH?.toFixed(1)}` : '量测缺失');
+check('B18b 对照：终端容器外壳 padding-top 仍随 sat 生效（edge-to-edge 链不回退，一个字不动）',
+      !!geo18 && geo18.termPadTop === '33px', `termPadTop=${geo18?.termPadTop}`);
+const shotSat = join(SHOT_DIR, 'ai-chat-header-no-sat.png');
+await page.screenshot({ path: shotSat });
+console.log('shot:', shotSat);
+await page.evaluate(() => document.documentElement.style.removeProperty('--sat'));
+await page.waitForTimeout(100);
 
 // ========== B13：拍板⑪ 发送后自动开页（TERMINAL 态发送等效点 orb） ==========
 // 语义：终端页面态在全局输入栏发送 = 主动说话意图 → 自动开页（滑入动画
