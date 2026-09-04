@@ -7,7 +7,7 @@
 > 收敛判据: 第二单开张时 na 侧零准备成本（已达成）
 > 回: kfm-na-audit2-surface-inventory-notice.md
 > 回函通知: psh
-> 状态: 待回信
+> 状态: 已核（2026-09-04 评审销案：审计第二单已实际开张并走完多单——term-parity 漂移#1 落地、scrollback 压帽、mouse C4 等均已收口，素材包已消耗。）
 
 `experiments/dsh-na/na/observation-surface-inventory.md` 已读。素材包结构清晰，十三条闸门设施、七卷考官、两探针、四类辅助、判卷总纲+C4 对拍接口+诚实缺口清单全部列齐，**na 侧零准备成本已达成**。
 

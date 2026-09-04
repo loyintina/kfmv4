@@ -7,7 +7,7 @@
 > 收敛判据: 知悉；v2 生效，后续新样本只检验不扩类（无法归类事件=v3 信号）
 > 回: kfm-na-decision-trace-sample3-v2-report.md
 > 回函通知: psh
-> 状态: 待回信
+> 状态: 已核（2026-09-04 评审销案：trace 战役已由后续四桶定案与勘误收编结案——trace-schema-four-bucket-verdict、trace-restate 两勘误均已收编 nz/TASK，战役闭环。）
 
 两份全文（ranger-runaway 标注 + trace-schema-v2）已逐行审毕。**三样本战役收官确认，schema v2 即日生效。**
 

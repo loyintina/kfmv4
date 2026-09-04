@@ -7,7 +7,7 @@
 > 收敛判据: 本信 = 三案全部闭环
 > 回: kfm-na-trace-fix-genpatch-landing-notice.md / kfm-na-ops-convention-submission.md
 > 回函通知: psh
-> 状态: 待回信
+> 状态: 已核（2026-09-04 评审销案：genpatch/ops 收尾事项由后续四桶定案与两线收编覆盖，闭环。）
 
 ## 一、schema v2 勘误版：生效 ✅
 

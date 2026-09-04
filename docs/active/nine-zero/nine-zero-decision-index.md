@@ -76,6 +76,8 @@
 | agent 信箱 D4 代际戳落地（2026-08-18 补登，MECH-FLOW-14 机检抓漏） | 代际戳防过期回执覆盖新状态：载体骑状态字段 + f3 签名行扫描可行 + 软告警建议 + LEGACY 豁免接受；v2 序位对账（暂存区对账+序位倒退拦截）支持立项但不并 D4；收敛判据达成待用户终审 | `kfmv4-agent-mailbox-d4-design-submission.md` | ✅ 茉莉已回（待用户终审） | experiments/agent-mailbox/design/d4-epoch-stamp.md（研究线 index 已登记） |
 | plugin-contract §7 行为层附件条款（2026-09-01 评审裁决通过） | 五要素固入宪法：状态枚举词汇真源（清单外=告警）/手势与环境事件同列（混成系统）/禁止条款/可观测性约束（专症不常驻）/考卷映射每转换一颗钉+时序预算；四步纪律=清单用户签收→考题先行→实现→变异抽检；结晶制防全组合枚举。裁决附三条完善：禁令各一钉/琐碎组件豁免线（≤2状态×≤4转换免签收事后报备）/清单路径进 §2 契约签名 | `kfmv4-review-plugin-contract-s7-verdict.md` | ✅ 已裁决（通过即生效） | nz/docs/plugin-contract.md §7；试点 tmux-tabs v2 |
 | agent-inbox 文件名状态编码提案裁决（2026-08-31 评审） | 核心洞察（`ls` 态势感知）采纳为需求；文件名状态编码/评审分配编号/编号引用三项驳回——双状态源必漂移 + ASCII 纪律冲突（MECH-FLOW-12）+ git rename 噪音与正文引用断链；「ls 可感知」已有等价物且更强（README 投影 + MECH-FLOW-16 停滞机检）；替代方案 = gen-agent-inbox 态势摘要节，触发制立项不预建；原信四处 schema 违规（流型/致线名/状态词/文件名末词）已顺手修正并重命名 -submission | `kfmv4-review-inbox-filename-proposal-verdict.md` | ✅ 已裁决（提案方如有异议走新信征集流） | docs/ledger/agent-inbox/kfmv4-agent-inbox-filename-state-encoding-submission.md |
+| 跨线运维公约三条（重IO窗口制/gen投影回写归属/push遇阻分流） | 两线均已收编执行；后经资源冲突三连实录升级——白天重负载只准手机跑、服务器仅 01:00-07:00 窗口、SIGSTOP 必须闭环 kill、杀链先杀父、后台任务默认 timeout 闸门 | `kfmv4-review-ops-convention-verdict.md` + kfmv4-perf-resource-conflict-notice.md | ✅ 已落地执行中 | na/kfmv4 两线 TASK 运维公约节 |
+| nz 观测手段统一登记（史官制度·手段总表） | nz TASK §2.7 立总表：11 手段×入口/边界/前后台限制 + CDP 四纪律 + 判卷层纪律；新规=新手段必须登记后才能用；后续焦点简报/softShot 等均照规登记 | `kfmv4-9.0-nz-observation-registry-report.md` | ✅ 已核（2026-09-04 销案补登） | nz/TASK.md §2.7 |
 
 ---
 

@@ -7,7 +7,7 @@
 > 收敛判据: 两处单行修复到账+评审核验两行 = schema v2 勘误版正式生效
 > 回: kfm-na-decision-trace-sample3-revision3-notice.md
 > 回函通知: psh
-> 状态: 待回信
+> 状态: 已核（2026-09-04 评审销案：同上，trace 战役闭环。）
 
 ## 一、复核结果：硬项全过
 

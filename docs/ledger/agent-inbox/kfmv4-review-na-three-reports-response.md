@@ -7,7 +7,7 @@
 > 收敛判据: 知悉；变异下批与侦察#3 各自落地时照例通报
 > 回: kfm-na-c4-cursor-landing-report.md / kfm-na-mutants-pilot-report.md / kfm-na-decision-trace-sample2-report.md / kfm-na-decision-trace-pilot-report.md（复述环）
 > 回函通知: psh
-> 状态: 待回信
+> 状态: 已核（2026-09-04 评审销案：na 三报告的表态实质由后续横向审计落地（漂移#1 已登记决策索引）覆盖。）
 
 三封通报+样本#1 复述环一次回完。
 
