@@ -18,8 +18,9 @@
  * 8.8.3b 按键栏：仿 Termux 两排七列（term/keybar.ts + keymap.ts 纯逻辑），
  * 修饰键一次性粘滞，方向键/Home/End 按 core.app_cursor() 实时翻
  * SS3/CSI；栏随软键盘上浮，终端容器底部常驻预留 KEYBAR_H（+
- * --kfm-aichat-composer-h：ai-chat 全局 composer 钉 keybar 正上方，
- * 2026-09-04 真机拍板①，不盖 shell 提示符）。
+ * --kfm-aichat-composer-h：ai-chat 全局 composer，2026-09-04 真机拍板①
+ * +同日二拍换序——composer 钉最底贴软键盘/视口底，keybar 钉 composer
+ * 正上方，预留总量不变、不盖 shell 提示符）。
  *
  * v1 留白：IME 组合键之外的全集映射（F1-F12 等）留 input 小插件。
  */
@@ -403,11 +404,13 @@ export function applyTermBundle(ctx: Context): void {
       //             + flex 列底锚——壳画布 margin-top:auto：内容不满屏时推底=
       //             空屏提示符在底行；超屏时 margin 归零正常滚动。flex 容器内
       //             画布必须 flex:none 防 shrink 压缩）
-      //   barStrip  按键栏 bottom:0 height:KEYBAR_H（垫底）
-      // 底部预留 = KEYBAR_H + --kfm-aichat-composer-h（2026-09-04 真机拍板①：
-      // ai-chat composer 全局化钉 keybar 正上方，终端内容区同步预留其高度，
-      // composer 不盖 shell 提示符——§3.0/P10；var 由 ai-chat 插件 RO 实测
-      // 单源下发，插件未挂 = tokens.css 静态默认/0 兜底）
+      //   barStrip  按键栏 bottom:composer-h height:KEYBAR_H（钉 composer 正
+      //             上方；composer 条由 ai-chat 插件钉最底贴软键盘/视口底）
+      // 底部预留 = KEYBAR_H + --kfm-aichat-composer-h（2026-09-04 真机拍板①
+      // +同日二拍换序：composer 钉最底、keybar 钉 composer 正上方——预留总量
+      // 不变、内部次序颠倒，终端内容区仍避开两条不盖 shell 提示符——§3.0/P10；
+      // var 由 ai-chat 插件 RO 实测单源下发，插件未挂 = tokens.css 静态默认
+      // /0 兜底）
       const scrollEl = document.createElement('div');
       scrollEl.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:calc(${KEYBAR_H}px + var(--kfm-aichat-composer-h, 0px));`
         + 'overflow:auto;display:flex;flex-direction:column;';
@@ -642,15 +645,17 @@ export function applyTermBundle(ctx: Context): void {
       };
 
       // 8.8.3b 按键栏（仿 Termux，纪律见 keybar.ts 头注释）：容器流内
-      // 条带（垫底拇指区，bottom:0）——8.x aux-bar 流内存活模式，键盘弹
-      // 起随容器钉 vv 同步上浮，条带自身不再追 vv（判尺/过渡帧/双基准
-      // 打架那套随布局重构退役）。生灭随容器（owner 死容器摘=子树同摘）。
+      // 条带（bottom:composer-h=钉全局 composer 正上方——2026-09-04 同日二拍
+      // 换序：composer 钉最底贴软键盘/视口底，键栏随之上挪一位；旧=bottom:0
+      // 垫底）——8.x aux-bar 流内存活模式，键盘弹起随容器钉 vv 同步上浮，
+      // 条带自身不再追 vv（判尺/过渡帧/双基准打架那套随布局重构退役）。
+      // 生灭随容器（owner 死容器摘=子树同摘）。
       // pointer-events:auto 防层根 none 拦截。
       // 2026-09-03 迁皮（keybar-v3-state-machine.md 装配方案 A）：mountKeybar
       // 现由 term/KeybarApp.tsx 提供（reactMount 桥接），KeybarHandle 形状
       // 不变——下方 takeMods/syncMods 调用点零改动。
       const barStripEl = document.createElement('div');
-      barStripEl.style.cssText = `position:absolute;left:0;right:0;bottom:0;height:${KEYBAR_H}px;pointer-events:auto;`;
+      barStripEl.style.cssText = `position:absolute;left:0;right:0;bottom:var(--kfm-aichat-composer-h, 0px);height:${KEYBAR_H}px;pointer-events:auto;`;
       container.el.appendChild(barStripEl);
       const keybar = mountKeybar(barStripEl, {
         send: (bytes) => { if (card.sessionId) { card.inputToBottom(); bridge.input(card.sessionId, bytes); } },
@@ -1021,10 +1026,11 @@ export function applyTermBundle(ctx: Context): void {
 
       // ALT_SCREEN 翻转：TUI（htop/ranger/vim）与行模式的布局差异只剩
       // overflow（TUI 禁滚硬裁剪、行模式可回翻）——按键栏两态都在流内
-      // 垫底可见、scrollEl bottom 恒 KEYBAR_H（2026-08-26 用户拍板 TUI
-      // 底部要求：TUI 窗口=视口−键栏高，键栏按钮恒在视口底端，
-      // tui-keybar-bottom-review；推翻 2026-08-24 两痛点②的藏键栏占满
-      // 方案——那套让 TUI 里发不了 Ctrl/方向键）。行列重测走
+      // 钉 composer 正上方可见、scrollEl bottom 恒 KEYBAR_H+composer-h
+      // （2026-08-26 用户拍板 TUI 底部要求：TUI 窗口=视口−键栏高−composer
+      // 高；2026-09-04 同日二拍换序：composer 钉最底贴视口底/键盘顶，键栏
+      // 钉其正上方，tui-keybar-bottom-review；推翻 2026-08-24 两痛点②的
+      // 藏键栏占满方案——那套让 TUI 里发不了 Ctrl/方向键）。行列重测走
       // scheduleResize 三方同步（TUI 会适配新尺寸，真终端窗口变更同款
       // 语义）。帧后发现翻转才切，不翻不动。
       let altMode = false;

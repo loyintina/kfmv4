@@ -6,8 +6,9 @@
  * （手机窄屏直接竖排：textarea 一行 + 控制行）。model picker 保留极简版
  * （§八③：数据源 GET /ai/providers，只出 id/name/models，含 echo 条目）。
  *
- * 2026-09-04 拍板① composer 全局化：本件不再住 AI 页内，由 index.tsx 装配
- * 进全局钉底条（[data-kfm-aichat-bar]，keybar 正上方）——两态常驻可发送。
+ * 2026-09-04 拍板① composer 全局化 + 同日二拍换序：本件不再住 AI 页内，
+ * 由 index.tsx 装配进全局钉底条（[data-kfm-aichat-bar]，钉**最底**贴软键盘
+ * /视口底，keybar 钉其正上方）——两态常驻可发送。
  *
  * 菜单机词汇（§3.3，P9 唯一真源）：CLOSED ↔ MODEL_OPEN。
  * P2：WAITING/STREAMING 中发送钮恒为停止钮（A8 入口）。

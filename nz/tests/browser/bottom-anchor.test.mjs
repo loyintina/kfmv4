@@ -16,11 +16,14 @@
  *
  * 跑法：起 8023 dev + node tests/browser/bottom-anchor.test.mjs（playwright + chromium）。
  *
- * 底部预留契约（2026-09-04 ai-chat composer 全局化拍板①改版）：scrollEl 底
- * = vv底 − KEYBAR_H(84) − --kfm-aichat-composer-h（全局 composer 钉 keybar
- * 正上方，终端内容区预留其高度）。④b/④c/④d/④e/④f 几何期值随之从
- * 「vh−84」改为「vh−84−composerH」，composerH 从 live token 读不抄魔数；
- * 各钉的核心断言（锚 vv/帧级自愈/空闲巡查/rows 跟随/禁滚不跑飞）不变。
+ * 底部预留契约（2026-09-04 ai-chat composer 全局化拍板① + 同日二拍换序）：
+ * scrollEl 底 = vv底 − KEYBAR_H(84) − --kfm-aichat-composer-h。换序：旧=
+ * keybar 垫底、composer 钉 keybar 正上方；新=**composer 钉最底**（贴软键盘
+ * /视口底，输入栏与键盘直接接触）、**keybar 钉 composer 正上方**——预留
+ * 总量不变，内部次序颠倒（④f 键栏底边期值随之从「视口底」改为
+ * 「视口底−composerH」，并补 composer 底=视口底断言）。④b/④c/④d/④e
+ * 几何期值沿用「vh−84−composerH」，composerH 从 live token 读不抄魔数；
+ * 各钉核心断言（锚 vv/帧级自愈/空闲巡查/rows 跟随/禁滚不跑飞）不变。
  */
 import { launchBrowser } from './launch.mjs';
 
@@ -211,22 +214,29 @@ await page.waitForTimeout(1500);
   await type('htop\r');
   await page.waitForTimeout(2500); // ALT 进入 + TUI 首帧稳定
   const altBase = await probe();
-  // ④f TUI 底部钉（2026-08-26 用户拍板 tui-keybar-bottom-review）：TUI 态
+  // ④f TUI 底部钉（2026-08-26 用户拍板 tui-keybar-bottom-review；2026-09-04
+  // 同日二拍换序：composer 钉最底贴视口底/软键盘、keybar 钉 composer 正上方
+  // ——键栏底边期值从「视口底」改为「视口底−composerH」，契约变迁）：TUI 态
   // 按键栏不藏——scrollClientH==vh−KEYBAR_H−composerH（不能=vh）、keybar
-  // display !=none 且矩形底=视口底。vv=620（headless vv==innerHeight）。
+  // display !=none 且矩形底=视口底−composerH（=composer 顶，接触无缝）、
+  // composer 底=视口底。vv=620（headless vv==innerHeight）。
   {
     const kb = await page.evaluate(() => {
       const e = document.querySelector('.kfm-term-keybar');
       if (!e) return null;
+      const bar = document.querySelector('[data-kfm-aichat-bar]');
       const r = e.getBoundingClientRect();
-      return { display: getComputedStyle(e).display, bottom: r.bottom, ih: window.innerHeight };
+      const br = bar?.getBoundingClientRect();
+      return { display: getComputedStyle(e).display, bottom: r.bottom, barBottom: br?.bottom ?? null, ih: window.innerHeight };
     });
+    const composerH = RESERVE - 84; // RESERVE=84+composerH（live token 单源）
     const ok = altBase.sc && kb
       && Math.abs(altBase.sc.clientHeight - (kb.ih - RESERVE)) <= 1  // scrollClientH==vh−预留(≠vh)
       && kb.display !== 'none'                                       // 键栏可见
-      && Math.abs(kb.bottom - kb.ih) <= 2;                           // 键栏矩形底=视口底
-    check('④f TUI态→键栏可见钉视口底+scrollClientH=vh−KEYBAR_H−composerH', ok === true,
-          `clientHeight=${altBase.sc?.clientHeight}（期望${kb ? kb.ih - RESERVE : '?'}） display=${kb?.display} kb.bottom=${kb?.bottom?.toFixed(1)} ih=${kb?.ih}`);
+      && Math.abs(kb.bottom - (kb.ih - composerH)) <= 2              // 键栏底=composer 顶（换序）
+      && kb.barBottom !== null && Math.abs(kb.barBottom - kb.ih) <= 2; // composer 底=视口底
+    check('④f TUI态→键栏钉composer正上方+composer贴视口底+scrollClientH=vh−KEYBAR_H−composerH', ok === true,
+          `clientHeight=${altBase.sc?.clientHeight}（期望${kb ? kb.ih - RESERVE : '?'}） display=${kb?.display} kb.bottom=${kb?.bottom?.toFixed(1)}（期望${kb ? kb.ih - composerH : '?'}） bar.bottom=${kb?.barBottom?.toFixed(1)} ih=${kb?.ih}`);
   }
   await page.setViewportSize({ width: 900, height: 400 });
   await page.waitForTimeout(1500); // 防抖150+空闲巡查500+RO 落地

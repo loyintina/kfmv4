@@ -16,6 +16,10 @@
  *     尺寸）、键序、字号逐格比对。字色=token 解析值断言（诚实注记：旧皮
  *     字面量 → --kfm-key-ink=--kfm-ink-2 档的收编漂移是清单 §五行 3 的
  *     意图内变更，不与基线字色做相等断言）。
+ *     **y 坐标契约变迁（2026-09-04 同日二拍换序）**：基线捕获于 keybar
+ *     垫底时代（bottom:0，y=536@vh620）；换序后 keybar 钉 composer 正上方
+ *     （bottom=composer-h），整体垂直上移 composerH——x/w/h/键序/字号
+ *     对基线恒等断言不变，y 断言=基线 y−composerH（live token 直读）。
  *     **降级声明**：像素级 diff 在 headless 太飘（--use-gl=disabled 软光栅
  *     +字体光栅差异，同码两跑都未必逐像素同），故降级为几何+computed-style
  *     断言；迁前/迁后 PNG 双存（baseline/after）供人审兜底。
@@ -130,16 +134,22 @@ const now = await page.evaluate(() => {
 });
 await page.locator('.kfm-term-keybar').screenshot({ path: join(HERE, '..', 'assets', 'keybar-after.png') });
 const near = (a, b) => Math.abs(a - b) <= 1; // 1px 容差（同 viewport 同链应全等）
-push('㉔ 栏几何一致（位置+尺寸 vs 基线）',
-  near(now.bar.x, baseline.bar.x) && near(now.bar.y, baseline.bar.y)
+// y 契约变迁（2026-09-04 同日二拍换序）：keybar 自垫底（bottom:0）上挪
+// composerH 钉 composer 正上方——y 期值=基线−composerH（live token 直读不抄
+// 魔数）；x/w/h/键序/字号对基线恒等断言不变
+const composerH = await page.evaluate(() =>
+  parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kfm-aichat-composer-h')) || 0);
+const nearY = (a, b) => Math.abs(a - (b - composerH)) <= 1;
+push('㉔ 栏几何一致（位置+尺寸 vs 基线；y=基线−composerH 换序契约）',
+  near(now.bar.x, baseline.bar.x) && nearY(now.bar.y, baseline.bar.y)
   && near(now.bar.w, baseline.bar.w) && near(now.bar.h, baseline.bar.h),
-  `baseline=${JSON.stringify(baseline.bar)} now=${JSON.stringify(now.bar)}`);
+  `baseline=${JSON.stringify(baseline.bar)} now=${JSON.stringify(now.bar)} composerH=${composerH}`);
 push('㉔ 14 键键序一致（KEYS 逐格对齐）',
   now.keys.length === 14 && now.keys.every((k, i) => k.label === baseline.keys[i].label),
   now.keys.map((k) => k.label).join(','));
 const geomBad = now.keys.findIndex((k, i) => {
   const b = baseline.keys[i];
-  return !(near(k.x, b.x) && near(k.y, b.y) && near(k.w, b.w) && near(k.h, b.h));
+  return !(near(k.x, b.x) && nearY(k.y, b.y) && near(k.w, b.w) && near(k.h, b.h));
 });
 push('㉔ 14 键几何一致（grid 7×2 位置尺寸逐格 vs 基线）', geomBad === -1,
   geomBad === -1 ? 'all within 1px' : `键${geomBad} ${now.keys[geomBad]?.label}: now=${JSON.stringify(now.keys[geomBad])} base=${JSON.stringify(baseline.keys[geomBad])}`);

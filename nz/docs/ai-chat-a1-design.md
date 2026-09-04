@@ -38,6 +38,15 @@
 >    不是被盖）；AI orb 始终可见可点为唯一开关 ✅；
 > ⑥（主会话裁定）composer 全局化后 chat-link 脑不动——事件流与消息核
 >    不变，只动皮和装配 ✅。
+> 仲裁记录追加（2026-09-04 同日二拍，用户真机拍板换序，已签收）：
+> ⑦ **composer/keybar 垂直次序互换**：旧=从底到顶 软键盘→keybar→composer→
+>    终端内容；新=从底到顶 软键盘→**composer→keybar**→终端内容。逻辑：
+>    点开软键盘时输入栏必须与软键盘直接接触。落地：composer 钉最底
+>    （bottom=键盘上浮量；无键盘贴视口底、键盘弹起贴键盘顶），keybar 钉
+>    composer 正上方（bottom=--kfm-aichat-composer-h），终端 scrollEl 底部
+>    预留总量不变（KEYBAR_H+composer-h，内部次序颠倒），TUI 底部数学不变
+>    （scrollClientH==vh−KEYBAR_H−composerH——composer 全局条 TUI/ALT 态
+>    同样常驻），AI 页内容区底=keybar 顶（keybar/composer 两不盖）✅。
 
 ## 〇、范围与边界（什么做、什么不做）
 
@@ -258,7 +267,7 @@ nz/tests/fixtures/ai-chat/   ← 从 kfm-na 借六份（原样复制，~28KB）�
 
 ## 三、UI 设计
 
-### 3.0 总体形态（2026-09-04 真机拍板改版）
+### 3.0 总体形态（2026-09-04 真机拍板改版 + 同日二拍换序⑦）
 
 常驻 orb（**屏幕右边缘垂直居中=右中**，2026-09-04 用户拍板自右上挪位——
 右上与顶部伸出的 tmux 标签排 max-content 宽度冲突；左上 tmux orb 不动）=
@@ -267,9 +276,11 @@ STREAMING 亮，静态换色零常动帧）；点按 → 全屏 AI 页（消息�
 页面切走 run 不死（server 缓冲），切回自动 attach
 补流——与 tmux-tabs 的「socket 断开会话不死」同哲学。
 
-**composer 全局化**（2026-09-04 真机拍板①）：composer 从 AI 页拆出，钉在
-中央终端页面底部**全局常驻**（TERMINAL/AI_PAGE 两态都在、都可发送，位置 =
-keybar 正上方、随软键盘上浮——visualViewport 跟踪，钉 vv 同哲学）。发送
+**composer 全局化**（2026-09-04 真机拍板① + 同日二拍换序⑦）：composer 从
+AI 页拆出，钉在中央终端页面**最底**全局常驻（TERMINAL/AI_PAGE 两态都在、
+都可发送；位置 = 贴软键盘/视口底、随软键盘上浮——visualViewport 跟踪，
+钉 vv 同哲学；**换序后 keybar 钉在 composer 正上方**——点开软键盘时输入栏
+必须与软键盘直接接触，旧序 keybar 垫底把输入栏和键盘隔开了）。发送
 永远去 AI；终端输入照旧走 IME 诱饵。焦点语义三立：点 composer=跟 AI 说话、
 点终端=跟 shell 说话（kb 诱饵照旧）、keybar 继续服务终端——三者焦点不打架
 （composer 在 overlay 层，点击不触达终端容器的 kb.focus 路径，IME 防线纪律
@@ -288,9 +299,13 @@ keybar）→ AI 页 → composer + AI orb。
 - AI orb 与 composer 的层级恒在 AI 页之上（否则页盖住球关不掉）；
 - AI 页打开时 tmux orb+标签栏**隐藏**（不渲染/不可见——
   `:root[data-kfm-aichat-open]` 下 display:none，不是被盖）；
-- composer 钉底不被 AI 页盖：AI 页内容区底部避开 composer 高度（高度经
-  ResizeObserver 实测，`--kfm-aichat-composer-h` 单源下发）；终端 scrollEl
-  底部同样预留 composer 高度（不盖 shell 提示符）。
+- composer 钉底不被 AI 页盖：AI 页内容区底部避开 keybar+composer（底边
+  =keybar 顶；换序⑦后 keybar 钉 composer 正上方，AI 页两条都不盖）。
+  composer 高度经 ResizeObserver 实测，`--kfm-aichat-composer-h` 单源下发；
+  终端 scrollEl 底部预留 KEYBAR_H+composer-h（总量与换序前相同，内部次序
+  颠倒：composer 在下贴软键盘/视口底、keybar 在上——不盖 shell 提示符）；
+  TUI/ALT 态 composer 同样常驻，TUI 底部数学不变
+  （scrollClientH==vh−KEYBAR_H−composerH）。
 
 ### 3.1 BeautifulUI 三件搬运清单（诚实定性：是重写，不是搬源码）
 
@@ -452,7 +467,7 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 | B9 | 层级规则（拍板④，P10） | AI 页开 → tmux orb/标签栏 display:none；z 序数值断言（AI orb > AI 页 > tmux orb）；点 AI orb 可关页（可见可点唯一开关） |
 | B10 | composer 全局常驻（拍板①，P10） | TERMINAL 态 composer 存在可见；关态发送 echo 全链消息入核、开页后 DOM 可见 |
 | B11 | 焦点不打架（拍板①裁定，P12） | 点 composer → 焦点落 composer 且 400ms 不被诱饵回抢；点终端 → 焦点回落 IME 诱饵 |
-| B12 | 底部避让（拍板①，P10） | 终端 scrollEl 底部预留 composer 高度（不盖提示符）；AI 页内容区底部 = composer 顶；composer 贴 keybar 正上方；钉底截图存证 |
+| B12 | 底部避让（拍板①+同日二拍换序⑦，P10） | 终端 scrollEl 底=keybar 顶（预留 KEYBAR_H+composer-h 不盖提示符）；keybar 底=composer 顶（贴 composer 正上方）；composer 底=视口底（无键盘）/键盘顶（弹起，直接接触）；AI 页内容区底部 = keybar 顶；钉底+键盘上浮截图存证 |
 
 ### C 档 · 真机
 

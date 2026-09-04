@@ -52,8 +52,9 @@
   --kfm-shadow-hairline: 0 0 0 1px var(--kfm-aichat-line);
   --kfm-shadow-card: 0 0 0 1px var(--kfm-aichat-line), 0 1px 2px #0003, 0 2px 6px #0003;
   --kfm-shadow-raised: 0 0 0 1px var(--kfm-aichat-line), 0 2px 10px #00000038;
-  /* 全局 composer 钉底高度（2026-09-04 真机拍板①：composer 从 AI 页拆出全局
-   * 常驻，终端 scrollEl 底部预留同高不盖提示符——§3.0/P10）。插件
+  /* 全局 composer 钉底高度（2026-09-04 真机拍板①+同日二拍换序：composer
+   * 从 AI 页拆出全局常驻、钉**最底**贴软键盘/视口底，keybar 钉其正上方，
+   * 终端 scrollEl 底部预留两条同高不盖提示符——§3.0/P10）。插件
    * ResizeObserver 实测后 inline 覆写本 var 为真值；此处静态默认 = 单行静高
    * 实测值（B12a 几何钉直读），兜住「插件未挂/RO 未首拍」的测量竞态 */
   --kfm-aichat-composer-h: 116px;

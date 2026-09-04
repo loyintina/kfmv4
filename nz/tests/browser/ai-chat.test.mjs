@@ -17,11 +17,12 @@
  *   B10 composer 全局常驻（拍板①：TERMINAL 态存在可见；关态可发送 echo 全链）
  *   B11 焦点不打架（P12：点 composer 焦点落 composer 不被诱饵回抢；
  *       点终端焦点回落 IME 诱饵）
- *   B12 底部避让（P10：终端 scrollEl 预留 composer 高度；AI 页底=composer 顶；
- *       composer 贴 keybar 正上方）
+ *   B12 底部避让（P10 + 2026-09-04 同日二拍换序：composer 钉最底贴软键盘/
+ *       视口底，keybar 钉 composer 正上方——终端 scrollEl 预留总量不变；
+ *       AI 页底=keybar 顶；B12c 键盘弹起 composer 底=键盘顶直接接触）
  *   补流钉  A1 转换：run 进行中切出 AI 页再切回 → attach from=N 补流不丢帧
  *   P7  皮内零硬编码色值（源码 grep；变异抽检的靶子）
- *   截图存证：composer 钉底终端态 / 滑入中间帧 / AI 页开无 tmux 控件
+ *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件
  *
  * 慢流杠杆（B3/B5/补流需要确定性时间窗）：page.evaluate 设
  * window.__kfmNzAiChatTestLever = { echoPaceMs } → client 在 echo start 载荷
@@ -133,6 +134,7 @@ const geom = () => page.evaluate(() => {
     tmuxRoot: rect('[data-tmux-tabs-root]'),
     keybar: rect('.kfm-term-keybar'),
     scroll: sr ? { top: sr.top, bottom: sr.bottom } : null,
+    ih: window.innerHeight,
   };
 });
 
@@ -148,10 +150,35 @@ const g0 = await geom();
 check('B10a composer 全局常驻：TERMINAL 态（AI 页关闭）composer 存在可见、AI 页不在',
       (g0.bar?.width ?? 0) > 0 && (g0.bar?.height ?? 0) > 0 && g0.page === null,
       `bar=${g0.bar ? `${g0.bar.width.toFixed(0)}x${g0.bar.height.toFixed(0)}` : 'null'} page=${g0.page ? '在?!' : 'null'}`);
-check('B12a 底部避让：终端 scrollEl 底部预留 composer 高度（不盖 shell 提示符）+ composer 贴 keybar 正上方',
+check('B12a 底部避让：终端 scrollEl 底=keybar 顶（预留总量不变）+ 换序后 keybar 贴 composer 正上方 + composer 底=视口底（无键盘贴屏底）',
       !!g0.scroll && !!g0.bar && !!g0.keybar
-      && Math.abs(g0.scroll.bottom - g0.bar.top) <= 2 && Math.abs(g0.bar.bottom - g0.keybar.top) <= 2,
-      `scroll.bottom=${g0.scroll?.bottom.toFixed(1)} bar=[${g0.bar?.top.toFixed(1)},${g0.bar?.bottom.toFixed(1)}] keybar.top=${g0.keybar?.top.toFixed(1)}`);
+      && Math.abs(g0.scroll.bottom - g0.keybar.top) <= 2 && Math.abs(g0.keybar.bottom - g0.bar.top) <= 2
+      && Math.abs(g0.bar.bottom - g0.ih) <= 2,
+      `scroll.bottom=${g0.scroll?.bottom.toFixed(1)} keybar=[${g0.keybar?.top.toFixed(1)},${g0.keybar?.bottom.toFixed(1)}] bar=[${g0.bar?.top.toFixed(1)},${g0.bar?.bottom.toFixed(1)}] ih=${g0.ih}`);
+
+// ========== B12c：键盘弹起换序几何（09-04 同日二拍核心逻辑：输入栏与软键盘直接接触） ==========
+// mock vv=620−271=349（真机实测键盘高，ime-pan 同款地形；defineProperty 路径
+// 同 bottom-anchor ④b——composer 的 kbRise 与终端容器的钉 vv 同吃一源）→
+// composer 底=键盘顶（直接接触）、keybar 底=composer 顶（接触无缝）；用完还原。
+{
+  await page.evaluate(() => { try {
+    Object.defineProperty(window.visualViewport, 'height', { get: () => 349, configurable: true });
+    Object.defineProperty(window.visualViewport, 'offsetTop', { get: () => 0, configurable: true });
+  } catch (e) {} window.visualViewport?.dispatchEvent(new Event('resize')); });
+  await page.waitForTimeout(700); // composer vv 监听当拍即钉 + 终端钉-量同拍防抖 150ms 落地
+  const gk = await geom();
+  check('B12c 键盘弹起：composer 底=键盘顶（直接接触）+ keybar 底=composer 顶（无缝）',
+        !!gk.bar && !!gk.keybar
+        && Math.abs(gk.bar.bottom - 349) <= 2 && Math.abs(gk.keybar.bottom - gk.bar.top) <= 2,
+        `bar.bottom=${gk.bar?.bottom.toFixed(1)}（键盘顶349） keybar.bottom=${gk.keybar?.bottom.toFixed(1)} bar.top=${gk.bar?.top.toFixed(1)}`);
+  const shotIme = join(SHOT_DIR, 'ai-chat-composer-ime-rise.png');
+  await page.screenshot({ path: shotIme });
+  console.log('shot:', shotIme);
+  await page.evaluate(() => { try {
+    delete window.visualViewport.height; delete window.visualViewport.offsetTop;
+  } catch (e) {} window.visualViewport?.dispatchEvent(new Event('resize')); });
+  await page.waitForTimeout(700);
+}
 
 // ========== B11：焦点不打架（P12） ==========
 await page.click('[data-aichat-input]').catch(() => {});
@@ -213,9 +240,9 @@ check('B9a 层级：AI 页开 → tmux orb+标签栏隐藏（display:none 不渲
 check('B9b 层级 z 序：AI orb ≥ composer > AI 页 > tmux orb（P10 不倒挂）',
       !!g9.page && !!g9.bar && !!g9.orb && g9.orb.z > g9.page.z && g9.bar.z > g9.page.z && g9.page.z > tmuxOrbZ,
       `aiOrb=${g9.orb?.z} bar=${g9.bar?.z} page=${g9.page?.z} tmuxOrb=${tmuxOrbZ}`);
-check('B12b 底部避让：AI 页内容区底=composer 顶（滑下不盖 composer）',
-      !!g9.page && !!g9.bar && Math.abs(g9.page.bottom - g9.bar.top) <= 2,
-      `page.bottom=${g9.page?.bottom.toFixed(1)} bar.top=${g9.bar?.top.toFixed(1)}`);
+check('B12b 底部避让：AI 页内容区底=keybar 顶（换序后 keybar 钉 composer 正上方——AI 页 keybar/composer 两不盖）',
+      !!g9.page && !!g9.keybar && Math.abs(g9.page.bottom - g9.keybar.top) <= 2,
+      `page.bottom=${g9.page?.bottom.toFixed(1)} keybar.top=${g9.keybar?.top.toFixed(1)}`);
 const shotOpen = join(SHOT_DIR, 'ai-chat-page-open-layering.png');
 await page.screenshot({ path: shotOpen });
 console.log('shot:', shotOpen);
