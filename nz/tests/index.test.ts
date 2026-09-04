@@ -20,6 +20,11 @@ import './term-core-shared.test.ts';
 import './keymap.test.ts';
 import './cdp-relay.test.ts';
 import './palette-bold-bright.test.ts';
+import './ai-sse-parser.test.ts';
+import './ai-translator.test.ts';
+import './ai-providers.test.ts';
+import './ai-reducer.test.ts';
+import './ai-projection.test.ts';
 import { runAll } from './runner.ts';
 
 await runAll();
