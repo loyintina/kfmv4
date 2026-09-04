@@ -27,6 +27,7 @@ import type { Server, IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import type { Context } from 'cordis';
 import { TmuxControl, listSessions, tmuxSessionCmd } from './tmux-connection.js';
+import { onPoolChanged, type PoolChangedEvent } from './pool/bus.ts';
 
 type Msg =
   | { t: 'open'; command?: string; cols?: number; rows?: number }
@@ -41,10 +42,19 @@ type Msg =
   | { t: 'tmux-cmd'; session: string; cmd: string }
   | { t: 'tmux-sessions-open' }
   | { t: 'tmux-session-new'; name: string }
-  | { t: 'tmux-session-kill'; name: string };
+  | { t: 'tmux-session-kill'; name: string }
+  | { t: 'pool-watch' }; // 配置池 A2a：订阅 pool/changed 推送（§1.6，多路复用同桥）
 
 export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): void {
   const wss = new WebSocketServer({ noServer: true });
+
+  // pool/changed 广播腿（配置池 A2a §1.6）：池数据层 emit → 订阅过的连接
+  // 收 {t:'pool-changed'} 帧。订阅制（pool-watch 开关）与 tmux-sessions 同款
+  // ——纯终端连接不被池事件打扰。
+  const poolWatchers = new Set<{ send: (m: Record<string, unknown>) => void }>();
+  const offPoolChanged: () => void = onPoolChanged((ev: PoolChangedEvent) => {
+    for (const w of poolWatchers) w.send({ t: 'pool-changed', pool: ev.pool, id: ev.id, op: ev.op });
+  });
 
   server.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     if ((req.url ?? '').split('?')[0] !== path) {
@@ -65,6 +75,8 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
     const send = (m: Record<string, unknown>) => {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m));
     };
+    /** pool-watch 订阅票（§1.6）：进 poolWatchers 后才收 pool-changed 帧 */
+    const watcher = { send };
     const sessionsTick = async (): Promise<void> => {
       const sessions = await listSessions();
       const sig = JSON.stringify(sessions);
@@ -167,6 +179,11 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
           sessionsTimer = setInterval(() => { void sessionsTick(); }, 3000);
           break;
         }
+        // pool/changed 订阅（配置池 A2a §1.6）：幂等入列；断线 close 统一清
+        case 'pool-watch': {
+          poolWatchers.add(watcher);
+          break;
+        }
         case 'tmux-session-new': {
           const name = m.name.trim().slice(0, 64);
           if (!name || /[.:]/.test(name)) { send({ t: 'error', message: `会话名非法：${name}` }); break; }
@@ -193,9 +210,10 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
       subs.clear();
       for (const c of tmuxes.values()) c.close();
       tmuxes.clear();
+      poolWatchers.delete(watcher);
       if (sessionsTimer) { clearInterval(sessionsTimer); sessionsTimer = undefined; }
     });
   });
 
-  ctx.effect(() => () => wss.close());
+  ctx.effect(() => () => { offPoolChanged(); wss.close(); });
 }

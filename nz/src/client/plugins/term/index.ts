@@ -590,6 +590,10 @@ export function applyTermBundle(ctx: Context): void {
         evicted: card.core.lines_evicted(),
         // SGR 鼠标上报判卷字段（mouse-report 考卷）：核当前鼠标模式位图
         mouseMode: card.core.mouse_mode(),
+        // ALT/TUI 态判卷字段（配置池 A2a 手势 condition 门复用 term 既有
+        // alt_screen 判定——设计 config-pool-a2a-design §1.2-2）：true=应用
+        // 独占屏（vim/htop 里左右滑是应用语义，页面导航手势不响应）
+        alt: card.core.alt_screen(),
         // 洪峰节流判卷字段：实际渲染帧计数（洪峰期应远小于消息数）
         frames: shell.stats.frames,
         // C4 对照题取数口：壳渲染尺（宽 span 断言用）

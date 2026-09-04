@@ -1,0 +1,627 @@
+/**
+ * tests/browser/config-pool.test.mjs — 配置池 A2a 阶段二 B 档考卷（设计清单
+ * docs/config-pool-a2a-design.md §五 B 档 11 钉；状态机蓝本=§四，词汇表 P6）。
+ *
+ *   B1  C1 左滑进入 + P1 冲突矩阵逐行（SHELL 左滑进/垂直不抢+scrollback 照滚/
+ *       ALT 态不响应/标签排横滑不触发且标签排照滚/keybar·composer·orb 落点
+ *       不响应/AI_PAGE 态不响应）
+ *   B2  C2 返回双通道（右滑 / × 钮）+ EDITING 中右滑草稿蒸发
+ *   B3  C3 标签行四池切换 + client 注册表 ⊆ server /pool/list 互证
+ *   B4  picker 同源互证（拍板⑫联动）：池页加 model → /ai/providers 即变 →
+ *       picker 二级同形；picker 选中 → 总账变 → 池页 ✓ 同步
+ *   B5  C7/C8 relied 禁删 UI（409 人话展 reliedBy+条目仍在）+ 断引用「已失效」
+ *   B6  P2 激活双态 UI（编辑不动激活标；设为激活 → ✓ 移动+picker ✓+基本池槽位）
+ *   B7  P4 密钥不明文（保存明文 → 载荷/DOM/钩子/池文件/日志 grep 全净，
+ *       .env 600 落明文，回填=代字空输入）
+ *   B8  C12 标题栏入口路由（拍板⑯）：kfm-nz-pool-open 事件 → POOL_OPEN 直达
+ *       对应池 + AI 页不收起；占位文案仍在（按钮接真=阶段三，诚实登记）
+ *   B9  P6/P9 词汇表+观测钩+动画 token（ring 状态名 ⊆ 枚举/≥50 拍；
+ *       动画时长跟随 --kfm-dur-normal；/tmp 夹具 nz-pool.log JSONL 互证）
+ *   B10 C11/C13 推送校准（第二页 CRUD → 本页 pool/changed refetch；WS 断+
+ *       回前台 → 重连 refetch）
+ *   B11 P10/仲裁⑩ 层级（池页 z44 全屏；composer/orb 池页在场恒顶 z45；
+ *       tmux 控件 display:none；C12 路径 AI 页 z42 在其下不收起）
+ *
+ * 跑法：node tests/browser/config-pool.test.mjs（自起隔离 server 实例：
+ * NZ_AI_CONFIG_DIR=临时夹具、独立端口、NZ_POOL_LOG=夹具内——零接触真机
+ * ~/.kfmv4 与 8023 dev 实例；tmux 是机器全局的，卷内建的 6 个 pool-exam-*
+ * 会话收尾自拆）。
+ *
+ * 红先证据：2026-09-04 先写本卷跑红（config-pool 插件未实现，
+ * __kfmNzPool 钩子缺席 → 全卷红，rc=1）→ 实现 → 全绿。
+ */
+import { launchBrowser } from './launch.mjs';
+import { spawn } from 'node:child_process';
+import { mkdtemp, rm, readFile, stat } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
+
+const results = [];
+const check = (name, ok, detail) => { results.push({ name, ok }); console.log(`${ok ? '✅' : '❌'} ${name}${detail ? ' — ' + detail : ''}`); };
+const SHOT_DIR = join(process.cwd(), 'tests', 'assets');
+const shot = async (page, name) => { const p = join(SHOT_DIR, `config-pool-${name}.png`); await page.screenshot({ path: p }); console.log('shot:', p); };
+
+// ---------- 词汇表（设计 §四，P6 唯一真源；B9 全程采样判定用） ----------
+const PAGE_VOCAB = ['POOL_CLOSED', 'POOL_OPEN'];
+const INNER_VOCAB = ['BROWSE', 'EDITING', 'OVERLAY_DELETE'];
+const POOL_VOCAB = ['basic', 'provider', 'prompt', 'session'];
+
+// ---------- 隔离 server 实例（夹具目录 + 私有端口 + 夹具日志） ----------
+const FIXTURE = await mkdtemp(join(tmpdir(), 'nz-pool-b-'));
+const POOL_LOG = join(FIXTURE, 'pool.log');
+let PORT = 8123;
+const freePort = async (p) => await fetch(`http://127.0.0.1:${p}/pool/list`).then(() => false).catch(() => true);
+while (!(await freePort(PORT))) PORT++;
+console.log(`[exam] 隔离实例：port=${PORT} fixture=${FIXTURE}`);
+const srv = spawn(join(process.cwd(), 'node_modules', '.bin', 'tsx'), ['src/server/index.ts'], {
+  cwd: process.cwd(),
+  env: { ...process.env, NZ_PORT: String(PORT), NZ_AI_CONFIG_DIR: FIXTURE, NZ_POOL_LOG: POOL_LOG, NZ_GATE_DIR: join(FIXTURE, 'gate') },
+  stdio: ['ignore', 'pipe', 'pipe'],
+});
+srv.stdout.on('data', (d) => { if (String(d).includes('error') || String(d).includes('Error')) console.log('[srv]', String(d).slice(0, 200)); });
+srv.stderr.on('data', (d) => console.log('[srv!]', String(d).slice(0, 200)));
+const BASE = `http://127.0.0.1:${PORT}`;
+let srvUp = false;
+for (let i = 0; i < 120; i++) {
+  try { const r = await fetch(`${BASE}/pool/list`); if (r.ok) { srvUp = true; break; } } catch { /* 未起 */ }
+  await sleep(500);
+}
+
+// ---------- 夹具播种（全走 /pool/* 统一池数据层——本身就是 A1 语义复跑） ----------
+const api = async (path, body) => {
+  const r = await fetch(`${BASE}${path}`, body === undefined ? {} : {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+  return { status: r.status, json: await r.json().catch(() => null) };
+};
+if (srvUp) {
+  await api('/pool/provider/create', { entry: { id: 'examprov', name: 'Exam Provider', baseUrl: 'https://exam.example/v1', apiKey: '', models: ['exam-model-a', 'exam-model-b'] } });
+  await api('/pool/provider/create', { entry: { id: 'otherprov', name: 'Other Provider', baseUrl: 'https://other.example/v1', apiKey: '', models: ['other-model-1'] } });
+  await api('/pool/prompt/create', { entry: { id: '考试角色', name: '考试角色' } });
+  await api('/pool/session/create', { entry: { title: '依赖会话', providerId: 'examprov', modelId: 'exam-model-a' } });
+  await api('/pool/session/create', { entry: { title: '断头会话', providerId: 'ghost-prov' } });
+}
+
+const PLAIN_KEY = 'sk-exam-plain-000111';
+const KEY_SHAPE = /sk-exam-plain-000111/;
+
+// ---------- 浏览器 ----------
+const browser = await launchBrowser();
+const context = await browser.newContext({ viewport: { width: 900, height: 620 } });
+const page = await context.newPage();
+const pageErrors = [];
+page.on('pageerror', (e) => { pageErrors.push(String(e).slice(0, 160)); console.log('[PAGEERROR]', String(e).slice(0, 200)); });
+await page.goto(`${BASE}/?nosplash`, { waitUntil: 'domcontentloaded', timeout: 40000 }).catch(() => {});
+const hookAlive = srvUp && await page.waitForFunction(() => !!(window).__kfmNzPool, null, { timeout: 20000, polling: 250 }).then(() => true).catch(() => false);
+
+const vocabSamples = [];
+const poolHook = async () => page.evaluate(() => {
+  const f = (window).__kfmNzPool;
+  if (!f) return null;
+  const r = f();
+  return {
+    page: r.page, pool: r.pool, pageState: r.pageState, editing: r.editing, active: r.active,
+    ringLen: r.ring?.length ?? 0,
+    ring: (r.ring ?? []).map((e) => ({ trigger: e.trigger, from: { page: e.from.page, inner: e.from.inner }, to: { page: e.to.page, inner: e.to.inner } })),
+    lastEvents: r.lastEvents ?? [],
+  };
+});
+const hook = async () => {
+  const h = await poolHook();
+  if (h) {
+    vocabSamples.push({ kind: 'page', v: h.page }, { kind: 'inner', v: h.pageState }, { kind: 'pool', v: h.pool });
+    for (const e of h.ring ?? []) {
+      vocabSamples.push({ kind: 'page', v: e.from.page }, { kind: 'inner', v: e.from.inner });
+      vocabSamples.push({ kind: 'page', v: e.to.page }, { kind: 'inner', v: e.to.inner });
+    }
+  }
+  return h;
+};
+const aiHook = async () => page.evaluate(() => { const f = (window).__kfmNzAiChat; return f ? f() : null; }).catch(() => null);
+
+/** 合成手势：pointerdown → 分步 move → pointerup（Playwright mouse 即 pointer 事件源） */
+const swipe = async (x, y, dx, dy, steps = 14) => {
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  for (let i = 1; i <= steps; i++) await page.mouse.move(x + (dx * i) / steps, y + (dy * i) / steps);
+  await page.mouse.up();
+  await sleep(150);
+};
+const swipeLeftOn = async (sel) => {
+  const box = await page.evaluate((s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, sel);
+  if (!box) return false;
+  await swipe(Math.min(box.x, 700), box.y, -170, 0);
+  return true;
+};
+const termCenter = () => page.evaluate(() => { const e = document.querySelector('.nz-term'); const r = e?.getBoundingClientRect(); return r ? { x: r.x + Math.min(r.width / 2, 400), y: r.y + r.height / 2 } : { x: 400, y: 300 }; });
+const poolClosed = async () => { const h = await hook(); return h?.page === 'POOL_CLOSED'; };
+const openPoolBySwipe = async () => { const c = await termCenter(); await swipe(c.x, c.y, -170, 0); };
+const closePoolBySwipe = async () => { await swipe(400, 300, 170, 0); };
+
+try {
+  // ========== ⓪ 环境就绪 ==========
+  check('⓪ 隔离 server 起来 + 夹具播种（/pool/list 四池）', srvUp && (await api('/pool/list')).json?.length === 4,
+    `srvUp=${srvUp} pools=${JSON.stringify((await api('/pool/list')).json?.map((p) => p.pool))}`);
+  check('⓪ __kfmNzPool 观测钩在场', hookAlive);
+  if (!hookAlive) throw new Error('hook missing — 后续钉全不成立');
+
+  // ========== B1：C1 左滑进入 + P1 冲突矩阵 ==========
+  {
+    await page.waitForSelector('.nz-term', { timeout: 15000 });
+    await sleep(2000); // PTY 提示符稳定
+    const c0 = await termCenter();
+    await swipe(c0.x, c0.y, -170, 0);
+    const h1 = await hook();
+    check('B1a SHELL 态终端正文左滑 → POOL_OPEN（默认基本池）+ DOM 在场',
+      h1?.page === 'POOL_OPEN' && h1?.pool === 'basic' && h1?.pageState === 'BROWSE'
+      && await page.evaluate(() => !!document.querySelector('[data-kfm-pool]')),
+      `page=${h1?.page} pool=${h1?.pool} inner=${h1?.pageState}`);
+    await shot(page, 'b1a-open-basic');
+    await closePoolBySwipe();
+    check('B1a-收 右滑返回 POOL_CLOSED（B2 前置顺带）', await poolClosed());
+
+    // B1b 垂直滑不触发 + 终端 scrollback 自有链路不被抢
+    await page.evaluate(() => (window).__kfmNzTermInject?.('seq 1 200\r'));
+    await sleep(1200);
+    await page.evaluate(() => { const s = (window).__kfmNzTermScroll?.(); if (s) s.getContainer().scrollTop = 0; });
+    await sleep(200);
+    const scBefore = await page.evaluate(() => { const s = (window).__kfmNzTermScroll?.(); return s ? { st: s.getContainer().scrollTop, sh: s.scrollHeight } : null; });
+    const cv = await termCenter();
+    await swipe(cv.x, cv.y, 0, -140); // 纯垂直上滑
+    const scAfter = await page.evaluate(() => { const s = (window).__kfmNzTermScroll?.(); return s ? { st: s.getContainer().scrollTop } : null; });
+    // scrollback 自有链路健康（headless 无真触摸 pan，考卷惯例=程序化滚动互证，
+    // scrollback.test.mjs 同款；真机滚动复核归 C 档）
+    await page.evaluate(() => { const s = (window).__kfmNzTermScroll?.(); if (s) s.getContainer().scrollTop = 40; });
+    await sleep(150);
+    const scWheel = await page.evaluate(() => (window).__kfmNzTermScroll?.().getContainer().scrollTop ?? -1);
+    check('B1b 垂直滑不进池（P1 方向裁决）', await poolClosed(), `st ${scBefore?.st}→${scAfter?.st}`);
+    check('B1b-滚 终端 scrollback 自有链路照滚（容器可滚，手势注册零改滚动语义）',
+      scWheel > 0 && (scBefore?.sh ?? 0) > (scBefore?.st ?? 0) + 100, `set40→${scWheel} sh=${scBefore?.sh}`);
+
+    // B1c ALT/TUI 态不响应（term 既有 ALT 判定复用：__kfmNzTermScroll().alt）
+    await page.evaluate(() => (window).__kfmNzTermInject?.("printf '\\033[?1049h'\r"));
+    await sleep(800);
+    const altOn = await page.evaluate(() => (window).__kfmNzTermScroll?.().alt ?? null);
+    const cA = await termCenter();
+    await swipe(cA.x, cA.y, -170, 0);
+    const hAlt = await hook();
+    await page.evaluate(() => (window).__kfmNzTermInject?.("printf '\\033[?1049l'\r"));
+    await sleep(400);
+    const altOff = await page.evaluate(() => (window).__kfmNzTermScroll?.().alt ?? null);
+    check('B1c ALT/TUI 态左滑不进池（condition 门=term 既有 alt_screen 判定）',
+      altOn === true && altOff === false && hAlt?.page === 'POOL_CLOSED', `alt=${altOn}→${altOff} page=${hAlt?.page}`);
+
+    // B1d tmux 标签排横滑不触发 + 标签排照滚（溢出用临时会话撑出）
+    for (let i = 0; i < 6; i++) spawn('tmux', ['new-session', '-d', '-s', `pool-exam-${i}`], { stdio: 'ignore' });
+    await page.waitForFunction(() => !!document.querySelector('[data-tmux-win="pool-exam-5"]'), null, { timeout: 12000 }).catch(() => {});
+    await page.click('[data-tmux-orb]').catch(() => {}); // 展开标签排
+    await sleep(500);
+    const stripOk = await page.evaluate(() => { const e = document.querySelector('[data-tmux-strip]'); return e ? { sw: e.scrollWidth, cw: e.clientWidth } : null; });
+    await swipeLeftOn('[data-tmux-strip]');
+    const hStrip = await hook();
+    // 标签排自身滚动能力健在（headless 无真触摸横 pan；程序化 scrollLeft
+    // 互证同 B1b-滚 惯例，真机横滑归 C 档）
+    const stripScrollAfter = await page.evaluate(() => {
+      const e = document.querySelector('[data-tmux-strip]');
+      if (!e) return -1;
+      e.scrollLeft = 40;
+      return e.scrollLeft;
+    });
+    check('B1d 标签排落点横滑不进池（targetFilter）+ 标签排照滚（自身滚动健在）',
+      hStrip?.page === 'POOL_CLOSED' && stripOk && stripOk.sw > stripOk.cw && stripScrollAfter > 0,
+      `strip=${JSON.stringify(stripOk)} scrollLeft=${stripScrollAfter} page=${hStrip?.page}`);
+
+    // B1e AI_PAGE 态不响应
+    await page.click('[data-tmux-orb]').catch(() => {}); // 收起标签排
+    await page.click('[data-kfm-aichat-orb]').catch(() => {});
+    await sleep(600);
+    const ai1 = await aiHook();
+    await swipe(400, 300, -170, 0);
+    const hAi = await hook();
+    const ai2 = await aiHook();
+    check('B1e AI_PAGE 态左滑不进池（condition 门）+ AI 页不被打扰',
+      ai1?.page === 'AI_PAGE' && hAi?.page === 'POOL_CLOSED' && ai2?.page === 'AI_PAGE',
+      `ai=${ai1?.page} pool=${hAi?.page}`);
+    await page.click('[data-kfm-aichat-orb]').catch(() => {}); // 关 AI 页
+    await sleep(500);
+
+    // B1f keybar / composer / orb 落点不响应
+    const kbBox = await page.evaluate(() => { const e = document.querySelector('[data-kfm-keybar]'); const r = e?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; });
+    if (kbBox) { await swipe(kbBox.x, kbBox.y, -170, 0); }
+    const hKb = await hook();
+    const barBox = await page.evaluate(() => { const e = document.querySelector('[data-aichat-composer]'); const r = e?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; });
+    if (barBox) await swipe(barBox.x, barBox.y, -170, 0);
+    const hBar = await hook();
+    const orbBox = await page.evaluate(() => { const e = document.querySelector('[data-kfm-aichat-orb]'); const r = e?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; });
+    if (orbBox) await swipe(orbBox.x, orbBox.y, -170, 0);
+    const hOrb = await hook();
+    const ai3 = await aiHook();
+    if (ai3?.page === 'AI_PAGE') { await page.click('[data-kfm-aichat-orb]').catch(() => {}); await sleep(400); }
+    check('B1f keybar/composer/orb 落点左滑均不进池（targetFilter 三连）',
+      hKb?.page === 'POOL_CLOSED' && hBar?.page === 'POOL_CLOSED' && hOrb?.page === 'POOL_CLOSED',
+      `kb=${hKb?.page} bar=${hBar?.page} orb=${hOrb?.page}`);
+  }
+
+  // ========== B2：C2 返回双通道 + EDITING 右滑草稿蒸发 ==========
+  {
+    await openPoolBySwipe();
+    const hOpen = await hook();
+    await closePoolBySwipe();
+    const hR = await hook();
+    await openPoolBySwipe();
+    await page.click('[data-pool-close]').catch(() => {});
+    await sleep(400);
+    const hX = await hook();
+    // EDITING 中右滑 = 直接关，草稿蒸发（C2 裁定）
+    await openPoolBySwipe();
+    await page.click('[data-pool-tab="provider"]').catch(() => {});
+    await page.click('[data-pool-new]').catch(() => {});
+    await sleep(300);
+    const hEdit = await hook();
+    await closePoolBySwipe();
+    const hGone = await hook();
+    await openPoolBySwipe();
+    const hRe = await hook();
+    check('B2 C2 双通道：右滑返回 ✓ × 钮返回 ✓（均 POOL_CLOSED）',
+      hOpen?.page === 'POOL_OPEN' && hR?.page === 'POOL_CLOSED' && hX?.page === 'POOL_CLOSED',
+      `swipe=${hR?.page} x=${hX?.page}`);
+    check('B2 EDITING 中右滑直接关 + 草稿蒸发（重开 BROWSE、editing=null）',
+      hEdit?.pageState === 'EDITING' && hGone?.page === 'POOL_CLOSED' && hRe?.pageState === 'BROWSE' && hRe?.editing === null,
+      `edit=${hEdit?.pageState} closed=${hGone?.page} reopen=${hRe?.pageState}/${JSON.stringify(hRe?.editing)}`);
+    await closePoolBySwipe();
+  }
+
+  // ========== B3：C3 标签行四池切换 + 注册表互证 ==========
+  {
+    const serverList = (await api('/pool/list')).json;
+    const serverPools = serverList.map((p) => p.pool).sort();
+    const tabPools = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-pool-tab]')].map((e) => e.getAttribute('data-pool-tab')).sort());
+    await openPoolBySwipe();
+    const shots = [];
+    const allSwitched = [];
+    for (const p of ['provider', 'prompt', 'session', 'basic']) {
+      await page.click(`[data-pool-tab="${p}"]`).catch(() => {});
+      await sleep(350);
+      const h = await hook();
+      allSwitched.push(h?.pool === p && h?.pageState === 'BROWSE');
+      if (p === 'provider' || p === 'basic') { shots.push(p); await shot(page, `b3-tab-${p}`); }
+    }
+    check('B3 标签集=池注册表枚举且 client ⊆ server /pool/list（互证）',
+      JSON.stringify(tabPools) === JSON.stringify(serverPools) && tabPools.length === 4,
+      `tabs=${JSON.stringify(tabPools)} server=${JSON.stringify(serverPools)}`);
+    check('B3 C3 四池点切各达 BROWSE（草稿不跨池）', allSwitched.every(Boolean), `switched=${JSON.stringify(allSwitched)}`);
+  }
+
+  // ========== B4：picker 同源互证（拍板⑫联动） ==========
+  {
+    await page.click('[data-pool-tab="provider"]').catch(() => {});
+    await sleep(350);
+    await page.click('[data-pool-row="provider:examprov"]').catch(() => {});
+    await sleep(350);
+    const hEdit = await hook();
+    const backfill = await page.evaluate(() => {
+      const input = document.querySelector('[data-pool-field="apiKey"]');
+      const hint = document.querySelector('[data-pool-keyhint]');
+      return { value: input?.value ?? null, hint: hint?.textContent ?? null };
+    });
+    // models 行编辑：加 exam-model-x
+    await page.fill('[data-pool-field="model-add"]', 'exam-model-x').catch(() => {});
+    await page.click('[data-pool-model-add-btn]').catch(() => {});
+    await page.click('[data-pool-save]').catch(() => {});
+    await sleep(500);
+    const hSaved = await hook();
+    const proj = await api('/ai/providers');
+    const ex = proj.json?.providers?.find((p) => p.id === 'examprov');
+    check('B4a 池页编辑载入（EDITING）+ apiKey 回填=空输入+代字提示（P4 回填只出代字）',
+      hEdit?.pageState === 'EDITING' && backfill.value === '' && /KFM_PROVIDER_|代字|未改/.test(backfill.hint ?? ''),
+      `value=${JSON.stringify(backfill.value)} hint=${JSON.stringify(backfill.hint)}`);
+    check('B4b 池页保存 → /ai/providers 投影即变（同源）',
+      hSaved?.pageState === 'BROWSE' && !!ex && ex.models.includes('exam-model-x'),
+      `models=${JSON.stringify(ex?.models)}`);
+    // picker 二级同形
+    await closePoolBySwipe();
+    await page.click('[data-aichat-model-btn]').catch(() => {});
+    await sleep(300);
+    await page.click('[data-aichat-provider-row="examprov"]').catch(() => {});
+    await sleep(300);
+    const pickerModels = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-aichat-model-row]')].map((e) => e.getAttribute('data-aichat-model-row')));
+    await shot(page, 'b4-picker-level2');
+    check('B4c picker 二级页与池页同源同形（exam-model-x 在场）',
+      pickerModels.some((m) => m === 'examprov::exam-model-x'), `rows=${JSON.stringify(pickerModels)}`);
+    // picker 选中 → 总账变
+    await page.click('[data-aichat-model-row="examprov::exam-model-a"]').catch(() => {});
+    await sleep(400);
+    const ledger1 = (await api('/pool/active')).json;
+    check('B4d picker 选中 → 总账变（POST /pool/active）',
+      ledger1?.providerId === 'examprov' && ledger1?.modelId === 'exam-model-a', JSON.stringify(ledger1));
+    // 池页 ✓ 同步
+    await openPoolBySwipe();
+    await page.click('[data-pool-tab="provider"]').catch(() => {});
+    await sleep(400);
+    const check1 = await page.evaluate(() => ({
+      exam: !!document.querySelector('[data-pool-active="examprov"]'),
+      other: !!document.querySelector('[data-pool-active="otherprov"]'),
+    }));
+    await shot(page, 'b4-pool-check-sync');
+    check('B4e 池页激活标同步（✓ 在 examprov）', check1.exam && !check1.other, JSON.stringify(check1));
+  }
+
+  // ========== B6：P2 激活双态 UI ==========
+  {
+    await page.click('[data-pool-activate="otherprov"]').catch(() => {});
+    await sleep(500);
+    const afterAct = await page.evaluate(() => ({
+      exam: !!document.querySelector('[data-pool-active="examprov"]'),
+      other: !!document.querySelector('[data-pool-active="otherprov"]'),
+    }));
+    // 编辑非激活条目保存 → 激活标不动（P2）
+    await page.click('[data-pool-row="provider:examprov"]').catch(() => {});
+    await sleep(300);
+    await page.fill('[data-pool-field="name"]', 'Exam Provider Renamed').catch(() => {});
+    await page.click('[data-pool-save]').catch(() => {});
+    await sleep(500);
+    const afterEdit = await page.evaluate(() => ({
+      exam: !!document.querySelector('[data-pool-active="examprov"]'),
+      other: !!document.querySelector('[data-pool-active="otherprov"]'),
+    }));
+    const ledger = (await api('/pool/active')).json;
+    check('B6a 设为激活 → ✓ 移动到 otherprov', afterAct.other && !afterAct.exam, JSON.stringify(afterAct));
+    check('B6b 编辑非激活条目保存 → 激活标不动（P2 双态）+ 总账未被编辑偷写',
+      afterEdit.other && !afterEdit.exam && ledger?.providerId === 'otherprov', JSON.stringify({ dom: afterEdit, ledger }));
+    // picker ✓ 同步
+    await closePoolBySwipe();
+    await page.click('[data-aichat-model-btn]').catch(() => {});
+    await sleep(300);
+    const pickerCheck = await page.evaluate(() => {
+      const row = document.querySelector('[data-aichat-provider-row="otherprov"]');
+      return !!row?.querySelector('[data-aichat-check]');
+    });
+    await page.click('[data-aichat-model-btn]').catch(() => {}); // 关菜单
+    await sleep(200);
+    // 基本池槽位同步
+    await openPoolBySwipe();
+    await page.click('[data-pool-tab="basic"]').catch(() => {});
+    await sleep(400);
+    const slotText = await page.evaluate(() => document.querySelector('[data-pool-slot="provider"]')?.textContent ?? '');
+    await shot(page, 'b6-basic-slots');
+    check('B6c picker ✓ 同步（otherprov 带 ✓）', pickerCheck, `pickerCheck=${pickerCheck}`);
+    check('B6d 基本池槽位同步（默认 Provider·Model=otherprov）',
+      /otherprov|Other Provider/.test(slotText), `slot="${slotText.slice(0, 60)}"`);
+  }
+
+  // ========== B7：P4 密钥不明文全链 ==========
+  {
+    await page.click('[data-pool-tab="provider"]').catch(() => {});
+    await sleep(300);
+    await page.click('[data-pool-row="provider:examprov"]').catch(() => {});
+    await sleep(300);
+    await page.fill('[data-pool-field="apiKey"]', PLAIN_KEY).catch(() => {});
+    await page.click('[data-pool-save]').catch(() => {});
+    await sleep(600);
+    const apiResp = JSON.stringify((await api('/pool/provider')).json);
+    const provFile = await readFile(join(FIXTURE, 'providers.json'), 'utf-8');
+    const envPathFile = join(FIXTURE, '.env');
+    const envExists = existsSync(envPathFile);
+    const envRaw = envExists ? await readFile(envPathFile, 'utf-8') : '';
+    const envMode = envExists ? (await stat(envPathFile)).mode & 0o777 : 0;
+    const domRaw = await page.evaluate(() => document.body.innerHTML);
+    const hookRaw = JSON.stringify(await poolHook());
+    const logRaw = existsSync(POOL_LOG) ? await readFile(POOL_LOG, 'utf-8') : '';
+    const backfill = await page.evaluate(() => {
+      document.querySelector('[data-pool-row="provider:examprov"]')?.click();
+      return null;
+    });
+    await sleep(300);
+    const backfill2 = await page.evaluate(() => ({
+      value: document.querySelector('[data-pool-field="apiKey"]')?.value ?? null,
+      hint: document.querySelector('[data-pool-keyhint]')?.textContent ?? null,
+    }));
+    await page.click('[data-pool-cancel]').catch(() => {});
+    const clean = (s) => !KEY_SHAPE.test(s ?? '');
+    const fusedShape = (s) => /\$\{KFM_PROVIDER_[A-Z0-9_]+\}/.test(s ?? '');
+    check('B7 P4 明文保存后五处落点全净（API 响应/池文件/DOM/钩子/日志）+ .env 600 落明文 + 池文件只留代字',
+      clean(apiResp) && clean(provFile) && clean(domRaw) && clean(hookRaw) && clean(logRaw)
+      && envExists && envRaw.includes(PLAIN_KEY) && envMode === 0o600
+      && fusedShape(provFile) && fusedShape(apiResp),
+      `env=${envExists}/${envMode.toString(8)} apiClean=${clean(apiResp)} fileClean=${clean(provFile)} domClean=${clean(domRaw)} logClean=${clean(logRaw)}`);
+    check('B7-回 再编辑回填=代字提示+空输入（不出明文）',
+      backfill2.value === '' && /KFM_PROVIDER_/.test(backfill2.hint ?? ''),
+      `value=${JSON.stringify(backfill2.value)} hint=${JSON.stringify(backfill2.hint)}`);
+  }
+
+  // ========== B5：C7/C8 relied 禁删 UI + 断引用已失效 ==========
+  {
+    await page.click('[data-pool-tab="provider"]').catch(() => {});
+    await sleep(300);
+    await page.click('[data-pool-delete="examprov"]').catch(() => {});
+    await sleep(300);
+    const hOverlay = await hook();
+    await page.click('[data-pool-overlay-confirm]').catch(() => {});
+    await sleep(500);
+    const hDenied = await hook();
+    const reliedText = await page.evaluate(() => document.querySelector('[data-pool-relied]')?.textContent ?? '');
+    await shot(page, 'b5-relied-409');
+    await page.click('[data-pool-overlay-cancel]').catch(() => {});
+    await sleep(300);
+    const stillThere = await page.evaluate(() => !!document.querySelector('[data-pool-row="provider:examprov"]'));
+    const stillListed = (await api('/pool/provider')).json.some((e) => e.id === 'examprov');
+    check('B5a 删被引用 provider → 确认页 409 人话展「被谁用着」（依赖会话）+ 不删不转换',
+      hOverlay?.pageState === 'OVERLAY_DELETE' && hDenied?.pageState === 'OVERLAY_DELETE'
+      && /依赖会话/.test(reliedText) && stillThere && stillListed,
+      `relied="${reliedText.slice(0, 60)}" row=${stillThere} api=${stillListed}`);
+    // 断引用降级：session 池列表「已失效」标注
+    await page.click('[data-pool-tab="session"]').catch(() => {});
+    await sleep(400);
+    const danglings = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-pool-dangling]')].map((e) => e.textContent).join('|'));
+    await shot(page, 'b5-session-dangling');
+    check('B5b 断引用条目照列 + 「已失效」标注（降级不崩）', /已失效/.test(danglings), `dangling="${danglings}"`);
+  }
+
+  // ========== B8：C12 标题栏入口路由（拍板⑯） ==========
+  {
+    await closePoolBySwipe();
+    await page.click('[data-kfm-aichat-orb]').catch(() => {});
+    await sleep(500);
+    const aiOpen = await aiHook();
+    await page.evaluate(() => (window).dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'prompt' } })));
+    await sleep(400);
+    const hPrompt = await hook();
+    const aiStill = await aiHook();
+    const aiDom = await page.evaluate(() => !!document.querySelector('[data-kfm-aichat]'));
+    await page.evaluate(() => (window).dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'session' } })));
+    await sleep(400);
+    const hSession = await hook();
+    await shot(page, 'b8-route-over-ai');
+    await page.click('[data-pool-close]').catch(() => {});
+    await sleep(400);
+    const aiBack = await aiHook();
+    check('B8 C12 入口事件 → POOL_OPEN 直达对应池（prompt→session）',
+      aiOpen?.page === 'AI_PAGE' && hPrompt?.page === 'POOL_OPEN' && hPrompt?.pool === 'prompt'
+      && hSession?.pool === 'session' && hPrompt?.pageState === 'BROWSE',
+      `prompt=${hPrompt?.pool} session=${hSession?.pool}`);
+    check('B8b C12 路径 AI 页不收起（池页关后 ai-chat 仍在 AI_PAGE）',
+      aiStill?.page === 'AI_PAGE' && aiDom && aiBack?.page === 'AI_PAGE',
+      `during=${aiStill?.page} dom=${aiDom} after=${aiBack?.page}`);
+    // 占位文案仍在：CONFIG_OPEN 下拉点「角色」→ 占位骨架行（接真=阶段三）
+    await page.click('[data-aichat-config-btn]').catch(() => {});
+    await sleep(300);
+    await page.click('[data-aichat-config-entry="role"]').catch(() => {});
+    await sleep(300);
+    const placeholder = await page.evaluate(() => document.querySelector('[data-aichat-config-placeholder]')?.textContent ?? null);
+    check('B8c 标题栏占位文案仍在（入口按钮接真=阶段三，阶段二只接路由事件——诚实登记）',
+      typeof placeholder === 'string' && /待接入/.test(placeholder), `placeholder=${JSON.stringify(placeholder)}`);
+    // 留 AI 页关掉，回终端态
+    await page.click('[data-kfm-aichat-orb]').catch(() => {});
+    await sleep(400);
+  }
+
+  // ========== B10：C11/C13 推送校准 ==========
+  {
+    await openPoolBySwipe();
+    await page.click('[data-pool-tab="session"]').catch(() => {});
+    await sleep(400);
+    const page2 = await context.newPage();
+    await page2.goto(`${BASE}/?nosplash`, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
+    await page2.waitForFunction(() => !!(window).__kfmNzPool, null, { timeout: 15000, polling: 250 }).catch(() => {});
+    const stamp = Date.now();
+    await page2.evaluate(async (t) => {
+      await fetch('/pool/session/create', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ entry: { title: `推送会话-${t}` } }) });
+    }, stamp);
+    const pushed = await page.waitForFunction(
+      (t) => !!document.querySelector(`[data-pool-row="session:推送会话-${t}"]`), stamp,
+      { timeout: 6000, polling: 200 }).then(() => true).catch(() => false);
+    check('B10a C11 第二页 CRUD → 本页 pool/changed 推送到达 refetch（零刷新出行）', pushed, `row=推送会话-${stamp}`);
+    // C13：WS 断 → 回前台 visibilitychange → 重连 refetch
+    await page.evaluate(() => (window).__kfmNzPoolDiag?.closeWs?.());
+    await sleep(300);
+    const stamp2 = Date.now();
+    await page2.evaluate(async (t) => {
+      await fetch('/pool/session/create', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ entry: { title: `断线会话-${t}` } }) });
+    }, stamp2);
+    await sleep(800);
+    const missed = await page.evaluate((t) => !document.querySelector(`[data-pool-row="session:断线会话-${t}"]`), stamp2);
+    await page.evaluate(() => (window).__kfmNzPoolDiag?.resync?.());
+    const reconnected = await page.waitForFunction(
+      (t) => !!document.querySelector(`[data-pool-row="session:断线会话-${t}"]`), stamp2,
+      { timeout: 8000, polling: 200 }).then(() => true).catch(() => false);
+    const wsState = await page.evaluate(() => (window).__kfmNzPoolDiag?.wsState?.() ?? null);
+    await page2.close();
+    check('B10b C13 WS 断漏推送 → 回前台重连 refetch 校准（服务器唯一真源）',
+      missed && reconnected && wsState === 'open', `missed=${missed} reconnected=${reconnected} ws=${wsState}`);
+    await closePoolBySwipe();
+  }
+
+  // ========== B9：P6/P9 词汇表+观测钩+动画 token+L2 日志互证 ==========
+  {
+    const h = await hook();
+    const bad = vocabSamples.filter((s) =>
+      (s.kind === 'page' && !PAGE_VOCAB.includes(s.v))
+      || (s.kind === 'inner' && !INNER_VOCAB.includes(s.v) && s.v !== null)
+      || (s.kind === 'pool' && s.v !== null && !POOL_VOCAB.includes(s.v)));
+    const ringBad = (h?.ring ?? []).filter((e) =>
+      !PAGE_VOCAB.includes(e.from.page) || !PAGE_VOCAB.includes(e.to.page)
+      || !INNER_VOCAB.includes(e.from.inner) || !INNER_VOCAB.includes(e.to.inner));
+    const triggers = new Set((h?.ring ?? []).map((e) => e.trigger));
+    const anim = await page.evaluate(() => {
+      const el = document.createElement('div');
+      el.setAttribute('data-kfm-pool', '1');
+      el.style.position = 'absolute'; el.style.left = '-9999px';
+      document.body.appendChild(el);
+      const d = getComputedStyle(el).animationDuration;
+      const token = getComputedStyle(document.documentElement).getPropertyValue('--kfm-dur-normal').trim();
+      el.remove();
+      const toMs = (s) => { const m = /^([\d.]+)(ms|s)?$/.exec(s.trim()); return m ? Number.parseFloat(m[1]) * (m[2] === 's' ? 1000 : 1) : NaN; };
+      return { anim: d, token, animMs: toMs(d), tokenMs: toMs(token) };
+    });
+    const logRaw = existsSync(POOL_LOG) ? await readFile(POOL_LOG, 'utf-8') : '';
+    const logLines = logRaw.trim().split('\n').filter(Boolean);
+    let logOk = logLines.length > 0; const logKinds = new Set();
+    for (const l of logLines) {
+      try { const o = JSON.parse(l); logKinds.add(o.kind); if (KEY_SHAPE.test(l)) logOk = false; }
+      catch { logOk = false; }
+    }
+    const kindsHit = ['create', 'update', 'delete', 'activated', 'guard-reject', 'fuse'].filter((k) => logKinds.has(k));
+    check('B9a P6 词汇表：钩子+观测环全程状态名 ⊆ 清单枚举（触发器 C1-C13 全谱系）',
+      bad.length === 0 && ringBad.length === 0 && triggers.size >= 6,
+      `samples=${vocabSamples.length} bad=${JSON.stringify(bad.slice(0, 3))} triggers=${JSON.stringify([...triggers].sort())}`);
+    check('B9b 观测环 ≥50 拍 + P9 动画时长跟随 --kfm-dur-normal',
+      (h?.ringLen ?? 0) >= 50 && anim.animMs === anim.tokenMs,
+      `ring=${h?.ringLen} anim=${anim.anim}(${anim.animMs}ms) token=${anim.token}(${anim.tokenMs}ms)`);
+    check('B9c L2 /tmp 夹具 nz-pool.log JSONL 互证（六类事件逐拍落账+无明文 key）',
+      logOk && kindsHit.length >= 5, `kinds=[${kindsHit.join(',')}] lines=${logLines.length}`);
+  }
+
+  // ========== B11：P10/仲裁⑩ 层级 ==========
+  {
+    await page.click('[data-kfm-aichat-orb]').catch(() => {});
+    await sleep(500);
+    await page.evaluate(() => (window).dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'basic' } })));
+    await sleep(500);
+    const z = await page.evaluate(() => {
+      const g = (sel) => { const e = document.querySelector(sel); return e ? getComputedStyle(e).zIndex : null; };
+      return {
+        pool: g('[data-kfm-pool]'),
+        orb: g('[data-kfm-aichat-orb]'),
+        bar: g('[data-kfm-aichat-bar]'),
+        ai: g('[data-kfm-aichat]'),
+        tmuxDisplay: getComputedStyle(document.querySelector('[data-tmux-tabs-root]') ?? document.body).display,
+        aiDom: !!document.querySelector('[data-kfm-aichat]'),
+      };
+    });
+    await shot(page, 'b11-z-order');
+    check('B11 仲裁⑩ 层级：终端/tmux < AI 页(42) < 池页(44) < composer+orb（恒顶 45）；tmux 隐藏；AI 页不收起',
+      Number(z.pool) === 44 && Number(z.orb) === 45 && Number(z.bar) === 45 && Number(z.ai) === 42
+      && z.tmuxDisplay === 'none' && z.aiDom,
+      JSON.stringify(z));
+    await page.click('[data-pool-close]').catch(() => {});
+    await sleep(400);
+    const restored = await page.evaluate(() => ({
+      orb: getComputedStyle(document.querySelector('[data-kfm-aichat-orb]')).zIndex,
+      aiPage: (window).__kfmNzAiChat?.().page,
+    }));
+    check('B11b 池页关闭复原：orb 回 z43 档（inline 值），AI 页保持 AI_PAGE', restored.orb === '43' && restored.aiPage === 'AI_PAGE',
+      JSON.stringify(restored));
+    await page.click('[data-kfm-aichat-orb]').catch(() => {});
+  }
+
+  check('⓪-尾 全程零页面异常', pageErrors.length === 0, pageErrors.slice(0, 3).join(' | '));
+} catch (e) {
+  check('考卷执行中断', false, String(e).slice(0, 300));
+} finally {
+  // ---------- 清场：tmux 临时会话 + 隔离 server + 夹具 ----------
+  for (let i = 0; i < 6; i++) spawn('tmux', ['kill-session', '-t', `pool-exam-${i}`], { stdio: 'ignore' });
+  await browser.close().catch(() => {});
+  srv.kill('SIGTERM');
+  await sleep(500);
+  if (!srv.killed) srv.kill('SIGKILL');
+  await rm(FIXTURE, { recursive: true, force: true }).catch(() => {});
+}
+
+const pass = results.filter((r) => r.ok).length;
+console.log(`\n=== config-pool B 档：${pass}/${results.length} ===`);
+process.exit(pass === results.length ? 0 : 1);

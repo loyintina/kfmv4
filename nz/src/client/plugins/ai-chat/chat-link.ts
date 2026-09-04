@@ -105,12 +105,29 @@ export function createAiChatLink(onUpdate: () => void, env?: { page?: () => Page
 
     async loadProviders(): Promise<void> {
       try {
-        const res = await fetch('/ai/providers');
+        // A2a §3.5 接点：picker 与池页同源互证（B4）——选中态第一次有持久化：
+        // /pool/active 总账在场且条目仍存在 → 选中随总账复原；否则回落
+        // server 默认（拍板⑮）。总账只被显式动作改写（池页/picker）。
+        const [res, actRes] = await Promise.all([
+          fetch('/ai/providers'),
+          fetch('/pool/active').catch(() => null),
+        ]);
         if (!res.ok) return;
         const info = (await res.json()) as ProvidersInfo;
         link.providersInfo = info;
-        // 默认 = server 下发的 default（2026-09-04 拍板⑮=智谱 glm-5.3-flash）
-        if (info.default && !link.selection.provider) {
+        let restored: { provider: string; model: string } | null = null;
+        if (actRes?.ok) {
+          const led = (await actRes.json()) as { providerId?: string; modelId?: string };
+          const p = info.providers.find((x) => x.id === led.providerId || x.name === led.providerId);
+          if (p && typeof led.modelId === 'string') {
+            restored = { provider: p.id, model: led.modelId === '' ? p.models[0] ?? '' : led.modelId };
+            if (led.modelId !== '' && !p.models.includes(led.modelId)) restored = null; // 断引用不复原（诚实回落）
+          }
+        }
+        if (restored && state.phase === 'IDLE') {
+          link.selection = restored;
+        } else if (info.default && !link.selection.provider) {
+          // 默认 = server 下发的 default（2026-09-04 拍板⑮=智谱 glm-5.3-flash）
           link.selection = { provider: info.default.provider, model: info.default.model };
         } else if (!link.selection.provider && info.providers.length > 0) {
           link.selection = { provider: info.providers[0].id, model: info.providers[0].models[0] ?? '' };

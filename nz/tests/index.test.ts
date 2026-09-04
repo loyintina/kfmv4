@@ -28,6 +28,7 @@ import './ai-projection.test.ts';
 import './ai-server.test.ts';
 import './pool-server.test.ts';
 import './pool-swipe.test.ts';
+import './pool-reducer.test.ts';
 import { runAll } from './runner.ts';
 
 await runAll();

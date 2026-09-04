@@ -261,6 +261,39 @@
   border-color: var(--kfm-accent) !important;
 }
 
+/* ── config-pool 皮（配置池 A2a 阶段二；[data-kfm-pool]=池页、
+ * [data-pool-tab]=标签行 chip、[data-pool-overlay]=删除确认罩层。
+ * 颜色/阴影/圆角/时长唯一来源本段（P8）；池页滑入/收起只用
+ * --kfm-dur-normal/--kfm-ease-out（P9）——左滑进入 translateX(100%)→0，
+ * 收起反向播完才摘 DOM（ai-chat 页同款机关） */
+@keyframes kfm-pool-page-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes kfm-pool-page-out {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
+}
+[data-kfm-pool] {
+  animation: kfm-pool-page-in var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+[data-kfm-pool].kfm-closing {
+  animation: kfm-pool-page-out var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+
+/* 层级规则（仲裁⑩用户修正稿，P10）：层级定死 终端/tmux < AI 页(z42) <
+ * 池页(z44) < 输入栏+光球（恒顶）。池页开（data-kfm-pool-open）时：
+ * tmux 控件 display:none（AI 页开时同款不渲染档）；输入栏+光球 inline
+ * z43 压不过池页 44 → !important 升 45 档保「恒顶」与可点（AI 光球=
+ * AI 面板开关语义不变，池页从标题栏入口/手势开时球都够得着） */
+:root[data-kfm-pool-open] [data-tmux-tabs-root] {
+  display: none;
+}
+:root[data-kfm-pool-open] [data-kfm-aichat-orb],
+:root[data-kfm-pool-open] [data-kfm-aichat-bar] {
+  z-index: 45 !important;
+}
+
 /* 未来主题切换示例（现在不启用）：
 :root[data-theme="light"] {
   --kfm-page: #fafafb;

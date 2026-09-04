@@ -259,8 +259,25 @@ export function createAiChatPlugin(): UiPlugin {
           closeTimerRef.current = setTimeout(() => { closeTimerRef.current = null; setClosing(false); }, readDurNormalMs());
           refreshRuntime();
         };
-        const onMenu = (next: MenuState): void => { menuRef.current = next; setMenu(next); refreshRuntime(); }; // A10
-        const onSelect = (provider: string, model: string): void => { link.selection = { provider, model }; refreshRuntime(); };
+        const onMenu = (next: MenuState): void => {
+          menuRef.current = next;
+          setMenu(next);
+          // A2a §3.5 接点（B6 picker ✓ 同步）：开 picker 即重取 /ai/providers
+          // + /pool/active——激活标移动后（池页「设为激活」）菜单打开即随总账
+          if (next === 'MODEL_OPEN') void link.loadProviders();
+          refreshRuntime();
+        };
+        const onSelect = (provider: string, model: string): void => {
+          link.selection = { provider, model };
+          // A2a §3.5 接点（拍板⑥联动）：picker 选中=显式激活动作 → 写总账
+          // （POST /pool/active）——刷新后读总账复原，picker 第一次有持久化
+          void fetch('/pool/active', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ providerId: provider, modelId: model }),
+          }).catch(() => { /* 总账暂不可得：选中仍生效（run 请求显式带） */ });
+          refreshRuntime();
+        };
 
         // 拍板⑬（2026-09-04）：picker 点菜单外任意处即关，且那一指的动作
         // **同时**生效（点终端=聚焦打字+菜单关、点消息区=交互+菜单关，无感

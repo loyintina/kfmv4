@@ -24,6 +24,7 @@ export const GestureLayer = {
   WindowOrb: 800, // 窗口卡光球
   FileTree: 700, // 文件树
   Launcher: 600, // 启动器
+  PageSwipe: 500, // 页面导航手势（配置池左滑进入/右滑返回，A2a 仲裁④：低于全部功能控件带，页面导航天然让位）
 } as const;
 export type GestureLayer = (typeof GestureLayer)[keyof typeof GestureLayer];
 

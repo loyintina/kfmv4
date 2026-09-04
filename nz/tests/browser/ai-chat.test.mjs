@@ -60,7 +60,14 @@ import { join } from 'node:path';
 const SHOT_DIR = join(process.cwd(), 'tests', 'assets');
 mkdirSync(SHOT_DIR, { recursive: true });
 
-const BASE = process.env.KFM_NZ_URL || 'http://127.0.0.1:8023/';
+// A2a 起（配置池 docs/config-pool-a2a-design.md §3.5 接点）：picker 选中
+// 即写 /pool/active 总账，本卷亦会播种「智谱」provider 夹具——必须跑隔离
+// 实例（KFM_NZ_URL 显式指定），裸跑 8023 dev 实例会污染真机 ~/.kfmv4。
+const BASE = process.env.KFM_NZ_URL;
+if (!BASE || BASE.includes('8023')) {
+  console.error('❌ 本卷必须以 KFM_NZ_URL 指向隔离实例跑（考卷会写 /pool/active 总账+播种 provider 夹具；防污染 dev/真机 ~/.kfmv4）。\n   例：NZ_PORT=8124 NZ_AI_CONFIG_DIR=/tmp/fx tsx src/server/index.ts 起完后 KFM_NZ_URL=http://127.0.0.1:8124/ node tests/browser/ai-chat.test.mjs');
+  process.exit(2);
+}
 const PAGE_URL = `${BASE}?nosplash`;
 const results = [];
 const check = (name, ok, detail) => { results.push({ name, ok, detail }); console.log(`${ok ? '✅' : '❌'} ${name}${detail ? ' — ' + detail : ''}`); };
@@ -73,8 +80,11 @@ const PAGE_VOCAB = ['TERMINAL', 'AI_PAGE'];
 const RUN_VOCAB = ['IDLE', 'WAITING', 'STREAMING'];
 const MENU_VOCAB = ['CLOSED', 'MODEL_OPEN', 'CONFIG_OPEN'];
 // 大小写敏感：代字形必须是环境变量命名习惯（${WORD_WORD}，含下划线），
-// 防误伤 minify 模板串 ${u}/${E}
-const KEY_SHAPE = /apiKey|Bearer |\$\{[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\}|KFM_PROVIDER|\bsk-[a-z0-9]/;
+// 防误伤 minify 模板串 ${u}/${E}。A2a 修订（config-pool 插件进 bundle）：
+// apiKey 是池条目的**字段名**（配置池编辑器合法词汇，字段名≠密钥材料），
+// 从尺里摘除——材料尺=Bearer 头/未展开代字 ${XXX_YYY}/sk- 值，与
+// config-pool B 卷 B7 同尺。
+const KEY_SHAPE = /Bearer |\$\{[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\}|\bsk-[a-z0-9]/;
 // server 日志尺：人话错误文案合法含 "apiKey" 字样（§1.3 fuse 人话点名变量），
 // 钉的是 key 材料本身（Bearer 头/未展开代字/sk- 值形态）
 const LOG_SHAPE = /Bearer |\$\{|\bsk-[a-z0-9]{6,}/i;
@@ -340,6 +350,18 @@ check('B7c client bundle 无 key 形态', bundleClean, bundleDetail);
 check('B7d server /tmp 日志无 key 形态', logClean, logDetail);
 
 // ========== A10 菜单机 + picker 默认 智谱/glm-5.3-flash（拍板⑮） ==========
+// A2a 接点自举（设计 config-pool-a2a-design §3.5）：①保证「智谱」在
+// /ai/providers 数据源（隔离夹具上不存在；已存在=409 忽略）；②清总账——
+// picker 选中写总账后，选中随总账复原（持久化），默认值断言必须在空账上做
+await page.evaluate(async () => {
+  await fetch('/pool/provider/create', { method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ entry: { id: '智谱', name: '智谱', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', apiKey: '', models: ['glm-5.3-flash', 'glm-5.2'] } }) }).catch(() => {});
+  await fetch('/pool/active', { method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ providerId: '', modelId: '', roleFile: '', sessionId: '' }) }).catch(() => {});
+});
+await page.reload({ waitUntil: 'networkidle' }).catch(() => {});
+await page.waitForFunction(() => !!window.__kfmNzAiChat, null, { timeout: 15000, polling: 250 }).catch(() => {});
+await page.waitForTimeout(1200);
 await actUntil(openAiPage, async () => (await hook())?.page === 'AI_PAGE');
 await page.waitForTimeout(300); // 等一帧上屏再截图（headless paint 教训）
 const defBtn = await page.evaluate(() => document.querySelector('[data-aichat-model-btn]')?.textContent ?? '').catch(() => '');
@@ -844,6 +866,26 @@ try {
   p7detail = offenders.join(' | ') || `${files.length} 件皮/脑零字面量`;
 } catch (e) { p7detail = String(e).slice(0, 100); }
 check('P7 皮内零硬编码色值/阴影/时长字面量（全走 --kfm-* token）', p7ok, p7detail);
+
+// ========== B19：A2a §3.5 接点——picker 选中持久化（选中写总账，刷新读总账复原） ==========
+// 红先证据（2026-09-04）：旧码（选中只存 client 内存）此钉必红——reload 后
+// btn 回落 server 默认「智谱·glm-5.3-flash」；新码从 /pool/active 复原 echo。
+{
+  await page.evaluate(() => window.__kfmNzAiChatTestLever = undefined);
+  await selectModel('echo::echo').catch(() => {});
+  await page.waitForTimeout(400);
+  const ledger = await page.evaluate(async () => await (await fetch('/pool/active')).json()).catch(() => null);
+  const btnBefore = await page.evaluate(() => document.querySelector('[data-aichat-model-btn]')?.textContent ?? '').catch(() => '');
+  await page.reload({ waitUntil: 'networkidle' }).catch(() => {});
+  await page.waitForFunction(() => !!window.__kfmNzAiChat, null, { timeout: 15000, polling: 250 }).catch(() => {});
+  await page.waitForTimeout(1500); // loadProviders 双拉（providers+总账）落定
+  const btnAfter = await page.evaluate(() => document.querySelector('[data-aichat-model-btn]')?.textContent ?? '').catch(() => '');
+  check('B19 A2a 接点：picker 选中写总账（echo 入账）+ 刷新后读总账复原（不再刷新即失忆）',
+    ledger?.providerId === 'echo' && ledger?.modelId === 'echo'
+    && /echo/i.test(btnBefore) && /echo/i.test(btnAfter),
+    `ledger=${JSON.stringify(ledger)} before="${btnBefore}" after="${btnAfter}"`);
+  await page.click('[data-kfm-aichat-orb]').catch(() => {}); // 关 AI 页收尾
+}
 
 // ========== 汇总 ==========
 const pass = results.filter((r) => r.ok).length;

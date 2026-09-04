@@ -19,10 +19,11 @@
  * 错误语义沿用 A1 表精神：配置错误 → 人话 JSON 不 500 不裸栈；
  * 写失败（权限/坏 JSON）→ 500{error} + /tmp 日志完整体。
  *
- * pool/changed 的 WS 推送是阶段二的活（清单 §1.6），v0 写盘即事实、
- * client 刷新校准——本层只在落盘成功后落 /tmp/nz-pool.log 观测拍。
+ * pool/changed 推送（清单 §1.6）：每次写盘成功后经 bus.emitPoolChanged 广播
+ * （先落盘后广播，落盘即事实），ws-bridge 消费转 {t:'pool-changed'} 帧。
  */
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { emitPoolChanged } from './bus.ts';
 import {
   POOLS, getPool, loadEntry, scanReliers, annotateDangling,
   type PoolDescriptor, type PoolEntry,
@@ -121,6 +122,7 @@ export function mountPoolRoutes(): (req: IncomingMessage, res: ServerResponse) =
       entry = fused;
     }
     poolLog({ kind: 'create', pool: d.pool, id });
+    emitPoolChanged({ pool: d.pool, id, op: 'created' });
     sendJson(res, 200, { entry });
   };
 
@@ -143,6 +145,7 @@ export function mountPoolRoutes(): (req: IncomingMessage, res: ServerResponse) =
       if (bad) { sendJson(res, 400, { error: bad }); return; }
       d.saveEntry(dir(), merged);
       poolLog({ kind: 'update', pool: d.pool, id });
+      emitPoolChanged({ pool: d.pool, id, op: 'updated' });
       sendJson(res, 200, { entry: merged });
       return;
     }
@@ -160,6 +163,7 @@ export function mountPoolRoutes(): (req: IncomingMessage, res: ServerResponse) =
     entries[idx] = fused;
     d.saveAll!(dir(), entries);
     poolLog({ kind: 'update', pool: d.pool, id });
+    emitPoolChanged({ pool: d.pool, id, op: 'updated' });
     sendJson(res, 200, { entry: fused });
   };
 
@@ -182,6 +186,7 @@ export function mountPoolRoutes(): (req: IncomingMessage, res: ServerResponse) =
       d.saveAll!(dir(), entries);
     }
     poolLog({ kind: 'delete', pool: d.pool, id });
+    emitPoolChanged({ pool: d.pool, id, op: 'deleted' });
     sendJson(res, 200, { ok: true });
   };
 
@@ -223,6 +228,7 @@ export function mountPoolRoutes(): (req: IncomingMessage, res: ServerResponse) =
         const ledger: ActiveLedger = { ...readActive(dir()), ...(body as Partial<ActiveLedger>) };
         writeActive(dir(), ledger);
         poolLog({ kind: 'activated', pool: 'active', fields: Object.keys(body).sort() });
+        emitPoolChanged({ pool: 'active', id: 'active', op: 'activated' });
         sendJson(res, 200, ledger);
         return;
       }

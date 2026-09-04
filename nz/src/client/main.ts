@@ -22,6 +22,7 @@ import { createUiKernel } from './kernel/ui-kernel.js';
 import { reactSmokePlugin } from './kernel/react-adapter.js';
 import { createTmuxTabsPlugin } from './plugins/tmux-tabs/index.js';
 import { createAiChatPlugin } from './plugins/ai-chat/index.js';
+import { createConfigPoolPlugin } from './plugins/config-pool/index.js';
 
 // ========== 内核件接线：宿主给盒子，手势管输入，broker 管卡类型户口 ==========
 const host = new RenderHost();
@@ -124,6 +125,13 @@ uiKernel.mount('tmux-tabs', createTmuxTabsPlugin(), tmuxContainer.el);
 // 同款教训：挂 body 会被 layout 层整面盖住）。
 const aiChatContainer = host.create(rootCtx, { kind: 'overlay', owner: 'ai-chat', slot: 'ai-chat' });
 uiKernel.mount('ai-chat', createAiChatPlugin(), aiChatContainer.el);
+
+// config-pool（设计 docs/config-pool-a2a-design.md §一/§三）：左滑进入的
+// 全屏池页（z44，AI 页之上、输入栏+光球恒顶之下——仲裁⑩）+ 四池标签行。
+// 槽位同落 overlay 层（tmux-tabs 同款教训）；挂 ai-chat 之后=同层 DOM 后位，
+// 手势注册走 rootCtx（registerGesture ctx.effect 白送摘除——仲裁④ PageSwipe:500）。
+const poolContainer = host.create(rootCtx, { kind: 'overlay', owner: 'config-pool', slot: 'config-pool' });
+uiKernel.mount('config-pool', createConfigPoolPlugin(rootCtx), poolContainer.el);
 
 // ========== 热更自刷（前端腿：build → 页面自动换血，会话靠续命 attach 不断） ==========
 // boot 记当前 builtAt，10s 轮询 /build-info.json（build.mjs 每次构建重写），
