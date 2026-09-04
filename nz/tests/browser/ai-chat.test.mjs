@@ -21,10 +21,11 @@
  *       composer 钉最底贴软键盘/视口底，keybar 钉 composer 正上方——终端
  *       scrollEl 预留总量不变；AI 页底=composer 顶（面板落到输入栏上面，
  *       盖住 keybar 且内容滚到底不被 composer 盖）；B12c 键盘弹起 composer
- *       底=键盘顶直接接触；B12d 长内容滚到底末条不被 composer 盖）
+ *       底=键盘顶直接接触；B12d 长内容滚到底末条不被 composer 盖；
+ *       B12e/B12e0 拍板⑩点输入栏弹键盘→列表追底锚定最新，被动 delta 不拽回）
  *   补流钉  A1 转换：run 进行中切出 AI 页再切回 → attach from=N 补流不丢帧
  *   P7  皮内零硬编码色值（源码 grep；变异抽检的靶子）
- *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见
+ *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后
  *
  * 慢流杠杆（B3/B5/补流需要确定性时间窗）：page.evaluate 设
  * window.__kfmNzAiChatTestLever = { echoPaceMs } → client 在 echo start 载荷
@@ -454,6 +455,61 @@ check('B12d 长内容滚到底：列表可滚 + 末条消息底=composer 顶上�
 const shotScrolled = join(SHOT_DIR, 'ai-chat-page-scrolled-bottom.png');
 await page.screenshot({ path: shotScrolled });
 console.log('shot:', shotScrolled);
+
+// ========== B12e/B12e0：拍板⑩ 点输入栏弹键盘 → 列表追底锚定最新 ==========
+// 语义：点输入栏=用户已表达「我要说话了」——主动触发，覆盖上滚阅读态合法
+// （聊天应用标准：键盘弹起即回最新）；纯被动事件（新 delta 到来）仍守
+// 「上滚不拽回」（term 8.8.3c 同纪律）。真滚动件=[data-aichat-list]（B12d
+// 量测坑：wrap 不溢出，list 才是 flex 受限的真滚动件）。
+// 造态：慢节目跑起来 → 流式中上滚 → 对照钉（被动 delta 不拽回）→ 流完仍
+// 上滚 → 点输入栏+mock 键盘上浮 → 主钉（追底锚定末条）。
+await setLever(40);
+await sendViaComposer('追底钉 PONG').catch(() => {});
+const r9 = await actUntil(async () => {}, async () => (await hook())?.phase === 'STREAMING', { tries: 0, settle: 6000, poll: 60 });
+// 流式中上滚阅读（scrollTop=0=顶，远离底部）
+await page.evaluate(() => { document.querySelector('[data-aichat-list]').scrollTop = 0; });
+await page.waitForTimeout(700); // 40ms/事件，十余条 delta 被动到达
+const passive = await page.evaluate(() => {
+  const list = document.querySelector('[data-aichat-list]');
+  return list ? { st: list.scrollTop, sh: list.scrollHeight, ch: list.clientHeight } : null;
+});
+check('B12e0 对照：上滚阅读中仅来新 delta（不点输入栏）→ 不拽回（term 不拽回纪律同哲学）',
+      r9.ok && !!passive && passive.st + passive.ch < passive.sh - 40,
+      passive ? `st=${passive.st.toFixed(0)} sh=${passive.sh} ch=${passive.ch}（在底=max ${(passive.sh - passive.ch).toFixed(0)}）` : '量测缺失');
+await actUntil(async () => {}, async () => (await hook())?.phase === 'IDLE', { tries: 0, settle: 10000 });
+const stillUp = await page.evaluate(() => {
+  const list = document.querySelector('[data-aichat-list]');
+  return list ? { st: list.scrollTop, sh: list.scrollHeight, ch: list.clientHeight } : null;
+});
+const shotUp = join(SHOT_DIR, 'ai-chat-scrolled-up-before-focus.png');
+await page.screenshot({ path: shotUp });
+console.log('shot:', shotUp);
+// 主钉：点输入栏（聚焦=主动说话意图）+ mock 键盘上浮（vv 620→349，真机
+// 271px 键盘地形，B12c 同款路径）→ 列表必须追底锚定末条
+await page.click('[data-aichat-input]').catch(() => {});
+await page.evaluate(() => { try {
+  Object.defineProperty(window.visualViewport, 'height', { get: () => 349, configurable: true });
+  Object.defineProperty(window.visualViewport, 'offsetTop', { get: () => 0, configurable: true });
+} catch (e) {} window.visualViewport?.dispatchEvent(new Event('resize')); });
+await page.waitForTimeout(700); // 聚焦即追 + kbRise 落地后再追（布局更新后）
+const snapped = await page.evaluate(() => {
+  const list = document.querySelector('[data-aichat-list]');
+  const bar = document.querySelector('[data-kfm-aichat-bar]')?.getBoundingClientRect();
+  const last = [...document.querySelectorAll('[data-aichat-msg]')].at(-1)?.getBoundingClientRect();
+  return list && bar && last ? { st: list.scrollTop, sh: list.scrollHeight, ch: list.clientHeight, lastBottom: last.bottom, barTop: bar.top } : null;
+});
+check('B12e 拍板⑩：上滚态点输入栏+键盘上浮 → 列表追底锚定末条（贴 composer 顶）',
+      !!stillUp && stillUp.st + stillUp.ch < stillUp.sh - 40        // 触发前确在上滚态
+      && !!snapped && snapped.st + snapped.ch >= snapped.sh - 5     // 追底（在底）
+      && snapped.lastBottom <= snapped.barTop + 2 && snapped.lastBottom > snapped.barTop - 60, // 末条贴 composer 顶
+      `before: st=${stillUp?.st.toFixed(0)}/${(stillUp ? stillUp.sh - stillUp.ch : 0).toFixed(0)} after: st=${snapped?.st.toFixed(0)}+${snapped?.ch} vs sh=${snapped?.sh} lastBottom=${snapped?.lastBottom.toFixed(1)} barTop=${snapped?.barTop.toFixed(1)}`);
+const shotSnap = join(SHOT_DIR, 'ai-chat-focus-kb-rise-snapped-bottom.png');
+await page.screenshot({ path: shotSnap });
+console.log('shot:', shotSnap);
+await page.evaluate(() => { try {
+  delete window.visualViewport.height; delete window.visualViewport.offsetTop;
+} catch (e) {} window.visualViewport?.dispatchEvent(new Event('resize')); });
+await page.waitForTimeout(700);
 
 // ========== 补流钉：A1 转换 run 进行中切出再切回 → attach from=N 不丢帧 ==========
 await setLever(40);

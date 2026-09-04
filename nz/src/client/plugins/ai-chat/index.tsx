@@ -166,11 +166,65 @@ export function createAiChatPlugin(): UiPlugin {
           document.documentElement.toggleAttribute('data-kfm-aichat-open', page === 'AI_PAGE');
         }, [page]);
 
-        // 消息更新自动滚底（贴近用户真实体验的跟随，不加动画）
+        // 列表滚动纪律（term 8.8.3c 同哲学 + 拍板⑩）：
+        //   真滚动件=[data-aichat-list]（wrap 是 flex 受限外壳不溢出，B12d
+        //   量测实锤）——所有滚动操作只认它；
+        //   被动事件（新 delta/渲染）只在「在底」时跟随，上滚阅读不拽回；
+        //   主动意图（点开 AI 页 / 点输入栏聚焦 / 键盘上浮）= 追底锚定最新
+        //   ——点输入栏=用户已表达「我要说话了」，覆盖上滚态是正确语义
+        //   （聊天应用标准：键盘弹起即回最新，拍板⑩ 2026-09-04）
+        // 在底判定**不用 scroll 事件**：程序化上滚后浏览器的 scroll 事件
+        // 合并迟发且只报当前位置——若跟随 effect 抢在事件前回拽，事件以
+        // 被拽回的位置到达，「上滚过」被整段抹掉（B12e0 调试实锤：手动
+        //   dispatch 一枪 scroll 即不拽回=监听器在但真事件没送达）。改为
+        // 渲染当拍直读 live 几何：scrollTop 与上一拍不同=外部滚动（内容
+        // 增长不动 scrollTop）→按 live 位置重判在底，竞态结构性消除。
+        const atBottomRef = useRef(true);
+        const lastGeomRef = useRef({ st: -1, sh: -1 });
+        const listScroller = (): HTMLElement | null => {
+          const wrap = listWrapRef.current;
+          if (!wrap) return null;
+          return (wrap.firstElementChild as HTMLElement | null) ?? wrap;
+        };
+        const snapListToBottom = (): void => {
+          atBottomRef.current = true;
+          const sc = listScroller();
+          if (!sc) return;
+          sc.scrollTop = sc.scrollHeight;
+          lastGeomRef.current = { st: sc.scrollTop, sh: sc.scrollHeight };
+        };
+        // 进页/收起动画期锚定最新（聊天标准开局位）
         useEffect(() => {
-          const el = listWrapRef.current;
-          if (el) el.scrollTop = el.scrollHeight;
+          if (page === 'AI_PAGE' || closing) snapListToBottom();
+        }, [page, closing]);
+        // 被动跟随：新内容落地仅在底时追底（上滚阅读不拽回）；先按 live
+        // 位置变化重判在底，再决定跟不跟
+        useEffect(() => {
+          const sc = listScroller();
+          if (!sc) return;
+          const g = lastGeomRef.current;
+          if (sc.scrollTop === g.st && sc.scrollHeight === g.sh) return;
+          if (sc.scrollTop !== g.st) {
+            atBottomRef.current = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 5;
+          }
+          if (atBottomRef.current) sc.scrollTop = sc.scrollHeight;
+          lastGeomRef.current = { st: sc.scrollTop, sh: sc.scrollHeight };
         });
+        // 拍板⑩触发源①：composer 聚焦（点输入栏=主动说话意图）→ 追底
+        useEffect(() => {
+          const bar = barRef.current;
+          if (!bar) return;
+          const onFocusIn = (): void => snapListToBottom();
+          bar.addEventListener('focusin', onFocusIn);
+          return () => bar.removeEventListener('focusin', onFocusIn);
+        }, []);
+        // 拍板⑩触发源②：键盘上浮（vv 收缩，面板随 composer 上浮）→ 布局
+        // 落定后追底（仅上浮沿触发；收键盘不回拽阅读位）
+        const prevKbRiseRef = useRef(0);
+        useEffect(() => {
+          if (kbRise > prevKbRiseRef.current) snapListToBottom();
+          prevKbRiseRef.current = kbRise;
+        }, [kbRise]);
 
         // A1：TERMINAL → AI_PAGE；有活跃 run → attach from cursor 补流。
         // 收起动画中途重开 = 作废摘除定时器、反播回滑入（动画归 CSS 类切换）
