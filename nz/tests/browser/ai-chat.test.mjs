@@ -17,9 +17,10 @@
  *   B10 composer 全局常驻（拍板①：TERMINAL 态存在可见；关态可发送 echo 全链）
  *   B11 焦点不打架（P12：点 composer 焦点落 composer 不被诱饵回抢；
  *       点终端焦点回落 IME 诱饵）
- *   B12 底部避让（P10 + 2026-09-04 同日二拍换序：composer 钉最底贴软键盘/
- *       视口底，keybar 钉 composer 正上方——终端 scrollEl 预留总量不变；
- *       AI 页底=keybar 顶；B12c 键盘弹起 composer 底=键盘顶直接接触）
+ *   B12 底部避让（P10 + 2026-09-04 同日二拍换序 + 同日三拍⑧：composer 钉
+ *       最底贴软键盘/视口底，keybar 钉 composer 正上方——终端 scrollEl 预留
+ *       总量不变；AI 页底=视口底盖住 keybar（终端/AI 两套逻辑），composer
+ *       z43 在页之上钉底可用；B12c 键盘弹起 composer 底=键盘顶直接接触）
  *   补流钉  A1 转换：run 进行中切出 AI 页再切回 → attach from=N 补流不丢帧
  *   P7  皮内零硬编码色值（源码 grep；变异抽检的靶子）
  *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件
@@ -240,9 +241,24 @@ check('B9a 层级：AI 页开 → tmux orb+标签栏隐藏（display:none 不渲
 check('B9b 层级 z 序：AI orb ≥ composer > AI 页 > tmux orb（P10 不倒挂）',
       !!g9.page && !!g9.bar && !!g9.orb && g9.orb.z > g9.page.z && g9.bar.z > g9.page.z && g9.page.z > tmuxOrbZ,
       `aiOrb=${g9.orb?.z} bar=${g9.bar?.z} page=${g9.page?.z} tmuxOrb=${tmuxOrbZ}`);
-check('B12b 底部避让：AI 页内容区底=keybar 顶（换序后 keybar 钉 composer 正上方——AI 页 keybar/composer 两不盖）',
-      !!g9.page && !!g9.keybar && Math.abs(g9.page.bottom - g9.keybar.top) <= 2,
-      `page.bottom=${g9.page?.bottom.toFixed(1)} keybar.top=${g9.keybar?.top.toFixed(1)}`);
+// B12b 拍板⑧（2026-09-04 同日三拍）：AI 页打开时 keybar 不应继续显示——
+// 终端逻辑与 AI 对话逻辑是两套，AI 页底=视口底把两排快捷键**盖住**；
+// composer 全局钉底不动（z43 在页之上），elementFromPoint 双探：keybar
+// 中心点被页接住（不可见不可点）、composer 输入框中心点仍被 composer 接住
+check('B12b AI 页盖住 keybar：页底=视口底 + keybar 中心点被页接住（不可点）+ composer 仍钉底可点',
+      !!g9.page && !!g9.keybar && !!g9.bar
+      && Math.abs(g9.page.bottom - g9.ih) <= 2
+      && await page.evaluate(() => {
+        const kb = document.querySelector('.kfm-term-keybar').getBoundingClientRect();
+        const hit = document.elementFromPoint(kb.left + kb.width / 2, kb.top + kb.height / 2);
+        return !!hit && !!hit.closest('[data-kfm-aichat]') && !hit.closest('.kfm-term-keybar');
+      })
+      && await page.evaluate(() => {
+        const input = document.querySelector('[data-aichat-input]').getBoundingClientRect();
+        const hit = document.elementFromPoint(input.left + input.width / 2, input.top + input.height / 2);
+        return !!hit && !!hit.closest('[data-kfm-aichat-bar]');
+      }),
+      `page.bottom=${g9.page?.bottom.toFixed(1)}（视口底${g9.ih}） keybar=[${g9.keybar?.top.toFixed(1)},${g9.keybar?.bottom.toFixed(1)}] bar.bottom=${g9.bar?.bottom.toFixed(1)}`);
 const shotOpen = join(SHOT_DIR, 'ai-chat-page-open-layering.png');
 await page.screenshot({ path: shotOpen });
 console.log('shot:', shotOpen);

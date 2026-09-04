@@ -22,9 +22,10 @@
  *   ④ 层级从底到顶：终端（含 tmux 控件/keybar）→ AI 页（z42）→ composer
  *      +AI orb（z43）；AI 页开时 tmux orb+标签栏 display:none 隐藏（不是
  *      被盖）；同日二拍换序后垂直次序（从底到顶）= 软键盘 → composer →
- *      keybar → 内容：AI 页内容区底部避开 keybar+composer（=keybar 顶），
- *      终端 scrollEl 底部预留两条同高（--kfm-aichat-composer-h 经
- *      ResizeObserver 实测单源下发）。
+ *      keybar → 内容，终端 scrollEl 底部预留两条同高（--kfm-aichat-
+ *      composer-h 经 ResizeObserver 实测单源下发）；同日三拍⑧：AI 页
+ *      底=视口底/键盘顶——终端与 AI 对话是两套逻辑，页开即盖住 keybar，
+ *      composer z43 在页之上钉底可用。
  *
  * 观测钩（§4.2，公共契约）：__kfmNzAiChat() 同步报
  *   { page, menu, run{phase,runId,provider,model,cursor,deltas,chars,startedMs}|null,
@@ -34,7 +35,6 @@ import { createElement, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { UiPlugin, UiPluginHandle } from '../../kernel/ui-kernel.js';
-import { KEYBAR_H } from '../../term/keybar.js';
 import { createAiChatLink, type AiChatLink, type PageState, type RunPhase } from './chat-link.js';
 import { MessageList } from './ui/message-list.js';
 import { PromptBar, type MenuState } from './ui/prompt-bar.js';
@@ -103,7 +103,6 @@ export function createAiChatPlugin(): UiPlugin {
         const [page, setPage] = useState<PageState>('TERMINAL');
         const [menu, setMenu] = useState<MenuState>('CLOSED');
         const [closing, setClosing] = useState(false);
-        const [composerH, setComposerH] = useState(0);
         const [kbRise, setKbRise] = useState(0);
         const [, setTick] = useState(0);
         const listWrapRef = useRef<HTMLDivElement>(null);
@@ -142,14 +141,14 @@ export function createAiChatPlugin(): UiPlugin {
         }, []);
 
         // composer 高度 ResizeObserver 实测 → --kfm-aichat-composer-h 单源下发
-        // （终端 scrollEl 底部预留 + AI 页底部避让同读此值；覆写 tokens.css
-        // 静态默认，插件摘除时还原——§3.0/P10）
+        // （终端 scrollEl 底部预留 + keybar 钉位同读此值；覆写 tokens.css
+        // 静态默认，插件摘除时还原——§3.0/P10。AI 页底=视口底后本组件不再
+        // 消费该值，纯做单源分发——拍板⑧）
         useEffect(() => {
           const el = barRef.current;
           if (!el) return;
           const apply = (): void => {
             const h = el.getBoundingClientRect().height;
-            setComposerH(h);
             document.documentElement.style.setProperty('--kfm-aichat-composer-h', `${h}px`);
           };
           apply();
@@ -238,9 +237,10 @@ export function createAiChatPlugin(): UiPlugin {
         if (page !== 'AI_PAGE' && !closing) return createElement('div', null, orb, bar);
 
         // 全屏 AI 页（z42：终端/tmux 控件之上、composer+orb 之下——P10 层序）：
-        // 头部 / 消息区（借 chat.tsx 结构）；内容区底部避开 keybar+composer
-        // 高度（=keybar 顶，换序后 composer 在最底、keybar 钉其正上方，
-        // AI 页两者都不盖——拍板①+同日二拍）
+        // 头部 / 消息区（借 chat.tsx 结构）；页底=视口底/键盘顶（拍板⑧
+        // 2026-09-04 同日三拍：终端逻辑与 AI 对话逻辑是两套，AI 页打开时
+        // 把 keybar 两排快捷键**盖住**；composer 全局钉底不动，z43 在页
+        // 之上不被盖）
         return createElement('div', null,
           orb,
           bar,
@@ -249,7 +249,7 @@ export function createAiChatPlugin(): UiPlugin {
             className: closing ? 'kfm-closing' : '',
             style: {
               position: 'fixed', top: 0, left: 0, right: 0,
-              bottom: `${composerH + KEYBAR_H + kbRise}px`,
+              bottom: `${kbRise}px`,
               zIndex: 42,
               background: 'var(--kfm-page)', color: 'var(--kfm-ink)',
               display: 'flex', flexDirection: 'column',

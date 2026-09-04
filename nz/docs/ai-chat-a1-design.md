@@ -47,6 +47,12 @@
 >    预留总量不变（KEYBAR_H+composer-h，内部次序颠倒），TUI 底部数学不变
 >    （scrollClientH==vh−KEYBAR_H−composerH——composer 全局条 TUI/ALT 态
 >    同样常驻），AI 页内容区底=keybar 顶（keybar/composer 两不盖）✅。
+> 仲裁记录追加（2026-09-04 同日三拍，用户真机拍板，已签收）：
+> ⑧ **AI 页打开时盖住 keybar**：⑦落地时 AI 页底=keybar 顶（两条都避让），
+>    用户拍板纠正——终端的逻辑和 AI 对话的逻辑是两套，AI 页打开时两排
+>    快捷键**不应继续显示**，正确做法是 AI 页把它们**盖住**（页底=视口底
+>    /键盘顶）。composer 保持全局钉底不动（z43 在 AI 页 z42 之上，不被
+>    盖、钉底可用）；z 序不变：终端/tmux ≤41 < AI 页 42 < composer+orb 43 ✅。
 
 ## 〇、范围与边界（什么做、什么不做）
 
@@ -267,7 +273,7 @@ nz/tests/fixtures/ai-chat/   ← 从 kfm-na 借六份（原样复制，~28KB）�
 
 ## 三、UI 设计
 
-### 3.0 总体形态（2026-09-04 真机拍板改版 + 同日二拍换序⑦）
+### 3.0 总体形态（2026-09-04 真机拍板改版 + 同日二拍换序⑦ + 同日三拍⑧）
 
 常驻 orb（**屏幕右边缘垂直居中=右中**，2026-09-04 用户拍板自右上挪位——
 右上与顶部伸出的 tmux 标签排 max-content 宽度冲突；左上 tmux orb 不动）=
@@ -299,9 +305,11 @@ keybar）→ AI 页 → composer + AI orb。
 - AI orb 与 composer 的层级恒在 AI 页之上（否则页盖住球关不掉）；
 - AI 页打开时 tmux orb+标签栏**隐藏**（不渲染/不可见——
   `:root[data-kfm-aichat-open]` 下 display:none，不是被盖）；
-- composer 钉底不被 AI 页盖：AI 页内容区底部避开 keybar+composer（底边
-  =keybar 顶；换序⑦后 keybar 钉 composer 正上方，AI 页两条都不盖）。
-  composer 高度经 ResizeObserver 实测，`--kfm-aichat-composer-h` 单源下发；
+- composer 钉底不被 AI 页盖：composer z43 恒在 AI 页（z42）之上。拍板⑧
+  （同日三拍）：**AI 页底=视口底/键盘顶，打开时把 keybar 两排快捷键盖住**
+  ——终端逻辑与 AI 对话逻辑是两套，keybar 属终端，不应在 AI 页继续显示；
+  composer 全局钉底不动、在页之上可用。composer 高度经 ResizeObserver
+  实测，`--kfm-aichat-composer-h` 单源下发（AI 页不消费，终端侧两条消费）；
   终端 scrollEl 底部预留 KEYBAR_H+composer-h（总量与换序前相同，内部次序
   颠倒：composer 在下贴软键盘/视口底、keybar 在上——不盖 shell 提示符）；
   TUI/ALT 态 composer 同样常驻，TUI 底部数学不变
@@ -467,7 +475,7 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 | B9 | 层级规则（拍板④，P10） | AI 页开 → tmux orb/标签栏 display:none；z 序数值断言（AI orb > AI 页 > tmux orb）；点 AI orb 可关页（可见可点唯一开关） |
 | B10 | composer 全局常驻（拍板①，P10） | TERMINAL 态 composer 存在可见；关态发送 echo 全链消息入核、开页后 DOM 可见 |
 | B11 | 焦点不打架（拍板①裁定，P12） | 点 composer → 焦点落 composer 且 400ms 不被诱饵回抢；点终端 → 焦点回落 IME 诱饵 |
-| B12 | 底部避让（拍板①+同日二拍换序⑦，P10） | 终端 scrollEl 底=keybar 顶（预留 KEYBAR_H+composer-h 不盖提示符）；keybar 底=composer 顶（贴 composer 正上方）；composer 底=视口底（无键盘）/键盘顶（弹起，直接接触）；AI 页内容区底部 = keybar 顶；钉底+键盘上浮截图存证 |
+| B12 | 底部避让（拍板①+同日二拍换序⑦+同日三拍⑧，P10） | 终端 scrollEl 底=keybar 顶（预留 KEYBAR_H+composer-h 不盖提示符）；keybar 底=composer 顶（贴 composer 正上方）；composer 底=视口底（无键盘）/键盘顶（弹起，直接接触）；AI 页底=视口底盖住 keybar（页接住 keybar 中心点=不可点），composer z43 在页之上钉底可点；钉底+键盘上浮+AI 页盖 keybar 截图存证 |
 
 ### C 档 · 真机
 
