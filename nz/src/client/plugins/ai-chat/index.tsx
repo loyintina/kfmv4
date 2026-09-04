@@ -4,11 +4,15 @@
  * 契约 §7 机检锚点）。
  *
  * 三机七态十转换（词汇表唯一真源，清单外状态名禁止——P9）：
- *   页面机 TERMINAL ↔ AI_PAGE（A1/A2 均点 orb——返回按钮已删，orb 即唯一
- *     开关；切走 run 不死——server 缓冲续命，切回 attach from cursor 补流，
- *     tmux-tabs 同哲学）；
+ *   页面机 TERMINAL ↔ AI_PAGE（A1/A2 点 orb——返回按钮已删，orb 即唯一
+ *     开关；拍板⑪：TERMINAL 态 composer 发送等效 A1 自动开页，滑入动画
+ *     照播，反向不成立；切走 run 不死——server 缓冲续命，切回 attach
+ *     from cursor 补流，tmux-tabs 同哲学）；
  *   运行机 IDLE → WAITING → STREAMING → IDLE（chat-link 脑驱动，A3-A9）；
- *   菜单机 CLOSED ↔ MODEL_OPEN（picker 极简版，数据源 /ai/providers）。
+ *   菜单机 CLOSED ↔ MODEL_OPEN（picker 数据源 /ai/providers；拍板⑫两级
+ *     路由——一级 provider 列表→点 provider 下钻二级 model 列表+server
+ *     默认模型常驻行，点定 model 才收；下钻层级是 picker 内部 UI 态，
+ *     不进菜单机词汇）。
  *
  * 形态（§3.0，2026-09-04 真机拍板四条+主会话裁定两条+同日二拍换序）：
  *   ① composer 全局化：从 AI 页拆出，钉中央终端页面**最底**全局常驻
@@ -287,7 +291,14 @@ export function createAiChatPlugin(): UiPlugin {
           providersInfo: link.providersInfo,
           onMenu,
           onSelect,
-          onSend: (text) => { void link.send(text); },
+          onSend: (text) => {
+            // 拍板⑪（2026-09-04）：TERMINAL 态发送 = 主动说话意图，等效点
+            // orb——自动开页（滑入动画照播），用户直接看到自己的消息与流式
+            // 回复，不需手动再点球；反向不成立：页开着发送=页内发送，page
+            // 不往返。openPage 幂等处理收起动画中途重开（作废摘除定时器）。
+            if (pageRef.current !== 'AI_PAGE') openPage();
+            void link.send(text);
+          },
           onStop: () => { void link.cancel(); },
         }));
 

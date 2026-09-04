@@ -11,9 +11,15 @@
  * /视口底，keybar 钉其正上方）——两态常驻可发送。
  *
  * 菜单机词汇（§3.3，P9 唯一真源）：CLOSED ↔ MODEL_OPEN。
+ * 2026-09-04 拍板⑫ picker 两级路由：一级=provider 列表（当前 provider
+ * 带 ✓），点 provider 下钻二级=该 provider 的 model 列表（带返回钮，
+ * 下钻不收起）；server 下发的默认模型恒可见——不在 models[] 里就合成
+ * 常驻行置顶（标注「默认」，A2 观察项①销账：Kimi 无 kimi-k2.7-code
+ * 但它是默认，切走也能点回来）；点定 model 才生效+收起（A10 语义）。
+ * 下钻层级（drill）是 picker 内部 UI 态，不进菜单机词汇（P9 不加词）。
  * P2：WAITING/STREAMING 中发送钮恒为停止钮（A8 入口）。
  */
-import { createElement, useLayoutEffect, useRef, useState } from 'react';
+import { createElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ProvidersInfo, RunPhase } from '../chat-link.js';
 
 /** 菜单机词汇（§3.3） */
@@ -45,7 +51,11 @@ function StopIcon(): React.ReactElement {
 export function PromptBar(props: PromptBarProps): React.ReactElement {
   const { phase, menu, selection, providersInfo, onMenu, onSelect, onSend, onStop } = props;
   const [draft, setDraft] = useState('');
+  // 拍板⑫：picker 下钻层级（null=一级 provider 列表；provider id=二级
+  // model 列表）。picker 内部 UI 态，不进菜单机词汇（P9）；菜单关即复位
+  const [drill, setDrill] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { if (menu === 'CLOSED') setDrill(null); }, [menu]);
 
   // 自动长高（借 prompt-bar.tsx 方案：height 归零量 scrollHeight，min/max 夹取）
   useLayoutEffect(() => {
@@ -65,11 +75,85 @@ export function PromptBar(props: PromptBarProps): React.ReactElement {
     setDraft('');
   };
 
-  // picker 行：provider × model 平铺（含 echo 条目——断网开发从 picker 可达）
-  const rows: Array<{ provider: string; name: string; model: string }> = [];
-  for (const p of providersInfo?.providers ?? []) {
-    for (const m of p.models) rows.push({ provider: p.id, name: p.name, model: m });
-  }
+  // picker 两级路由（拍板⑫）：一级 provider 列表 → 点 provider 下钻二级
+  // model 列表（含 echo 条目——断网开发从 picker 可达）。行通用件：
+  const providers = providersInfo?.providers ?? [];
+  const def = providersInfo?.default ?? null;
+  const rowStyle: Record<string, unknown> = {
+    display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+    padding: '6px 8px', border: 'none', background: 'none', cursor: 'pointer',
+    borderRadius: 'var(--kfm-radius-sm)', textAlign: 'left',
+  };
+  const rowTextStyle: Record<string, unknown> = {
+    flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12.5px', color: 'var(--kfm-ink)',
+  };
+  const checkMark = createElement('svg', { 'data-aichat-check': '1', width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--kfm-accent-ink)', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round' },
+    createElement('path', { d: 'M20 6L9 17l-5-5' }));
+
+  // 一级：provider 列表（当前 provider 带 ✓；点击=下钻不收起——拍板⑫③）
+  const level1 = providers.map((p) =>
+    createElement('button', {
+      key: p.id,
+      'data-aichat-provider-row': p.id,
+      type: 'button',
+      onClick: () => setDrill(p.id),
+      style: rowStyle,
+    },
+    createElement('span', { style: rowTextStyle }, p.name),
+    createElement('span', { style: { fontSize: '11px', color: 'var(--kfm-ink-3)' } }, `${p.models.length}`),
+    p.id === selection.provider ? checkMark : null,
+    createElement('svg', { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--kfm-ink-3)', strokeWidth: 2.4, strokeLinecap: 'round', strokeLinejoin: 'round' },
+      createElement('path', { d: 'M9 6l6 6-6 6' })),
+    ));
+
+  // 二级：该 provider 的 model 列表 + server 默认模型常驻行（拍板⑫②——
+  // 默认模型不在 models[] 就合成置顶常驻行，标注「默认」，切走也能点回来；
+  // A2 观察项①销账：Kimi models 无 kimi-k2.7-code 但它是默认）。返回钮回
+  // 一级（不收起）；点定 model 才生效+收起（A10 语义沿用）
+  const drillProv = drill ? providers.find((p) => p.id === drill) : undefined;
+  const level2 = drillProv
+    ? (() => {
+        const isDefProv = !!def && def.provider === drillProv.id;
+        const models = [...drillProv.models];
+        if (isDefProv && def && !models.includes(def.model)) models.unshift(def.model);
+        return [
+          createElement('button', {
+            key: '__back__',
+            'data-aichat-picker-back': '1',
+            type: 'button',
+            onClick: () => setDrill(null),
+            style: { ...rowStyle, color: 'var(--kfm-ink-2)' },
+          },
+          createElement('svg', { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--kfm-ink-3)', strokeWidth: 2.4, strokeLinecap: 'round', strokeLinejoin: 'round' },
+            createElement('path', { d: 'M15 6l-6 6 6 6' })),
+          createElement('span', { style: { ...rowTextStyle, fontSize: '12px', color: 'var(--kfm-ink-2)' } }, drillProv.name),
+          ),
+          ...models.map((m) => {
+            const isDef = isDefProv && def !== null && m === def.model;
+            const current = drillProv.id === selection.provider && m === selection.model;
+            return createElement('button', {
+              key: `${drillProv.id}::${m}`,
+              'data-aichat-model-row': `${drillProv.id}::${m}`,
+              'data-aichat-model-default': isDef ? '1' : null,
+              type: 'button',
+              onClick: () => { onSelect(drillProv.id, m); onMenu('CLOSED'); inputRef.current?.focus(); },
+              style: rowStyle,
+            },
+            createElement('span', { style: rowTextStyle }, m),
+            isDef
+              ? createElement('span', {
+                  style: {
+                    fontSize: '10px', color: 'var(--kfm-ink-3)', border: '1px solid var(--kfm-line)',
+                    borderRadius: 'var(--kfm-radius-sm)', padding: '0 4px', flexShrink: 0,
+                  },
+                }, '默认')
+              : null,
+            current ? checkMark : null,
+            );
+          }),
+        ];
+      })()
+    : null;
 
   const modelMenu = menu === 'MODEL_OPEN'
     ? createElement('div', {
@@ -81,30 +165,9 @@ export function PromptBar(props: PromptBarProps): React.ReactElement {
           boxShadow: 'var(--kfm-shadow-raised)', padding: '4px',
         },
       },
-      rows.length === 0
+      providers.length === 0
         ? createElement('div', { style: { padding: '8px 10px', fontSize: '12px', color: 'var(--kfm-ink-3)' } }, '加载 provider 列表…')
-        : rows.map((r) => {
-            const current = r.provider === selection.provider && r.model === selection.model;
-            return createElement('button', {
-              key: `${r.provider}::${r.model}`,
-              'data-aichat-model-row': `${r.provider}::${r.model}`,
-              type: 'button',
-              onClick: () => { onSelect(r.provider, r.model); onMenu('CLOSED'); inputRef.current?.focus(); },
-              style: {
-                display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
-                padding: '6px 8px', border: 'none', background: 'none', cursor: 'pointer',
-                borderRadius: 'var(--kfm-radius-sm)', textAlign: 'left',
-              },
-            },
-            createElement('span', {
-              style: { flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12.5px', color: 'var(--kfm-ink)' },
-            }, `${r.name} · ${r.model}`),
-            current
-              ? createElement('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--kfm-accent-ink)', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round' },
-                  createElement('path', { d: 'M20 6L9 17l-5-5' }))
-              : null,
-            );
-          }),
+        : drill === null ? level1 : level2,
       )
     : null;
 

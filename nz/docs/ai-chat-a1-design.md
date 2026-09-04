@@ -70,6 +70,22 @@
 >    改为渲染当拍直读 live 几何（scrollTop 与上拍不同=外部滚动→按 live
 >    位置重判在底）；追底挂三个主动触发：进页/收起动画期、composer
 >    focusin、键盘上浮沿 ✅。
+> 仲裁记录追加（2026-09-04 同日六拍，用户拍板两条，已签收）：
+> ⑪ **发送后自动开页**：终端页面态（AI 页关闭）在全局输入栏发送内容后，
+>    自动相当于点了一下 orb——AI 页滑出（滑入动画照播），用户直接看到
+>    自己的消息和 AI 的流式回复，不该需要手动再点球。与状态机咬合：
+>    TERMINAL 态 send 等效 A1 转换；反向不成立——页开着发送就是页内
+>    发送，无新增动作 ✅；
+> ⑫ **picker 二级路由**：模型选择从单层混排改两级——第一级 provider
+>    列表（/ai/providers 的 id/name），点进某 provider → 第二级该
+>    provider 的 model 列表（models[]），带返回一级按钮。数据语义：
+>    ①当前选中的 provider+model 两级都要可辨识（✓ 标）；②**server 下发
+>    的默认模型必须恒可见**——修掉 A2 观察项①：Kimi 的 models 列表里没
+>    有 kimi-k2.7-code 但它是默认，二级页把默认模型合成常驻行置顶呈现
+>    （标注「默认」），切走也能点回来；③选中即生效+收起（沿用 A10 转换
+>    语义，二级点定 model 才收，点 provider 只是下钻不收）。菜单机词汇
+>    不变（CLOSED↔MODEL_OPEN，P9）——下钻层级是 picker 内部 UI 态，
+>    不进词汇表 ✅。
 
 ## 〇、范围与边界（什么做、什么不做）
 
@@ -383,7 +399,7 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 
 | # | 起点 | 触发 | 终点 | 底层动作 |
 |---|---|---|---|---|
-| A1 | `TERMINAL` | 点 orb | `AI_PAGE` | 纯 UI；入场动画 translateY(-100%)→0（P11）；有活跃 run → attach from cursor 补流 |
+| A1 | `TERMINAL` | 点 orb / **composer 发送**（拍板⑪：发送=主动说话意图，等效点 orb 自动开页；反向不成立——AI_PAGE 态发送=页内发送，无转换） | `AI_PAGE` | 纯 UI；入场动画 translateY(-100%)→0（P11）；有活跃 run → attach from cursor 补流 |
 | A2 | `AI_PAGE` | 点 orb（**唯一开关，无返回按钮**） | `TERMINAL` | 纯 UI；收起动画 translateY(0)→-100% 播完才摘 DOM；run 不死（server 缓冲） |
 | A3 | `IDLE` | 输入非空 + 发送 | `WAITING` | 用户消息入格 → POST /ai/chat/start |
 | A4 | `WAITING` | 首个 SSE 事件 | `STREAMING` | cursor 起记，reducer 起约 |
@@ -392,7 +408,7 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 | A7 | `STREAMING`/`WAITING` | `error` 事件 | `IDLE` | 错误文案入流为消息内容（不是 toast） |
 | A8 | `STREAMING`/`WAITING` | 点停止钮 | `IDLE` | POST cancel → error `已取消` 入流收尾 |
 | A9 | 任意 | 通道断（fetch 流断/页面回前台） | 原状保持 | 重连 attach from cursor 补流；补不上 → error 事件入流 |
-| A10 | `CLOSED` ↔ `MODEL_OPEN` | 点模型钮 / 选定 / Escape | 互转 | 数据源 = GET /ai/providers（只出 id/name/models） |
+| A10 | `CLOSED` ↔ `MODEL_OPEN` | 点模型钮 / 选定 / Escape | 互转 | 数据源 = GET /ai/providers（只出 id/name/models）；拍板⑫两级路由：一级 provider 列表 → 点 provider 下钻二级 model 列表（下钻不收，返回钮回一级），二级点定 model 才选定收起；server 默认模型不在 models[] 就合成常驻行置顶（标注「默认」）；下钻层级是 picker 内部 UI 态，不进菜单机词汇 |
 
 **禁止条款**：
 
@@ -493,11 +509,13 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 | B7 | P1 key 不出服务器 | `/ai/providers` 响应 + 全链路载荷 grep 无 key 形态 |
 | B8 | 滑入/收起动画（拍板③，P11） | 拨 `--kfm-dur-normal` 杠杆：中间帧 transform=负 ty 矩阵、animationName/Duration 跟随 token；收起 kfm-closing/page-out 播完才摘 DOM；中间帧截图存证 |
 | B9 | 层级规则（拍板④，P10） | AI 页开 → tmux orb/标签栏 display:none；z 序数值断言（AI orb > AI 页 > tmux orb）；点 AI orb 可关页（可见可点唯一开关） |
-| B10 | composer 全局常驻（拍板①，P10） | TERMINAL 态 composer 存在可见；关态发送 echo 全链消息入核、开页后 DOM 可见 |
+| B10 | composer 全局常驻（拍板①，P10） | TERMINAL 态 composer 存在可见（关态可发送语义被拍板⑪改写，见 B13） |
 | B11 | 焦点不打架（拍板①裁定，P12） | 点 composer → 焦点落 composer 且 400ms 不被诱饵回抢；点终端 → 焦点回落 IME 诱饵 |
 | B12 | 底部避让（拍板①+换序⑦+⑧+⑨方案1，P10） | 终端 scrollEl 底=keybar 顶（预留 KEYBAR_H+composer-h 不盖提示符）；keybar 底=composer 顶；composer 底=视口底（无键盘）/键盘顶（弹起，直接接触）；AI 页底=composer 顶（落输入栏上面盖住 keybar：页接住 keybar 中心点=不可点，composer 仍可点；长内容滚到底末条消息底≤composer 顶不被盖）；钉底+键盘上浮+滚到底截图存证 |
 | B12e0 | 被动 delta 不拽回（拍板⑩对照钉） | 上滚阅读中慢流式新 delta 到达 → 列表留在原地（st+ch<sh−40），不自动追底 |
 | B12e | 点输入栏追底（拍板⑩主钉） | 上滚态点输入栏 + mock vv 键盘上浮 → 列表追底锚定最新（st+ch≥sh−5，末条底贴 composer 顶）；触发前 stillUp 断言确在上滚态；上滚态+追底两截图存证 |
+| B13 | 发送后自动开页（拍板⑪） | TERMINAL 态 composer 发送 → 即转 AI_PAGE（等效点 orb）+ 滑入动画在场（token 杠杆取中间帧，page-in 负 ty）+ echo 全链收流 + 用户消息立即可见；反向钉：AI_PAGE 态发送 page 不往返；自动开页截图存证 |
+| B14 | picker 两级路由（拍板⑫） | 一级=provider 列表（数量=/ai/providers，当前 provider ✓ 可辨识，不出 model 行）→ 点 provider 下钻不收（返回钮在场）→ 二级=model 列表+server 默认模型常驻行（models[] 没有也合成置顶，标注「默认」）→ 点定默认行生效收起（btn 文案变）；二级当前 model 行 ✓ 可辨识；返回钮回一级仍 MODEL_OPEN；一级/二级截图存证 |
 
 ### C 档 · 真机
 

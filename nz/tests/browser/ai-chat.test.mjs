@@ -14,7 +14,7 @@
  *       跟随 --kfm-dur-normal token 杠杆；收起 kfm-closing/page-out 播完摘 DOM）
  *   B9  层级规则（拍板④/P10：AI 页开 → tmux orb/标签栏 display:none；
  *       z 序 AI orb ≥ composer > AI 页 > tmux orb；AI orb 可见可点=唯一开关）
- *   B10 composer 全局常驻（拍板①：TERMINAL 态存在可见；关态可发送 echo 全链）
+ *   B10 composer 全局常驻（拍板①：TERMINAL 态存在可见）
  *   B11 焦点不打架（P12：点 composer 焦点落 composer 不被诱饵回抢；
  *       点终端焦点回落 IME 诱饵）
  *   B12 底部避让（P10 + 2026-09-04 同日二拍换序⑦ + 三拍⑧ + 四拍⑨方案1：
@@ -23,9 +23,16 @@
  *       盖住 keybar 且内容滚到底不被 composer 盖）；B12c 键盘弹起 composer
  *       底=键盘顶直接接触；B12d 长内容滚到底末条不被 composer 盖；
  *       B12e/B12e0 拍板⑩点输入栏弹键盘→列表追底锚定最新，被动 delta 不拽回）
+ *   B13 拍板⑪ 发送后自动开页：TERMINAL 态 composer 发送 → 即转 AI_PAGE
+ *       （等效点 orb，滑入动画照播）+ echo 全链收流 + 用户消息立即可见；
+ *       反向不成立（页开着发送=页内发送，page 不往返）
+ *   B14 拍板⑫ picker 两级路由：一级 provider 列表（当前 provider 可辨识）
+ *       → 点 provider 下钻（不收起）→ 二级 model 列表 + server 默认模型
+ *       常驻行（标注「默认」，models 列表里没有也恒在——A2 观察项①销账）
+ *       → 点定 model 才生效+收起（A10 语义沿用）；返回钮回一级
  *   补流钉  A1 转换：run 进行中切出 AI 页再切回 → attach from=N 补流不丢帧
  *   P7  皮内零硬编码色值（源码 grep；变异抽检的靶子）
- *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后
+ *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后 / 终端态发送自动开页 / picker 一级 / picker 二级默认行
  *
  * 慢流杠杆（B3/B5/补流需要确定性时间窗）：page.evaluate 设
  * window.__kfmNzAiChatTestLever = { echoPaceMs } → client 在 echo start 载荷
@@ -110,8 +117,11 @@ const sendViaComposer = async (text) => {
   await page.fill('[data-aichat-input]', text, { timeout: 4000 }).catch(() => {});
   await page.press('[data-aichat-input]', 'Enter', { timeout: 4000 }).catch(() => {});
 };
+// 拍板⑫两级路由：先下钻 provider 再点 model 行（点 provider 只是下钻不收）
 const selectModel = async (row) => {
+  const prov = row.split('::')[0];
   await page.click('[data-aichat-model-btn]', { timeout: 4000 }).catch(() => {});
+  await page.click(`[data-aichat-provider-row="${prov}"]`, { timeout: 4000 }).catch(() => {});
   await page.click(`[data-aichat-model-row="${row}"]`, { timeout: 4000 }).catch(() => {});
 };
 // 动画 token 杠杆（B8）：拨 --kfm-dur-normal；计算样式必须跟随（P11 反向验证）
@@ -330,22 +340,117 @@ const mSel = (await hook())?.menu;
 const echoBtn = await page.evaluate(() => document.querySelector('[data-aichat-model-btn]')?.textContent ?? '').catch(() => '');
 check('A10d 选定 echo（picker 可达断网腿）→ CLOSED', mSel === 'CLOSED' && /echo/i.test(echoBtn), `menu=${mSel} btn="${echoBtn}"`);
 
-// ========== B10b：composer 关态可发送（AI 页关闭态 echo 全链，拍板①裁定⑥） ==========
+// ========== B14：拍板⑫ picker 两级路由（一级 provider → 二级 model，默认模型常驻行） ==========
+// 数据语义：①当前选中 provider+model 两级都可辨识 ②server 下发的默认模型
+// 恒可见——Kimi 的 models 列表里没有 kimi-k2.7-code 但它是默认（A2 观察项
+// ①），二级页合成常驻行标注「默认」，切走也能点回来 ③点 provider=下钻
+// 不收起，点定 model 才生效+收起（A10 转换语义沿用）。菜单机词汇不变
+// （CLOSED↔MODEL_OPEN，P9）——下钻层级是 picker 内部 UI 态，不进词汇表。
+const provJson = await page.evaluate(async () => await (await fetch('/ai/providers')).json()).catch(() => null);
+const defProvEntry = provJson?.providers?.find((p) => p.id === provJson.default?.provider);
+const defInList = !!defProvEntry && defProvEntry.models.includes(provJson.default.model);
+const expectDefRows = (defProvEntry?.models?.length ?? -1) + (defInList ? 0 : 1);
+await page.click('[data-aichat-model-btn]').catch(() => {});
+await page.waitForTimeout(300);
+const lvl1 = await page.evaluate(() => ({
+  provRows: [...document.querySelectorAll('[data-aichat-provider-row]')].map((el) => el.getAttribute('data-aichat-provider-row')),
+  modelRows: document.querySelectorAll('[data-aichat-model-row]').length,
+  checkedProv: [...document.querySelectorAll('[data-aichat-provider-row]')].find((el) => el.querySelector('[data-aichat-check]'))?.getAttribute('data-aichat-provider-row') ?? null,
+}));
+check('B14a 拍板⑫一级：picker 打开=provider 列表（不下钻不出 model 行）+ 当前 provider 可辨识（✓ 标）',
+      !!provJson && lvl1.provRows.length === provJson.providers.length && lvl1.modelRows === 0 && lvl1.checkedProv === 'echo',
+      `providers=${lvl1.provRows.length}/${provJson?.providers?.length} modelRows=${lvl1.modelRows} checked=${lvl1.checkedProv}`);
+const shotL1 = join(SHOT_DIR, 'ai-chat-picker-providers.png');
+await page.screenshot({ path: shotL1 });
+console.log('shot:', shotL1);
+await page.click(`[data-aichat-provider-row="${provJson?.default?.provider ?? '__none__'}"]`).catch(() => {});
+await page.waitForTimeout(300);
+const lvl2 = await page.evaluate(() => ({
+  rows: [...document.querySelectorAll('[data-aichat-model-row]')].map((el) => ({
+    row: el.getAttribute('data-aichat-model-row'),
+    def: el.getAttribute('data-aichat-model-default') === '1',
+    badge: el.textContent.includes('默认'),
+    sel: !!el.querySelector('[data-aichat-check]'),
+  })),
+  provRows: document.querySelectorAll('[data-aichat-provider-row]').length,
+  back: !!document.querySelector('[data-aichat-picker-back]'),
+  menuOpen: !!document.querySelector('[data-aichat-model-menu]'),
+}));
+const defRow = lvl2.rows.find((r) => r.row === `${provJson?.default?.provider}::${provJson?.default?.model}`);
+check('B14b 拍板⑫二级：点 Kimi 下钻（不收起，带返回钮）→ model 列表 + 默认模型 kimi-k2.7-code 常驻行（标注「默认」，models 列表没有也恒在）',
+      lvl2.menuOpen && lvl2.back && lvl2.provRows === 0 && !!defProvEntry
+      && lvl2.rows.length === expectDefRows
+      && !!defRow && defRow.def && defRow.badge,
+      `rows=${lvl2.rows.length}/${expectDefRows} defRow=${JSON.stringify(defRow)} back=${lvl2.back} menu=${lvl2.menuOpen}`);
+const shotL2 = join(SHOT_DIR, 'ai-chat-picker-models-default.png');
+await page.screenshot({ path: shotL2 });
+console.log('shot:', shotL2);
+await page.click(`[data-aichat-model-row="${provJson?.default?.provider}::${provJson?.default?.model}"]`).catch(() => {});
+const mB14c = (await hook())?.menu;
+const btnB14c = await page.evaluate(() => document.querySelector('[data-aichat-model-btn]')?.textContent ?? '').catch(() => '');
+check('B14c 二级点定默认行 → 选中生效（btn=Kimi·kimi-k2.7-code）+ 收起（A10 语义沿用：点定 model 才收）',
+      mB14c === 'CLOSED' && /kimi-k2\.7-code/.test(btnB14c), `menu=${mB14c} btn="${btnB14c}"`);
+await page.click('[data-aichat-model-btn]').catch(() => {});
+await page.click(`[data-aichat-provider-row="${provJson?.default?.provider ?? '__none__'}"]`).catch(() => {});
+await page.waitForTimeout(200);
+// 拍板⑫①二级侧：当前选中 model 行带 ✓（B14c 已把选中切到默认行）
+const lvl2Checked = await page.evaluate((defRowSel) => {
+  const row = document.querySelector(`[data-aichat-model-row="${defRowSel}"]`);
+  return !!row && !!row.querySelector('[data-aichat-check]');
+}, `${provJson?.default?.provider}::${provJson?.default?.model}`);
+check('B14e 拍板⑫①二级：当前选中 model 行可辨识（默认行带 ✓ 标）', lvl2Checked, `checked=${lvl2Checked}`);
+await page.click('[data-aichat-picker-back]').catch(() => {});
+await page.waitForTimeout(200);
+const back1 = await page.evaluate(() => ({
+  provRows: document.querySelectorAll('[data-aichat-provider-row]').length,
+  modelRows: document.querySelectorAll('[data-aichat-model-row]').length,
+  menuOpen: !!document.querySelector('[data-aichat-model-menu]'),
+}));
+check('B14d 二级返回钮 → 回一级 provider 列表（仍 MODEL_OPEN 不收起）',
+      back1.menuOpen && back1.provRows === (provJson?.providers?.length ?? -1) && back1.modelRows === 0,
+      `provRows=${back1.provRows} modelRows=${back1.modelRows} menu=${back1.menuOpen}`);
+await page.press('[data-aichat-input]', 'Escape').catch(() => {});
+await selectModel('echo::echo').catch(() => {}); // 还原 echo 选中——后续发送全走 echo 夹具
+
+// ========== B13：拍板⑪ 发送后自动开页（TERMINAL 态发送等效点 orb） ==========
+// 语义：终端页面态在全局输入栏发送 = 主动说话意图 → 自动开页（滑入动画
+// 照播），用户直接看到自己的消息和 AI 的流式回复，不需手动再点球；反向
+// 不成立——页开着发送就是页内发送，page 不往返。
 await actUntil(closeAiPage, async () => (await hook())?.page === 'TERMINAL');
+await page.waitForFunction(() => !document.querySelector('[data-kfm-aichat]'), null, { timeout: 4000 }).catch(() => {}); // 收起动画播完
+await setDurToken('1200ms'); // 滑入中间帧确定性（B8 同款 token 杠杆）
 await setLever(2);
-const lenB10 = (await hook())?.messages?.length ?? 0;
-const r10 = await actUntil(
-  () => sendViaComposer('关态发送 PONG'),
-  async () => { const h = await hook(); return h?.phase === 'IDLE' && (h?.messages?.length ?? 0) >= lenB10 + 2; },
+const lenB13 = (await hook())?.messages?.length ?? 0;
+await sendViaComposer('关态发送自动开页 PONG');
+await page.waitForTimeout(400); // 1.2s 滑入中段
+const midOpen = await page.evaluate(() => {
+  const el = document.querySelector('[data-kfm-aichat]');
+  if (!el) return null;
+  const cs = getComputedStyle(el);
+  return { an: cs.animationName, dur: cs.animationDuration, tf: cs.transform };
+});
+const hMid13 = (await hook()) ?? {};
+const midTy13 = midOpen?.tf?.startsWith('matrix(') ? +midOpen.tf.split(',').pop().trim().replace(')', '') : 0;
+check('B13a 拍板⑪：TERMINAL 态 composer 发送 → 即转 AI_PAGE（等效点 orb）+ 滑入动画在场（page-in 负 ty 跟随 token）',
+      hMid13.page === 'AI_PAGE' && !!midOpen && midOpen.an === 'kfm-aichat-page-in' && midOpen.dur === '1.2s' && midTy13 < -20,
+      `page=${hMid13.page} an=${midOpen?.an} dur=${midOpen?.dur} ty=${midTy13.toFixed(1)}`);
+await setDurToken(null);
+const r13 = await actUntil(async () => {}, async () => { const h = await hook(); return h?.phase === 'IDLE' && (h?.messages?.length ?? 0) >= lenB13 + 2; }, { tries: 0, settle: 12000, poll: 150 });
+const domB13 = await page.evaluate(() => [...document.querySelectorAll('[data-aichat-msg="user"]')].at(-1)?.textContent ?? '').catch(() => '');
+check('B13b 自动开页后 echo 全链收流 + 用户消息立即可见（不需手动再点球）',
+      r13.ok && domB13.includes('关态发送自动开页 PONG'), `done=${r13.ok} dom="${domB13.slice(0, 30)}"`);
+const shotAuto = join(SHOT_DIR, 'ai-chat-send-auto-open.png');
+await page.screenshot({ path: shotAuto });
+console.log('shot:', shotAuto);
+// B13c 反向不成立：页开着发送=页内发送，无新增动作（page 不往返）
+const r13c = await actUntil(
+  () => sendViaComposer('页内发送 PONG'),
+  async () => { const h = await hook(); return h?.phase === 'IDLE' && (h?.messages?.length ?? 0) >= lenB13 + 4; },
   { tries: 1, settle: 12000, poll: 150 },
 );
-const h10 = (await hook()) ?? {};
-check('B10b composer 关态可发送：TERMINAL 态发 echo 全链 → 消息入核收流、页面不切（P10 全局常驻）',
-      r10.ok && h10.page === 'TERMINAL' && (h10.messages?.filter((m) => m.role === 'ai').at(-1)?.chars ?? 0) > 0,
-      `page=${h10.page} msgs=${h10.messages?.length}`);
-await actUntil(openAiPage, async () => (await hook())?.page === 'AI_PAGE');
-const domB10 = await page.evaluate(() => [...document.querySelectorAll('[data-aichat-msg="user"]')].at(-1)?.textContent ?? '').catch(() => '');
-check('B10b2 关态发的消息开页可见（脑不动，只动皮和装配——裁定⑥）', domB10.includes('关态发送 PONG'), `dom="${domB10.slice(0, 30)}"`);
+const h13c = (await hook()) ?? {};
+check('B13c 反向：AI_PAGE 态发送 → page 保持 AI_PAGE（页内发送无新增动作）',
+      r13c.ok && h13c.page === 'AI_PAGE', `page=${h13c.page} msgs=${h13c.messages?.length}`);
 
 // ========== B2：A3→A6 发送-流式-完成（消息只增） ==========
 await setLever(2);
