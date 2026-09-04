@@ -84,6 +84,15 @@ export function mountAiChatRoutes(): (req: IncomingMessage, res: ServerResponse)
         sendJson(res, 400, { error: '缺少 messages 参数或 messages 为空' });
         return;
       }
+      // 消息形状闸（C 档实锤：缺 content 数组的畸形消息曾打崩整个 server
+      // 进程）——形状非法 = 参数非法，400，与缺/空 messages 同族
+      const malformed = messages.some((m) => !m || typeof m !== 'object'
+        || (m.role !== 'user' && m.role !== 'ai')
+        || !Array.isArray(m.content));
+      if (malformed) {
+        sendJson(res, 400, { error: '消息形状非法：每条消息须含 role（user/ai）与 content 数组' });
+        return;
+      }
       const brain = pickBrain(typeof body.provider === 'string' ? body.provider : undefined);
       const req_: BrainStartRequest = {
         messages,

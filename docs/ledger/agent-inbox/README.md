@@ -386,4 +386,5 @@
 | 2026-09-03 | [`kfmv4-9.0-term-bold-bright-report.md`](kfmv4-9.0-term-bold-bright-report.md) | 用户真机报告「bold 中文糊成毛边」 | 通报完毕（2026-09-03 用户真机验收通过；na 侧 C6 待跟进对齐） |
 | 2026-09-03 | [`kfmv4-tmux-tabs-v26-taphighlight-expand-sync-report.md`](kfmv4-tmux-tabs-v26-taphighlight-expand-sync-report.md) | 用户真机报告①②（点按浅青浮层 / 展开旋转滞后） | 通报完毕（2026-09-03 nz：双修 tokens 两连提交，用户真机确认修复有效） |
 | 2026-09-04 | [`kfm-na-gate-mutants-r2-report.md`](kfm-na-gate-mutants-r2-report.md) | kfmv4-review-na-three-reports-response.md(§二 下批点将: | 待回信 |
+| 2026-09-04 | [`kfmv4-ai-chat-a1-accept-report.md`](kfmv4-ai-chat-a1-accept-report.md) | A1 设计清单签收（c6038411，§八六条异议全裁决）+ 用户 09-04 拍板（默认=Kimi 官方+kimi-k2.7-code「官方渠道此名可通，C 档实测」；orb 自右上挪右中） | 通报完毕（2026-09-04 nz：A1 四提交+阶段四验收提交全落，npm test 155/155+browser 16 卷全绿） |
 <!-- gen:agent-inbox:end -->

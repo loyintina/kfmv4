@@ -239,6 +239,27 @@ test('probe 错误语义实录：空 messages → 400；非法 provider → 200+
   }
 });
 
+test('畸形消息形状闸：缺 content 数组 → 400，同进程后续请求照常（C 档打崩 server 实锤回归）', async () => {
+  const server = createNzServer();
+  const port = await listen(server);
+  try {
+    // C 档实锤：{role:'user'} 无 content → extractText TypeError 经 void pump
+    // 成未捕获拒绝，整个 server 进程崩。形状闸后 = 400，与缺/空 messages 同族
+    const noContent = await postStart(port, { messages: [{ role: 'user' }] });
+    assert(noContent.status === 400 && typeof noContent.json.error === 'string',
+      `缺 content 应 400，实际 ${noContent.status}`);
+    const badRole = await postStart(port, { messages: [{ role: 'system', content: [] }] });
+    assert(badRole.status === 400, '非法 role 应 400');
+    const contentNotArray = await postStart(port, { messages: [{ role: 'user', content: 'hi' }] });
+    assert(contentNotArray.status === 400, 'content 非数组应 400');
+    // 同进程后续请求照常 = 没崩的机器证明
+    const alive = await postStart(port, { messages: USER_HI, provider: 'echo' });
+    assert(alive.status === 200 && typeof alive.json.runId === 'string', '形状闸后 server 应活着');
+  } finally {
+    server.close();
+  }
+});
+
 test('取消：POST cancel → error「已取消」入流收尾（P5），重复取消 ok:false', async () => {
   await withEnv({ NZ_AI_ECHO_PACE_MS: '30' }, async () => {
     const server = createNzServer();

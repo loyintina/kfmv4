@@ -447,6 +447,11 @@ export class DirectApiBrain implements BrainEndpoint {
         kind: 'done', runId: run.id, deltas: run.deltas, chars: run.chars,
         usage: translator.usage, ms: Date.now() - t0,
       });
+    } catch (err) {
+      // 装配期未预见异常（畸形消息/配置读取等）：error 事件入流收尾，绝不抛出
+      // 崩进程（P3——C 档实锤：消息缺 content 数组时 extractText TypeError
+      // 经 void pump 成未捕获拒绝，整个 server 进程被打崩）
+      fail(`内部错误: ${err instanceof Error ? err.message : String(err)}`, 'internal');
     } finally {
       if (run.cancelRequested) {
         aiDebugLog({ kind: 'error', runId: run.id, errorKind: 'cancel', message: '已取消' });
