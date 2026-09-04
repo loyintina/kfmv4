@@ -17,7 +17,9 @@
  *
  * 8.8.3b 按键栏：仿 Termux 两排七列（term/keybar.ts + keymap.ts 纯逻辑），
  * 修饰键一次性粘滞，方向键/Home/End 按 core.app_cursor() 实时翻
- * SS3/CSI；栏随软键盘上浮，终端容器底部常驻预留 KEYBAR_H。
+ * SS3/CSI；栏随软键盘上浮，终端容器底部常驻预留 KEYBAR_H（+
+ * --kfm-aichat-composer-h：ai-chat 全局 composer 钉 keybar 正上方，
+ * 2026-09-04 真机拍板①，不盖 shell 提示符）。
  *
  * v1 留白：IME 组合键之外的全集映射（F1-F12 等）留 input 小插件。
  */
@@ -397,13 +399,17 @@ export function applyTermBundle(ctx: Context): void {
       };
       measureCell();
       // 单区布局（行高量出后一次性落位）：
-      //   scrollEl  终端本体 top:0 bottom:按键栏（overflow:auto + flex 列
-      //             底锚——壳画布 margin-top:auto：内容不满屏时推底=空屏
-      //             提示符在底行；超屏时 margin 归零正常滚动。flex 容器内
+      //   scrollEl  终端本体 top:0 bottom:按键栏+全局 composer（overflow:auto
+      //             + flex 列底锚——壳画布 margin-top:auto：内容不满屏时推底=
+      //             空屏提示符在底行；超屏时 margin 归零正常滚动。flex 容器内
       //             画布必须 flex:none 防 shrink 压缩）
       //   barStrip  按键栏 bottom:0 height:KEYBAR_H（垫底）
+      // 底部预留 = KEYBAR_H + --kfm-aichat-composer-h（2026-09-04 真机拍板①：
+      // ai-chat composer 全局化钉 keybar 正上方，终端内容区同步预留其高度，
+      // composer 不盖 shell 提示符——§3.0/P10；var 由 ai-chat 插件 RO 实测
+      // 单源下发，插件未挂 = tokens.css 静态默认/0 兜底）
       const scrollEl = document.createElement('div');
-      scrollEl.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:${KEYBAR_H}px;`
+      scrollEl.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:calc(${KEYBAR_H}px + var(--kfm-aichat-composer-h, 0px));`
         + 'overflow:auto;display:flex;flex-direction:column;';
       container.el.appendChild(scrollEl);
       // 实测定尺寸（写死 80×24 时代结束）：先用与壳同字体的探针量字格，

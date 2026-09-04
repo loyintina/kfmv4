@@ -52,6 +52,11 @@
   --kfm-shadow-hairline: 0 0 0 1px var(--kfm-aichat-line);
   --kfm-shadow-card: 0 0 0 1px var(--kfm-aichat-line), 0 1px 2px #0003, 0 2px 6px #0003;
   --kfm-shadow-raised: 0 0 0 1px var(--kfm-aichat-line), 0 2px 10px #00000038;
+  /* 全局 composer 钉底高度（2026-09-04 真机拍板①：composer 从 AI 页拆出全局
+   * 常驻，终端 scrollEl 底部预留同高不盖提示符——§3.0/P10）。插件
+   * ResizeObserver 实测后 inline 覆写本 var 为真值；此处静态默认 = 单行静高
+   * 实测值（B12a 几何钉直读），兜住「插件未挂/RO 未首拍」的测量竞态 */
+  --kfm-aichat-composer-h: 116px;
 
   /* ── 字体 ── */
   --kfm-font-mono: ui-monospace, Menlo, Consolas, monospace;
@@ -173,8 +178,34 @@
   animation: kfm-tmux-overlay-in var(--kfm-dur-normal) var(--kfm-ease-spring) both;
 }
 
-/* ── ai-chat 皮（[data-kfm-aichat] 挂点；颜色/阴影/圆角/时长唯一来源，
+/* ── ai-chat 皮（[data-kfm-aichat]=AI 页、[data-kfm-aichat-bar]=全局 composer
+ * 条、[data-kfm-aichat-orb]=AI orb 三挂点；颜色/阴影/圆角/时长唯一来源，
  * 结构尺寸留组件 inline——§3.2 翻译规则） ── */
+
+/* AI 页滑入/收起（2026-09-04 真机拍板③：整体自顶部向下平移
+ * translateY(-100%)→0，收起反向；时长/曲线走 --kfm-dur-normal/
+ * --kfm-ease-out——P11 禁硬编码，B8 考卷拨 token 杠杆反向验证） */
+@keyframes kfm-aichat-page-in {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes kfm-aichat-page-out {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-100%); }
+}
+[data-kfm-aichat] {
+  animation: kfm-aichat-page-in var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+[data-kfm-aichat].kfm-closing {
+  animation: kfm-aichat-page-out var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+
+/* 层级规则（拍板④+主会话裁定⑤，§3.0/P10）：AI 页打开时 tmux orb+标签栏
+ * 隐藏——display:none 不渲染档，不是被盖；AI orb 恒可见可点为唯一开关。
+ * z 序数值（组件 inline）：终端/tmux 控件 ≤41 < AI 页 42 < composer=AI orb 43 */
+:root[data-kfm-aichat-open] [data-tmux-tabs-root] {
+  display: none;
+}
 
 /* 消息入场 fade-up（借 chat.tsx 词汇：opacity+translateY，节点身份不动=P6 兼容） */
 @keyframes kfm-aichat-fade-up {
@@ -202,21 +233,22 @@
   animation: kfm-aichat-cursor-blink calc(var(--kfm-dur-slow) * 3) var(--kfm-ease-sharp) infinite;
 }
 
-/* 模型菜单弹出（借 prompt-bar.tsx pop-in 词汇） */
+/* 模型菜单弹出（借 prompt-bar.tsx pop-in 词汇；挂全局 composer 条——
+ * composer 全局化后菜单两态（TERMINAL/AI_PAGE）都可开） */
 @keyframes kfm-aichat-pop-in {
   from { opacity: 0; transform: scale(0.96); }
   to   { opacity: 1; transform: scale(1); }
 }
-[data-kfm-aichat] [data-aichat-model-menu] {
+[data-kfm-aichat-bar] [data-aichat-model-menu] {
   animation: kfm-aichat-pop-in var(--kfm-dur-fast) var(--kfm-ease-out) both;
   transform-origin: bottom right;
 }
 
 /* composer 聚焦态：边框升档（借 prompt-bar.tsx focus-within 词汇） */
-[data-kfm-aichat] [data-aichat-composer] {
+[data-kfm-aichat-bar] [data-aichat-composer] {
   transition: border-color var(--kfm-dur-fast) var(--kfm-ease-out);
 }
-[data-kfm-aichat] [data-aichat-composer]:focus-within {
+[data-kfm-aichat-bar] [data-aichat-composer]:focus-within {
   border-color: var(--kfm-aichat-line-strong) !important;
 }
 

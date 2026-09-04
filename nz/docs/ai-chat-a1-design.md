@@ -22,6 +22,22 @@
 > ④ 配置直读 `~/.kfmv4/`（providers.json + .env），`NZ_AI_CONFIG_DIR` 可覆盖 ✅；
 > ⑤ kfmv4 routes.ts 不搬，错误语义靠 fixture 钉住 ✅；
 > ⑥ run 薄层登记表保留（内存 Map + 封顶缓冲 + 5min 淘汰，保页面切换补流）✅。
+> 仲裁记录追加（2026-09-04 用户真机拍板四条 + 主会话裁定两条，均已签收）：
+> ① **composer 全局化**：从 AI 页拆出，钉中央终端页面底部**全局常驻**
+>    （TERMINAL/AI_PAGE 两态都在、都可发送）；发送永远去 AI，终端输入照旧
+>    走 IME 诱饵——点输入栏=跟 AI 说话、点终端=跟 shell 说话、keybar 继续
+>    服务终端，三者焦点不打架；AI 页滑下时 composer 不能被盖（composer 作
+>    为全局顶层条钉底，AI 页内容区底部避开 composer 高度）✅；
+> ② **删返回按钮**：AI 页顶栏左侧返回按钮删除（多余，orb 即开关）；
+>    硬约束 AI orb 层级必须在 AI 页之上（否则页盖住球关不掉）✅；
+> ③ **入场动画**：AI 页整体自顶部向下平移（translateY(-100%)→0），收起
+>    反向；时长/曲线走 tokens（--kfm-dur-normal/--kfm-ease-out）✅；
+> ④ **层级规则**（从底到顶）：终端（含 tmux 控件）→ AI 页 → 输入栏 +
+>    AI orb ✅；
+> ⑤（主会话裁定）AI 页打开时 tmux orb+标签栏**隐藏**（不渲染/不可见，
+>    不是被盖）；AI orb 始终可见可点为唯一开关 ✅；
+> ⑥（主会话裁定）composer 全局化后 chat-link 脑不动——事件流与消息核
+>    不变，只动皮和装配 ✅。
 
 ## 〇、范围与边界（什么做、什么不做）
 
@@ -242,14 +258,39 @@ nz/tests/fixtures/ai-chat/   ← 从 kfm-na 借六份（原样复制，~28KB）�
 
 ## 三、UI 设计
 
-### 3.0 总体形态
+### 3.0 总体形态（2026-09-04 真机拍板改版）
 
 常驻 orb（**屏幕右边缘垂直居中=右中**，2026-09-04 用户拍板自右上挪位——
 右上与顶部伸出的 tmux 标签排 max-content 宽度冲突；左上 tmux orb 不动）=
-AI 页切换钮 + 运行指示灯（闲暗 /
-STREAMING 亮，静态换色零常动帧）；点按 → 全屏 AI 页（消息列表 + 底部
-prompt-bar）↔ 终端。页面切走 run 不死（server 缓冲），切回自动 attach
+AI 页**唯一开关** + 运行指示灯（闲暗 /
+STREAMING 亮，静态换色零常动帧）；点按 → 全屏 AI 页（消息列表）↔ 终端。
+页面切走 run 不死（server 缓冲），切回自动 attach
 补流——与 tmux-tabs 的「socket 断开会话不死」同哲学。
+
+**composer 全局化**（2026-09-04 真机拍板①）：composer 从 AI 页拆出，钉在
+中央终端页面底部**全局常驻**（TERMINAL/AI_PAGE 两态都在、都可发送，位置 =
+keybar 正上方、随软键盘上浮——visualViewport 跟踪，钉 vv 同哲学）。发送
+永远去 AI；终端输入照旧走 IME 诱饵。焦点语义三立：点 composer=跟 AI 说话、
+点终端=跟 shell 说话（kb 诱饵照旧）、keybar 继续服务终端——三者焦点不打架
+（composer 在 overlay 层，点击不触达终端容器的 kb.focus 路径，IME 防线纪律
+不回退）。
+
+**无返回按钮**（拍板②）：AI 页顶栏左侧返回按钮删除——orb 即唯一开关
+（A2 = 点 orb）。
+
+**入场动画**（拍板③）：AI 页整体自顶部向下平移入场
+（translateY(-100%)→0），收起反向（translateY(0)→-100%，播完才摘 DOM）；
+时长/曲线走 tokens（--kfm-dur-normal/--kfm-ease-out），皮内禁硬编码（P11）。
+
+**层级规则**（拍板④ + 主会话裁定⑤，从底到顶）：终端（含 tmux 控件 /
+keybar）→ AI 页 → composer + AI orb。
+
+- AI orb 与 composer 的层级恒在 AI 页之上（否则页盖住球关不掉）；
+- AI 页打开时 tmux orb+标签栏**隐藏**（不渲染/不可见——
+  `:root[data-kfm-aichat-open]` 下 display:none，不是被盖）；
+- composer 钉底不被 AI 页盖：AI 页内容区底部避开 composer 高度（高度经
+  ResizeObserver 实测，`--kfm-aichat-composer-h` 单源下发）；终端 scrollEl
+  底部同样预留 composer 高度（不盖 shell 提示符）。
 
 ### 3.1 BeautifulUI 三件搬运清单（诚实定性：是重写，不是搬源码）
 
@@ -299,8 +340,8 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 
 | # | 起点 | 触发 | 终点 | 底层动作 |
 |---|---|---|---|---|
-| A1 | `TERMINAL` | 点 orb | `AI_PAGE` | 纯 UI；有活跃 run → attach from cursor 补流 |
-| A2 | `AI_PAGE` | 点收起 / 系统返回 | `TERMINAL` | 纯 UI；run 不死（server 缓冲） |
+| A1 | `TERMINAL` | 点 orb | `AI_PAGE` | 纯 UI；入场动画 translateY(-100%)→0（P11）；有活跃 run → attach from cursor 补流 |
+| A2 | `AI_PAGE` | 点 orb（**唯一开关，无返回按钮**） | `TERMINAL` | 纯 UI；收起动画 translateY(0)→-100% 播完才摘 DOM；run 不死（server 缓冲） |
 | A3 | `IDLE` | 输入非空 + 发送 | `WAITING` | 用户消息入格 → POST /ai/chat/start |
 | A4 | `WAITING` | 首个 SSE 事件 | `STREAMING` | cursor 起记，reducer 起约 |
 | A5 | `STREAMING` | delta 事件 | `STREAMING` | applyEvent 原地 mutate → 重渲染气泡 |
@@ -329,6 +370,17 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
   或断流——容忍忽略，不渲染。
 - **P9** 词汇表强制统一：`TERMINAL`/`AI_PAGE`/`IDLE`/`WAITING`/`STREAMING`/
   `CLOSED`/`MODEL_OPEN`，清单外状态名 = 规格外状态 ≈ bug 候选。
+- **P10** 层级禁止倒挂（2026-09-04 拍板④+裁定⑤）：composer 与 AI orb 恒在
+  AI 页之上（z 序：终端/tmux 控件 < AI 页 < composer=AI orb）；AI 页打开时
+  tmux orb+标签栏必须**隐藏**（display:none 不渲染档，不许「被盖」态）；
+  composer 全局常驻——TERMINAL/AI_PAGE 两态都在且可发送，AI 页与终端内容
+  区都不得盖住 composer（底部避让 `--kfm-aichat-composer-h`）。
+- **P11** 动画时长/曲线禁硬编码：AI 页滑入/收起只许引用
+  `--kfm-dur-normal`/`--kfm-ease-out`（JS 侧等待时长也从 token 计算样式读，
+  不写魔法数）。
+- **P12** 焦点禁止互抢：点 composer 不许触发终端 IME 诱饵的 kb.focus 链路，
+  点终端/keybar 照旧走诱饵——composer 获焦后诱饵不得回抢（ime-pan 全卷
+  不回退是这条的判卷腿）。
 
 ## 四、观测与自测纪律（用户硬要求：全程能测试 + 看到 API 调试结果）
 
@@ -389,13 +441,18 @@ nz 不引入 Tailwind。翻译规则（学 keybar P5 先例）：
 
 | 钉 | 验证转换 | 手段 |
 |---|---|---|
-| B1 | A1/A2 orb 往返 | 点 orb → AI_PAGE；收起 → TERMINAL；词汇表钉 |
+| B1 | A1/A2 orb 往返（A2 = 点 orb，无返回按钮；P10 唯一开关） | 点 orb → AI_PAGE；再点 orb → TERMINAL；词汇表钉 + 返回按钮不存在断言 |
 | B2 | A3→A6 发送-流式-完成 | echo 节目单回放 → 消息只增、delta 逐字上屏、done 收流 |
 | B3 | A8 取消 | 流式中点停止 → `已取消` 入流、回 IDLE |
 | B4 | A7 错误入流 | echo 错误节目 → error 文案成消息、页面不崩 |
 | B5 | P6 只增不重建 | streaming 期间气泡 DOM 节点身份断言（同一引用） |
 | B6 | P9 词汇表 | `__kfmNzAiChat()` ring 状态名 ⊆ 清单枚举 |
 | B7 | P1 key 不出服务器 | `/ai/providers` 响应 + 全链路载荷 grep 无 key 形态 |
+| B8 | 滑入/收起动画（拍板③，P11） | 拨 `--kfm-dur-normal` 杠杆：中间帧 transform=负 ty 矩阵、animationName/Duration 跟随 token；收起 kfm-closing/page-out 播完才摘 DOM；中间帧截图存证 |
+| B9 | 层级规则（拍板④，P10） | AI 页开 → tmux orb/标签栏 display:none；z 序数值断言（AI orb > AI 页 > tmux orb）；点 AI orb 可关页（可见可点唯一开关） |
+| B10 | composer 全局常驻（拍板①，P10） | TERMINAL 态 composer 存在可见；关态发送 echo 全链消息入核、开页后 DOM 可见 |
+| B11 | 焦点不打架（拍板①裁定，P12） | 点 composer → 焦点落 composer 且 400ms 不被诱饵回抢；点终端 → 焦点回落 IME 诱饵 |
+| B12 | 底部避让（拍板①，P10） | 终端 scrollEl 底部预留 composer 高度（不盖提示符）；AI 页内容区底部 = composer 顶；composer 贴 keybar 正上方；钉底截图存证 |
 
 ### C 档 · 真机
 

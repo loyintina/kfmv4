@@ -1,17 +1,26 @@
 /**
- * src/client/plugins/ai-chat/index.tsx — AI 对话插件（ai-chat A1 阶段三；
- * 状态机清单 = docs/ai-chat-a1-design.md §3.3，契约 §7 机检锚点）。
+ * src/client/plugins/ai-chat/index.tsx — AI 对话插件（ai-chat A1 阶段三 +
+ * 2026-09-04 真机拍板交互改版；状态机清单 = docs/ai-chat-a1-design.md §3.3，
+ * 契约 §7 机检锚点）。
  *
  * 三机七态十转换（词汇表唯一真源，清单外状态名禁止——P9）：
- *   页面机 TERMINAL ↔ AI_PAGE（A1 点 orb / A2 点收起；切走 run 不死——
- *     server 缓冲续命，切回 attach from cursor 补流，tmux-tabs 同哲学）；
+ *   页面机 TERMINAL ↔ AI_PAGE（A1/A2 均点 orb——返回按钮已删，orb 即唯一
+ *     开关；切走 run 不死——server 缓冲续命，切回 attach from cursor 补流，
+ *     tmux-tabs 同哲学）；
  *   运行机 IDLE → WAITING → STREAMING → IDLE（chat-link 脑驱动，A3-A9）；
  *   菜单机 CLOSED ↔ MODEL_OPEN（picker 极简版，数据源 /ai/providers）。
  *
- * 形态（§3.0）：常驻 orb（屏幕右边缘垂直居中=右中，2026-09-04 用户拍板
- * 自右上挪位——右上与顶部伸出的 tmux 标签排 max-content 宽度冲突）= AI 页
- * 切换钮 + 运行指示灯（闲暗 / 活跃亮，静态换色零常动帧）；点按 → 全屏
- * AI 页（消息列表 + 底部 prompt-bar）↔ 终端。
+ * 形态（§3.0，2026-09-04 真机拍板四条+主会话裁定两条）：
+ *   ① composer 全局化：从 AI 页拆出，钉中央终端页面底部全局常驻（keybar
+ *      正上方、随软键盘上浮），TERMINAL/AI_PAGE 两态都在且可发送；发送永远
+ *      去 AI，终端输入照旧走 IME 诱饵——三者焦点不打架（P12）；
+ *   ② 无返回按钮：AI orb = 唯一开关，层级恒在 AI 页之上（P10）；
+ *   ③ AI 页入场动画 translateY(-100%)→0，收起反向播完才摘 DOM；时长/曲线
+ *      走 --kfm-dur-normal/--kfm-ease-out（P11，JS 等待时长也读 token）；
+ *   ④ 层级从底到顶：终端（含 tmux 控件/keybar）→ AI 页（z42）→ composer
+ *      +AI orb（z43）；AI 页开时 tmux orb+标签栏 display:none 隐藏（不是
+ *      被盖），AI 页内容区与终端 scrollEl 底部都避开 composer 高度
+ *      （--kfm-aichat-composer-h 经 ResizeObserver 实测单源下发）。
  *
  * 观测钩（§4.2，公共契约）：__kfmNzAiChat() 同步报
  *   { page, menu, run{phase,runId,provider,model,cursor,deltas,chars,startedMs}|null,
@@ -21,6 +30,7 @@ import { createElement, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { UiPlugin, UiPluginHandle } from '../../kernel/ui-kernel.js';
+import { KEYBAR_H } from '../../term/keybar.js';
 import { createAiChatLink, type AiChatLink, type PageState, type RunPhase } from './chat-link.js';
 import { MessageList } from './ui/message-list.js';
 import { PromptBar, type MenuState } from './ui/prompt-bar.js';
@@ -39,6 +49,16 @@ export interface AiChatRuntime {
 
 const AI_ICON = createElement('svg', { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--kfm-ink-2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
   createElement('path', { d: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z' }));
+
+// P11：收起动画的 JS 等待时长也从 token 计算样式读（--kfm-dur-normal 唯一
+// 真源；B8 考卷拨 token 杠杆时等待同步跟随）
+const readDurNormalMs = (): number => {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--kfm-dur-normal').trim();
+  const ms = /^([\d.]+)ms$/.exec(v);
+  if (ms) return Number.parseFloat(ms[1]);
+  const s = /^([\d.]+)s$/.exec(v);
+  return s ? Number.parseFloat(s[1]) * 1000 : 250;
+};
 
 export function createAiChatPlugin(): UiPlugin {
   return {
@@ -78,8 +98,13 @@ export function createAiChatPlugin(): UiPlugin {
       function AiChatApp(): React.ReactElement {
         const [page, setPage] = useState<PageState>('TERMINAL');
         const [menu, setMenu] = useState<MenuState>('CLOSED');
+        const [closing, setClosing] = useState(false);
+        const [composerH, setComposerH] = useState(0);
+        const [kbRise, setKbRise] = useState(0);
         const [, setTick] = useState(0);
         const listWrapRef = useRef<HTMLDivElement>(null);
+        const barRef = useRef<HTMLDivElement>(null);
+        const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
         bump = () => { refreshRuntime(); setTick((x) => x + 1); };
         pageRef.current = page;
@@ -100,33 +125,75 @@ export function createAiChatPlugin(): UiPlugin {
           };
         }, []);
 
+        // composer 钉 keybar 正上方随软键盘上浮（钉 vv 同哲学，term 容器同款）
+        useEffect(() => {
+          const vv = window.visualViewport;
+          if (!vv) return;
+          const onVv = (): void => setKbRise(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+          onVv();
+          vv.addEventListener('resize', onVv);
+          vv.addEventListener('scroll', onVv);
+          return () => { vv.removeEventListener('resize', onVv); vv.removeEventListener('scroll', onVv); };
+        }, []);
+
+        // composer 高度 ResizeObserver 实测 → --kfm-aichat-composer-h 单源下发
+        // （终端 scrollEl 底部预留 + AI 页底部避让同读此值；覆写 tokens.css
+        // 静态默认，插件摘除时还原——§3.0/P10）
+        useEffect(() => {
+          const el = barRef.current;
+          if (!el) return;
+          const apply = (): void => {
+            const h = el.getBoundingClientRect().height;
+            setComposerH(h);
+            document.documentElement.style.setProperty('--kfm-aichat-composer-h', `${h}px`);
+          };
+          apply();
+          const ro = new ResizeObserver(apply);
+          ro.observe(el);
+          return () => { ro.disconnect(); document.documentElement.style.removeProperty('--kfm-aichat-composer-h'); };
+        }, []);
+
+        // 层级规则（拍板④+裁定⑤，P10）：AI 页打开时 tmux orb+标签栏
+        // display:none 隐藏（不渲染档，不是被盖）；机关即复显
+        useEffect(() => {
+          document.documentElement.toggleAttribute('data-kfm-aichat-open', page === 'AI_PAGE');
+        }, [page]);
+
         // 消息更新自动滚底（贴近用户真实体验的跟随，不加动画）
         useEffect(() => {
           const el = listWrapRef.current;
           if (el) el.scrollTop = el.scrollHeight;
         });
 
-        // A1：TERMINAL → AI_PAGE；有活跃 run → attach from cursor 补流
+        // A1：TERMINAL → AI_PAGE；有活跃 run → attach from cursor 补流。
+        // 收起动画中途重开 = 作废摘除定时器、反播回滑入（动画归 CSS 类切换）
         const openPage = (): void => {
+          if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
+          setClosing(false);
           pageRef.current = 'AI_PAGE';
           setPage('AI_PAGE');
           link.resumeStream();
           refreshRuntime();
         };
-        // A2：AI_PAGE → TERMINAL；run 不死（server 缓冲），client 断流
+        // A2：AI_PAGE → TERMINAL（点 orb，唯一开关）；run 不死（server 缓冲）。
+        // 机先转、收起动画是呈现尾巴：translateY(0)→-100% 播完才摘 DOM（§3.0）
         const closePage = (): void => {
           link.suspendStream();
           menuRef.current = 'CLOSED';
           setMenu('CLOSED');
           pageRef.current = 'TERMINAL';
           setPage('TERMINAL');
+          setClosing(true);
+          if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+          closeTimerRef.current = setTimeout(() => { closeTimerRef.current = null; setClosing(false); }, readDurNormalMs());
           refreshRuntime();
         };
         const onMenu = (next: MenuState): void => { menuRef.current = next; setMenu(next); refreshRuntime(); }; // A10
         const onSelect = (provider: string, model: string): void => { link.selection = { provider, model }; refreshRuntime(); };
 
         // 常驻 orb（屏幕右中，2026-09-04 用户拍板自右上挪位——避开顶部
-        // tmux 标签排伸出区）：AI 页切换钮 + 运行指示灯
+        // tmux 标签排伸出区）：AI 页唯一开关 + 运行指示灯；z43 恒在 AI 页
+        // （z42）之上——否则页盖住球关不掉（P10 硬约束）
         const lit = link.state.phase !== 'IDLE';
         const orb = createElement('div', {
           'data-kfm-aichat-orb': '1',
@@ -134,22 +201,48 @@ export function createAiChatPlugin(): UiPlugin {
           onClick: (e: ReactMouseEvent) => { e.stopPropagation(); if (pageRef.current === 'AI_PAGE') closePage(); else openPage(); },
           onPointerDown: (e: ReactMouseEvent) => { e.stopPropagation(); },
           style: {
-            position: 'fixed', top: '50%', right: '12px', transform: 'translateY(-50%)', zIndex: 41,
+            position: 'fixed', top: '50%', right: '12px', transform: 'translateY(-50%)', zIndex: 43,
             width: '32px', height: '32px', borderRadius: '50%',
             background: 'var(--kfm-bar-bg)', border: '1px solid var(--kfm-line)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
           },
         }, AI_ICON);
 
-        if (page !== 'AI_PAGE') return orb;
+        // 全局 composer 条（拍板①：从 AI 页拆出钉底全局常驻，keybar 正上方、
+        // 随键盘上浮；TERMINAL/AI_PAGE 两态都在且可发送——发送永远去 AI，
+        // 终端 IME 诱饵照旧，三者焦点不打架 P12）
+        const bar = createElement('div', {
+          'data-kfm-aichat-bar': '1',
+          ref: barRef,
+          style: {
+            position: 'fixed', left: 0, right: 0, bottom: `${KEYBAR_H + kbRise}px`, zIndex: 43,
+          },
+        }, createElement(PromptBar, {
+          phase: link.state.phase,
+          menu,
+          selection: link.selection,
+          providersInfo: link.providersInfo,
+          onMenu,
+          onSelect,
+          onSend: (text) => { void link.send(text); },
+          onStop: () => { void link.cancel(); },
+        }));
 
-        // 全屏 AI 页：头部 / 消息区 / composer（借 chat.tsx 三段结构）
+        if (page !== 'AI_PAGE' && !closing) return createElement('div', null, orb, bar);
+
+        // 全屏 AI 页（z42：终端/tmux 控件之上、composer+orb 之下——P10 层序）：
+        // 头部 / 消息区（借 chat.tsx 结构）；内容区底部避开 composer+keybar
+        // 高度——滑下不盖 composer（拍板①）
         return createElement('div', null,
           orb,
+          bar,
           createElement('div', {
             'data-kfm-aichat': '1',
+            className: closing ? 'kfm-closing' : '',
             style: {
-              position: 'fixed', inset: 0, zIndex: 38,
+              position: 'fixed', top: 0, left: 0, right: 0,
+              bottom: `${composerH + KEYBAR_H + kbRise}px`,
+              zIndex: 42,
               background: 'var(--kfm-page)', color: 'var(--kfm-ink)',
               display: 'flex', flexDirection: 'column',
               fontFamily: 'var(--kfm-font-sans)',
@@ -158,27 +251,13 @@ export function createAiChatPlugin(): UiPlugin {
           },
           createElement('div', {
             style: {
-              flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px',
-              // 左右 56px 让开左上 tmux orb 热区（z=41 压在本页 z=38 之上——
-              // B1c 考卷实锤：收起钮被 tmux orb 截点；ai orb 已挪右中不占头部）
-              padding: '10px 56px', borderBottom: '1px solid var(--kfm-aichat-line)',
+              flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              // 返回按钮已删（拍板②：orb 即唯一开关）——头部只剩居中标题
+              padding: '10px 16px', borderBottom: '1px solid var(--kfm-aichat-line)',
             },
           },
-          createElement('button', {
-            'data-aichat-collapse': '1',
-            type: 'button',
-            onClick: closePage,
-            style: {
-              display: 'flex', alignItems: 'center', gap: '6px', border: 'none', background: 'none',
-              color: 'var(--kfm-ink-2)', cursor: 'pointer', fontSize: '13px', padding: '4px 6px',
-            },
-          },
-          createElement('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.4, strokeLinecap: 'round', strokeLinejoin: 'round' },
-            createElement('path', { d: 'M15 18l-6-6 6-6' })),
-          '收起'),
-          createElement('div', { style: { flex: 1, textAlign: 'center', fontSize: '13px', color: 'var(--kfm-ink-2)' } },
+          createElement('div', { style: { fontSize: '13px', color: 'var(--kfm-ink-2)' } },
             'AI 对话'),
-          createElement('div', { style: { width: '44px' } }),
           ),
           createElement('div', {
             ref: listWrapRef,
@@ -188,16 +267,6 @@ export function createAiChatPlugin(): UiPlugin {
             msgIdx: link.state.msgIdx,
             phase: link.state.phase,
           })),
-          createElement(PromptBar, {
-            phase: link.state.phase,
-            menu,
-            selection: link.selection,
-            providersInfo: link.providersInfo,
-            onMenu,
-            onSelect,
-            onSend: (text) => { void link.send(text); },
-            onStop: () => { void link.cancel(); },
-          }),
           ),
         );
       }
@@ -211,6 +280,7 @@ export function createAiChatPlugin(): UiPlugin {
         unmount: () => {
           link.close();
           root.unmount();
+          document.documentElement.removeAttribute('data-kfm-aichat-open');
           delete (window as unknown as Record<string, unknown>).__kfmNzAiChat;
         },
       };

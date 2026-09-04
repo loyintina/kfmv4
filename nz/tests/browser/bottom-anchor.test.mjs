@@ -15,6 +15,12 @@
  * 两区钩子 __kfmNzTermInputRow 已随单区回退退役（无独立输入行）。
  *
  * 跑法：起 8023 dev + node tests/browser/bottom-anchor.test.mjs（playwright + chromium）。
+ *
+ * 底部预留契约（2026-09-04 ai-chat composer 全局化拍板①改版）：scrollEl 底
+ * = vv底 − KEYBAR_H(84) − --kfm-aichat-composer-h（全局 composer 钉 keybar
+ * 正上方，终端内容区预留其高度）。④b/④c/④d/④e/④f 几何期值随之从
+ * 「vh−84」改为「vh−84−composerH」，composerH 从 live token 读不抄魔数；
+ * 各钉的核心断言（锚 vv/帧级自愈/空闲巡查/rows 跟随/禁滚不跑飞）不变。
  */
 import { launchBrowser } from './launch.mjs';
 
@@ -44,6 +50,12 @@ const probe = () => page.evaluate(() => {
     term: tr ? { top: tr.top, bottom: tr.bottom } : null,
   };
 });
+
+// 底部预留 = KEYBAR_H(84) + 全局 composer 高（live token 单源直读——
+// 2026-09-04 拍板①布局契约，期值不抄魔数）；rows 期值尺 = 壳字格高 16.25
+const RESERVE = await page.evaluate(() =>
+  84 + (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kfm-aichat-composer-h')) || 0));
+const rowsFor = (px) => Math.floor(px / 16.25);
 
 await kbFocus();
 const base = await probe();
@@ -117,7 +129,7 @@ await page.waitForTimeout(1500);
 // ④b 布局视口≠视觉视口扰动钉（2026-08-25 评审扰动实验证伪 fixed inset:0
 // 等价锚后补，card-visual-viewport-anchor-review 五节）：窗口还原 620
 // （布局视口不动），mock vv=400（模拟地址栏把视觉视口压扁）——卡身必须
-// 锚 vv 缩到底边 316(400−84)；若锚布局视口会停在 536=必红。正对
+// 锚 vv 缩到底边 400−RESERVE；若锚布局视口会停在 620−RESERVE=必红。正对
 // 「地址栏 chrome 覆盖布局视口、resizes-content 不管」这个真机坑。
 {
   await page.setViewportSize({ width: 900, height: 620 });
@@ -130,11 +142,11 @@ await page.waitForTimeout(1500);
   await page.waitForTimeout(900);
   const after = await probe();
   const ok = before.scroll && after.scroll
-    && before.scroll.bottom > 500                                             // 布局视口已还原(620−84=536)
-    && Math.abs(after.scroll.bottom - 316) <= 6                               // 卡身锚视觉视口：400−84=316
+    && Math.abs(before.scroll.bottom - (620 - RESERVE)) <= 6                    // 布局视口已还原
+    && Math.abs(after.scroll.bottom - (400 - RESERVE)) <= 6                     // 卡身锚视觉视口
     && after.cursor && Math.abs(after.cursor.bottom - after.scroll.bottom) <= 6;
   check('④b布局≠视觉视口→卡身锚视觉视口（扰动钉）', ok === true,
-        `before=${before.scroll?.bottom?.toFixed(1)} after=${after.scroll?.bottom?.toFixed(1)}（锚布局=536 锚视觉=316）cursor.bottom=${after.cursor?.bottom?.toFixed(1)}`);
+        `before=${before.scroll?.bottom?.toFixed(1)} after=${after.scroll?.bottom?.toFixed(1)}（锚布局=${620 - RESERVE} 锚视觉=${400 - RESERVE}）cursor.bottom=${after.cursor?.bottom?.toFixed(1)}`);
 }
 
 // ④c vv 事件不送达→帧级自愈钉（2026-08-26 真机 ranger 瞬态错量修复的回归
@@ -142,7 +154,7 @@ await page.waitForTimeout(1500);
 // 事件**（Via 地址栏/键盘路径事件可能整组不到）——输出帧的 checkDrift
 // （钉-量同拍，直读 live vv 属性）必须把卡身钉到新 vv 且 rows 跟随落地；
 // 无帧级自愈的旧实现卡身/rows 都卡旧值=必红。承接④b 末态：vv mock=400、
-// 卡身 400、rows=19。
+// 卡身 400、rows=rowsFor(400−RESERVE)。
 {
   const before = await probe();
   await page.evaluate(()=>{ try {
@@ -152,18 +164,18 @@ await page.waitForTimeout(1500);
   await page.waitForTimeout(1200); // 帧钉+RO+防抖150ms 落地
   const after = await probe();
   const ok = before.sc && after.sc
-    && before.sc.rows === 19                                                  // ④b 末态（卡身400）
-    && Math.abs(after.scroll.bottom - 216) <= 6                               // 卡身钉到 live vv=300：300−84=216
-    && after.sc.rows === 13;                                                  // floor(216/16.25)=13
+    && before.sc.rows === rowsFor(400 - RESERVE)                              // ④b 末态（卡身400）
+    && Math.abs(after.scroll.bottom - (300 - RESERVE)) <= 6                   // 卡身钉到 live vv=300
+    && after.sc.rows === rowsFor(300 - RESERVE);
   check('④c vv事件不送达→帧级自愈（钉到live vv+rows跟随）', ok === true,
-        `rows ${before.sc?.rows}→${after.sc?.rows}（期望19→13） scroll.bottom=${after.scroll?.bottom?.toFixed(1)}（期望216）`);
+        `rows ${before.sc?.rows}→${after.sc?.rows}（期望${rowsFor(400 - RESERVE)}→${rowsFor(300 - RESERVE)}） scroll.bottom=${after.scroll?.bottom?.toFixed(1)}（期望${300 - RESERVE}）`);
 }
 
 // ④d 空闲态自愈钉（2026-08-26 checkdrift-idle-gap-review：④c 靠输入产生
 // 输出帧驱动 checkDrift，真机 ranger 空闲无输出态覆盖不到）：mock vv 到
 // 新值、不派发事件、**不注入任何输入**——500ms 空闲巡查必须把卡身钉到
 // live vv 且 rows 在 ~1-2s 内自愈落地；无空闲驱动的旧实现必红。
-// 承接④c 末态：vv mock=300、rows=13。
+// 承接④c 末态：vv mock=300、rows=rowsFor(300−RESERVE)。
 {
   const before = await probe();
   await page.evaluate(()=>{ try {
@@ -172,11 +184,11 @@ await page.waitForTimeout(1500);
   await page.waitForTimeout(1600); // 空闲巡查500ms+防抖150ms 落地
   const after = await probe();
   const ok = before.sc && after.sc
-    && before.sc.rows === 13                                                  // ④c 末态
-    && Math.abs(after.scroll.bottom - 256) <= 6                               // 卡身钉到 340：340−84=256
-    && after.sc.rows === 15;                                                  // floor(256/16.25)=15
+    && before.sc.rows === rowsFor(300 - RESERVE)                              // ④c 末态
+    && Math.abs(after.scroll.bottom - (340 - RESERVE)) <= 6                   // 卡身钉到 340
+    && after.sc.rows === rowsFor(340 - RESERVE);
   check('④d vv事件不送达+无输入空闲→巡查自愈（rows跟随）', ok === true,
-        `rows ${before.sc?.rows}→${after.sc?.rows}（期望13→15） scroll.bottom=${after.scroll?.bottom?.toFixed(1)}（期望256）`);
+        `rows ${before.sc?.rows}→${after.sc?.rows}（期望${rowsFor(300 - RESERVE)}→${rowsFor(340 - RESERVE)}） scroll.bottom=${after.scroll?.bottom?.toFixed(1)}（期望${340 - RESERVE}）`);
 }
 
 // ④e ALT 态禁滚+rows 不跑飞钉（2026-08-26 ranger-runaway-rows-growth-review：
@@ -185,9 +197,9 @@ await page.waitForTimeout(1500);
 // ②ALT 三路禁滚（壳游标兜底/followOutput/inputToBottom + syncAlt 清零）。
 // 流程：还原 vv mock（delete configurable getter）→ 进 htop（ALT——
 // 2026-08-26 用户拍板 TUI 底部要求后按键栏两态都不藏，scrollEl 恒
-// bottom:KEYBAR_H，scrollClientH=620−84=536 → rows=floor(536/16.25)=32）
-// → 真缩窗到 400（卡身锚 vv=400 → scrollClientH=316 → rows=19）→ 断言
-// rows=19 且 scrollTop=0 且 scrollHeight≤clientHeight+1；再空闲 1.2s 复探，
+// bottom:KEYBAR_H+composer，scrollClientH=620−RESERVE → rows=rowsFor 同尺）
+// → 真缩窗到 400（卡身锚 vv=400 → scrollClientH=400−RESERVE）→ 断言
+// rows 跟随且 scrollTop=0 且 scrollHeight≤clientHeight+1；再空闲 1.2s 复探，
 // rows/scrollTop 不得增长（runaway 签名=随时间恶化）。退出 q + 还原窗。
 // 诚实声明：headless 双源本一致，此钉绿色两可，是回归护栏非 red-first；
 // 真凶 divergence 实锤靠新遥测字段（mCellH/mCellW/rawH/src）真机取证。
@@ -200,9 +212,8 @@ await page.waitForTimeout(1500);
   await page.waitForTimeout(2500); // ALT 进入 + TUI 首帧稳定
   const altBase = await probe();
   // ④f TUI 底部钉（2026-08-26 用户拍板 tui-keybar-bottom-review）：TUI 态
-  // 按键栏不藏——scrollClientH==vh−KEYBAR_H（不能=vh）、keybar display
-  // !=none 且矩形底=视口底。vv=620（headless vv==innerHeight）：
-  // scrollClientH=536、keybar 底=620。
+  // 按键栏不藏——scrollClientH==vh−KEYBAR_H−composerH（不能=vh）、keybar
+  // display !=none 且矩形底=视口底。vv=620（headless vv==innerHeight）。
   {
     const kb = await page.evaluate(() => {
       const e = document.querySelector('.kfm-term-keybar');
@@ -211,11 +222,11 @@ await page.waitForTimeout(1500);
       return { display: getComputedStyle(e).display, bottom: r.bottom, ih: window.innerHeight };
     });
     const ok = altBase.sc && kb
-      && Math.abs(altBase.sc.clientHeight - (kb.ih - 84)) <= 1      // scrollClientH==vh−KEYBAR_H(≠vh)
+      && Math.abs(altBase.sc.clientHeight - (kb.ih - RESERVE)) <= 1  // scrollClientH==vh−预留(≠vh)
       && kb.display !== 'none'                                       // 键栏可见
       && Math.abs(kb.bottom - kb.ih) <= 2;                           // 键栏矩形底=视口底
-    check('④f TUI态→键栏可见钉视口底+scrollClientH=vh−KEYBAR_H', ok === true,
-          `clientHeight=${altBase.sc?.clientHeight}（期望${kb ? kb.ih - 84 : '?'}） display=${kb?.display} kb.bottom=${kb?.bottom?.toFixed(1)} ih=${kb?.ih}`);
+    check('④f TUI态→键栏可见钉视口底+scrollClientH=vh−KEYBAR_H−composerH', ok === true,
+          `clientHeight=${altBase.sc?.clientHeight}（期望${kb ? kb.ih - RESERVE : '?'}） display=${kb?.display} kb.bottom=${kb?.bottom?.toFixed(1)} ih=${kb?.ih}`);
   }
   await page.setViewportSize({ width: 900, height: 400 });
   await page.waitForTimeout(1500); // 防抖150+空闲巡查500+RO 落地
@@ -223,13 +234,13 @@ await page.waitForTimeout(1500);
   await page.waitForTimeout(1200); // 空闲复探：runaway 签名=随时间增长
   const idle = await probe();
   const ok = altBase.sc && shrunk.sc && idle.sc
-    && altBase.sc.rows === 32                                        // ALT 占满键栏上方 536
-    && shrunk.sc.rows === 19                                         // 缩窗 rows 跟随=floor(316/16.25)
+    && altBase.sc.rows === rowsFor(620 - RESERVE)                    // ALT 占满预留上方
+    && shrunk.sc.rows === rowsFor(400 - RESERVE)                     // 缩窗 rows 跟随
     && shrunk.sc.scrollTop === 0                                     // ALT 禁滚
     && shrunk.sc.scrollHeight <= shrunk.sc.clientHeight + 1          // 画布不溢出
-    && idle.sc.rows === 19 && idle.sc.scrollTop === 0;               // 空闲不跑飞
+    && idle.sc.rows === rowsFor(400 - RESERVE) && idle.sc.scrollTop === 0; // 空闲不跑飞
   check('④e ALT缩窗→rows跟随+禁滚+空闲不跑飞（runaway回归钉）', ok === true,
-        `rows ${altBase.sc?.rows}→${shrunk.sc?.rows}→${idle.sc?.rows}（期望32→19→19） st=${shrunk.sc?.scrollTop}/${idle.sc?.scrollTop} sh=${shrunk.sc?.scrollHeight} ch=${shrunk.sc?.clientHeight}`);
+        `rows ${altBase.sc?.rows}→${shrunk.sc?.rows}→${idle.sc?.rows}（期望${rowsFor(620 - RESERVE)}→${rowsFor(400 - RESERVE)}→${rowsFor(400 - RESERVE)}） st=${shrunk.sc?.scrollTop}/${idle.sc?.scrollTop} sh=${shrunk.sc?.scrollHeight} ch=${shrunk.sc?.clientHeight}`);
   await type('q');
   await page.waitForTimeout(800);
   await page.setViewportSize({ width: 900, height: 620 });

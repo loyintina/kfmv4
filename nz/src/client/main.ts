@@ -119,8 +119,9 @@ const uiKernel = createUiKernel({ host: document.body, debug: debugOn });
 const tmuxContainer = host.create(rootCtx, { kind: 'overlay', owner: 'tmux-tabs', slot: 'tmux-tabs' });
 uiKernel.mount('tmux-tabs', createTmuxTabsPlugin(), tmuxContainer.el);
 
-// ai-chat A1（设计 §2.2/§3.0）：常驻 orb（右上）+ 全屏 AI 页，槽位同落
-// overlay 层（tmux-tabs 同款教训：挂 body 会被 layout 层整面盖住）。
+// ai-chat（设计 §2.2/§3.0 + 2026-09-04 真机拍板改版）：常驻 orb（右中，唯一
+// 开关）+ 滑入式 AI 页 + 全局钉底 composer，槽位同落 overlay 层（tmux-tabs
+// 同款教训：挂 body 会被 layout 层整面盖住）。
 const aiChatContainer = host.create(rootCtx, { kind: 'overlay', owner: 'ai-chat', slot: 'ai-chat' });
 uiKernel.mount('ai-chat', createAiChatPlugin(), aiChatContainer.el);
 
