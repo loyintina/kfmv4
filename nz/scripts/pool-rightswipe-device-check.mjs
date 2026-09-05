@@ -19,6 +19,15 @@ const list = await (await fetch('http://localhost:8026/json/list')).json();
 // 目标选择：优先「可见」的 nz 页（后台页 Input.dispatchTouchEvent 必挂——
 // 2026-09-05 实测 hidden 页 touch 派发永久 pending）；都不可见再退 attached 首个
 const nzPages = list.filter((t) => t.type === 'page' && (t.url || '').includes('8023'));
+const sizeOf = async (t) => {
+  const ws = new WebSocket(t.webSocketDebuggerUrl);
+  let idc = 0; const p = new Map();
+  ws.addEventListener('message', (ev) => { const m = JSON.parse(ev.data); if (m.id && p.has(m.id)) { const x = p.get(m.id); p.delete(m.id); m.error ? x.reject(new Error(m.error.message)) : x.resolve(m.result); } });
+  await new Promise((r) => ws.addEventListener('open', r));
+  const v = await new Promise((res, rej) => { const id = ++idc; p.set(id, { resolve: res, reject: rej }); ws.send(JSON.stringify({ id, method: 'Runtime.evaluate', params: { expression: 'JSON.stringify({w:innerWidth,h:innerHeight})', returnByValue: true } })); });
+  try { ws.close(); } catch {}
+  try { return JSON.parse(v.result?.value ?? '{}'); } catch { return null; }
+};
 const visOf = async (t) => {
   const ws = new WebSocket(t.webSocketDebuggerUrl);
   let idc = 0; const p = new Map();
@@ -30,9 +39,12 @@ const visOf = async (t) => {
 };
 let live = null;
 for (const t of nzPages) {
+  // visible 且视口>100 才算真前台（0×0 僵尸页 visible 是伪地形：hit-test
+  // fallback 到 root，touch-action 链不适用，结果不可判读）
+  const size = await sizeOf(t).catch(() => null);
   const v = await visOf(t).catch(() => 'err');
-  console.log('[target]', t.id.slice(0, 8), t.url.slice(0, 50), 'visibility=' + v);
-  if (v === 'visible') { live = t; break; }
+  console.log('[target]', t.id.slice(0, 8), t.url.slice(0, 50), `visibility=${v} viewport=${size ? size.w + 'x' + size.h : '?'}`);
+  if (v === 'visible' && size && size.w > 100) { live = t; break; }
 }
 if (!live) live = nzPages.find((t) => t.description.includes('"attached":true'));
 if (!live) { console.error('❌ 无 attached 的 nz live 目标'); process.exit(2); }
