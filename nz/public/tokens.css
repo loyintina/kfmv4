@@ -301,8 +301,10 @@
 }
 
 /* 置顶入场（仲裁⑫ 页面栈模型：提顶即召唤，两卡各自入场动画重播）。
- * 类换名重启动画（同名 animation 不重播），animationend 由插件摘类：
- * 池卡置顶=从右滑入（与左滑召唤同向）；AI 置顶=从上滑入（与点球召唤同向） */
+ * 类换名重启动画（同名 animation 不重播）。**播完不摘类**：摘类会把
+ * animation-name 切回基础 page-in → 底牌动画再播一遍（2026-09-05 用户
+ * 真机报告「入场动画播两遍」定罪）。类驻留无害：重播=插件「移除→reflow
+ * →再加」；关页走 .kfm-closing 换名照播；重开=元素重建类自然归零 */
 @keyframes kfm-pool-raise-in {
   from { transform: translateX(100%); }
   to   { transform: translateX(0); }

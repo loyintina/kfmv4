@@ -155,14 +155,15 @@ export function createAiChatPlugin(): UiPlugin {
         }, []);
 
         // 仲裁⑫ 置顶入场：提顶账 false→true 翻转沿上，AI 页重播入场动画
-        // （类换名 kfm-aichat-raise-in 重启动画，animationend 摘类）
+        // （类换名 kfm-aichat-raise-in 重启动画）。**播完不摘类**——摘类会把
+        // animation-name 切回基础 page-in 导致底牌动画再播一遍（用户真机
+        // 报告「播两遍」定罪）；类驻留无害，重播=移除→reflow→再加
         const prevRaisedRef = useRef(false);
         const raiseReplayRef = useRef<((el: Element) => void) | null>(null);
         raiseReplayRef.current = (el: Element): void => {
           el.classList.remove('kfm-raise');
           void el.offsetWidth; // 强制 reflow：类移除后再加，动画必重启
           el.classList.add('kfm-raise');
-          el.addEventListener('animationend', () => el.classList.remove('kfm-raise'), { once: true });
         };
 
         bump = () => { refreshRuntime(); setTick((x) => x + 1); };

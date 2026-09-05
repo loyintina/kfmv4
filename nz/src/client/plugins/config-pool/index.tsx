@@ -137,14 +137,14 @@ export function createConfigPoolPlugin(ctx: Context): UiPlugin {
           if (v === 'left' && core.state.page === 'POOL_CLOSED') { core.openBySwipe(); bump(); }
           else if (v === 'left' && core.state.page === 'POOL_OPEN' && raised) {
             // 仲裁⑫：池卡置顶=demote AI（ai-chat 清提顶账，池页复现 z44 档）
-            // +池页入场动画重播（从右滑入，与左滑召唤同向）
+            // +池页入场动画重播（从右滑入）。**播完不摘类**：摘类=animation-name
+            // 切回基础 page-in → 底牌动画再播一遍（「播两遍」定罪，同 ai-chat）
             window.dispatchEvent(new CustomEvent('kfm-nz-aichat-demote'));
             const el = document.querySelector('[data-kfm-pool]');
             if (el) {
               el.classList.remove('kfm-raise');
               void (el as HTMLElement).offsetWidth;
               el.classList.add('kfm-raise');
-              el.addEventListener('animationend', () => el.classList.remove('kfm-raise'), { once: true });
             }
           }
           else if (v === 'right' && core.state.page === 'POOL_OPEN' && !raised) { requestClose(); }

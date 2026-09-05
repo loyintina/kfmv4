@@ -839,8 +839,22 @@ try {
       `ai=${aiPre} ta=${JSON.stringify(aiTa)} st=${stAi}→${stAiBack} tape=${JSON.stringify(tapeAi)} aiPost=${aiPost}`);
 
     // B13f 仲裁⑫ 页面栈：提顶档左滑=池卡置顶（demote 清提顶账+入场重播）+
-    // 右滑仍不隔空关（看不见的卡不关）；池顶时右滑=关池露 AI
-    await tpage.click('[data-kfm-aichat-orb]').catch(() => {}); // 终端态点球→AI 页
+    // 右滑仍不隔空关（看不见的卡不关）；池顶时右滑=关池露 AI。
+    // 动画机检：重载拿干净态，token+计数器装在一切动画之前（中途改时长会让
+    // 已播完的动画按新时长复活重发 animationstart=测量伪影）——本块内
+    // 各 page-in/raise-in 恰好 1 次，多出来的都是底牌重播（「播两遍」病灶）
+    await tpage.goto(`${BASE}/?nosplash`, { waitUntil: 'domcontentloaded', timeout: 40000 }).catch(() => {});
+    await tpage.waitForFunction(() => !!(window).__kfmNzPool && !!document.querySelector('.nz-term'), null, { timeout: 20000, polling: 250 });
+    await sleep(2200);
+    await tpage.evaluate(() => {
+      document.documentElement.style.setProperty('--kfm-dur-normal', '3s');
+      window.__animLog = [];
+      document.addEventListener('animationstart', (e) => {
+        const n = e.animationName;
+        if (String(n).includes('raise') || String(n).includes('page-in')) window.__animLog.push(String(n));
+      }, { capture: true });
+    });
+    await tpage.click('[data-kfm-aichat-orb]').catch(() => {}); // 点球→AI 页
     await sleep(600);
     // mouse 左滑开池（等价已开态）→ 点球提顶 AI（raised 档）
     {
@@ -858,8 +872,6 @@ try {
       ai: (window).__kfmNzAiChat().page,
     }));
     await tpage.evaluate(() => { window.__ttape = []; });
-    // 动画期内取样：临时拉长时长 token（B8b 同款杠杆），防 250ms 播完取样落空
-    await tpage.evaluate(() => document.documentElement.style.setProperty('--kfm-dur-normal', '3s'));
     const ar = await tpage.evaluate(() => { const e = document.querySelector('[data-kfm-aichat]').getBoundingClientRect(); return { x: Math.round(e.x + Math.min(e.width / 2, 420)), y: Math.round(e.y + Math.min(e.height / 2, 300)) }; });
     await tstroke(ar.x, ar.y, ar.x - 190, ar.y);
     const raisedPost = await tpage.evaluate(() => ({
@@ -867,21 +879,25 @@ try {
       poolZ: getComputedStyle(document.querySelector('[data-kfm-pool]')).zIndex,
       anim: getComputedStyle(document.querySelector('[data-kfm-pool]')).animationName,
     }));
-    await tpage.evaluate(() => document.documentElement.style.removeProperty('--kfm-dur-normal'));
     const stR = await tp();
-    await sleep(400); // token 复原后等提顶动画播完，再测池顶右滑
+    await sleep(400); // 提顶动画播完再测池顶右滑
     // 池顶时右滑=关池露 AI
     const pr = await tpage.evaluate(() => { const e = document.querySelector('[data-kfm-pool]').getBoundingClientRect(); return { x: Math.round(e.x + Math.min(e.width / 2, 420)), y: Math.round(e.y + Math.min(e.height / 2, 300)) }; });
     await tstroke(pr.x, pr.y, pr.x + 190, pr.y);
     const stR2 = await tp();
     const aiEnd = await tpage.evaluate(() => (window).__kfmNzAiChat().page);
-    check('B13f 提顶档左滑=池卡置顶（demote+入场重播）+右滑不隔空关+池顶右滑露 AI',
+    const animLog = await tpage.evaluate(() => (window).__animLog);
+    const cnt = (n) => animLog.filter((x) => x === n).length;
+    check('B13f 提顶档左滑=池卡置顶（demote+入场重播恰好一遍）+右滑不隔空关+池顶右滑露 AI',
       raisedPre.raised === true && raisedPre.ai === 'AI_PAGE'
         && raisedPost.raised === false && raisedPost.poolZ === '44'
         && String(raisedPost.anim).includes('raise')
         && stR.startsWith('POOL_OPEN')
-        && stR2.startsWith('POOL_CLOSED') && aiEnd === 'AI_PAGE',
-      `pre=${JSON.stringify(raisedPre)} post=${JSON.stringify(raisedPost)} st=${stR}→${stR2} ai=${aiEnd}`);
+        && stR2.startsWith('POOL_CLOSED') && aiEnd === 'AI_PAGE'
+        && cnt('kfm-aichat-raise-in') === 1 && cnt('kfm-pool-raise-in') === 1
+        && cnt('kfm-pool-page-in') === 1 && cnt('kfm-aichat-page-in') === 1,
+      `pre=${JSON.stringify(raisedPre)} post=${JSON.stringify(raisedPost)} st=${stR}→${stR2} ai=${aiEnd} anim=${JSON.stringify(animLog)}`);
+    await tpage.evaluate(() => document.documentElement.style.removeProperty('--kfm-dur-normal'));
     await tctx.close();
   }
 
