@@ -126,27 +126,29 @@ export function createConfigPoolPlugin(ctx: Context): UiPlugin {
         layer: GestureLayer.PageSwipe,
         targetFilter: (target) => !target.closest(POOL_SWIPE_EXCLUDE),
         condition: () => {
-          if (core.state.page === 'POOL_OPEN') {
-            // 仲裁⑩ orb 提顶档：AI 页盖在池页上时手势归 AI 页——盖着的池页
-            // 不吃右滑返回（隐藏池页不被误关，B12b 钉）
-            if (document.documentElement.hasAttribute('data-kfm-aichat-raised')) return false;
-            return true; // 池页内右滑返回（左滑裁决后不绑 §八⑦）
-          }
-          // AI_PAGE 态不设门（仲裁⑪实施扩展，2026-09-05 用户拍板「任何地方
-          // 都能左滑」含 AI 对话页）：消息列表只有纵向滚动，横向滑动无冲突；
-          // 左滑开出池页盖在 AI 页上（仲裁⑩层级），右滑回 AI 页原样还在。
-          return true;
-          // 终端 ALT/TUI 态不设门（仲裁⑪，2026-09-05 用户拍板「任何地方都能
-          // 左滑」）：用户主场景=设备常挂 kimi-code（本身是 TUI，合法占 ALT
-          // 屏），设门=池页在最高频状态不可达。触摸滑动手势不注入字节，
-          // TUI 在面板底下继续跑零影响——原「防 TUI 横向冲突」前提不成立。
+          // 仲裁⑫ 页面栈模型：任何状态手势都归本插件裁决——提顶档（AI 页盖
+          // 着池页）左滑=池卡置顶、右滑在 onEnd 判（看不见的卡不隔空关）；
+          // AI_PAGE 态/ALT 态无门（仲裁⑪：任何地方都能左滑）
           return true;
         },
         onEnd: (_e, dx, dy) => {
           const v = judgePoolSwipe(dx, dy); // 松手期方向裁决（§1.2-4）
+          const raised = document.documentElement.hasAttribute('data-kfm-aichat-raised');
           if (v === 'left' && core.state.page === 'POOL_CLOSED') { core.openBySwipe(); bump(); }
-          else if (v === 'right' && core.state.page === 'POOL_OPEN') { requestClose(); }
-          // 其余=零动作零副作用（垂直滚动自然落选）
+          else if (v === 'left' && core.state.page === 'POOL_OPEN' && raised) {
+            // 仲裁⑫：池卡置顶=demote AI（ai-chat 清提顶账，池页复现 z44 档）
+            // +池页入场动画重播（从右滑入，与左滑召唤同向）
+            window.dispatchEvent(new CustomEvent('kfm-nz-aichat-demote'));
+            const el = document.querySelector('[data-kfm-pool]');
+            if (el) {
+              el.classList.remove('kfm-raise');
+              void (el as HTMLElement).offsetWidth;
+              el.classList.add('kfm-raise');
+              el.addEventListener('animationend', () => el.classList.remove('kfm-raise'), { once: true });
+            }
+          }
+          else if (v === 'right' && core.state.page === 'POOL_OPEN' && !raised) { requestClose(); }
+          // 其余=零动作零副作用：垂直滚动自然落选；提顶档右滑不隔空关池（B12b）
         },
       });
 

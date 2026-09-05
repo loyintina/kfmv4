@@ -136,6 +136,9 @@ export function createAiChatPlugin(): UiPlugin {
           // 外部 dispatch 不经 React 事件，须手动触发渲染同步）
           const onRoute = (): void => { aiRaisedRef.current = false; setTick((x) => x + 1); };
           window.addEventListener('kfm-nz-pool-open', onRoute);
+          // 仲裁⑫ 页面栈模型：池卡置顶=demote AI（清提顶账，池页复现 z44 档）——
+          // 池侧手势经此事件通知，账仍归本插件（收敛 effect 落属性，不跨插件改 DOM）
+          window.addEventListener('kfm-nz-aichat-demote', onRoute);
           const mo = new MutationObserver(() => {
             if (document.documentElement.hasAttribute('data-kfm-pool-open')) {
               aiRaisedRef.current = false;
@@ -145,10 +148,22 @@ export function createAiChatPlugin(): UiPlugin {
           mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-kfm-pool-open'] });
           return () => {
             window.removeEventListener('kfm-nz-pool-open', onRoute);
+            window.removeEventListener('kfm-nz-aichat-demote', onRoute);
             mo.disconnect();
             document.documentElement.removeAttribute('data-kfm-aichat-raised');
           };
         }, []);
+
+        // 仲裁⑫ 置顶入场：提顶账 false→true 翻转沿上，AI 页重播入场动画
+        // （类换名 kfm-aichat-raise-in 重启动画，animationend 摘类）
+        const prevRaisedRef = useRef(false);
+        const raiseReplayRef = useRef<((el: Element) => void) | null>(null);
+        raiseReplayRef.current = (el: Element): void => {
+          el.classList.remove('kfm-raise');
+          void el.offsetWidth; // 强制 reflow：类移除后再加，动画必重启
+          el.classList.add('kfm-raise');
+          el.addEventListener('animationend', () => el.classList.remove('kfm-raise'), { once: true });
+        };
 
         bump = () => { refreshRuntime(); setTick((x) => x + 1); };
         pageRef.current = page;
@@ -208,8 +223,14 @@ export function createAiChatPlugin(): UiPlugin {
           const doc = document.documentElement;
           doc.toggleAttribute('data-kfm-aichat-open', page === 'AI_PAGE');
           const raised = page === 'AI_PAGE' && aiRaisedRef.current && doc.hasAttribute('data-kfm-pool-open');
-          if (raised && !doc.hasAttribute('data-kfm-aichat-raised')) doc.setAttribute('data-kfm-aichat-raised', '');
+          if (raised && !doc.hasAttribute('data-kfm-aichat-raised')) {
+            doc.setAttribute('data-kfm-aichat-raised', '');
+            // 仲裁⑫ 置顶入场：AI 页重播从上滑入
+            const el = doc.querySelector('[data-kfm-aichat]');
+            if (el && !prevRaisedRef.current) raiseReplayRef.current?.(el);
+          }
           if (!raised && doc.hasAttribute('data-kfm-aichat-raised')) doc.removeAttribute('data-kfm-aichat-raised');
+          prevRaisedRef.current = raised;
         });
 
         // 列表滚动纪律（term 8.8.3c 同哲学 + 拍板⑩）：

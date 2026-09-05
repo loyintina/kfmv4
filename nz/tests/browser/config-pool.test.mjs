@@ -832,6 +832,56 @@ try {
         && tapeAi.down === 1 && tapeAi.cancel === 0
         && stAiBack.startsWith('POOL_CLOSED') && aiPost === 'AI_PAGE',
       `ai=${aiPre} ta=${JSON.stringify(aiTa)} st=${stAi}→${stAiBack} tape=${JSON.stringify(tapeAi)} aiPost=${aiPost}`);
+    check('B13e AI 页真触摸左滑开池（pan-y 放行 cancels=0 → POOL_OPEN）+右滑回（AI 页原样）',
+      aiPre === 'AI_PAGE' && aiTa.page === 'pan-y' && stAi.startsWith('POOL_OPEN')
+        && tapeAi.down === 1 && tapeAi.cancel === 0
+        && stAiBack.startsWith('POOL_CLOSED') && aiPost === 'AI_PAGE',
+      `ai=${aiPre} ta=${JSON.stringify(aiTa)} st=${stAi}→${stAiBack} tape=${JSON.stringify(tapeAi)} aiPost=${aiPost}`);
+
+    // B13f 仲裁⑫ 页面栈：提顶档左滑=池卡置顶（demote 清提顶账+入场重播）+
+    // 右滑仍不隔空关（看不见的卡不关）；池顶时右滑=关池露 AI
+    await tpage.click('[data-kfm-aichat-orb]').catch(() => {}); // 终端态点球→AI 页
+    await sleep(600);
+    // mouse 左滑开池（等价已开态）→ 点球提顶 AI（raised 档）
+    {
+      const c = await tpage.evaluate(() => { const e = document.querySelector('.nz-term').getBoundingClientRect(); return { x: Math.min(e.x + e.width / 2, 420), y: Math.max(8, Math.min(e.y + e.height / 2, 400)) }; });
+      await tpage.mouse.move(c.x, c.y);
+      await tpage.mouse.down();
+      for (let i = 1; i <= 14; i++) { await tpage.mouse.move(c.x - (180 * i) / 14, c.y); await sleep(8); }
+      await tpage.mouse.up();
+      await sleep(450);
+    }
+    await tpage.click('[data-kfm-aichat-orb]').catch(() => {});
+    await sleep(600);
+    const raisedPre = await tpage.evaluate(() => ({
+      raised: document.documentElement.hasAttribute('data-kfm-aichat-raised'),
+      ai: (window).__kfmNzAiChat().page,
+    }));
+    await tpage.evaluate(() => { window.__ttape = []; });
+    // 动画期内取样：临时拉长时长 token（B8b 同款杠杆），防 250ms 播完取样落空
+    await tpage.evaluate(() => document.documentElement.style.setProperty('--kfm-dur-normal', '3s'));
+    const ar = await tpage.evaluate(() => { const e = document.querySelector('[data-kfm-aichat]').getBoundingClientRect(); return { x: Math.round(e.x + Math.min(e.width / 2, 420)), y: Math.round(e.y + Math.min(e.height / 2, 300)) }; });
+    await tstroke(ar.x, ar.y, ar.x - 190, ar.y);
+    const raisedPost = await tpage.evaluate(() => ({
+      raised: document.documentElement.hasAttribute('data-kfm-aichat-raised'),
+      poolZ: getComputedStyle(document.querySelector('[data-kfm-pool]')).zIndex,
+      anim: getComputedStyle(document.querySelector('[data-kfm-pool]')).animationName,
+    }));
+    await tpage.evaluate(() => document.documentElement.style.removeProperty('--kfm-dur-normal'));
+    const stR = await tp();
+    await sleep(400); // token 复原后等提顶动画播完，再测池顶右滑
+    // 池顶时右滑=关池露 AI
+    const pr = await tpage.evaluate(() => { const e = document.querySelector('[data-kfm-pool]').getBoundingClientRect(); return { x: Math.round(e.x + Math.min(e.width / 2, 420)), y: Math.round(e.y + Math.min(e.height / 2, 300)) }; });
+    await tstroke(pr.x, pr.y, pr.x + 190, pr.y);
+    const stR2 = await tp();
+    const aiEnd = await tpage.evaluate(() => (window).__kfmNzAiChat().page);
+    check('B13f 提顶档左滑=池卡置顶（demote+入场重播）+右滑不隔空关+池顶右滑露 AI',
+      raisedPre.raised === true && raisedPre.ai === 'AI_PAGE'
+        && raisedPost.raised === false && raisedPost.poolZ === '44'
+        && String(raisedPost.anim).includes('raise')
+        && stR.startsWith('POOL_OPEN')
+        && stR2.startsWith('POOL_CLOSED') && aiEnd === 'AI_PAGE',
+      `pre=${JSON.stringify(raisedPre)} post=${JSON.stringify(raisedPost)} st=${stR}→${stR2} ai=${aiEnd}`);
     await tctx.close();
   }
 

@@ -300,6 +300,24 @@
   touch-action: pan-y;
 }
 
+/* 置顶入场（仲裁⑫ 页面栈模型：提顶即召唤，两卡各自入场动画重播）。
+ * 类换名重启动画（同名 animation 不重播），animationend 由插件摘类：
+ * 池卡置顶=从右滑入（与左滑召唤同向）；AI 置顶=从上滑入（与点球召唤同向） */
+@keyframes kfm-pool-raise-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes kfm-aichat-raise-in {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+[data-kfm-pool].kfm-raise {
+  animation: kfm-pool-raise-in var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+[data-kfm-aichat].kfm-raise {
+  animation: kfm-aichat-raise-in var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+
 /* 层级规则（仲裁⑩用户修正稿，P10）：层级定死 终端/tmux < AI 页(z42) <
  * 池页(z44) < 输入栏+光球（恒顶）。池页开（data-kfm-pool-open）时：
  * tmux 控件 display:none（AI 页开时同款不渲染档）；输入栏+光球 inline
