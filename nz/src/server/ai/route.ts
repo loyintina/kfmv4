@@ -145,6 +145,9 @@ export function mountAiChatRoutes(): (req: IncomingMessage, res: ServerResponse)
     const mSess = /^\/ai\/session\/([^/]+)\/messages$/.exec(url);
     if (mSess && req.method === 'GET') {
       const id = decodeURIComponent(mSess[1]);
+      // ?tail=N：只回尾部 N 条（2026-09-05 卡顿修复——大会话全量 JSON 在手机
+      // 端 res.json() 解析 16.5s 主线程冻结；真相源/发送投影仍在 server 全量）
+      const tailQ = Number.parseInt(query.get('tail') ?? '', 10);
       const file = join(sessionsDir(poolDir()), `${id}.json`);
       const resolved = resolve(file);
       if (!id || id.includes('/') || id.includes('\\') || id === '.' || id === '..'
@@ -153,6 +156,8 @@ export function mountAiChatRoutes(): (req: IncomingMessage, res: ServerResponse)
         return;
       }
       const meta = readMeta(id);
+      const all = readMessages(id);
+      const messages = Number.isFinite(tailQ) && tailQ > 0 ? all.slice(-tailQ) : all;
       sendJson(res, 200, {
         session: {
           id: meta.id ?? id,
@@ -163,7 +168,8 @@ export function mountAiChatRoutes(): (req: IncomingMessage, res: ServerResponse)
           modelId: meta.modelId ?? null,
           manuallyNamed: meta.manuallyNamed === true,
         },
-        messages: readMessages(id),
+        messages,
+        total: all.length,
         stats: readStats(id),
       });
       return;

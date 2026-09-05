@@ -71,6 +71,9 @@ export interface AiChatLink {
   sessionId: string | null;
   /** A2a.5：当前会话标题（水合时随全文带回；新会话=null→显示「新会话」） */
   sessionTitle: string | null;
+  /** A2a.5：水合截断账——会话总条数超过显示上限时=全量条数（「加载更早」
+   *  接口位的数据源），未截断=null */
+  hydratedTotal: number | null;
   loadProviders(): Promise<void>;
   send(text: string): Promise<void>;
   cancel(): Promise<void>;
@@ -85,6 +88,12 @@ export interface AiChatLink {
 }
 
 const RING_CAP = 64; // ≥50（§4.2/契约 §7 可观测性约束）
+/** 并发水合闸（2026-09-05 卡顿诊断：开机自动水合与手动调用双发，同一大会话
+ *  各解析一遍全量 JSON=双倍冻结） */
+const loadSessionInFlight = new Set<string>();
+/** 水合显示上限（2026-09-05 卡顿修复）：大会话只挂尾部 N 条进渲染层，
+ *  全量仍在会话文件+server 发送投影——真相源与显示层解耦 */
+const MAX_HYDRATE_MSGS = 100;
 const MAX_RECONNECT = 3;
 
 export function createAiChatLink(onUpdate: () => void, env?: { page?: () => PageState }): AiChatLink {
@@ -111,23 +120,42 @@ export function createAiChatLink(onUpdate: () => void, env?: { page?: () => Page
     selection: { provider: '', model: '' },
     sessionId: null,
     sessionTitle: null,
+    hydratedTotal: null,
 
     /** A2a.5 D3 水合：拉会话全文直挂消息核（§2.4——落盘的是归约后 messages，
      *  无需重放）+恢复绑定（会话记录了 provider/model 且在池内存活→写总账并
      *  更新 selection；记录值已失效→只切会话，诚实降级）。流式中调用方禁入（P18）。 */
     async loadSession(id: string): Promise<boolean> {
       if (disposed || state.phase !== 'IDLE') return false;
+      if (loadSessionInFlight.has(id) || loadSessionInFlight.size > 0) return false; // 并发水合闸：同时只跑一个（开机自动+手动双发去重）
+      loadSessionInFlight.add(id);
+      const __t0 = Date.now();
+      const __mark = (label: string): void => console.log(`[aichat-load +${Date.now() - __t0}ms] ${label}`);
+      __mark(`start id=${id}`);
       try {
-        const res = await fetch(`/ai/session/${encodeURIComponent(id)}/messages`);
-        if (!res.ok) return false;
+        const res = await fetch(`/ai/session/${encodeURIComponent(id)}/messages?tail=${MAX_HYDRATE_MSGS}`);
+        __mark('fetch done ' + res.status);
+        if (!res.ok) { loadSessionInFlight.delete(id); return false; }
         const data = (await res.json()) as {
           messages: ChatMessage[];
           session: { providerId?: string | null; modelId?: string | null };
         };
-        state.messages = Array.isArray(data.messages) ? data.messages : [];
+        // A2a.5 §2.4 + 卡顿修复（2026-09-05 用户实测「加载会话卡住」）：
+        // 大会话（实测 1745 条/131 万 tok）全量直挂=一次渲染上千节点，主线程
+        // 卡死、气泡迟迟不出。显示层只挂最后 MAX_HYDRATE_MSGS 条——真相源不受
+        // 限（文件全量 + server 发送投影仍按全量，「画多少」与「发多少」解耦）；
+        // 「加载更早」按钮留接口后续做。
+        loadSessionInFlight.delete(id);
+        __mark(`json parsed, shown=${data.messages?.length} total=${data.total}`);
+        // 纵深第二层：client 侧再洗一遍坏 content 块（server 已洗，防旧包/直调）
+        state.messages = Array.isArray(data.messages)
+          ? (data.messages.length > MAX_HYDRATE_MSGS ? data.messages.slice(-MAX_HYDRATE_MSGS) : data.messages)
+              .map((m) => ({ ...m, content: Array.isArray(m.content) ? m.content.filter((b) => !!b && typeof b === 'object' && typeof (b as { type?: unknown }).type === 'string') : [] }))
+          : [];
         state.msgIdx = -1;
         state.phase = 'IDLE';
         link.sessionId = id;
+        link.hydratedTotal = typeof data.total === 'number' && state.messages.length < data.total ? data.total : null;
         link.sessionTitle = typeof data.session.title === 'string' ? data.session.title : null;
         lastError = null;
         // 恢复绑定：会话记录值在 providers 池内存活才写总账（仲裁⑪三类白名单）
@@ -159,9 +187,13 @@ export function createAiChatLink(onUpdate: () => void, env?: { page?: () => Page
           }).catch(() => { /* 尽力而为 */ });
         }
         pushRing('ui:hydrate', -1);
+        __mark('state assigned, firing onUpdate (render)');
         onUpdate();
+        __mark(`onUpdate returned (render 同步段完成)`);
         return true;
-      } catch {
+      } catch (e) {
+        loadSessionInFlight.delete(id);
+        console.error('[aichat] loadSession failed:', id, e instanceof Error ? e.message : String(e));
         return false;
       }
     },

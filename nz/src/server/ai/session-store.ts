@@ -90,10 +90,16 @@ function _loadFromDisk(sessionId: string): SessionState {
       meta = raw;
       if (Array.isArray(raw.messages)) {
         for (const m of raw.messages as ChatMessage[]) {
-          // hydrate 白名单（v8 照搬）：role 归一 + content 数组 + ts 存活
+          // hydrate 白名单（v8 照搬）：role 归一 + content 数组 + ts 存活。
+          // A2a.5 真机加固（2026-09-05）：真实会话文件里存在 null/坏 content 块
+          // （茉莉的测试 实录），渲染期 `'text' in null` 崩 React 树=「AI 气泡
+          // 消失」病灶——坏块在唯一写者的入口洗掉，不活过 hydrate。
+          const content = Array.isArray(m?.content)
+            ? (m.content as ChatMessage['content']).filter((b) => !!b && typeof b === 'object' && typeof (b as { type?: unknown }).type === 'string')
+            : [];
           messages.push({
             role: m?.role === 'user' ? 'user' : 'ai',
-            content: Array.isArray(m?.content) ? m.content : [],
+            content,
             ...(typeof m?.ts === 'string' ? { ts: m.ts } : {}),
           });
         }

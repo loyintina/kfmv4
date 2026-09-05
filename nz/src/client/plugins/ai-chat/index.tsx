@@ -653,6 +653,9 @@ export function createAiChatPlugin(): UiPlugin {
       root.render(createElement(AiChatApp));
       // 判卷钩子（§4.2 观测基建，公共契约）
       (window as unknown as Record<string, unknown>).__kfmNzAiChat = () => runtimeRef.current;
+      // A2a.5 诊断口：现场调用水合（控制台排障用）
+      (window as unknown as Record<string, unknown>).__kfmNzAiChatLoad = (id: string) =>
+        link.loadSession(id).then((ok) => ({ ok, sid: link.sessionId, msgs: link.state.messages.length, err: link.lastError }));
       refreshRuntime();
       return {
         unmount: () => {

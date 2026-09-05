@@ -513,15 +513,15 @@ try {
     check('B8b C12 路径 AI 页不收起（池页关后 ai-chat 仍在 AI_PAGE）',
       aiStill?.page === 'AI_PAGE' && aiDom && aiBack?.page === 'AI_PAGE',
       `during=${aiStill?.page} dom=${aiDom} after=${aiBack?.page}`);
-    // 拍板⑯接真（A2a 阶段三）：占位退役——点「角色」= C12 路由真发（AI 页
-    // 开着 → 池页开+直达 prompt 池），占位骨架元素必须不存在
+    // 拍板⑯接真 + A2a.5 §五快选化：条目=选择（role:<id> 激活），「管理…」=
+    // C12 路由真发（AI 页开着→池页开+直达 prompt 池），占位骨架元素不存在
     await page.click('[data-aichat-config-btn]').catch(() => {});
     await sleep(300);
-    await page.click('[data-aichat-config-entry="role"]').catch(() => {});
+    await page.click('[data-aichat-config-entry="role:manage"]').catch(() => {});
     await sleep(500);
     const hRole = await hook();
     const phGone = await page.evaluate(() => !document.querySelector('[data-aichat-config-placeholder]'));
-    check('B8c 入口接真（拍板⑯占位退役）：标题栏点「角色」→ 池页开+定位 prompt 池 + 占位元素不存在',
+    check('B8c 入口接真（拍板⑯+A2a.5 快选化）：标题栏「管理 prompt 池…」→ 池页开+定位 prompt 池 + 占位元素不存在',
       hRole?.page === 'POOL_OPEN' && hRole?.pool === 'prompt' && phGone,
       `pool=${hRole?.pool}/${hRole?.page} phGone=${phGone}`);
     // orb 新逻辑收尾链（三态详钉=B12）：池页盖 AI → 点球=提顶（AI_PAGE 保持）
