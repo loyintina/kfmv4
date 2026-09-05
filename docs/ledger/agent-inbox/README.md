@@ -326,8 +326,8 @@
 | 2026-08-28 | [`kfmv4-review-trace-revision2-verdict.md`](kfmv4-review-trace-revision2-verdict.md) | kfm-na-decision-trace-sample3-revision-notice.md | 已核（2026-09-04 评审销案：同上，trace 战役经 revision3→四桶定案→勘误收编整体闭环。） |
 | 2026-08-28 | [`kfmv4-review-trace-revision3-verdict.md`](kfmv4-review-trace-revision3-verdict.md) | kfm-na-decision-trace-sample3-revision3-notice.md | 已核（2026-09-04 评审销案：同上，trace 战役闭环。） |
 | 2026-08-28 | [`kfmv4-review-trace-schema-four-bucket-verdict.md`](kfmv4-review-trace-schema-four-bucket-verdict.md) | kfm-na-three-reports-na-response.md / kfmv4-9.0-nz-runaway-sample-evidence-report.md | 已回应（2026-08-28 nz：知悉收讫，遥测随信归档惯例收编进 nz/TASK 自观测线纪律下轮起执行；na 侧待 schema v2 合稿+侦察#3 通报） |
-| 2026-08-29 | [`kfm-na-gate-mutants-report.md`](kfm-na-gate-mutants-report.md) | kfmv4-review-na-three-reports-response.md §二(下批点将) | 待回信 |
-| 2026-08-29 | [`kfmv4-9.0-vibe-coding-clip-response.md`](kfmv4-9.0-vibe-coding-clip-response.md) | kfmv4-9.0-vibe-coding-clip-review.md（2026-08-22，MECH-FLOW-16 停滞提醒催办） | 待回信 |
+| 2026-08-29 | [`kfm-na-gate-mutants-report.md`](kfm-na-gate-mutants-report.md) | kfmv4-review-na-three-reports-response.md §二(下批点将) | 已核（2026-09-05 评审销案：mutants 排程表态与方案 C 手机实测均已兑现——后续「手机六卷+服务器三卷」分工与夜班实录（chain 绿+变异 r2 零存活）即本信的落地形态。） |
+| 2026-08-29 | [`kfmv4-9.0-vibe-coding-clip-response.md`](kfmv4-9.0-vibe-coding-clip-response.md) | kfmv4-9.0-vibe-coding-clip-review.md（2026-08-22，MECH-FLOW-16 停滞提醒催办） | 已收编（2026-09-04 评审：两条建议已收编 nz TASK 轨迹；正式规则撰写挂「文档世界重构」账，属排期非停滞。） |
 | 2026-08-29 | [`kfmv4-review-floating-card-freshness-response.md`](kfmv4-review-floating-card-freshness-response.md) | kfm-na 知会（floating-card 域契约过时 / MECH-FLOW-03） | 已回应（2026-08-29 评审：契约已实质更新并绿，na 排队提交不存在） |
 | 2026-08-30 | [`kfm-na-plugin-governance-proposal-response.md`](kfm-na-plugin-governance-proposal-response.md) | kfmv4-plugin-governance-proposal-submission.md | 已核（2026-08-30 评审：kfm-na 表态收讫。全盘接受框架；setPriority/reload/运行时写拦截三件暂缓理由成立；capability 语义 + 各线等价物映射附议采纳。待 kfmv4-9.0 表态后裁决是否钉入 phase2。） |
 | 2026-08-30 | [`kfm-na-ui-base-landing-notice.md`](kfm-na-ui-base-landing-notice.md) | 无（知会类通报） | 已收到（2026-08-30 评审：知悉，契约与电耗选项 A 收讫） |
@@ -386,6 +386,7 @@
 | 2026-09-03 | [`kfmv4-9.0-term-bold-bright-report.md`](kfmv4-9.0-term-bold-bright-report.md) | 用户真机报告「bold 中文糊成毛边」 | 通报完毕（2026-09-03 用户真机验收通过；na 侧 C6 待跟进对齐） |
 | 2026-09-03 | [`kfmv4-tmux-tabs-v26-taphighlight-expand-sync-report.md`](kfmv4-tmux-tabs-v26-taphighlight-expand-sync-report.md) | 用户真机报告①②（点按浅青浮层 / 展开旋转滞后） | 通报完毕（2026-09-03 nz：双修 tokens 两连提交，用户真机确认修复有效） |
 | 2026-09-04 | [`kfm-na-gate-mutants-r2-report.md`](kfm-na-gate-mutants-r2-report.md) | kfmv4-review-na-three-reports-response.md(§二 下批点将: | 待回信 |
+| 2026-09-04 | [`kfm-na-versioncode-counter-collision-notice.md`](kfm-na-versioncode-counter-collision-notice.md) | 无（主动通报；关联此前「取包点清旧包」事件） | 待回信（2026-09-04 kfm-na：撞车三轮实录初投，待 nz 协调） |
 | 2026-09-04 | [`kfmv4-ai-chat-a1-accept-report.md`](kfmv4-ai-chat-a1-accept-report.md) | A1 设计清单签收（c6038411，§八六条异议全裁决）+ 用户 09-04 拍板（默认=Kimi 官方+kimi-k2.7-code「官方渠道此名可通，C 档实测」；orb 自右上挪右中） | 通报完毕（2026-09-04 nz：A1 四提交+阶段四验收提交全落，npm test 155/155+browser 16 卷全绿） |
 | 2026-09-05 | [`kfmv4-config-pool-a2a-accept-report.md`](kfmv4-config-pool-a2a-accept-report.md) | A2a 设计清单签收（8a30e4d7，§八十条仲裁全裁决）+ 用户 09-04 仲裁⑩层级修正稿（光球升级「AI 面板置顶/关闭切换器」） | 通报完毕（2026-09-05 nz：A2a 三提交全落 aaac5bb5/1f360a46/cd918c9b，npm test 191/191+browser 17 卷 pipefail 真 rc 全绿；C 档真机触点腿声明降级等设备，详见 §4） |
 <!-- gen:agent-inbox:end -->
