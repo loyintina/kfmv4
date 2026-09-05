@@ -200,6 +200,14 @@
 [data-kfm-aichat].kfm-closing {
   animation: kfm-aichat-page-out var(--kfm-dur-normal) var(--kfm-ease-out) both;
 }
+/* 真触摸横向手势放行（仲裁⑪：AI 页左滑开池）：消息列表是纵向滚动容器，
+ * 默认 touch-action 下浏览器原生接管横向流 → pointercancel，手势核收不到
+ * 完整位移（真机实锤病，与池页 pan-y 同款）。pan-y=纵向滚动保持原生，
+ * 横向流完整到手。composer/textarea 不在此列（文本选择/纵向行为自理）。 */
+[data-kfm-aichat],
+[data-kfm-aichat] [data-aichat-list] {
+  touch-action: pan-y;
+}
 
 /* 层级规则（拍板④+主会话裁定⑤，§3.0/P10）：AI 页打开时 tmux orb+标签栏
  * 隐藏——display:none 不渲染档，不是被盖；AI orb 恒可见可点为唯一开关。

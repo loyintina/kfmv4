@@ -806,6 +806,32 @@ try {
     const tape2 = await tpage.evaluate(() => { const t = window.__ttape; window.__ttape = []; return { cancel: t.filter((x) => x === 'pointercancel').length, up: t.filter((x) => x === 'pointerup').length }; });
     check('B13d 对照：真触摸垂直拖=池区列表原生滚动接管（cancel 允许），池页保持开着（方向裁决 P1：垂直不关池）',
       st2.startsWith('POOL_OPEN') && (tape2.cancel === 1 || tape2.up >= 1), `st=${st2} tape=${JSON.stringify(tape2)}`);
+
+    // B13e AI 页真触摸左滑开池（仲裁⑪实施扩展钉；同款 L1/L3 缝隙——
+    // AI 页消息列表纵向滚动容器原生接管横向流，pan-y 放行后全流到手）
+    // 前置清场：B13d 池页开着——先真触摸右滑关池，回到纯净终端态
+    await tstroke(cz.x, cz.y, cz.x + 190, cz.y);
+    await sleep(300);
+    await tpage.evaluate(() => { window.__ttape = []; });
+    await tpage.click('[data-kfm-aichat-orb]').catch(() => {});
+    await sleep(600);
+    const aiPre = await tpage.evaluate(() => (window).__kfmNzAiChat().page);
+    const aiTa = await tpage.evaluate(() => ({
+      page: getComputedStyle(document.querySelector('[data-kfm-aichat]')).touchAction,
+      list: (() => { const l = document.querySelector('[data-aichat-list]'); return l ? getComputedStyle(l).touchAction : null; })(),
+    }));
+    const ab = await tpage.evaluate(() => { const e = document.querySelector('[data-kfm-aichat]').getBoundingClientRect(); return { x: Math.round(e.x + Math.min(e.width / 2, 420)), y: Math.round(e.y + Math.min(e.height / 2, 300)) }; });
+    await tstroke(ab.x, ab.y, ab.x - 190, ab.y);
+    const stAi = await tp();
+    const tapeAi = await tpage.evaluate(() => { const t = window.__ttape; return { down: t.filter((x) => x === 'pointerdown').length, cancel: t.filter((x) => x === 'pointercancel').length }; });
+    await tstroke(ab.x, ab.y, ab.x + 190, ab.y);
+    const stAiBack = await tp();
+    const aiPost = await tpage.evaluate(() => (window).__kfmNzAiChat().page);
+    check('B13e AI 页真触摸左滑开池（pan-y 放行 cancels=0 → POOL_OPEN）+右滑回（AI 页原样）',
+      aiPre === 'AI_PAGE' && aiTa.page === 'pan-y' && stAi.startsWith('POOL_OPEN')
+        && tapeAi.down === 1 && tapeAi.cancel === 0
+        && stAiBack.startsWith('POOL_CLOSED') && aiPost === 'AI_PAGE',
+      `ai=${aiPre} ta=${JSON.stringify(aiTa)} st=${stAi}→${stAiBack} tape=${JSON.stringify(tapeAi)} aiPost=${aiPost}`);
     await tctx.close();
   }
 
