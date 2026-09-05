@@ -254,7 +254,7 @@ test('A2a 阶段三 仲裁⑥：默认改读激活总账——/ai/providers defa
 });
 
 test('attach 补流：中途断开重连 from=cursor 读到缓冲回放+尾随，断开不死 run', async () => {
-  await withEnv({ NZ_AI_ECHO_PACE_MS: '10' }, async () => {
+  await withEnv({ NZ_AI_ECHO_PACE_MS: '10', NZ_AI_CONFIG_DIR: mkdtempSync(join(tmpdir(), 'nz-sess-a')) }, async () => {
     const server = createNzServer();
     const port = await listen(server);
     try {
@@ -279,6 +279,7 @@ test('attach 补流：中途断开重连 from=cursor 读到缓冲回放+尾随�
 });
 
 test('probe 错误语义实录：空 messages → 400；非法 provider → 200+SSE error 人话；不存在 runId → __end__', async () => {
+  process.env.NZ_AI_CONFIG_DIR = mkdtempSync(join(tmpdir(), 'nz-sess-b')); // 隔离：非法 provider 腿也会建壳，别写真账
   const server = createNzServer();
   const port = await listen(server);
   try {
@@ -303,6 +304,7 @@ test('probe 错误语义实录：空 messages → 400；非法 provider → 200+
 });
 
 test('text 形状闸（A2a.5 ③：messages 全量上行退役）→ 400，同进程后续请求照常（C 档打崩 server 实锤回归）', async () => {
+  process.env.NZ_AI_CONFIG_DIR = mkdtempSync(join(tmpdir(), 'nz-sess-d')); // 隔离：alive 腿会建壳
   const server = createNzServer();
   const port = await listen(server);
   try {
@@ -321,7 +323,7 @@ test('text 形状闸（A2a.5 ③：messages 全量上行退役）→ 400，同�
 });
 
 test('取消：POST cancel → error「已取消」入流收尾（P5），重复取消 ok:false', async () => {
-  await withEnv({ NZ_AI_ECHO_PACE_MS: '30' }, async () => {
+  await withEnv({ NZ_AI_ECHO_PACE_MS: '30', NZ_AI_CONFIG_DIR: mkdtempSync(join(tmpdir(), 'nz-sess-c')) }, async () => {
     const server = createNzServer();
     const port = await listen(server);
     try {
