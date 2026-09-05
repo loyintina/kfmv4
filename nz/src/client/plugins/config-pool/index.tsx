@@ -133,8 +133,10 @@ export function createConfigPoolPlugin(ctx: Context): UiPlugin {
             return true; // 池页内右滑返回（左滑裁决后不绑 §八⑦）
           }
           if (document.documentElement.hasAttribute('data-kfm-aichat-open')) return false; // AI_PAGE 态（§1.2-2）
-          const scroll = (window as unknown as Record<string, unknown>).__kfmNzTermScroll as (() => { alt?: boolean }) | undefined;
-          if (scroll?.().alt === true) return false; // 终端 ALT/TUI 态（term 既有 alt_screen 判定）
+          // 终端 ALT/TUI 态不设门（仲裁⑪，2026-09-05 用户拍板「任何地方都能
+          // 左滑」）：用户主场景=设备常挂 kimi-code（本身是 TUI，合法占 ALT
+          // 屏），设门=池页在最高频状态不可达。触摸滑动手势不注入字节，
+          // TUI 在面板底下继续跑零影响——原「防 TUI 横向冲突」前提不成立。
           return true;
         },
         onEnd: (_e, dx, dy) => {

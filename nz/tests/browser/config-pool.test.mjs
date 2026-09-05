@@ -3,7 +3,7 @@
  * docs/config-pool-a2a-design.md §五 B 档 11 钉；状态机蓝本=§四，词汇表 P6）。
  *
  *   B1  C1 左滑进入 + P1 冲突矩阵逐行（SHELL 左滑进/垂直不抢+scrollback 照滚/
- *       ALT 态不响应/标签排横滑不触发且标签排照滚/keybar·composer·orb 落点
+ *       ALT 态左滑照进池（仲裁⑪）/标签排横滑不触发且标签排照滚/keybar·composer·orb 落点
  *       不响应/AI_PAGE 态不响应）
  *   B2  C2 返回双通道（右滑 / × 钮）+ EDITING 中右滑草稿蒸发
  *   B3  C3 标签行四池切换 + client 注册表 ⊆ server /pool/list 互证
@@ -193,18 +193,25 @@ try {
     check('B1b-滚 终端 scrollback 自有链路照滚（容器可滚，手势注册零改滚动语义）',
       scWheel > 0 && (scBefore?.sh ?? 0) > (scBefore?.st ?? 0) + 100, `set40→${scWheel} sh=${scBefore?.sh}`);
 
-    // B1c ALT/TUI 态不响应（term 既有 ALT 判定复用：__kfmNzTermScroll().alt）
+    // B1c ALT/TUI 态左滑照进池（仲裁⑪ 2026-09-05 用户拍板「任何地方都能左滑」：
+    // 用户主场景=设备常挂 kimi-code（本身是 TUI 占 ALT 屏），设门=池页最高频
+    // 状态不可达，门拆除；触摸手势不注入字节，TUI 底下继续跑零影响）
     await page.evaluate(() => (window).__kfmNzTermInject?.("printf '\\033[?1049h'\r"));
     await sleep(800);
     const altOn = await page.evaluate(() => (window).__kfmNzTermScroll?.().alt ?? null);
     const cA = await termCenter();
     await swipe(cA.x, cA.y, -170, 0);
     const hAlt = await hook();
+    // 右滑返回（池页内右滑不受 ALT 影响），再退 ALT 屏
+    await swipe(cA.x, cA.y, 170, 0);
+    await sleep(250);
+    const hAltClosed = await hook();
     await page.evaluate(() => (window).__kfmNzTermInject?.("printf '\\033[?1049l'\r"));
     await sleep(400);
     const altOff = await page.evaluate(() => (window).__kfmNzTermScroll?.().alt ?? null);
-    check('B1c ALT/TUI 态左滑不进池（condition 门=term 既有 alt_screen 判定）',
-      altOn === true && altOff === false && hAlt?.page === 'POOL_CLOSED', `alt=${altOn}→${altOff} page=${hAlt?.page}`);
+    check('B1c ALT/TUI 态左滑照进池+右滑照回（仲裁⑪：ALT 门拆除）',
+      altOn === true && hAlt?.page === 'POOL_OPEN' && hAltClosed?.page === 'POOL_CLOSED' && altOff === false,
+      `alt=${altOn}→${altOff} swipe=${hAlt?.page}→${hAltClosed?.page}`);
 
     // B1d tmux 标签排横滑不触发 + 标签排照滚（溢出用临时会话撑出）
     for (let i = 0; i < 6; i++) spawn('tmux', ['new-session', '-d', '-s', `pool-exam-${i}`], { stdio: 'ignore' });
