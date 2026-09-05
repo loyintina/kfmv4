@@ -81,6 +81,7 @@
   印象，append 语义追加）/ **链红先归因**（别线在途的红不替修不惊动）。
   即刻手工纪律两条（回信自更新状态列 / commit 只 add 自己线文件）见 phase2
   契约 3。
+- **评审晨报**（2026-09-05 试点）：评审线每日晨检产出《两线进度日报》（`kfmv4-review-daily-progress-YYYY-MM-DD-report.md`，流型汇总/致 all/通报完毕），**观察者通报口径**——内容源自公开痕迹（git/信箱/TASK），线内自述以各线 TASK 为准；本信不替代各线第一手落地通报，仅提供每日快照+跨线视角+催办线索。
 - **活性**：本信箱是外围机制（机制注册表登记），失效信号 = 状态列停滞（待回信
   长期不推进）。发现手段已机械化（2026-08-18）：check-agent-inbox e 查
   「待*」状态 + 发信超 7 天报红（⛳ MECH-FLOW-16），用户抽查兜底保留。
@@ -389,4 +390,5 @@
 | 2026-09-04 | [`kfm-na-versioncode-counter-collision-notice.md`](kfm-na-versioncode-counter-collision-notice.md) | 无（主动通报；关联此前「取包点清旧包」事件） | 待回信（2026-09-04 kfm-na：撞车三轮实录初投，待 nz 协调） |
 | 2026-09-04 | [`kfmv4-ai-chat-a1-accept-report.md`](kfmv4-ai-chat-a1-accept-report.md) | A1 设计清单签收（c6038411，§八六条异议全裁决）+ 用户 09-04 拍板（默认=Kimi 官方+kimi-k2.7-code「官方渠道此名可通，C 档实测」；orb 自右上挪右中） | 通报完毕（2026-09-04 nz：A1 四提交+阶段四验收提交全落，npm test 155/155+browser 16 卷全绿） |
 | 2026-09-05 | [`kfmv4-config-pool-a2a-accept-report.md`](kfmv4-config-pool-a2a-accept-report.md) | A2a 设计清单签收（8a30e4d7，§八十条仲裁全裁决）+ 用户 09-04 仲裁⑩层级修正稿（光球升级「AI 面板置顶/关闭切换器」） | 通报完毕（2026-09-05 nz：A2a 三提交全落 aaac5bb5/1f360a46/cd918c9b，npm test 191/191+browser 17 卷 pipefail 真 rc 全绿；C 档真机触点腿声明降级等设备，详见 §4） |
+| 2026-09-05 | [`kfmv4-review-daily-progress-2026-09-05-report.md`](kfmv4-review-daily-progress-2026-09-05-report.md) | 无（主动通报；晨检日报的信箱化，评审线新职责试点） | 通报完毕（2026-09-05 评审：首期进度信，观察者通报口径——内容源自公开痕迹（git/信箱/TASK），线内自述以各线 TASK 为准；本信不替代各线第一手落地通报。） |
 <!-- gen:agent-inbox:end -->
