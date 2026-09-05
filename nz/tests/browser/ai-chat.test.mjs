@@ -553,6 +553,27 @@ check('B17b 拍板⑯②+A2a.5 快选化：点标题下拉钮 → CONFIG_OPEN + 
       mCfg === 'CONFIG_OPEN' && entries.some((e) => e.startsWith('role:manage'))
         && entries.some((e) => e.startsWith('session:manage')) && entries.some((e) => e.startsWith('session:s-')),
       `menu=${mCfg} entries=${JSON.stringify(entries)}`);
+// B17b2 真机截图实证钉（2026-09-05 同日三连 L1/L3 缝隙）：菜单容器**无裁剪**
+// ——maxHeight 百分比于 33px 标题栏内≈20px，把条目全裁进滚动区（DOM 在场而
+// 像素不可见）。播种角色后断言 scrollHeight ≤ clientHeight+4 且首条目在视口内
+await page.evaluate(async () => {
+  await fetch('/pool/prompt/create', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ entry: { id: 'clip-probe', name: '裁剪探针角色', promptFiles: [], dynamicPromptFiles: [] } }) }).catch(() => {});
+  document.querySelector('[data-aichat-config-btn]')?.click(); // 关
+  await new Promise((r) => setTimeout(r, 300));
+  document.querySelector('[data-aichat-config-btn]')?.click(); // 重开（快选重拉）
+  await new Promise((r) => setTimeout(r, 500));
+});
+const menuClip = await page.evaluate(() => {
+  const m = document.querySelector('[data-aichat-config-menu]');
+  if (!m) return null;
+  const entry = [...m.querySelectorAll('[data-aichat-config-entry]')].find((el) => el.getAttribute('data-aichat-config-entry') === 'role:clip-probe');
+  const er = entry?.getBoundingClientRect();
+  const vh = window.innerHeight; // 视口高（documentElement rect 在部分 headless 页高为 0，不可作参照）
+  return { sh: m.scrollHeight, ch: m.clientHeight, inVp: er ? (er.top >= -2 && er.bottom <= vh + 2) : false, entries: m.querySelectorAll('[data-aichat-config-entry]').length, er: er ? { top: Math.round(er.top), bottom: Math.round(er.bottom) } : null, vh, menuRect: (() => { const r = m.getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom) }; })() };
+});
+check('B17b2 菜单无裁剪（真机截图实证钉）：角色条目可见于视口内+容器无溢出裁切（maxHeight 禁百分比回归）',
+      !!menuClip && menuClip.sh <= menuClip.ch + 4 && menuClip.inVp && menuClip.entries >= 3,
+      `menu=${JSON.stringify(menuClip)}`);
 const shotCfg = join(SHOT_DIR, 'ai-chat-config-dropdown.png');
 await page.screenshot({ path: shotCfg });
 console.log('shot:', shotCfg);

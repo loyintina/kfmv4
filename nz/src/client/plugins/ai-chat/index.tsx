@@ -535,7 +535,10 @@ export function createAiChatPlugin(): UiPlugin {
                 'data-aichat-config-menu': '1',
                 style: {
                   position: 'absolute', left: '8px', top: '100%', marginTop: '4px', zIndex: 10,
-                  minWidth: '170px', maxHeight: '60%', overflowY: 'auto', background: 'var(--kfm-surface)',
+                  minWidth: '170px', maxHeight: '50vh', overflowY: 'auto', background: 'var(--kfm-surface)',
+                  /* maxHeight 禁用百分比（2026-09-05 真机截图实证）：absolute 于
+                   * 33px 标题栏内，60% ≈ 20px → 条目全被裁进滚动区不可见（L1/L3
+                   * 缝隙第三次实锤——DOM 钉绿而像素坏）。vh 相对视口，稳定。 */
                   borderRadius: 'var(--kfm-radius-lg)', boxShadow: 'var(--kfm-shadow-raised)', padding: '4px',
                 },
               },
