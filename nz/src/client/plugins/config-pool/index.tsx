@@ -76,7 +76,7 @@ function buildRegistry(link: PoolLink): PoolPageRegistry {
     title: 'Provider·Model',
     list: () => link.fetchPool('provider'),
     edit: (entry: PoolEntry | null) => {
-      link.core.beginEdit(entry ? { id: String(entry.id), isNew: false } : { id: null, isNew: true });
+      link.core.selectDetail(entry ? { id: String(entry.id), isNew: false } : { id: null, isNew: true });
     },
     activeId: async () => matchProviderEntry(link.lists.provider ?? [], link.active.providerId)?.id ?? null,
     activate: async (id: string) => {
@@ -90,7 +90,7 @@ function buildRegistry(link: PoolLink): PoolPageRegistry {
     title: '角色·Prompt',
     list: () => link.fetchPool('prompt'),
     edit: (entry: PoolEntry | null) => {
-      link.core.beginEdit(entry ? { id: String(entry.id), isNew: false } : { id: null, isNew: true });
+      link.core.selectDetail(entry ? { id: String(entry.id), isNew: false } : { id: null, isNew: true });
     },
     activeId: async () => link.active.roleFile || null,
     activate: async (id: string) => { await link.activate({ roleFile: id }); },
@@ -100,7 +100,7 @@ function buildRegistry(link: PoolLink): PoolPageRegistry {
     title: '会话',
     list: () => link.fetchPool('session'),
     edit: (entry: PoolEntry | null) => {
-      link.core.beginEdit(entry ? { id: String(entry.id), isNew: false } : { id: null, isNew: true });
+      link.core.selectDetail(entry ? { id: String(entry.id), isNew: false } : { id: null, isNew: true });
     },
     activeId: async () => link.active.sessionId || null,
     activate: async (id: string) => { await link.activate({ sessionId: id }); },
@@ -176,6 +176,18 @@ export function createConfigPoolPlugin(ctx: Context): UiPlugin {
           void link.fetchAll();
           return () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); };
         }, []);
+
+        // 选择制自动选首条（§四 修订①：老角色卡「聚焦第一个」同语义）——开页/
+        // 切池/删尽兜底后 editing 为空且池非只读 → 选首条；每渲染幂等补选
+        useEffect(() => {
+          if (core.state.page !== 'POOL_OPEN') return;
+          const pool = core.state.pool;
+          if (!pool || pool === 'basic') return; // 只读聚合无编辑目标
+          const ed = core.state.editing;
+          if (ed && ed.pool === pool) return;
+          const list = link.lists[pool] ?? [];
+          if (list.length > 0) { core.selectDetail({ id: String(list[0].id), isNew: false }); bump(); }
+        });
 
         // 层级规则（仲裁⑩/P10）：池页开时 documentElement 挂 data-kfm-pool-open
         // ——tokens.css 据此藏 tmux 控件 + 输入栏/光球升 45 恒顶档；关（含收起

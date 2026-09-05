@@ -15,6 +15,12 @@
  *   GET  /pool/active                → 激活总账 {providerId,modelId,roleFile,sessionId}
  *   POST /pool/active                body 部分更新（如{providerId,modelId}）→ 新总账
  *                                      （激活唯一路径；未知字段/非字符串 → 400 不写盘）
+ *   GET  /pool/files                 → {files:[相对路径]}（§1.4 修订① 2026-09-05：
+ *                                      角色页文件选择器宇宙=rolesDir 平铺递归，
+ *                                      点文件跳过、上限 200；只读不 emit）
+ *   GET  /pool/files/content?path=   → {content,truncated}（只读全文；放行区=
+ *                                      $HOME ∪ rolesDir（后者=考卷 /tmp 夹具
+ *                                      专支）；64KB 截断防巨文件）
  *
  * 错误语义沿用 A1 表精神：配置错误 → 人话 JSON 不 500 不裸栈；
  * 写失败（权限/坏 JSON）→ 500{error} + /tmp 日志完整体。
@@ -23,6 +29,9 @@
  * （先落盘后广播，落盘即事实），ws-bridge 消费转 {t:'pool-changed'} 帧。
  */
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { readdirSync, statSync, openSync, readSync, closeSync, type Stats } from 'node:fs';
+import { homedir } from 'node:os';
+import { join, resolve, sep } from 'node:path';
 import { emitPoolChanged } from './bus.ts';
 import { invalidateSession } from '../ai/session-store.ts';
 import {
@@ -30,7 +39,7 @@ import {
   type PoolDescriptor, type PoolEntry,
 } from './pools.ts';
 import {
-  poolDir, readActive, writeActive, poolLog, ACTIVE_FIELDS,
+  poolDir, rolesDir, readActive, writeActive, poolLog, ACTIVE_FIELDS,
   type ActiveLedger,
 } from './store.ts';
 
@@ -236,6 +245,70 @@ export function mountPoolRoutes(): (req: IncomingMessage, res: ServerResponse) =
         sendJson(res, 200, ledger);
         return;
       }
+    }
+
+    // ---- GET /pool/files：prompt 根目录（rolesDir）平铺文件列表（§1.4 修订①
+    //      2026-09-05：角色页文件选择器宇宙；只读，不 emit） ----
+    if (req.method === 'GET' && url === '/pool/files') {
+      try {
+        const root = rolesDir(dir());
+        const out: string[] = [];
+        const walk = (rel: string): void => {
+          if (out.length >= 200) return; // 上限：选择器宇宙防爆炸
+          const abs = rel ? join(root, rel) : root;
+          let items: string[] = [];
+          try { items = readdirSync(abs); } catch { return; }
+          for (const name of items) {
+            if (name.startsWith('.')) continue; // 点文件不入选择器
+            if (name.endsWith('.json')) continue; // 角色定义文件不入选择器（宇宙=提示词文本）
+            const relChild = rel ? `${rel}/${name}` : name;
+            const absChild = join(abs, name);
+            let st: Stats;
+            try { st = statSync(absChild); } catch { continue; }
+            if (st.isDirectory()) walk(relChild);
+            else if (st.isFile()) {
+              out.push(relChild);
+              if (out.length >= 200) return;
+            }
+          }
+        };
+        walk('');
+        out.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+        sendJson(res, 200, { files: out });
+      } catch (e) {
+        sendJson(res, 500, { error: `文件列表失败: ${e instanceof Error ? e.message : String(e)}` });
+      }
+      return;
+    }
+
+    // ---- GET /pool/files/content?path=：文件全文（§1.4 修订①：装配线同语义
+    //      放行=resolve(~) 后须落在 $HOME 内；64KB 截断防巨文件） ----
+    if (req.method === 'GET' && url === '/pool/files/content') {
+      const qs = new URLSearchParams((req.url ?? '').split('?')[1] ?? '');
+      const p = qs.get('path') ?? '';
+      try {
+        // 相对路径锚点=rolesDir（prompt-assembler sanitizePath 缺省锚点同语义）；
+        // ~ / 绝对路径照旧，最终一律须落在 $HOME 内（放行区）
+        const rolesRoot = rolesDir(dir());
+        const abs = p.startsWith('~')
+          ? resolve(join(homedir(), p.slice(1)))
+          : p.startsWith('/') ? resolve(p) : resolve(join(rolesRoot, p));
+        const home = homedir() + sep;
+        // 放行区=$HOME 内 ∪ rolesRoot 内（后者专供考卷 /tmp 夹具：夹具不在
+        // $HOME 下，但 rolesDir 就是选择器/装配线宇宙本身，须放行）
+        if (p === '' || (!abs.startsWith(home) && !abs.startsWith(rolesRoot + sep))) { sendJson(res, 400, { error: '路径越界（只读放行区=$HOME ∪ rolesDir）' }); return; }
+        const st = statSync(abs);
+        if (!st.isFile()) { sendJson(res, 400, { error: '不是常规文件' }); return; }
+        const fh = openSync(abs, 'r');
+        try {
+          const buf = Buffer.alloc(Math.min(st.size, 64 * 1024));
+          const n = readSync(fh, buf, 0, buf.length, 0);
+          sendJson(res, 200, { content: buf.toString('utf-8', 0, n), truncated: st.size > n });
+        } finally { closeSync(fh); }
+      } catch (e) {
+        sendJson(res, 404, { error: `读不到: ${e instanceof Error ? e.message : String(e)}` });
+      }
+      return;
     }
 
     // ---- POST /pool/:pool/create ----

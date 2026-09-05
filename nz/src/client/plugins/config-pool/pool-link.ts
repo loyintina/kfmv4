@@ -2,8 +2,9 @@
  * pool-link.ts — 配置池插件的脑（纯 TS，不碰 DOM 框架；宪法 §3 逻辑/皮分离）
  *
  * 两层：
- *   createPoolCore() — 池框架状态机（设计清单 §四，P6 词汇表唯一真源）：
- *     页面机 POOL_CLOSED/POOL_OPEN + 池页机 BROWSE/EDITING/OVERLAY_DELETE，
+ *   createPoolCore() — 池框架状态机（设计清单 §四 + §四修订①，P6 词汇表唯一真源）：
+ *     页面机 POOL_CLOSED/POOL_OPEN + 池页机 DETAIL/OVERLAY_DELETE（修订①
+ *     选择制：BROWSE/EDITING 两态退役，2026-09-05 用户拍板），
  *     转换 C1-C13 逐条一个入口（单源 reducer：唯一 transition 入口记账
  *     from/to/trigger，环形缓冲 ≥50 拍——可观测性约束）；清单外状态名
  *     transition 即抛（P6 机检锚点）。
@@ -28,7 +29,10 @@ export { judgePoolSwipe, POOL_SWIPE_MIN_PX, POOL_SWIPE_AXIS_RATIO } from './swip
 // ========== 词汇表（§四，清单外状态名禁止——P6） ==========
 
 export const POOL_PAGE_VOCAB = ['POOL_CLOSED', 'POOL_OPEN'] as const;
-export const POOL_INNER_VOCAB = ['BROWSE', 'EDITING', 'OVERLAY_DELETE'] as const;
+// 2026-09-05 用户拍板（老 kfmv4 池卡组织复刻）：两态（BROWSE/EDITING）退役，
+// 改选择制单态——上区=当前选中条目详情编辑常驻，下区=池路由；inner 只剩
+// DETAIL（详情编辑）与 OVERLAY_DELETE（删除确认罩层）。
+export const POOL_INNER_VOCAB = ['DETAIL', 'OVERLAY_DELETE'] as const;
 export const POOL_TRIGGER_VOCAB = [
   'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13',
 ] as const;
@@ -56,6 +60,9 @@ export interface PoolCoreState {
   inner: PoolInnerState;
   editing: EditingTarget | null;
   overlay: { pool: PoolId; id: string } | null;
+  /** 详情表单重挂 nonce（C6 取消=丢弃草稿回存档值：rev++ 让 key 变化强制
+   *  重挂；选择制下编辑目标不变，只有草稿蒸发） */
+  rev: number;
 }
 
 export interface PoolTransitionRecord {
@@ -74,14 +81,18 @@ export interface PoolCore {
   readonly ring: PoolTransitionRecord[];
   /** 唯一 transition 入口（from/to/trigger 记账；野词汇即抛=P6 机检锚点） */
   transition(trigger: PoolTrigger, to: Partial<Pick<PoolCoreState, 'page' | 'pool' | 'inner'>>): void;
-  // —— 转换表 C1-C13 逐条入口（§四） ——
+  // —— 转换表 C1-C13 逐条入口（§四；2026-09-05 起选择制语义，见 §四修订①） ——
   openBySwipe(): void; // C1
   openRoute(pool: PoolId): void; // C12
   close(): void; // C2
   switchPool(pool: PoolId): void; // C3（标签行/前往更换同形状）
-  beginEdit(target: { id: string | null; isNew: boolean }): void; // C4
-  saveDone(): void; // C5
-  cancelEdit(): void; // C6
+  /** C4：点池行=切换详情编辑目标（选择制；isNew=新建草稿）。自动选首条由
+   *  PoolApp 效果腿负责（老卡「聚焦第一个」同语义） */
+  selectDetail(target: { id: string | null; isNew: boolean }): void;
+  /** C5：保存成功——选择制下编辑器**保持**载入保存后的条目；isNew 传入
+   *  落盘后的真实 id（create→update 语义翻转） */
+  saveDone(selectId?: string): void;
+  cancelEdit(): void; // C6：草稿蒸发（rev++ 重挂回存档值），编辑目标不变
   askDelete(id: string): void; // C7
   deleteDone(): void; // C8 成功
   deleteDenied(): void; // C8 409 relied（不转换，from==to 记账）
@@ -93,10 +104,10 @@ export interface PoolCore {
 
 export function createPoolCore(): PoolCore {
   const state: PoolCoreState = {
-    page: 'POOL_CLOSED', pool: null, inner: 'BROWSE', editing: null, overlay: null,
+    page: 'POOL_CLOSED', pool: null, inner: 'DETAIL', editing: null, overlay: null, rev: 0,
   };
   const ring: PoolTransitionRecord[] = [];
-  let overlayReturn: PoolInnerState = 'BROWSE'; // C9 原状账（C7 进罩层前记）
+  let overlayReturn: PoolInnerState = 'DETAIL'; // C9 原状账（C7 进罩层前记）
 
   const core: PoolCore = {
     state,
@@ -115,32 +126,37 @@ export function createPoolCore(): PoolCore {
       if (ring.length > RING_CAP) ring.shift();
     },
     openBySwipe() {
-      core.transition('C1', { page: 'POOL_OPEN', pool: DEFAULT_POOL, inner: 'BROWSE' });
+      core.transition('C1', { page: 'POOL_OPEN', pool: DEFAULT_POOL, inner: 'DETAIL' });
     },
     openRoute(pool) {
-      core.transition('C12', { page: 'POOL_OPEN', pool, inner: 'BROWSE' });
+      core.transition('C12', { page: 'POOL_OPEN', pool, inner: 'DETAIL' });
     },
     close() {
-      state.editing = null; // C2 裁定：草稿蒸发与 C6 同语义
+      state.editing = null; // C2 裁定：草稿蒸发（重开由自动选首条重建编辑目标）
       state.overlay = null;
-      core.transition('C2', { page: 'POOL_CLOSED', pool: null, inner: 'BROWSE' });
+      core.transition('C2', { page: 'POOL_CLOSED', pool: null, inner: 'DETAIL' });
     },
     switchPool(pool) {
-      state.editing = null; // C3：旧池草稿蒸发
+      state.editing = null; // C3：旧池草稿蒸发（新池自动选首条）
       state.overlay = null;
-      core.transition('C3', { pool, inner: 'BROWSE' });
+      core.transition('C3', { pool, inner: 'DETAIL' });
     },
-    beginEdit(target) {
+    selectDetail(target) {
       state.editing = { pool: state.pool ?? DEFAULT_POOL, id: target.id, isNew: target.isNew };
-      core.transition('C4', { inner: 'EDITING' });
+      state.rev++; // 重选即重挂：上一次选择的草稿（含未落盘明文）不得跨选择存活（B7 病灶）
+      core.transition('C4', { inner: 'DETAIL' });
     },
-    saveDone() {
-      state.editing = null;
-      core.transition('C5', { inner: 'BROWSE' });
+    saveDone(selectId) {
+      // 选择制：保存后编辑器保持载入保存后的条目（isNew 补真实 id=create→update 翻转）；
+      // rev++ 重挂回存档值——密钥字段明文草稿在落盘瞬间必须从 DOM 消失
+      // （代字化后重载=空输入+代字提示，B7 domClean 病灶）
+      if (selectId !== undefined && state.editing) state.editing = { pool: state.editing.pool, id: selectId, isNew: false };
+      state.rev++;
+      core.transition('C5', { inner: 'DETAIL' });
     },
     cancelEdit() {
-      state.editing = null;
-      core.transition('C6', { inner: 'BROWSE' });
+      state.rev++; // 草稿蒸发：表单按 rev 重挂回存档值，编辑目标不变
+      core.transition('C6', { inner: 'DETAIL' });
     },
     askDelete(id) {
       overlayReturn = state.inner; // C9 原状账
@@ -149,8 +165,8 @@ export function createPoolCore(): PoolCore {
     },
     deleteDone() {
       state.overlay = null;
-      state.editing = null; // 删的就是可能正编辑的条目：BROWSE 兜底（§四 C8 终点）
-      core.transition('C8', { inner: 'BROWSE' });
+      state.editing = null; // 删的是正编辑条目：清目标（PoolApp 效果自动补选首条，§四 C8 修订终点）
+      core.transition('C8', { inner: 'DETAIL' });
     },
     deleteDenied() {
       // 409 relied：确认页内展人话，不删不转换（§四 C8 括号）——from==to 记账

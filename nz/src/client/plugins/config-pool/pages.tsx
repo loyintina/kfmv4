@@ -1,21 +1,26 @@
 /**
  * pages.tsx — 四池页皮（React 组件；设计清单 §三「上配置下池」页内布局）
  *
- *   basic    只读聚合变体：上区=三激活槽位行（值+失效标注位），下区=「前往
- *            更换」路由到对应池页（池框架内部能力，走 C3 转换形状）；数据=
- *            /pool/basic 投影 + /pool/active（§3.1）
- *   provider 表单（id/name/baseUrl/apiKey 代字回填占位/models 清单行编辑）
- *            + 列表（✓激活标/编辑=点行/删除/设为激活）+ model 行级下钻
- *            （增删+行级设为激活——与 picker 二级路由同构同数据源，§3.2）
- *   prompt   role schema 表单（name + promptFiles/dynamicPromptFiles 有序
- *            手填路径行，增删/上下移排序——仲裁⑧）+ 列表+激活标（§3.3）
- *   session  壳表单（title 改名）+ 会话列表（title/updatedAt/激活标）+新建
- *            +删除+设为激活；messages 恒空不渲染不写（仲裁①，P5）（§3.4）
+ *   2026-09-05 用户拍板（老 kfmv4 池卡信息组织复刻，修订①）：**选择制单态**
+ *   ——上区=当前选中条目详情编辑**常驻**（点下区池行=切换编辑目标，无进出
+ *   编辑态），下区=池路由。BROWSE/EDITING 两态退役（§四 修订①）。
+ *
+ *   basic    只读聚合变体：无详情区，槽位行+「前往更换」（§3.1）
+ *   provider 详情=id/name/baseUrl/apiKey 代字/models 清单行编辑（model 行级
+ *            激活与 picker 二级同构，§3.2）
+ *   prompt   详情=name + **双区有序文件对象**（静态/动态两区，文件芯片=文件
+ *            名+内容预览，拖柄区内排序+跨区移动，点芯片开全文对话框，加文
+ *            件走 /pool/files 选择器——仲裁⑧「有序」语义不变，操作方式升级，
+ *            手填路径行/上下移按钮退役）（§3.3 修订②）
+ *   session  详情=title 改名 + 会话列表（§3.4）
  *
  * 激活双态 UI（P2）：✓ 激活标只随激活总账走；编辑任何条目不动 ✓。
+ * 草稿语义：详情区改动是本地草稿，保存才落盘（C5）；取消=rev++ 重挂回存
+ * 档值（C6）；新建草稿取消=回落选中首条。删除=服务性破坏操作，仍走确认
+ * 罩层（C7-C9）；草稿内移除文件引用不确认（取消即可整体撤销）。
  * 皮内零硬编码颜色/阴影/圆角/时长字面量（P8，全走 --kfm-* token）。
  */
-import { createElement, useState } from 'react';
+import { createElement, useEffect, useRef, useState } from 'react';
 import type { PoolLink, PoolEntry, ActiveLedger, ReliedBy } from './pool-link.js';
 
 export interface ViewProps {
@@ -72,56 +77,14 @@ function TextField(props: {
   });
 }
 
-/** 手填路径行（有序清单：增删/上下移排序——仲裁⑧；文件树挑选留接口位等 8.10） */
-function OrderedPathRows(props: {
-  title: string; dataField: string; rows: string[];
-  onChange(rows: string[]): void;
+/** 上详情区骨架（选择制：常驻载当前编辑目标；§四 修订①）
+ *  loading=目标未定（数据在途）：藏存/取消/新建钮防误存 */
+function DetailZone(props: {
+  title: string; newMode: boolean; error: string | null;
+  loading?: boolean;
+  onSave(): void; onCancel(): void; onNew(): void; children?: React.ReactNode;
 }): React.ReactElement {
-  const { title, dataField, rows, onChange } = props;
-  const [draft, setDraft] = useState('');
-  const move = (i: number, d: -1 | 1): void => {
-    const next = [...rows];
-    const j = i + d;
-    if (j < 0 || j >= next.length) return;
-    [next[i], next[j]] = [next[j], next[i]];
-    onChange(next);
-  };
-  return createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px' } },
-    createElement('div', { style: { fontSize: '11px', color: 'var(--kfm-ink-3)' } }, title),
-    rows.map((p, i) => createElement('div', {
-      key: `${p}:${i}`, 'data-pool-path-row': p,
-      style: { display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--kfm-ink)' },
-    },
-    createElement('span', {
-      style: { flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-    }, p),
-    createElement('span', { style: { fontSize: '10px', color: 'var(--kfm-ink-3)', flexShrink: 0 } }, `#${i + 1}`),
-    createElement(Btn, { onClick: () => move(i, -1) }, '↑'),
-    createElement(Btn, { onClick: () => move(i, 1) }, '↓'),
-    createElement(Btn, { danger: true, onClick: () => onChange(rows.filter((_, k) => k !== i)) }, '×'),
-    )),
-    createElement('div', { style: { display: 'flex', gap: '4px' } },
-      createElement('div', { style: { flex: 1 } },
-        createElement(TextField, {
-          'data-x': dataField, value: draft, placeholder: '手填路径（如 prompts/system.md）',
-          onChange: setDraft,
-          onCommit: () => { if (draft.trim()) { onChange([...rows, draft.trim()]); setDraft(''); } },
-        })),
-      createElement(Btn, {
-        primary: true,
-        onClick: () => { if (draft.trim()) { onChange([...rows, draft.trim()]); setDraft(''); } },
-      }, '加路径'),
-    ),
-  );
-}
-
-/** 上配置区骨架：EDITING 载表单，BROWSE 出预览/新建位（§四 池页机两态） */
-function ConfigZone(props: {
-  editing: boolean; title: string; error: string | null;
-  onSave(): void; onCancel(): void; children?: React.ReactNode;
-}): React.ReactElement {
-  const { editing, title, error, onSave, onCancel, children } = props;
-  if (!editing) return createElement('div', null);
+  const { title, newMode, error, loading, onSave, onCancel, onNew, children } = props;
   return createElement('div', {
     'data-pool-config': '1',
     style: {
@@ -129,13 +92,23 @@ function ConfigZone(props: {
       background: 'var(--kfm-surface)', border: '1px solid var(--kfm-line)', borderRadius: 'var(--kfm-radius-lg)',
     },
   },
-  createElement('div', { style: { fontSize: '12.5px', color: 'var(--kfm-ink-2)' } }, title),
-  children,
+  createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
+    createElement('div', { style: { fontSize: '12.5px', color: 'var(--kfm-ink-2)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, title),
+    newMode || loading ? null : createElement('button', {
+      'data-pool-new': '1', type: 'button', onClick: onNew,
+      style: {
+        flexShrink: 0, padding: '2px 10px', fontSize: '11.5px', cursor: 'pointer',
+        borderRadius: 'var(--kfm-radius-sm)', border: '1px dashed var(--kfm-line-strong)',
+        background: 'none', color: 'var(--kfm-ink-2)',
+      },
+    }, '＋ 新建'),
+  ),
+  loading ? createElement('div', { style: { fontSize: '11.5px', color: 'var(--kfm-ink-3)' } }, '列表加载中…') : children,
   error !== null
     ? createElement('div', { 'data-pool-form-error': '1', style: { fontSize: '11.5px', color: 'var(--kfm-red)' } }, error)
     : null,
-  createElement('div', { style: { display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
-    createElement(Btn, { 'data-x': undefined, onClick: onCancel }, '取消'),
+  loading ? null : createElement('div', { style: { display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
+    createElement(Btn, { 'data-x': undefined, 'data-pool-cancel': '1', onClick: onCancel }, '取消'),
     createElement('button', {
       'data-pool-save': '1', type: 'button', onClick: (e: React.MouseEvent) => { e.stopPropagation(); onSave(); },
       style: {
@@ -198,14 +171,318 @@ function CheckMark(): React.ReactElement {
   }, '✓');
 }
 
-const newBtn = (onClick: () => void): React.ReactElement => createElement('button', {
-  'data-pool-new': '1', type: 'button', onClick,
-  style: {
-    flexShrink: 0, alignSelf: 'flex-start', margin: '8px 10px 0', padding: '4px 12px', fontSize: '12px',
-    cursor: 'pointer', borderRadius: 'var(--kfm-radius-sm)', border: '1px dashed var(--kfm-line-strong)',
-    background: 'none', color: 'var(--kfm-ink-2)',
+// ========== prompt 双区文件对象（§3.3 修订②） ==========
+
+/** 文件内容缓存（预览与全文共用；模块级——池页重挂不重拉） */
+const fileContentCache = new Map<string, string>();
+
+async function fetchFileContent(path: string): Promise<string | null> {
+  if (fileContentCache.has(path)) return fileContentCache.get(path) ?? null;
+  try {
+    const r = await fetch(`/pool/files/content?path=${encodeURIComponent(path)}`);
+    if (!r.ok) return null;
+    const body = (await r.json()) as { content?: string };
+    const content = typeof body.content === 'string' ? body.content : null;
+    if (content !== null) fileContentCache.set(path, content);
+    return content;
+  } catch { return null; }
+}
+
+const previewOf = (content: string): string =>
+  content.split('\n').slice(0, 2).map((l) => (l.length > 60 ? l.slice(0, 60) + '…' : l)).join('\n');
+
+type ZoneId = 'static' | 'dyn';
+
+/** 文件芯片：拖柄 + 文件名 + 内容预览两行（点芯片开全文对话框） */
+function FileChip(props: {
+  path: string; zone: ZoneId; index: number; preview: string | null;
+  dragging: boolean; dy: number;
+  onHandleDown(e: React.PointerEvent): void;
+  onOpen(): void;
+}): React.ReactElement {
+  const { path, preview, dragging, dy, onHandleDown, onOpen } = props;
+  return createElement('div', {
+    'data-pool-file-chip': path,
+    'data-pool-file-zone': props.zone,
+    onClick: onOpen,
+    style: {
+      display: 'flex', alignItems: 'stretch', minHeight: '52px',
+      border: '1px solid var(--kfm-line)', borderRadius: 'var(--kfm-radius-md)',
+      background: 'var(--kfm-surface)', overflow: 'hidden', cursor: 'pointer',
+      touchAction: 'none',
+      ...(dragging ? {
+        transform: `translateY(${dy}px) scale(1.02)`,
+        borderColor: 'var(--kfm-accent)',
+        boxShadow: 'var(--kfm-shadow-pop)',
+        position: 'relative' as const, zIndex: 5,
+      } : {}),
+    },
   },
-}, '＋ 新建');
+  // 拖柄（24px；pointer capture 自拖拽——老角色卡同款交互）
+  createElement('div', {
+    'data-pool-file-handle': path,
+    onPointerDown: onHandleDown,
+    title: '拖动排序/跨区移动',
+    style: {
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      width: '26px', flexShrink: 0, cursor: 'grab', userSelect: 'none',
+      color: 'var(--kfm-ink-3)', borderRight: '1px solid var(--kfm-line)',
+      touchAction: 'none',
+    },
+  }, '≡'),
+  createElement('div', { style: { flex: 1, minWidth: 0, padding: '5px 8px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1px' } },
+    createElement('div', {
+      style: { fontSize: '12px', color: 'var(--kfm-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--kfm-font-mono, monospace)' },
+    }, path),
+    createElement('div', {
+      style: {
+        fontSize: '10px', color: 'var(--kfm-ink-3)', whiteSpace: 'pre-wrap', overflow: 'hidden',
+        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as never,
+      },
+    }, preview ?? '…'),
+  ),
+  );
+}
+
+/** 双区有序文件对象（静态/动态；拖柄排序+跨区移动——仲裁⑧有序语义不变） */
+function DualZoneFiles(props: {
+  files: string[]; dynFiles: string[];
+  onChangeFiles(files: string[]): void;
+  onChangeDynFiles(files: string[]): void;
+  onOpenDialog(path: string, zone: ZoneId): void;
+  onPick(zone: ZoneId): void;
+}): React.ReactElement {
+  const { files, dynFiles, onChangeFiles, onChangeDynFiles, onOpenDialog, onPick } = props;
+  const [previews, setPreviews] = useState<Record<string, string>>({});
+  const [drag, setDrag] = useState<{ zone: ZoneId; idx: number; dy: number } | null>(null);
+  const [overZone, setOverZone] = useState<ZoneId | null>(null);
+  const dragRef = useRef<{ zone: ZoneId; idx: number; startY: number; active: boolean } | null>(null);
+  const staticRef = useRef<HTMLDivElement | null>(null);
+  const dynRef = useRef<HTMLDivElement | null>(null);
+  const stateRef = useRef({ files, dynFiles });
+  stateRef.current = { files, dynFiles };
+
+  // 预览腿：路径集变化时补拉缺的（两行预览）
+  useEffect(() => {
+    const all = Array.from(new Set([...files, ...dynFiles]));
+    for (const p of all) {
+      if (previews[p] !== undefined) continue;
+      const cached = fileContentCache.get(p);
+      if (cached !== undefined) { setPreviews((s) => ({ ...s, [p]: previewOf(cached) })); continue; }
+      void fetchFileContent(p).then((c) => {
+        setPreviews((s) => ({ ...s, [p]: c === null ? '（读不到）' : previewOf(c) }));
+      });
+    }
+  }, [files, dynFiles]);
+
+  const arrOf = (zone: ZoneId): string[] => (zone === 'static' ? stateRef.current.files : stateRef.current.dynFiles);
+  const commit = (zone: ZoneId, next: string[]): void => { (zone === 'static' ? onChangeFiles : onChangeDynFiles)(next); };
+  const otherOf = (zone: ZoneId): ZoneId => (zone === 'static' ? 'dyn' : 'static');
+
+  const zoneRect = (zone: ZoneId): DOMRect | null => {
+    const el = zone === 'static' ? staticRef.current : dynRef.current;
+    return el ? el.getBoundingClientRect() : null;
+  };
+
+  const onHandleDown = (zone: ZoneId, idx: number) => (e: React.PointerEvent): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    dragRef.current = { zone, idx, startY: e.clientY, active: false };
+  };
+  const onHandleMove = (e: React.PointerEvent): void => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dy = e.clientY - d.startY;
+    if (!d.active && Math.abs(dy) > 6) d.active = true;
+    if (!d.active) return;
+    setDrag({ zone: d.zone, idx: d.idx, dy });
+    const other = otherOf(d.zone);
+    const rect = zoneRect(other);
+    setOverZone(rect && e.clientY >= rect.top && e.clientY <= rect.bottom ? other : null);
+  };
+  const onHandleUp = (e: React.PointerEvent): void => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    setDrag(null);
+    setOverZone(null);
+    if (!d || !d.active) return;
+    const dy = e.clientY - d.startY;
+    const other = otherOf(d.zone);
+    const rect = zoneRect(other);
+    const cross = !!(rect && e.clientY >= rect.top && e.clientY <= rect.bottom);
+    const arr = arrOf(d.zone);
+    if (cross) {
+      // 跨区移动：源区摘除 → 目标区尾部追加（老角色卡同语义）
+      const moved = arr[d.idx];
+      commit(d.zone, arr.filter((_, k) => k !== d.idx));
+      commit(other, [...arrOf(other), moved]);
+      return;
+    }
+    // 区内排序：位移按芯片实高折算目标序（老卡 offsetHeight+gap 同款）
+    const zoneEl = d.zone === 'static' ? staticRef.current : dynRef.current;
+    const chipEl = zoneEl?.querySelector('[data-pool-file-chip]') as HTMLElement | null;
+    const cardH = (chipEl?.offsetHeight ?? 52) + 6;
+    const targetIdx = Math.max(0, Math.min(arr.length - 1, Math.round((d.idx * cardH + dy) / cardH)));
+    if (targetIdx !== d.idx) {
+      const next = [...arr];
+      const [moved] = next.splice(d.idx, 1);
+      next.splice(targetIdx, 0, moved);
+      commit(d.zone, next);
+    }
+  };
+
+  const zone = (id: ZoneId, label: string, hint: string, rows: string[], ref: React.RefObject<HTMLDivElement | null>) =>
+    createElement('div', { key: id, style: { display: 'flex', flexDirection: 'column', gap: '4px' } },
+      createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
+        createElement('div', { style: { fontSize: '11px', color: 'var(--kfm-ink-3)', flex: 1 } }, label),
+        createElement(Btn, { 'data-pool-file-add': id, onClick: () => onPick(id) }, '＋加文件'),
+      ),
+      createElement('div', {
+        ref,
+        'data-pool-filezone': id,
+        style: {
+          display: 'flex', flexDirection: 'column', gap: '6px', minHeight: '20px', borderRadius: 'var(--kfm-radius-md)',
+          transition: 'outline 0.15s', padding: '2px',
+          outline: overZone === id ? '2px dashed var(--kfm-accent)' : '2px dashed transparent',
+        },
+      },
+      rows.length === 0
+        ? createElement('div', { style: { fontSize: '10.5px', color: 'var(--kfm-ink-3)', padding: '4px 2px' } }, '（空）')
+        : null,
+      rows.map((p, i) => createElement(FileChip, {
+        key: `${p}:${i}`, path: p, zone: id, index: i,
+        preview: previews[p] ?? null,
+        dragging: drag?.zone === id && drag.idx === i,
+        dy: drag?.zone === id && drag.idx === i ? drag.dy : 0,
+        onHandleDown: onHandleDown(id, i),
+        onOpen: () => onOpenDialog(p, id),
+      })),
+      ),
+      createElement('div', { style: { fontSize: '10px', color: 'var(--kfm-ink-3)' } }, hint),
+    );
+
+  return createElement('div', { onPointerMove: onHandleMove, onPointerUp: onHandleUp, onPointerCancel: onHandleUp, style: { display: 'flex', flexDirection: 'column', gap: '10px' } },
+    zone('static', '静态提示词（有序，拼接按此序）', '拖 ≡ 排序；拖入另一区=跨区移动；点芯片看全文', files, staticRef),
+    zone('dyn', '动态反馈（每轮工具调用后刷新，A2b 眼睛挂载点）', '同上；顺序即注入顺序', dynFiles, dynRef),
+  );
+}
+
+/** 文件全文对话框（只读 + 移除引用；移除的是草稿——取消可整体撤销，不确认） */
+function FileDetailDialog(props: {
+  path: string; zone: ZoneId;
+  onRemove(): void; onClose(): void;
+}): React.ReactElement {
+  const { path, onRemove, onClose } = props;
+  const [content, setContent] = useState<string | null>(fileContentCache.get(path) ?? null);
+  const [truncated, setTruncated] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void fetch(`/pool/files/content?path=${encodeURIComponent(path)}`)
+      .then((r) => r.json())
+      .then((b: { content?: string; truncated?: boolean }) => {
+        if (!alive) return;
+        if (typeof b.content === 'string') { fileContentCache.set(path, b.content); setContent(b.content); }
+        setTruncated(!!b.truncated);
+      })
+      .catch(() => { if (alive) setContent(null); });
+    return () => { alive = false; };
+  }, [path]);
+  return createElement('div', {
+    'data-pool-file-dialog': '1',
+    onClick: onClose,
+    style: {
+      position: 'absolute', inset: 0, zIndex: 12,
+      background: 'var(--kfm-overlay-bg)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '48px',
+    },
+  }, createElement('div', {
+    onClick: (e: React.MouseEvent) => e.stopPropagation(),
+    style: {
+      width: 'min(92vw, 560px)', maxHeight: '70vh', minHeight: '40vh', display: 'flex', flexDirection: 'column',
+      background: 'var(--kfm-bar-bg)', border: '1px solid var(--kfm-line)', borderRadius: 'var(--kfm-radius-lg)', overflow: 'hidden',
+    },
+  },
+  createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderBottom: '1px solid var(--kfm-line)', flexShrink: 0 } },
+    createElement('div', { style: { flex: 1, minWidth: 0, fontSize: '12.5px', color: 'var(--kfm-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--kfm-font-mono, monospace)' } }, path),
+    createElement(Btn, { 'data-pool-file-dialog-close': '1', onClick: onClose }, '×'),
+  ),
+  createElement('textarea', {
+    'data-pool-file-content': '1',
+    readOnly: true,
+    value: content ?? '加载中…',
+    style: {
+      flex: 1, minHeight: 0, border: 'none', padding: '10px 12px', fontSize: '11.5px', lineHeight: 1.6,
+      color: 'var(--kfm-ink)', background: 'transparent', resize: 'none', outline: 'none',
+      fontFamily: 'var(--kfm-font-mono, monospace)', whiteSpace: 'pre', overflow: 'auto',
+    },
+  }),
+  createElement('div', { style: { display: 'flex', gap: '10px', justifyContent: 'space-between', padding: '10px 12px', borderTop: '1px solid var(--kfm-line)', flexShrink: 0, alignItems: 'center' } },
+    createElement('span', { style: { fontSize: '10px', color: 'var(--kfm-ink-3)' } },
+      truncated ? '超 64KB 截断展示' : `（${props.zone === 'static' ? '静态区' : '动态区'}引用；移除只改草稿，保存落盘）`),
+    createElement(Btn, { danger: true, 'data-pool-file-remove': '1', onClick: onRemove }, '移除引用'),
+  )));
+}
+
+/** 文件选择器（/pool/files 平铺宇宙；已在任一区的置灰不可重选） */
+function FilePickerOverlay(props: {
+  existing: Set<string>;
+  onPick(path: string): void; onClose(): void;
+}): React.ReactElement {
+  const { existing, onPick, onClose } = props;
+  const [files, setFiles] = useState<string[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void fetch('/pool/files').then((r) => r.json()).then((b: { files?: string[] }) => {
+      if (alive && Array.isArray(b.files)) setFiles(b.files.map(String));
+    }).catch(() => { if (alive) setFiles([]); });
+    return () => { alive = false; };
+  }, []);
+  return createElement('div', {
+    'data-pool-file-picker': '1',
+    onClick: onClose,
+    style: {
+      position: 'absolute', inset: 0, zIndex: 12,
+      background: 'var(--kfm-overlay-bg)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '48px',
+    },
+  }, createElement('div', {
+    onClick: (e: React.MouseEvent) => e.stopPropagation(),
+    style: {
+      width: 'min(92vw, 560px)', maxHeight: '70vh', display: 'flex', flexDirection: 'column',
+      background: 'var(--kfm-bar-bg)', border: '1px solid var(--kfm-line)', borderRadius: 'var(--kfm-radius-lg)', overflow: 'hidden',
+    },
+  },
+  createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderBottom: '1px solid var(--kfm-line)', flexShrink: 0 } },
+    createElement('div', { style: { flex: 1, fontSize: '12.5px', color: 'var(--kfm-ink)' } }, '选择提示词文件（roles 目录平铺）'),
+    createElement(Btn, { 'data-pool-file-picker-close': '1', onClick: onClose }, '×'),
+  ),
+  createElement('div', { style: { flex: 1, minHeight: 0, overflowY: 'auto', padding: '6px' } },
+    files === null
+      ? createElement('div', { style: { fontSize: '11.5px', color: 'var(--kfm-ink-3)', padding: '8px' } }, '加载中…')
+      : files.length === 0
+        ? createElement('div', { style: { fontSize: '11.5px', color: 'var(--kfm-ink-3)', padding: '8px' } }, 'roles 目录还没有文件——把 .md 放进 ~/.kfmv4/agents/ 再来')
+        : files.map((p) => {
+            const taken = existing.has(p);
+            return createElement('div', {
+              key: p,
+              'data-pool-file-pick': p,
+              onClick: taken ? undefined : () => onPick(p),
+              style: {
+                padding: '7px 9px', fontSize: '12px', cursor: taken ? 'default' : 'pointer',
+                color: taken ? 'var(--kfm-ink-3)' : 'var(--kfm-ink)',
+                opacity: taken ? 0.55 : 1,
+                borderBottom: '1px solid var(--kfm-line)',
+                fontFamily: 'var(--kfm-font-mono, monospace)',
+                display: 'flex', justifyContent: 'space-between', gap: '8px',
+              },
+            },
+            createElement('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, p),
+            taken ? createElement('span', { style: { flexShrink: 0 } }, '已加') : null,
+            );
+          }),
+  )));
+}
 
 // ========== 基本池（§3.1 只读聚合变体） ==========
 
@@ -256,47 +533,52 @@ function BasicView(props: ViewProps): React.ReactElement {
   );
 }
 
-// ========== provider-model 池（§3.2） ==========
+// ========== provider-model 池（§3.2；选择制详情常驻） ==========
 
 function ProviderView(props: ViewProps): React.ReactElement {
   const { link, entries, active, formError, setFormError, bump } = props;
   const editing = link.core.state.editing;
+  const rev = link.core.state.rev;
   const current = editing && !editing.isNew ? entries.find((e) => e.id === editing.id) ?? null : null;
   const provAlive = entries.find((e) => e.id === active.providerId || e.name === active.providerId) ?? null;
 
   const save = async (entry: PoolEntry, isNew: boolean): Promise<void> => {
-    const r = await link.save('provider', entry, isNew); // C5：成功 core 转 BROWSE；败=人话回表单不转换
+    const r = await link.save('provider', entry, isNew); // C5：成功=编辑器保持载入该条目；败=人话回表单
     if (!r.ok) setFormError(r.error ?? '保存失败');
+    else { setFormError(null); if (isNew) link.core.saveDone(String(entry.id)); }
     bump();
   };
   const activateModel = (provId: string, model: string): void => {
     void link.activate({ providerId: provId, modelId: model }).then(() => bump());
   };
 
-  let form: React.ReactElement | null = null;
-  if (editing) {
-    form = createElement(ProviderForm, {
-      key: `${editing.pool}:${editing.id ?? '__new__'}`,
-      entry: current, isNew: editing.isNew,
-      error: formError,
-      onSave: save, onActivateModel: activateModel,
-      onCancel: () => { link.core.cancelEdit(); setFormError(null); bump(); },
-    });
-  }
   return createElement('div', { style: { display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 } },
-    form ?? newBtn(() => { link.core.beginEdit({ id: null, isNew: true }); bump(); }),
+    createElement(ProviderDetail, {
+      key: `provider:${editing?.id ?? '__new__'}:${rev}:${editing?.isNew ? 'n' : 's'}`,
+      entry: current, isNew: !!editing?.isNew, error: formError, loading: !editing,
+      onSave: save,
+      onCancel: () => {
+        link.core.cancelEdit();
+        if (editing?.isNew && entries.length > 0) link.core.selectDetail({ id: String(entries[0].id), isNew: false }); // 新建草稿取消=回落首条
+        setFormError(null); bump();
+      },
+      onNew: () => { link.core.selectDetail({ id: null, isNew: true }); setFormError(null); bump(); },
+      onActivateModel: activateModel,
+    }),
     PoolZone({
       children: entries.map((e) => {
         const models = Array.isArray(e.models) ? (e.models as string[]).map(String) : [];
         const isActive = provAlive?.id === e.id;
+        const isSelected = !!editing && !editing.isNew && editing.id === String(e.id);
         return createElement(ListRow, {
           key: String(e.id),
           'data-x': `provider:${e.id}`,
           active: isActive,
           title: String(e.name ?? e.id),
           sub: `${e.id} · ${models.length} models`,
-          onClickRow: () => { link.core.beginEdit({ id: String(e.id), isNew: false }); bump(); },
+          onClickRow: () => { link.core.selectDetail({ id: String(e.id), isNew: false }); setFormError(null); bump(); },
         },
+        isSelected ? createElement('span', { 'data-pool-selected': '1', style: { fontSize: '10px', color: 'var(--kfm-accent-ink)', border: '1px solid var(--kfm-accent)', borderRadius: 'var(--kfm-radius-sm)', padding: '0 4px', flexShrink: 0 } }, '编辑中') : null,
         createElement(Btn, {
           primary: !isActive,
           'data-pool-activate': String(e.id),
@@ -313,13 +595,13 @@ function ProviderView(props: ViewProps): React.ReactElement {
   );
 }
 
-const ProviderForm = (props: {
-  entry: PoolEntry | null; isNew: boolean; error: string | null;
+const ProviderDetail = (props: {
+  entry: PoolEntry | null; isNew: boolean; error: string | null; loading?: boolean;
   onSave(entry: PoolEntry, isNew: boolean): Promise<void>;
   onActivateModel(provId: string, model: string): void;
-  onCancel(): void;
+  onCancel(): void; onNew(): void;
 }): React.ReactElement => {
-  const { entry, isNew, error, onSave, onActivateModel, onCancel } = props;
+  const { entry, isNew, error, loading, onSave, onActivateModel, onCancel, onNew } = props;
   const [id, setId] = useState(entry ? String(entry.id) : '');
   const [name, setName] = useState(entry ? String(entry.name ?? '') : '');
   const [baseUrl, setBaseUrl] = useState(entry ? String(entry.baseUrl ?? '') : '');
@@ -332,12 +614,11 @@ const ProviderForm = (props: {
     if (m && !models.includes(m)) setModels([...models, m]);
     setModelDraft('');
   };
-  return createElement(ConfigZone, {
-    editing: true,
-    title: isNew ? '新建 Provider' : `编辑 Provider：${entry?.id ?? ''}`,
-    error,
+  return createElement(DetailZone, {
+    title: isNew ? '新建 Provider' : `详情：${entry?.id ?? ''}`,
+    newMode: isNew, error, loading,
     onSave: () => { void onSave({ id, name, baseUrl, apiKey, models }, isNew); },
-    onCancel,
+    onCancel, onNew,
     children: [
       createElement('div', { key: 'row1', style: { display: 'flex', gap: '6px' } },
         createElement('div', { style: { width: '32%' } },
@@ -388,69 +669,137 @@ const ProviderForm = (props: {
   });
 };
 
-// ========== agent-prompt 池（§3.3） ==========
+// ========== agent-prompt 池（§3.3 修订②：双区文件对象） ==========
 
 function PromptView(props: ViewProps): React.ReactElement {
   const { link, entries, active, formError, setFormError, bump } = props;
   const editing = link.core.state.editing;
+  const rev = link.core.state.rev;
   const current = editing && !editing.isNew ? entries.find((e) => e.id === editing.id) ?? null : null;
   const save = async (entry: PoolEntry, isNew: boolean): Promise<void> => {
     const r = await link.save('prompt', entry, isNew);
     if (!r.ok) setFormError(r.error ?? '保存失败');
+    else { setFormError(null); if (isNew) link.core.saveDone(String(entry.id)); }
     bump();
   };
+  // 对话框/选择器态（草稿层之上的覆盖物；draftRef=详情草稿的取改口，移除引用走它）
+  const [dialog, setDialog] = useState<{ path: string; zone: ZoneId } | null>(null);
+  const [picker, setPicker] = useState<ZoneId | null>(null);
+  const [draftApi, setDraftApi] = useState<{
+    get(): { files: string[]; dynFiles: string[] };
+    set(files: string[], dynFiles: string[]): void;
+  } | null>(null);
   return createElement('div', { style: { display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 } },
-    editing
-      ? createElement(PromptForm, {
-          key: `${editing.pool}:${editing.id ?? '__new__'}`,
-          entry: current, isNew: editing.isNew, error: formError,
-          onSave: save,
-          onCancel: () => { link.core.cancelEdit(); setFormError(null); bump(); },
-        })
-      : newBtn(() => { link.core.beginEdit({ id: null, isNew: true }); bump(); }),
+    createElement(PromptDetail, {
+      key: `prompt:${editing?.id ?? '__new__'}:${rev}:${editing?.isNew ? 'n' : 's'}`,
+      entry: current, isNew: !!editing?.isNew, error: formError, loading: !editing,
+      onSave: save,
+      onCancel: () => {
+        link.core.cancelEdit();
+        if (editing?.isNew && entries.length > 0) link.core.selectDetail({ id: String(entries[0].id), isNew: false });
+        setFormError(null); bump();
+      },
+      onNew: () => { link.core.selectDetail({ id: null, isNew: true }); setFormError(null); bump(); },
+      onDraftRef: setDraftApi,
+      onOpenDialog: (path, zone) => setDialog({ path, zone }),
+      onPick: (zone) => setPicker(zone),
+    }),
     createElement('div', {
       style: { flexShrink: 0, margin: '6px 10px 0', fontSize: '10.5px', color: 'var(--kfm-ink-3)' },
     }, '激活角色 A2b 装配线起生效（v0 被记住）'),
     PoolZone({
-      children: entries.map((e) => createElement(ListRow, {
-        key: String(e.id),
-        'data-x': `prompt:${e.id}`,
-        active: active.roleFile === e.id,
-        title: String(e.name ?? e.id),
-        sub: `${e.id} · files=${(e.promptFiles as string[] | undefined)?.length ?? 0}`,
-        onClickRow: () => { link.core.beginEdit({ id: String(e.id), isNew: false }); bump(); },
-      },
-      createElement(Btn, {
-        primary: active.roleFile !== e.id,
-        'data-pool-activate': String(e.id),
-        onClick: () => { void link.activate({ roleFile: String(e.id) }).then(() => bump()); },
-      }, '设为激活'),
-      createElement(Btn, {
-        danger: true,
-        'data-pool-delete': String(e.id),
-        onClick: () => { link.core.askDelete(String(e.id)); bump(); },
-      }, '删除'),
-      )),
+      children: entries.map((e) => {
+        const fileCount = (e.promptFiles as string[] | undefined)?.length ?? 0;
+        const dynCount = (e.dynamicPromptFiles as string[] | undefined)?.length ?? 0;
+        const isSelected = !!editing && !editing.isNew && editing.id === String(e.id);
+        return createElement(ListRow, {
+          key: String(e.id),
+          'data-x': `prompt:${e.id}`,
+          active: active.roleFile === e.id,
+          title: String(e.name ?? e.id),
+          sub: `${e.id} · 静态${fileCount}+动态${dynCount}`,
+          onClickRow: () => { link.core.selectDetail({ id: String(e.id), isNew: false }); setFormError(null); bump(); },
+        },
+        isSelected ? createElement('span', { 'data-pool-selected': '1', style: { fontSize: '10px', color: 'var(--kfm-accent-ink)', border: '1px solid var(--kfm-accent)', borderRadius: 'var(--kfm-radius-sm)', padding: '0 4px', flexShrink: 0 } }, '编辑中') : null,
+        createElement(Btn, {
+          primary: active.roleFile !== e.id,
+          'data-pool-activate': String(e.id),
+          onClick: () => { void link.activate({ roleFile: String(e.id) }).then(() => bump()); },
+        }, '设为激活'),
+        createElement(Btn, {
+          danger: true,
+          'data-pool-delete': String(e.id),
+          onClick: () => { link.core.askDelete(String(e.id)); bump(); },
+        }, '删除'),
+        );
+      }),
     }),
+    dialog
+      ? createElement(FileDetailDialog, {
+          path: dialog.path, zone: dialog.zone,
+          onRemove: () => {
+            // 草稿层移除引用（不确认：取消即整体撤销）
+            const d = draftApi?.get();
+            if (d) {
+              if (dialog.zone === 'static') { if (d.files.includes(dialog.path)) draftApi.set(d.files.filter((x) => x !== dialog.path), d.dynFiles); }
+              else { if (d.dynFiles.includes(dialog.path)) draftApi.set(d.files, d.dynFiles.filter((x) => x !== dialog.path)); }
+            }
+            setDialog(null); bump();
+          },
+          onClose: () => setDialog(null),
+        })
+      : null,
+    picker
+      ? createElement(FilePickerOverlay, {
+          // 已加判定读草稿态（未保存的新加也算占坑，防重复添加）
+          existing: (() => {
+            const d = draftApi?.get();
+            const f = d ? d.files : (current?.promptFiles as string[] | undefined ?? []);
+            const g = d ? d.dynFiles : (current?.dynamicPromptFiles as string[] | undefined ?? []);
+            return new Set([...f, ...g]);
+          })(),
+          onPick: (p) => {
+            const d = draftApi?.get();
+            if (d) {
+              if (picker === 'static') draftApi.set([...d.files, p], d.dynFiles);
+              else draftApi.set(d.files, [...d.dynFiles, p]);
+            }
+            setPicker(null); bump();
+          },
+          onClose: () => setPicker(null),
+        })
+      : null,
   );
 }
 
-const PromptForm = (props: {
-  entry: PoolEntry | null; isNew: boolean; error: string | null;
+const PromptDetail = (props: {
+  entry: PoolEntry | null; isNew: boolean; error: string | null; loading?: boolean;
   onSave(entry: PoolEntry, isNew: boolean): Promise<void>;
-  onCancel(): void;
+  onCancel(): void; onNew(): void;
+  onDraftRef(api: { get(): { files: string[]; dynFiles: string[] }; set(files: string[], dynFiles: string[]): void } | null): void;
+  onOpenDialog(path: string, zone: ZoneId): void;
+  onPick(zone: ZoneId): void;
 }): React.ReactElement => {
-  const { entry, isNew, error, onSave, onCancel } = props;
+  const { entry, isNew, error, loading, onSave, onCancel, onNew, onDraftRef, onOpenDialog, onPick } = props;
   const [id, setId] = useState(entry ? String(entry.id) : '');
   const [name, setName] = useState(entry ? String(entry.name ?? '') : '');
   const [files, setFiles] = useState<string[]>(entry && Array.isArray(entry.promptFiles) ? (entry.promptFiles as string[]).map(String) : []);
   const [dynFiles, setDynFiles] = useState<string[]>(entry && Array.isArray(entry.dynamicPromptFiles) ? (entry.dynamicPromptFiles as string[]).map(String) : []);
-  return createElement(ConfigZone, {
-    editing: true,
-    title: isNew ? '新建角色（id=文件名裸名，可中文）' : `编辑角色：${entry?.id ?? ''}`,
-    error,
+  const filesRef = useRef(files);
+  const dynRef2 = useRef(dynFiles);
+  filesRef.current = files; dynRef2.current = dynFiles;
+  useEffect(() => {
+    onDraftRef({
+      get: () => ({ files: filesRef.current, dynFiles: dynRef2.current }),
+      set: (f, d) => { setFiles([...f]); setDynFiles([...d]); },
+    });
+    return () => onDraftRef(null);
+  }, [onDraftRef]);
+  return createElement(DetailZone, {
+    title: isNew ? '新建角色（id=文件名裸名，可中文）' : `详情：${entry?.id ?? ''}`,
+    newMode: isNew, error, loading,
     onSave: () => { void onSave({ id, name, promptFiles: files, dynamicPromptFiles: dynFiles }, isNew); },
-    onCancel,
+    onCancel, onNew,
     children: [
       createElement('div', { key: 'row1', style: { display: 'flex', gap: '6px' } },
         createElement('div', { style: { width: '40%' } },
@@ -458,38 +807,47 @@ const PromptForm = (props: {
         createElement('div', { style: { flex: 1 } },
           createElement(TextField, { 'data-x': 'name', value: name, placeholder: '角色名', onChange: setName })),
       ),
-      createElement(OrderedPathRows, { title: 'promptFiles（有序，拼接按此序——A2b 装配线）', dataField: 'file-add', rows: files, onChange: setFiles }),
-      createElement(OrderedPathRows, { title: 'dynamicPromptFiles（眼睛挂载点，投影联动 A2b）', dataField: 'dynfile-add', rows: dynFiles, onChange: setDynFiles }),
+      createElement(DualZoneFiles, {
+        files, dynFiles,
+        onChangeFiles: setFiles, onChangeDynFiles: setDynFiles,
+        onOpenDialog, onPick,
+      }),
     ],
   });
 };
 
-// ========== session 池（§3.4 v0 壳） ==========
+// ========== session 池（§3.4 v0 壳；选择制详情常驻） ==========
 
 function SessionView(props: ViewProps): React.ReactElement {
   const { link, entries, active, formError, setFormError, bump } = props;
   const editing = link.core.state.editing;
+  const rev = link.core.state.rev;
   const current = editing && !editing.isNew ? entries.find((e) => e.id === editing.id) ?? null : null;
   const save = async (entry: PoolEntry, isNew: boolean): Promise<void> => {
     const r = await link.save('session', entry, isNew);
     if (!r.ok) setFormError(r.error ?? '保存失败');
+    else { setFormError(null); if (isNew) link.core.saveDone(String(entry.id)); }
     bump();
   };
   return createElement('div', { style: { display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 } },
-    editing
-      ? createElement(SessionForm, {
-          key: `${editing.pool}:${editing.id ?? '__new__'}`,
-          entry: current, isNew: editing.isNew, error: formError,
-          onSave: save,
-          onCancel: () => { link.core.cancelEdit(); setFormError(null); bump(); },
-        })
-      : newBtn(() => { link.core.beginEdit({ id: null, isNew: true }); bump(); }),
+    createElement(SessionDetail, {
+      key: `session:${editing?.id ?? '__new__'}:${rev}:${editing?.isNew ? 'n' : 's'}`,
+      entry: current, isNew: !!editing?.isNew, error: formError, loading: !editing,
+      onSave: save,
+      onCancel: () => {
+        link.core.cancelEdit();
+        if (editing?.isNew && entries.length > 0) link.core.selectDetail({ id: String(entries[0].id), isNew: false });
+        setFormError(null); bump();
+      },
+      onNew: () => { link.core.selectDetail({ id: null, isNew: true }); setFormError(null); bump(); },
+    }),
     createElement('div', {
       style: { flexShrink: 0, margin: '6px 10px 0', fontSize: '10.5px', color: 'var(--kfm-ink-3)' },
     }, 'v0=壳管理：messages 恒空（消息落盘 A3/session-store lineage，仲裁①）'),
     PoolZone({
       children: entries.map((e) => {
         const dangling = Array.isArray(e.dangling) && (e.dangling as string[]).length > 0;
+        const isSelected = !!editing && !editing.isNew && editing.id === String(e.id);
         return createElement(ListRow, {
           key: String(e.id),
           'data-x': `session:${e.id}`,
@@ -497,8 +855,9 @@ function SessionView(props: ViewProps): React.ReactElement {
           title: String(e.title ?? e.id),
           sub: `${e.id}${e.updatedAt ? ` · ${String(e.updatedAt).slice(0, 19).replace('T', ' ')}` : ''}`,
           dangling,
-          onClickRow: () => { link.core.beginEdit({ id: String(e.id), isNew: false }); bump(); },
+          onClickRow: () => { link.core.selectDetail({ id: String(e.id), isNew: false }); setFormError(null); bump(); },
         },
+        isSelected ? createElement('span', { 'data-pool-selected': '1', style: { fontSize: '10px', color: 'var(--kfm-accent-ink)', border: '1px solid var(--kfm-accent)', borderRadius: 'var(--kfm-radius-sm)', padding: '0 4px', flexShrink: 0 } }, '编辑中') : null,
         createElement(Btn, {
           primary: active.sessionId !== e.id,
           'data-pool-activate': String(e.id),
@@ -515,19 +874,18 @@ function SessionView(props: ViewProps): React.ReactElement {
   );
 }
 
-const SessionForm = (props: {
-  entry: PoolEntry | null; isNew: boolean; error: string | null;
+const SessionDetail = (props: {
+  entry: PoolEntry | null; isNew: boolean; error: string | null; loading?: boolean;
   onSave(entry: PoolEntry, isNew: boolean): Promise<void>;
-  onCancel(): void;
+  onCancel(): void; onNew(): void;
 }): React.ReactElement => {
-  const { entry, isNew, error, onSave, onCancel } = props;
+  const { entry, isNew, error, loading, onSave, onCancel, onNew } = props;
   const [title, setTitle] = useState(isNew ? '' : String(entry?.title ?? ''));
-  return createElement(ConfigZone, {
-    editing: true,
-    title: isNew ? '新建空会话（壳）' : `改名：${entry?.id ?? ''}`,
-    error,
+  return createElement(DetailZone, {
+    title: isNew ? '新建空会话（壳）' : `详情：${entry?.id ?? ''}`,
+    newMode: isNew, error, loading,
     onSave: () => { void onSave(isNew ? { id: title, title } : { id: String(entry?.id), title }, isNew); },
-    onCancel,
+    onCancel, onNew,
     children: [
       createElement(TextField, { key: 't', 'data-x': 'title', value: title, placeholder: '会话名', onChange: setTitle }),
     ],
@@ -592,9 +950,12 @@ export function DeleteOverlay(props: {
 
 export function PoolPageView(props: ViewProps): React.ReactElement {
   const { pool } = props;
-  if (pool === 'basic') return BasicView(props);
-  if (pool === 'provider') return ProviderView(props);
-  if (pool === 'prompt') return PromptView(props);
-  if (pool === 'session') return SessionView(props);
+  // 修订① 后各视图自带 hooks（PromptView 的对话框/选择器态等）——必须以
+  // 真组件分发（createElement），直调会把视图钩子记到本组件账上，切池即
+  // React #310（hooks 数量前后不一致，B3 现场实锤）
+  if (pool === 'basic') return createElement(BasicView, props);
+  if (pool === 'provider') return createElement(ProviderView, props);
+  if (pool === 'prompt') return createElement(PromptView, props);
+  if (pool === 'session') return createElement(SessionView, props);
   return PoolZone({ children: [] });
 }
