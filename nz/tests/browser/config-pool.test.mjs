@@ -233,7 +233,8 @@ try {
       hStrip?.page === 'POOL_CLOSED' && stripOk && stripOk.sw > stripOk.cw && stripScrollAfter > 0,
       `strip=${JSON.stringify(stripOk)} scrollLeft=${stripScrollAfter} page=${hStrip?.page}`);
 
-    // B1e AI_PAGE 态不响应
+    // B1e AI_PAGE 态左滑照进池（仲裁⑪实施扩展：任何地方含 AI 对话页），
+    // 右滑回 AI 页原样还在
     await page.click('[data-tmux-orb]').catch(() => {}); // 收起标签排
     await page.click('[data-kfm-aichat-orb]').catch(() => {});
     await sleep(600);
@@ -241,9 +242,14 @@ try {
     await swipe(400, 300, -170, 0);
     const hAi = await hook();
     const ai2 = await aiHook();
-    check('B1e AI_PAGE 态左滑不进池（condition 门）+ AI 页不被打扰',
-      ai1?.page === 'AI_PAGE' && hAi?.page === 'POOL_CLOSED' && ai2?.page === 'AI_PAGE',
-      `ai=${ai1?.page} pool=${hAi?.page}`);
+    await swipe(400, 300, 170, 0);
+    await sleep(300);
+    const hAiBack = await hook();
+    const aiB1e3 = await aiHook();
+    check('B1e AI_PAGE 态左滑进池（池页盖 AI 页）+右滑回 AI 页原样',
+      ai1?.page === 'AI_PAGE' && hAi?.page === 'POOL_OPEN' && ai2?.page === 'AI_PAGE'
+        && hAiBack?.page === 'POOL_CLOSED' && aiB1e3?.page === 'AI_PAGE',
+      `ai=${ai1?.page} pool=${hAi?.page}/${hAiBack?.page} ai2=${aiB1e3?.page}`);
     await page.click('[data-kfm-aichat-orb]').catch(() => {}); // 关 AI 页
     await sleep(500);
 

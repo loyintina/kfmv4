@@ -132,7 +132,10 @@ export function createConfigPoolPlugin(ctx: Context): UiPlugin {
             if (document.documentElement.hasAttribute('data-kfm-aichat-raised')) return false;
             return true; // 池页内右滑返回（左滑裁决后不绑 §八⑦）
           }
-          if (document.documentElement.hasAttribute('data-kfm-aichat-open')) return false; // AI_PAGE 态（§1.2-2）
+          // AI_PAGE 态不设门（仲裁⑪实施扩展，2026-09-05 用户拍板「任何地方
+          // 都能左滑」含 AI 对话页）：消息列表只有纵向滚动，横向滑动无冲突；
+          // 左滑开出池页盖在 AI 页上（仲裁⑩层级），右滑回 AI 页原样还在。
+          return true;
           // 终端 ALT/TUI 态不设门（仲裁⑪，2026-09-05 用户拍板「任何地方都能
           // 左滑」）：用户主场景=设备常挂 kimi-code（本身是 TUI，合法占 ALT
           // 屏），设门=池页在最高频状态不可达。触摸滑动手势不注入字节，
