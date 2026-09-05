@@ -67,9 +67,16 @@ export interface AiChatLink {
   readonly ring: RingEntry[];
   providersInfo: ProvidersInfo | null;
   selection: { provider: string; model: string };
+  /** A2a.5：当前会话 id（null=未落盘的新会话，首条消息 server 自动建壳并回填） */
+  sessionId: string | null;
+  /** A2a.5：当前会话标题（水合时随全文带回；新会话=null→显示「新会话」） */
+  sessionTitle: string | null;
   loadProviders(): Promise<void>;
   send(text: string): Promise<void>;
   cancel(): Promise<void>;
+  /** A2a.5 D3：切换/重开水合——拉会话全文直挂消息核（§2.4 直挂，无需重放），
+   *  并恢复会话绑定的 provider/model（写总账三类白名单第三行，仲裁⑪） */
+  loadSession(id: string): Promise<boolean>;
   /** A2：页面切走——断流不死 run（server 缓冲续命），相位保持 */
   suspendStream(): void;
   /** A1/A9：切回/回前台——有活跃 run 则 attach from cursor 补流（幂等） */
@@ -102,6 +109,62 @@ export function createAiChatLink(onUpdate: () => void, env?: { page?: () => Page
     get ring() { return ring; },
     providersInfo: null,
     selection: { provider: '', model: '' },
+    sessionId: null,
+    sessionTitle: null,
+
+    /** A2a.5 D3 水合：拉会话全文直挂消息核（§2.4——落盘的是归约后 messages，
+     *  无需重放）+恢复绑定（会话记录了 provider/model 且在池内存活→写总账并
+     *  更新 selection；记录值已失效→只切会话，诚实降级）。流式中调用方禁入（P18）。 */
+    async loadSession(id: string): Promise<boolean> {
+      if (disposed || state.phase !== 'IDLE') return false;
+      try {
+        const res = await fetch(`/ai/session/${encodeURIComponent(id)}/messages`);
+        if (!res.ok) return false;
+        const data = (await res.json()) as {
+          messages: ChatMessage[];
+          session: { providerId?: string | null; modelId?: string | null };
+        };
+        state.messages = Array.isArray(data.messages) ? data.messages : [];
+        state.msgIdx = -1;
+        state.phase = 'IDLE';
+        link.sessionId = id;
+        link.sessionTitle = typeof data.session.title === 'string' ? data.session.title : null;
+        lastError = null;
+        // 恢复绑定：会话记录值在 providers 池内存活才写总账（仲裁⑪三类白名单）
+        const sid = data.session.providerId ?? '';
+        const mid = data.session.modelId ?? '';
+        if (sid && link.providersInfo) {
+          const p = link.providersInfo.providers.find((x) => x.id === sid || x.name === sid);
+          const modelAlive = !!p && (mid === '' || p.models.includes(mid));
+          if (p && modelAlive) {
+            link.selection = { provider: p.id, model: mid === '' ? p.models[0] ?? '' : mid };
+            void fetch('/pool/active', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ providerId: p.id, modelId: link.selection.model, sessionId: id }),
+            }).catch(() => { /* 尽力而为：总账写失败不影响水合 */ });
+          } else {
+            // 诚实降级：绑定失效只切会话（系统提示由皮层展示）
+            void fetch('/pool/active', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ sessionId: id }),
+            }).catch(() => { /* 尽力而为 */ });
+          }
+        } else {
+          void fetch('/pool/active', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ sessionId: id }),
+          }).catch(() => { /* 尽力而为 */ });
+        }
+        pushRing('ui:hydrate', -1);
+        onUpdate();
+        return true;
+      } catch {
+        return false;
+      }
+    },
 
     async loadProviders(): Promise<void> {
       try {
@@ -149,11 +212,15 @@ export function createAiChatLink(onUpdate: () => void, env?: { page?: () => Page
       onUpdate();
       const lever = (window as unknown as Record<string, unknown>).__kfmNzAiChatTestLever as { echoPaceMs?: number } | undefined;
       try {
+        // A2a.5 §2.2 形状 break：{text, sessionId?}——history 归会话文件
+        // （client 上行全量=第二真相源，P13 禁）。首条消息 server 自动建壳
+        // 并回 sessionId（后续发送透传，§1.4）
         const res = await fetch('/ai/chat/start', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
-            messages: state.messages,
+            text: content,
+            ...(link.sessionId ? { sessionId: link.sessionId } : {}),
             provider: link.selection.provider,
             model: link.selection.model,
             ...(typeof lever?.echoPaceMs === 'number' ? { paceMs: lever.echoPaceMs } : {}),
@@ -164,7 +231,8 @@ export function createAiChatLink(onUpdate: () => void, env?: { page?: () => Page
           failIntoStream(`请求被拒: HTTP ${res.status}`);
           return;
         }
-        const { runId } = (await res.json()) as { runId: string };
+        const { runId, sessionId } = (await res.json()) as { runId: string; sessionId?: string };
+        if (sessionId) link.sessionId = sessionId; // 自动建壳回填（§2.2 步骤 1）
         run = {
           runId, provider: link.selection.provider, model: link.selection.model,
           cursor: 0, deltas: 0, chars: 0, startedMs: Date.now(),

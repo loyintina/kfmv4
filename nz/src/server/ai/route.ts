@@ -25,12 +25,19 @@
  */
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { existsSync } from 'node:fs';
+import { join, resolve, sep } from 'node:path';
 import {
   RunRegistry, EchoBrain, DirectApiBrain, defaultFromLedger,
   type BrainEndpoint, type BrainStartRequest,
 } from './brain.ts';
 import { loadProviders } from './providers.ts';
-import type { ChatMessage } from '../../shared/chat-protocol/messages.ts';
+import {
+  ensureSession, appendUserMessage, readMessages, readMeta, readStats,
+  recordSystemChars, appendEvent, flush,
+} from './session-store.ts';
+import { assembleRoleSystemPrompt } from './prompt-assembler.ts';
+import { poolDir, sessionsDir, readActive, writeActive } from '../pool/store.ts';
 
 const BODY_CAP = 1024 * 1024; // 单请求 1MB 封顶（对话载荷规模）
 
@@ -71,7 +78,7 @@ export function mountAiChatRoutes(): (req: IncomingMessage, res: ServerResponse)
       return;
     }
 
-    // ---- POST /ai/chat/start ----
+    // ---- POST /ai/chat/start（A2a.5 §2.2：形状 break——history 归会话文件） ----
     if (req.method === 'POST' && url === '/ai/chat/start') {
       let body: Record<string, unknown>;
       try {
@@ -80,29 +87,85 @@ export function mountAiChatRoutes(): (req: IncomingMessage, res: ServerResponse)
         sendJson(res, 400, { error: '请求体不是合法 JSON' });
         return;
       }
-      const messages = body.messages as ChatMessage[] | undefined;
-      if (!Array.isArray(messages) || messages.length === 0) {
-        sendJson(res, 400, { error: '缺少 messages 参数或 messages 为空' });
+      const text = typeof body.text === 'string' ? body.text : '';
+      if (!text.trim()) {
+        sendJson(res, 400, { error: '缺少 text 参数或 text 为空' });
         return;
       }
-      // 消息形状闸（C 档实锤：缺 content 数组的畸形消息曾打崩整个 server
-      // 进程）——形状非法 = 参数非法，400，与缺/空 messages 同族
-      const malformed = messages.some((m) => !m || typeof m !== 'object'
-        || (m.role !== 'user' && m.role !== 'ai')
-        || !Array.isArray(m.content));
-      if (malformed) {
-        sendJson(res, 400, { error: '消息形状非法：每条消息须含 role（user/ai）与 content 数组' });
-        return;
+      // 会话定位：显式 sessionId（裸名闸）或自动建壳（时间戳随机 id，与标题解耦）
+      const reqSessionId = typeof body.sessionId === 'string' ? body.sessionId : '';
+      let sessionId: string;
+      if (reqSessionId && !reqSessionId.includes('/') && !reqSessionId.includes('\\') && reqSessionId !== '.' && reqSessionId !== '..') {
+        sessionId = reqSessionId;
+      } else {
+        sessionId = ensureSession().id;
+        // §1.4 表第三行：自动建壳只写总账 sessionId（新会话无历史绑定可恢复）
+        const ledger = readActive(poolDir());
+        writeActive(poolDir(), { ...ledger, sessionId });
       }
-      const brain = pickBrain(typeof body.provider === 'string' ? body.provider : undefined);
+      const model = typeof body.model === 'string' ? body.model : undefined;
+      const provider = typeof body.provider === 'string' ? body.provider : undefined;
+      // 用户消息入会话文件（幂等）+ provider/model 盖进会话绑定
+      appendUserMessage(sessionId, text, model, provider);
+      const messages = readMessages(sessionId);
+      // 角色 system（§三：每次 start 重读总账+角色文件拼接；无角色=出厂基线）
+      const system = assembleRoleSystemPrompt();
+      if (system) recordSystemChars(sessionId, system.length); // 窗口口径「含 system」
+      const brain = pickBrain(provider);
       const req_: BrainStartRequest = {
         messages,
-        model: typeof body.model === 'string' ? body.model : undefined,
-        provider: typeof body.provider === 'string' ? body.provider : undefined,
+        system: system ?? undefined,
+        sessionId,
+        model,
+        provider,
         paceMs: typeof body.paceMs === 'number' ? body.paceMs : undefined,
       };
       const handle_ = brain.start(req_);
-      sendJson(res, 200, { runId: handle_.runId, fromIndex: 0, done: false });
+      // 录音泵（§2.3）：server 侧自足——不依赖 client 是否 attach，逐事件进
+      // store（防抖落盘）；done/error/finish 生死线强制 flush
+      {
+        const pumpGen = registry.attach(handle_.runId, 0);
+        if (pumpGen) {
+          void (async () => {
+            try {
+              for await (const { event } of pumpGen) {
+                appendEvent(sessionId, event);
+                if (event.type === 'done' || event.type === 'error') flush(sessionId);
+              }
+            } catch { /* run 淘汰/取消竞态：generator 返回即终 */ }
+            finally { flush(sessionId); }
+          })();
+        }
+      }
+      sendJson(res, 200, { runId: handle_.runId, fromIndex: 0, done: false, sessionId });
+      return;
+    }
+
+    // ---- GET /ai/session/:id/messages（A2a.5 §1.3 全文视角：水合/续聊） ----
+    const mSess = /^\/ai\/session\/([^/]+)\/messages$/.exec(url);
+    if (mSess && req.method === 'GET') {
+      const id = decodeURIComponent(mSess[1]);
+      const file = join(sessionsDir(poolDir()), `${id}.json`);
+      const resolved = resolve(file);
+      if (!id || id.includes('/') || id.includes('\\') || id === '.' || id === '..'
+        || !resolved.startsWith(resolve(sessionsDir(poolDir())) + sep) || !existsSync(file)) {
+        sendJson(res, 404, { error: `会话「${id}」不存在` });
+        return;
+      }
+      const meta = readMeta(id);
+      sendJson(res, 200, {
+        session: {
+          id: meta.id ?? id,
+          title: meta.title ?? id,
+          createdAt: meta.createdAt ?? null,
+          updatedAt: meta.updatedAt ?? null,
+          providerId: meta.providerId ?? null,
+          modelId: meta.modelId ?? null,
+          manuallyNamed: meta.manuallyNamed === true,
+        },
+        messages: readMessages(id),
+        stats: readStats(id),
+      });
       return;
     }
 

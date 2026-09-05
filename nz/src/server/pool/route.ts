@@ -24,6 +24,7 @@
  */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { emitPoolChanged } from './bus.ts';
+import { invalidateSession } from '../ai/session-store.ts';
 import {
   POOLS, getPool, loadEntry, scanReliers, annotateDangling,
   type PoolDescriptor, type PoolEntry,
@@ -185,6 +186,9 @@ export function mountPoolRoutes(): (req: IncomingMessage, res: ServerResponse) =
       const entries = d.loadAll!(dir()).filter((e) => e.id !== id);
       d.saveAll!(dir(), entries);
     }
+    // A2a.5 §2.1：池层删会话文件必须联动 store 缓存失效（v8 串档事故根治点；
+    // 不 flush 脏数据——文件已被删，flush 会把删掉的会话重新写出来）
+    if (d.pool === 'session') invalidateSession(id);
     poolLog({ kind: 'delete', pool: d.pool, id });
     emitPoolChanged({ pool: d.pool, id, op: 'deleted' });
     sendJson(res, 200, { ok: true });

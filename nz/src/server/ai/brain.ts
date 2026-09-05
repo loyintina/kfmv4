@@ -191,7 +191,14 @@ export class RunRegistry {
 // ========== 脑插座接口（na brain_ep.rs 同形状） ==========
 
 export interface BrainStartRequest {
+  /** OpenAI 载荷形态的消息（route 层已投影；A2a.5 ③起 history 来自会话文件） */
   messages: ChatMessage[];
+  /** A2a.5 §2.2：route 层组装好的整体 system（角色拼接+出厂基线〔+②摘要段〕），
+   *  DirectApiBrain 合并为单条 system 放载荷首位（v8 BAR-QWEN-01 语义：
+   *  多条 system 被严格端点拒）；EchoBrain 忽略（echo 节目单不含 system 段） */
+  system?: string;
+  /** A2a.5：会话绑定（route 层落盘/usage 回调用，脑不自知 store） */
+  sessionId?: string;
   model?: string;
   provider?: string;
   /** echo 脑专用节奏注入（ms/事件，0-500 夹取；B 档慢流钉的确定性时间窗杠杆，
@@ -360,6 +367,11 @@ export class DirectApiBrain implements BrainEndpoint {
         return;
       }
       const apiMessages = toOpenAiMessages(req.messages);
+      // A2a.5 §2.2：route 层组装的整体 system → 单条 system 放载荷首位
+      // （v8 BAR-QWEN-01：多条 system 被严格端点拒，故合并单条）
+      if (req.system && req.system.trim()) {
+        apiMessages.unshift({ role: 'system', content: req.system });
+      }
       // max_tokens 照 kfmv4 chat.ts 16384（思考链计入预算，过低会吃光正文）
       const requestBody = {
         model,

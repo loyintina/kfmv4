@@ -57,10 +57,18 @@ function isClientArtifact(text: string): boolean {
   return (t.startsWith('[错误: ') && t.endsWith(']')) || t === '[未收到回复，请重试]';
 }
 
-export function toOpenAiMessages(messages: ChatMessage[]): OpenAiMessage[] {
+export interface ToOpenAiOpts {
+  /** 〔②〕压缩切点：messages[0..cutIndex) 不进载荷（摘要代表，投影起点不是
+   *  删除点——飞行记录仪）。阶段①不传=全量投影，行为一字不变（§2.5）。 */
+  compactCutIndex?: number;
+}
+
+export function toOpenAiMessages(messages: ChatMessage[], opts?: ToOpenAiOpts): OpenAiMessage[] {
+  const from = typeof opts?.compactCutIndex === 'number' && opts.compactCutIndex >= 0 ? opts.compactCutIndex : 0;
   const apiMessages: OpenAiMessage[] = [];
-  for (const m of messages) {
-    if (!m) continue;
+  for (let mi = 0; mi < messages.length; mi++) {
+    const m = messages[mi];
+    if (!m || mi < from) continue;
     if (m.role === 'user') {
       // G5：user 消息一个字不动（ts 前缀是元数据渲染，非压缩）
       apiMessages.push({ role: 'user', content: tsPrefix(m.ts) + extractText(m) });

@@ -99,13 +99,15 @@ export function createAiChatPlugin(): UiPlugin {
             phase: link.state.phase, runId: r.runId, provider: r.provider, model: r.model,
             cursor: r.cursor, deltas: r.deltas, chars: r.chars, startedMs: r.startedMs,
           } : null,
-          // 摘要，不回全文（§4.2）
+          // 摘要，不回全文（§4.2）；A2a.5 三字段扩展=sessionId/sessionTitle/stats 摘要位
           messages: link.state.messages.map((m) => ({
             role: m.role,
             blocks: m.content.length,
             chars: m.content.reduce((n, b) => n + ('text' in b && typeof b.text === 'string' ? b.text.length : 0)
               + ('reasoning' in b && typeof b.reasoning === 'string' ? b.reasoning.length : 0), 0),
           })),
+          sessionId: link.sessionId,
+          sessionTitle: link.sessionTitle,
           lastEvents: [...link.ring],
           lastError: link.lastError,
         };
@@ -120,6 +122,20 @@ export function createAiChatPlugin(): UiPlugin {
         const [composerH, setComposerH] = useState(0);
         const [kbRise, setKbRise] = useState(0);
         const [, setTick] = useState(0);
+        // A2a.5 §五 下拉快选（D1-D7）：条目来自池，当前项来自总账；notice=D2
+        // 系统提示条（不进消息核不落盘，§3.4）
+        const [quick, setQuick] = useState<{
+          roles: Array<{ id: string; name: string }>;
+          sessions: Array<{ id: string; title: string; messageCount?: number }>;
+          active: { roleFile: string; sessionId: string };
+        }>({ roles: [], sessions: [], active: { roleFile: '', sessionId: '' } });
+        const [notice, setNotice] = useState<string | null>(null);
+        const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+        const showNotice = (text: string): void => {
+          setNotice(text);
+          if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+          noticeTimerRef.current = setTimeout(() => setNotice(null), 3500);
+        };
         const listWrapRef = useRef<HTMLDivElement>(null);
         const barRef = useRef<HTMLDivElement>(null);
         const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -173,7 +189,17 @@ export function createAiChatPlugin(): UiPlugin {
         useEffect(() => { refreshRuntime(); });
 
         useEffect(() => {
-          void link.loadProviders();
+          void (async () => {
+            await link.loadProviders();
+            // A2a.5 §2.4 重开路径：总账 sessionId 在场 → 水合（「刷新即清空」退役）
+            try {
+              const r = await fetch('/pool/active');
+              if (r.ok) {
+                const led = (await r.json()) as { sessionId?: string };
+                if (typeof led.sessionId === 'string' && led.sessionId) await link.loadSession(led.sessionId);
+              }
+            } catch { /* 总账不可得=空态新会话 */ }
+          })();
           // A9 环境事件：页面回前台时活跃 run 补流（attach from cursor）
           const onVis = (): void => {
             if (document.visibilityState === 'visible') link.resumeStream();
@@ -323,6 +349,45 @@ export function createAiChatPlugin(): UiPlugin {
           closeTimerRef.current = setTimeout(() => { closeTimerRef.current = null; setClosing(false); }, readDurNormalMs());
           refreshRuntime();
         };
+        // A2a.5 D1：CONFIG_OPEN 打开即拉快选数据（条目=池壳投影，当前项=总账）
+        useEffect(() => {
+          if (menu !== 'CONFIG_OPEN') return;
+          void (async () => {
+            try {
+              const [pr, ss, act] = await Promise.all([
+                fetch('/pool/prompt'), fetch('/pool/session'), fetch('/pool/active'),
+              ]);
+              const roles = pr.ok ? ((await pr.json()) as Array<{ id: string; name?: string }>).map((e) => ({ id: e.id, name: e.name ?? e.id })) : [];
+              const sessions = ss.ok ? ((await ss.json()) as Array<{ id: string; title?: string; messageCount?: number }>).map((e) => ({ id: e.id, title: e.title ?? e.id, messageCount: e.messageCount })) : [];
+              const led = act.ok ? ((await act.json()) as { roleFile?: string; sessionId?: string }) : { roleFile: '', sessionId: '' };
+              setQuick({
+                roles,
+                sessions,
+                active: { roleFile: led.roleFile ?? '', sessionId: led.sessionId ?? '' },
+              });
+            } catch { /* 池不可得：菜单显示空表 */ }
+          })();
+        }, [menu]);
+        // A2a.5 D2/D3 动作：切角色（只写总账 roleFile，D2 语义）/切会话（水合+恢复绑定）
+        const selectRole = (id: string, name: string): void => {
+          if (link.state.phase !== 'IDLE') return; // P18 同族：流式中不改配置
+          void fetch('/pool/active', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ roleFile: id }),
+          }).catch(() => { /* 尽力而为：总账写失败不影响菜单关闭 */ });
+          setQuick((q) => ({ ...q, active: { ...q.active, roleFile: id } }));
+          showNotice(`角色已切换为「${name}」，下一条消息起生效`);
+          onMenu('CLOSED');
+        };
+        const selectSession = (id: string, _title: string): void => {
+          if (link.state.phase !== 'IDLE') return; // P18 流式禁切会话
+          void link.loadSession(id).then((ok) => {
+            if (ok) {
+              setQuick((q) => ({ ...q, active: { ...q.active, sessionId: id } }));
+              onMenu('CLOSED');
+            }
+          });
+        };
         const onMenu = (next: MenuState): void => {
           menuRef.current = next;
           setMenu(next);
@@ -441,11 +506,9 @@ export function createAiChatPlugin(): UiPlugin {
               fontFamily: 'var(--kfm-font-sans)',
             },
           },
-          // 拍板⑯（2026-09-04）：①标题栏压成一行（padding 3+3+26 钮高≈32px，
-          // 旧 10+10+13 字≈37px）——返回按钮已删（拍板②：orb 即唯一开关）；
-          // ②标题字改下拉钮（「默认会话 ▾」占位名），点开=CONFIG_OPEN 出
-          // 「角色/会话」两占位入口，选定=占位骨架一行（内容后续接配置池，
-          // 不许发明完整功能）；点外/Escape 关=⑬同款 passive 捕获监听
+          // 拍板⑯（2026-09-04）标题栏一行；A2a.5 §五：下拉钮标题=当前会话名
+          // （水合带回），CONFIG_OPEN=快选（D1-D7）：角色/会话两组条目+当前项
+          // ✓+「管理…」跳池页；流式中禁切（P18 置灰）；点外/Escape 关=⑬同款
           createElement('div', {
             'data-aichat-header': '1',
             style: {
@@ -463,7 +526,7 @@ export function createAiChatPlugin(): UiPlugin {
               fontSize: '13px', color: 'var(--kfm-ink-2)',
             },
           },
-          '默认会话',
+          link.sessionTitle ?? '新会话',
           createElement('svg', { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--kfm-ink-3)', strokeWidth: 2.4, strokeLinecap: 'round', strokeLinejoin: 'round' },
             createElement('path', { d: 'M6 9l6 6 6-6' })),
           ),
@@ -472,34 +535,103 @@ export function createAiChatPlugin(): UiPlugin {
                 'data-aichat-config-menu': '1',
                 style: {
                   position: 'absolute', left: '8px', top: '100%', marginTop: '4px', zIndex: 10,
-                  minWidth: '120px', background: 'var(--kfm-surface)',
+                  minWidth: '170px', maxHeight: '60%', overflowY: 'auto', background: 'var(--kfm-surface)',
                   borderRadius: 'var(--kfm-radius-lg)', boxShadow: 'var(--kfm-shadow-raised)', padding: '4px',
                 },
               },
-              ...(['role', 'session'] as const).map((k) =>
+              // —— 角色组（快选：条目=agent-prompt 池，✓=激活 roleFile） ——
+              createElement('div', {
+                style: { padding: '4px 8px', fontSize: '11px', color: 'var(--kfm-ink-3)' },
+              }, `角色 · ${quick.roles.length}`),
+              ...quick.roles.map((r) =>
                 createElement('button', {
-                  key: k,
-                  'data-aichat-config-entry': k,
+                  key: `role-${r.id}`,
+                  'data-aichat-config-entry': `role:${r.id}`,
                   type: 'button',
-                  onClick: () => {
-                    onMenu('CLOSED');
-                    // 拍板⑯接真（A2a 阶段三，占位退役 §八⑨）：入口=C12 路由
-                    // 真发——config-pool 监听 kfm-nz-pool-open：角色→prompt 池、
-                    // 会话→session 池；AI 页不收起池页盖其上（C12 语义=入口把
-                    // 池页召到 AI 之上：若当前 AI 提顶盖着池页，先清提顶账再
-                    // 发，池页即回 z44 档）。
-                    aiRaisedRef.current = false;
-                    window.dispatchEvent(new CustomEvent('kfm-nz-pool-open', {
-                      detail: { pool: k === 'role' ? 'prompt' : 'session' },
-                    }));
-                  },
+                  onClick: () => selectRole(r.id, r.name),
                   style: {
-                    display: 'flex', alignItems: 'center', width: '100%', padding: '6px 8px',
+                    display: 'flex', alignItems: 'center', gap: '6px', width: '100%', padding: '6px 8px',
                     border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
                     borderRadius: 'var(--kfm-radius-sm)', fontSize: '12.5px', color: 'var(--kfm-ink)',
+                    opacity: link.state.phase === 'IDLE' ? 1 : 0.45, // P18 流式禁切
                   },
-                }, k === 'role' ? '角色' : '会话')),
+                },
+                createElement('span', { style: { width: '12px', color: 'var(--kfm-accent)' } },
+                  quick.active.roleFile === r.id ? '✓' : ''),
+                r.name,
+                quick.active.roleFile === r.id ? createElement('span', { style: { fontSize: '10px', color: 'var(--kfm-ink-3)' } }, '· 激活') : null),
+              ),
+              quick.roles.length === 0
+                ? createElement('div', { style: { padding: '4px 8px', fontSize: '11.5px', color: 'var(--kfm-ink-3)' } }, '（空）agent-prompt 池')
+                : null,
+              createElement('button', {
+                key: 'role-manage',
+                'data-aichat-config-entry': 'role:manage',
+                type: 'button',
+                onClick: () => {
+                  onMenu('CLOSED');
+                  aiRaisedRef.current = false;
+                  window.dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'prompt' } }));
+                },
+                style: {
+                  display: 'flex', width: '100%', padding: '6px 8px', border: 'none', background: 'none',
+                  cursor: 'pointer', textAlign: 'left', borderRadius: 'var(--kfm-radius-sm)',
+                  fontSize: '11.5px', color: 'var(--kfm-ink-3)',
+                },
+              }, '管理 prompt 池…'),
+              // —— 会话组（快选：条目=session 池壳，✓=激活 sessionId；P18 置灰） ——
+              createElement('div', {
+                style: { padding: '4px 8px', borderTop: '1px solid var(--kfm-aichat-line)', marginTop: '2px', fontSize: '11px', color: 'var(--kfm-ink-3)' },
+              }, `会话 · ${quick.sessions.length}`),
+              ...quick.sessions.map((x) =>
+                createElement('button', {
+                  key: `sess-${x.id}`,
+                  'data-aichat-config-entry': `session:${x.id}`,
+                  type: 'button',
+                  onClick: () => selectSession(x.id, x.title),
+                  style: {
+                    display: 'flex', alignItems: 'center', gap: '6px', width: '100%', padding: '6px 8px',
+                    border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
+                    borderRadius: 'var(--kfm-radius-sm)', fontSize: '12.5px', color: 'var(--kfm-ink)',
+                    opacity: link.state.phase === 'IDLE' ? 1 : 0.45, // P18 流式禁切
+                  },
+                },
+                createElement('span', { style: { width: '12px', color: 'var(--kfm-accent)' } },
+                  quick.active.sessionId === x.id ? '✓' : ''),
+                x.title,
+                typeof x.messageCount === 'number' ? createElement('span', { style: { fontSize: '10px', color: 'var(--kfm-ink-3)' } }, `· ${x.messageCount} 条`) : null,
+                quick.active.sessionId === x.id ? createElement('span', { style: { fontSize: '10px', color: 'var(--kfm-ink-3)' } }, '· 激活') : null),
+              ),
+              quick.sessions.length === 0
+                ? createElement('div', { style: { padding: '4px 8px', fontSize: '11.5px', color: 'var(--kfm-ink-3)' } }, '（空）session 池——发首条消息自动建壳')
+                : null,
+              createElement('button', {
+                key: 'session-manage',
+                'data-aichat-config-entry': 'session:manage',
+                type: 'button',
+                onClick: () => {
+                  onMenu('CLOSED');
+                  aiRaisedRef.current = false;
+                  window.dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'session' } }));
+                },
+                style: {
+                  display: 'flex', width: '100%', padding: '6px 8px', border: 'none', background: 'none',
+                  cursor: 'pointer', textAlign: 'left', borderRadius: 'var(--kfm-radius-sm)',
+                  fontSize: '11.5px', color: 'var(--kfm-ink-3)',
+                },
+              }, '管理 session 池…'),
               )
+            : null,
+          // A2a.5 D2 系统提示条：角色切换一次性提示（不进消息核不落盘，§3.4）
+          notice
+            ? createElement('div', {
+                'data-aichat-notice': '1',
+                style: {
+                  position: 'absolute', left: 0, right: 0, top: '100%', marginTop: '0',
+                  padding: '3px 10px', fontSize: '11.5px', color: 'var(--kfm-ink-3)',
+                  background: 'var(--kfm-surface)', borderBottom: '1px solid var(--kfm-aichat-line)',
+                },
+              }, notice)
             : null,
           ),
           createElement('div', {

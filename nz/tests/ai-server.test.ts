@@ -31,7 +31,7 @@
  */
 import { test, group, assert } from './runner.ts';
 import { createServer as createHttpServer, type Server } from 'node:http';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createNzServer } from '../src/server/index.ts';
@@ -117,7 +117,7 @@ async function postStart(port: number, body: unknown): Promise<{ status: number;
   return { status: resp.status, json: await resp.json() as Record<string, unknown> };
 }
 
-const USER_HI = [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }];
+const USER_TEXT = 'hi'; // A2a.5 ③：start 形状 break——{text, sessionId?}，history 归会话文件
 
 /**  env 现场保护：设值 → 跑 → 还原 */
 async function withEnv<T>(vars: Record<string, string>, fn: () => Promise<T>): Promise<T> {
@@ -136,14 +136,30 @@ async function withEnv<T>(vars: Record<string, string>, fn: () => Promise<T>): P
 group('ai-server（B 档雏形：echo 脑 HTTP 全链）');
 
 test('echo 全链：start → stream 九事件序列与 probe-kimi fixture 逐帧互证', async () => {
-  await withEnv({ NZ_AI_ECHO_PACE_MS: '0' }, async () => {
+  const cfgDir = mkdtempSync(join(tmpdir(), 'nz-ai-sess-'));
+  await withEnv({ NZ_AI_ECHO_PACE_MS: '0', NZ_AI_CONFIG_DIR: cfgDir }, async () => {
     const server = createNzServer();
     const port = await listen(server);
     try {
-      const { status, json } = await postStart(port, { messages: USER_HI, provider: 'echo' });
+      const { status, json } = await postStart(port, { text: USER_TEXT, provider: 'echo' });
       assert(status === 200, `start 应 200，实际 ${status}`);
       assert(typeof json.runId === 'string' && String(json.runId).startsWith('run_'), '应立即返 runId');
       assert(json.fromIndex === 0 && json.done === false, 'start 应答形状 {runId,fromIndex:0,done:false}');
+      assert(typeof json.sessionId === 'string' && String(json.sessionId).startsWith('s-'),
+        `A2a.5：应自动建壳并回 sessionId，实际 ${JSON.stringify(json.sessionId)}`);
+      await sleep(350); // 防抖窗（200ms）过后会话文件应在场
+      const sessFile = join(cfgDir, 'sessions', `${String(json.sessionId)}.json`);
+      assert(existsSync(sessFile), `会话文件应落盘（自动建壳+用户消息），${sessFile}`);
+      // 显式 sessionId 透传：继续往同一会话发，文件消息数应增长（history 归文件）
+      const { json: j2 } = await postStart(port, { text: '第二条', sessionId: json.sessionId, provider: 'echo' });
+      assert(j2.sessionId === json.sessionId, '显式 sessionId 应透传');
+      await sleep(350);
+      const sess = JSON.parse(readFileSync(sessFile, 'utf-8')) as { messages: unknown[]; providerId?: string; tokenCount?: number; fullTokenCount?: number };
+      // 两轮对话=4 条消息（2 user + 2 AI，归约器产物落盘；每轮 user+AI 各一）
+      assert(sess.messages.length === 4, `同会话第二条应追加（两轮共 4 条），实际 ${sess.messages.length}`);
+      assert((sess.messages[3] as { role?: string }).role === 'ai', '末条应为 AI 回复');
+      assert(sess.providerId === 'echo', 'provider 应盖进会话绑定');
+      assert((sess.tokenCount ?? 0) > 0 && (sess.fullTokenCount ?? 0) > 0, '三数字应随 flush 落盘');
       const { frames, ended } = await readSse(port, String(json.runId), 0);
       assert(ended, '应有 __end__ 终结帧');
       const expected = loadProbeEvents('probe-kimi-k3-256k-20260830.sse');
@@ -219,7 +235,7 @@ test('A2a 阶段三 仲裁⑥：默认改读激活总账——/ai/providers defa
       //    总账条目不在 providers.json → error 人话点名总账条目，不点出厂智谱）
       writeFileSync(join(dir, 'active.json'), JSON.stringify({ providerId: 'exam-ledger-prov', modelId: 'exam-ledger-model', roleFile: '', sessionId: '' }));
       await sleep(20);
-      const { json } = await postStart(port, { messages: USER_HI });
+      const { json } = await postStart(port, { text: USER_TEXT });
       const sse = await readSse(port, String(json.runId), 0);
       const err = sse.frames.map((f) => f.event).find((e) => e.type === 'error');
       assert(!!err && String(err.content ?? '').includes('exam-ledger-prov'),
@@ -242,7 +258,7 @@ test('attach 补流：中途断开重连 from=cursor 读到缓冲回放+尾随�
     const server = createNzServer();
     const port = await listen(server);
     try {
-      const { json } = await postStart(port, { messages: USER_HI, provider: 'echo' });
+      const { json } = await postStart(port, { text: USER_TEXT, provider: 'echo' });
       const runId = String(json.runId);
       const first = await readSse(port, runId, 0, { abortAfter: 5 });
       assert(first.frames.length === 5, `应先收 5 帧再断，实际 ${first.frames.length}`);
@@ -266,13 +282,13 @@ test('probe 错误语义实录：空 messages → 400；非法 provider → 200+
   const server = createNzServer();
   const port = await listen(server);
   try {
-    // probe ③：空 messages / 缺 messages → 400 {error}
-    const empty = await postStart(port, { messages: [] });
-    assert(empty.status === 400 && typeof empty.json.error === 'string', '空 messages 应 400 {error}');
+    // probe ③（A2a.5 形状）：空 text / 缺 text → 400 {error}
+    const empty = await postStart(port, { text: '' });
+    assert(empty.status === 400 && typeof empty.json.error === 'string', '空 text 应 400 {error}');
     const missing = await postStart(port, { provider: 'echo' });
-    assert(missing.status === 400, '缺 messages 应 400');
+    assert(missing.status === 400, '缺 text 应 400');
     // probe ①：非法 provider → 200 立即 runId + SSE error 事件人话（不 500 不抛）
-    const bad = await postStart(port, { messages: USER_HI, provider: '不存在的provider' });
+    const bad = await postStart(port, { text: USER_TEXT, provider: '不存在的provider' });
     assert(bad.status === 200 && typeof bad.json.runId === 'string', '配置错误应 200 立即返 runId');
     const { frames, ended } = await readSse(port, String(bad.json.runId), 0);
     assert(ended && frames.length === 1 && frames[0].event.type === 'error', '应只有一个 error 事件后终结');
@@ -286,21 +302,18 @@ test('probe 错误语义实录：空 messages → 400；非法 provider → 200+
   }
 });
 
-test('畸形消息形状闸：缺 content 数组 → 400，同进程后续请求照常（C 档打崩 server 实锤回归）', async () => {
+test('text 形状闸（A2a.5 ③：messages 全量上行退役）→ 400，同进程后续请求照常（C 档打崩 server 实锤回归）', async () => {
   const server = createNzServer();
   const port = await listen(server);
   try {
-    // C 档实锤：{role:'user'} 无 content → extractText TypeError 经 void pump
-    // 成未捕获拒绝，整个 server 进程崩。形状闸后 = 400，与缺/空 messages 同族
-    const noContent = await postStart(port, { messages: [{ role: 'user' }] });
-    assert(noContent.status === 400 && typeof noContent.json.error === 'string',
-      `缺 content 应 400，实际 ${noContent.status}`);
-    const badRole = await postStart(port, { messages: [{ role: 'system', content: [] }] });
-    assert(badRole.status === 400, '非法 role 应 400');
-    const contentNotArray = await postStart(port, { messages: [{ role: 'user', content: 'hi' }] });
-    assert(contentNotArray.status === 400, 'content 非数组应 400');
+    // 旧形状 {messages:[…]} 退役：一律 400（P13——history 归会话文件，
+    // client 上行全量=第二真相源）
+    const legacy = await postStart(port, { messages: [{ role: 'user', content: [{ type: 'text', text: 'x' }] }] });
+    assert(legacy.status === 400, `旧 messages 形状应 400（text 必填），实际 ${legacy.status}`);
+    const ws = await postStart(port, { text: '   ' });
+    assert(ws.status === 400, '纯空白 text 应 400');
     // 同进程后续请求照常 = 没崩的机器证明
-    const alive = await postStart(port, { messages: USER_HI, provider: 'echo' });
+    const alive = await postStart(port, { text: USER_TEXT, provider: 'echo' });
     assert(alive.status === 200 && typeof alive.json.runId === 'string', '形状闸后 server 应活着');
   } finally {
     server.close();
@@ -312,7 +325,7 @@ test('取消：POST cancel → error「已取消」入流收尾（P5），重复
     const server = createNzServer();
     const port = await listen(server);
     try {
-      const { json } = await postStart(port, { messages: USER_HI, provider: 'echo' });
+      const { json } = await postStart(port, { text: USER_TEXT, provider: 'echo' });
       const runId = String(json.runId);
       const streamPromise = readSse(port, runId, 0);
       await sleep(80); // 已流出 2~3 帧
@@ -375,8 +388,7 @@ test('直连全链：请求形状 + 九事件与阶段一 translator 产物互�
     const port = await listen(server);
     try {
       const { status, json } = await postStart(port, {
-        messages: [{ role: 'user', content: [{ type: 'text', text: DISTINCTIVE_USER_TEXT }] }],
-        provider: 'Fake', model: 'fake-model',
+        text: DISTINCTIVE_USER_TEXT, provider: 'Fake', model: 'fake-model',
       });
       assert(status === 200, 'start 应 200');
       const { frames, ended } = await readSse(port, String(json.runId), 0);
@@ -388,7 +400,11 @@ test('直连全链：请求形状 + 九事件与阶段一 translator 产物互�
       assert(seen.body.model === 'fake-model' && seen.body.stream === true, 'model/stream 形状');
       assert((seen.body.stream_options as { include_usage?: boolean })?.include_usage === true, 'include_usage 必带');
       const msgs = seen.body.messages as Array<{ role: string; content: string }>;
-      assert(msgs.length === 1 && msgs[0].role === 'user' && msgs[0].content.includes(DISTINCTIVE_USER_TEXT),
+      // A2a.5 §三：出厂基线 system 应在载荷首位（无角色=ts 前缀声明）
+      assert(msgs.length === 2 && msgs[0].role === 'system'
+        && msgs[0].content.includes('[ts MM-DD HH:MM:SS]'),
+        `出厂基线 system 应在载荷首位，实际 ${JSON.stringify(msgs.map((m) => m.role))}`);
+      assert(msgs[1].role === 'user' && msgs[1].content.includes(DISTINCTIVE_USER_TEXT),
         '用户消息应完整上行（假上游侧可见全文）');
       // 九事件与阶段一 translator 产物逐帧互证
       const expected = translateUpstreamFixture('upstream-kimi-k2.7-highspeed-20260830.sse');
@@ -398,7 +414,7 @@ test('直连全链：请求形状 + 九事件与阶段一 translator 产物互�
         assert(JSON.stringify(f.event) === JSON.stringify(expected[i]), `第 ${i} 帧与 translator 产物一致`);
       });
       // echo run 也落一条 start（每个 run 逐拍落）
-      const echoStart = await postStart(port, { messages: USER_HI, provider: 'echo' });
+      const echoStart = await postStart(port, { text: USER_TEXT, provider: 'echo' });
       await readSse(port, String(echoStart.json.runId), 0);
       // 落盘钉（§4.3）：等异步 appendFile 落盘
       await sleep(150);
@@ -408,7 +424,7 @@ test('直连全链：请求形状 + 九事件与阶段一 translator 产物互�
       const ofRun = (kind: string) => lines.find((l) => l.runId === runId && l.kind === kind);
       const start = ofRun('start');
       assert(!!start && start.provider === 'Fake' && start.model === 'fake-model'
-        && start.msgCount === 1 && typeof start.bodyBytes === 'number' && (start.bodyBytes as number) > 0,
+        && start.msgCount === 2 && typeof start.bodyBytes === 'number' && (start.bodyBytes as number) > 0,
         `start 记录字段齐全，实际 ${JSON.stringify(start)}`);
       const st = ofRun('upstream-status');
       assert(!!st && st.status === 200 && typeof st.ttfbMs === 'number', `upstream-status 应含 status+ttfbMs，实际 ${JSON.stringify(st)}`);
@@ -446,13 +462,13 @@ test('错误语义：双路 401 方言取 message / 非 200 截 300 字 / 代字
     const port = await listen(server);
     try {
       // 401 方言 → error 事件取 message
-      const r401 = await postStart(port, { messages: USER_HI, provider: 'Fake', model: 'm-401' });
+      const r401 = await postStart(port, { text: USER_TEXT, provider: 'Fake', model: 'm-401' });
       const f401 = await readSse(port, String(r401.json.runId), 0);
       const e401 = f401.frames[f401.frames.length - 1].event;
       assert(e401.type === 'error' && e401.content === 'API 请求失败: 401 — 令牌已过期或验证不正确',
         `401 方言应取 error.message，实际 ${e401.content}`);
       // 500 巨型错误体 → error 事件截 300 字（P4）
-      const r500 = await postStart(port, { messages: USER_HI, provider: 'Fake', model: 'm-500' });
+      const r500 = await postStart(port, { text: USER_TEXT, provider: 'Fake', model: 'm-500' });
       const f500 = await readSse(port, String(r500.json.runId), 0);
       const e500 = f500.frames[f500.frames.length - 1].event;
       assert(e500.type === 'error' && String(e500.content).startsWith('API 请求失败: 500 — '),
@@ -481,7 +497,7 @@ test('错误语义：双路 401 方言取 message / 非 200 截 300 字 / 代字
     const server = createNzServer();
     const port = await listen(server);
     try {
-      const r = await postStart(port, { messages: USER_HI, provider: 'Fake', model: 'fake-model' });
+      const r = await postStart(port, { text: USER_TEXT, provider: 'Fake', model: 'fake-model' });
       assert(r.status === 200, '配置错误应 200 立即返 runId');
       const { frames } = await readSse(port, String(r.json.runId), 0);
       const ev = frames[frames.length - 1].event;

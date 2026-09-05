@@ -549,19 +549,20 @@ await page.click('[data-aichat-config-btn]').catch(() => {});
 await page.waitForTimeout(300); // 等一帧上屏再截图（headless paint 教训）
 const mCfg = (await hook())?.menu;
 const entries = await page.evaluate(() => [...document.querySelectorAll('[data-aichat-config-entry]')].map((el) => `${el.getAttribute('data-aichat-config-entry')}:${el.textContent.trim()}`));
-check('B17b 拍板⑯②：点标题下拉钮 → CONFIG_OPEN（菜单机新词汇）+ 角色/会话两入口在场',
-      mCfg === 'CONFIG_OPEN' && entries.length === 2 && entries.some((e) => e === 'role:角色') && entries.some((e) => e === 'session:会话'),
+check('B17b 拍板⑯②+A2a.5 快选化：点标题下拉钮 → CONFIG_OPEN + 角色/会话两组条目在场（role:manage 路由项+session 快选/管理项）',
+      mCfg === 'CONFIG_OPEN' && entries.some((e) => e.startsWith('role:manage'))
+        && entries.some((e) => e.startsWith('session:manage')) && entries.some((e) => e.startsWith('session:s-')),
       `menu=${mCfg} entries=${JSON.stringify(entries)}`);
 const shotCfg = join(SHOT_DIR, 'ai-chat-config-dropdown.png');
 await page.screenshot({ path: shotCfg });
 console.log('shot:', shotCfg);
-await page.click('[data-aichat-config-entry="role"]').catch(() => {});
+await page.click('[data-aichat-config-entry="role:manage"]').catch(() => {});
 await page.waitForTimeout(500);
 const mRole = (await hook())?.menu;
 const poolRole = await page.evaluate(() => { const f = window.__kfmNzPool; const r = f ? f() : null; return { page: r?.page, pool: r?.pool }; });
 const phGone = await page.evaluate(() => !document.querySelector('[data-aichat-config-placeholder]'));
 const aiStillRole = (await hook())?.page;
-check('B17c A2a 阶段三接真（拍板⑯占位退役）：点「角色」→ 池页开+定位 prompt 池 + 占位元素不存在 + 菜单 CLOSED + AI 页不收起（池页盖其上）',
+check('B17c A2a 阶段三接真+A2a.5 快选化：点「管理 prompt 池…」→ 池页开+定位 prompt 池 + 占位元素不存在 + 菜单 CLOSED + AI 页不收起（池页盖其上）',
       mRole === 'CLOSED' && poolRole?.page === 'POOL_OPEN' && poolRole?.pool === 'prompt' && phGone && aiStillRole === 'AI_PAGE',
       `menu=${mRole} pool=${JSON.stringify(poolRole)} phGone=${phGone} ai=${aiStillRole}`);
 // B17c2（仲裁⑩ orb 提顶档）：池页盖 AI → 点球=AI 页提到池页上（池页降 41
@@ -574,7 +575,7 @@ const raise17 = await page.evaluate(() => {
 });
 await page.click('[data-aichat-config-btn]').catch(() => {});
 await page.waitForTimeout(300);
-await page.click('[data-aichat-config-entry="session"]').catch(() => {});
+await page.click('[data-aichat-config-entry="session:manage"]').catch(() => {});
 await page.waitForTimeout(500);
 const poolSess = await page.evaluate(() => {
   const f = window.__kfmNzPool;
@@ -585,7 +586,7 @@ const poolSess = await page.evaluate(() => {
     poolZ: Number(getComputedStyle(document.querySelector('[data-kfm-pool]') ?? document.body).zIndex),
   };
 });
-check('B17c2 orb 提顶（仲裁⑩：池页盖 AI 点球=AI 页上来，raised 档池页降 41 不关）+ 点「会话」→ 池页切 session 池并召回 AI 之上（提顶账清、z44）+ 菜单 CLOSED',
+check('B17c2 orb 提顶（仲裁⑩）+ 点「管理 session 池…」→ 池页切 session 池并召回 AI 之上（提顶账清、z44）+ 菜单 CLOSED',
       raise17?.raised === true && raise17?.pool === 41 && raise17?.ai === 42
       && poolSess?.page === 'POOL_OPEN' && poolSess?.pool === 'session' && poolSess?.raised === false && poolSess?.poolZ === 44
       && (await hook())?.menu === 'CLOSED',
