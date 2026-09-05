@@ -115,6 +115,15 @@ PoolPage 接口 + 池注册表）+ server 侧统一池数据层（一套 CRUD �
 | AI 页打开 | 消息列表滚动 | 不响应（condition 门） | AI 页入口=标题栏下拉（拍板⑯） |
 | 池页内 | 池区列表滚动 | 右滑返回；左滑不绑（§八⑦） | 页内滑切池不做 |
 
+> （2026-09-05 实施注：真触摸与合成 mouse 事件的差别在本矩阵落地为
+> touch-action 语义——body 的 `touch-action:none` 罩不进「触点元素自身即可
+> 滚动容器」子树，池页列表区横拖 ~slop 即被浏览器原生接管 → pointercancel
+> → 手势核以小位移判 null（真机右滑不响的根因，mouse 合成事件钉测不出）。
+> 修法=池页根/列表区显式 `touch-action:pan-y`：禁 pan-x 接管（横向 pointer
+> 流完整到手，右滑返回成立），纵向列表滚动保持原生（上表「池页内垂直滑」
+> 行不破）。真触摸序列钉=B 档 B13（CDP Input.dispatchTouchEvent，headless
+> 可跑）。）
+
 ### 1.3 顶栏标签行（复用 tmux 标签件词汇/样式）
 
 标签行 = tmux-tabs 标签排的同族件：**借词汇与视觉 token，新写数据驱动

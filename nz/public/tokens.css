@@ -280,6 +280,17 @@
 [data-kfm-pool].kfm-closing {
   animation: kfm-pool-page-out var(--kfm-dur-normal) var(--kfm-ease-out) both;
 }
+/* 真触摸接管防治（2026-09-05 真机报告：池页右滑回不去；CDP 真触摸序列实锤）：
+ * body 的 touch-action:none 罩不进「触点元素自身即可滚动容器」的子树——池页
+ * 列表区（overflowY:auto）触点的实际生效值是 auto，横拖 ~slop 即被浏览器原生
+ * 接管 → pointercancel → 手势核以小位移判 null（mouse 指针无接管语义，故
+ * headless B 卷 mouse 拖动钉全绿=L1/L3 缝隙）。修法=显式 pan-y：禁 pan-x 接管
+ * （横向 pointer 流完整到手，右滑返回在列表行上成立）；纵向列表滚动保持原生
+ * （P1 冲突矩阵「池页内垂直滑=池区列表滚动」不破） */
+[data-kfm-pool],
+[data-pool-zone] {
+  touch-action: pan-y;
+}
 
 /* 层级规则（仲裁⑩用户修正稿，P10）：层级定死 终端/tmux < AI 页(z42) <
  * 池页(z44) < 输入栏+光球（恒顶）。池页开（data-kfm-pool-open）时：

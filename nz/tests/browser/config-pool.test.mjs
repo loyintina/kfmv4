@@ -26,6 +26,14 @@
  *       池页开着点球=AI 页提到池页上（池页降 41 不关）；提顶档右滑不关隐藏
  *       池页；再点球=关 AI 页（池页复现 z44）；提顶档对无关重渲染稳定；
  *       路由事件（C12 入口意图）把池页召回 AI 之上
+ *   B13 真触摸右滑返回（2026-09-05 真机报告修复钉；L1/L3 缝隙）：
+ *       CDP Input.dispatchTouchEvent 真触摸序列（非合成 JS 事件，走浏览器
+ *       输入管线=touch-action/pointercancel 全真实）——池页列表行上横拖
+ *       全流到手（cancels=0）+ 右滑关池成立；垂直拖仍归原生列表滚动
+ *       （P1 矩阵行不破）；池页根/列表区 touch-action=pan-y 静态钉。
+ *       病灶：body none 罩不进「触点元素自身即可滚动容器」子树，横拖
+ *       ~slop 即被原生接管 → pointercancel → 手势核小位移判 null（真机
+ *       右滑不响、mouse 合成事件钉全绿的原因）。
  *
  * 跑法：node tests/browser/config-pool.test.mjs（自起隔离 server 实例：
  * NZ_AI_CONFIG_DIR=临时夹具、独立端口、NZ_POOL_LOG=夹具内——零接触真机
@@ -712,6 +720,80 @@ try {
     // 收尾：右滑关池页回全关态（此刻池页在顶可滑）
     await closePoolBySwipe();
     check('B12-收 池页右滑关闭回全关态', await poolClosed());
+  }
+
+  // ========== B13：真触摸右滑返回（2026-09-05 真机报告修复钉；CDP dispatchTouchEvent） ==========
+  {
+    const tctx = await browser.newContext({ viewport: { width: 900, height: 620 }, hasTouch: true });
+    const tpage = await tctx.newPage();
+    const tcdp = await tctx.newCDPSession(tpage);
+    tpage.on('pageerror', (e) => pageErrors.push(String(e).slice(0, 160)));
+    await tpage.goto(`${BASE}/?nosplash`, { waitUntil: 'domcontentloaded', timeout: 40000 }).catch(() => {});
+    await tpage.waitForFunction(() => !!(window).__kfmNzPool && !!document.querySelector('.nz-term'), null, { timeout: 20000, polling: 250 });
+    await sleep(2200); // PTY/布局稳态
+    const tp = () => tpage.evaluate(() => {
+      const r = (window).__kfmNzPool();
+      return `${r.page}/${r.pool ?? '-'}/${r.pageState}`;
+    });
+    // mouse 开池（headless 退化布局下 touch 左滑会被 touch-adjustment 干扰——
+    // 病灶腿只涉池页，开池走 mouse 等价真机「池页已开」前提）
+    {
+      const c = await tpage.evaluate(() => { const e = document.querySelector('.nz-term').getBoundingClientRect(); return { x: Math.min(e.x + e.width / 2, 420), y: Math.max(8, Math.min(e.y + e.height / 2, 400)) }; });
+      await tpage.mouse.move(c.x, c.y);
+      await tpage.mouse.down();
+      for (let i = 1; i <= 14; i++) { await tpage.mouse.move(c.x - (180 * i) / 14, c.y); await sleep(8); }
+      await tpage.mouse.up();
+      await sleep(450);
+    }
+    check('B13a 前置：mouse 左滑开池（等价真机已开态）', (await tp()).startsWith('POOL_OPEN'), await tp());
+    // touch 流记录带（捕获阶段）
+    await tpage.evaluate(() => {
+      window.__ttape = [];
+      for (const ty of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'])
+        document.addEventListener(ty, (e) => { if (e.pointerType !== 'touch') return; window.__ttape.push(e.type); }, { capture: true, passive: true });
+    });
+    const tstroke = async (x0, y0, x1, y1, steps = 16) => {
+      const t = (type, points) => tcdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+      await t('touchStart', [{ x: x0, y: y0, id: 1 }]);
+      for (let i = 1; i <= steps; i++) {
+        await t('touchMove', [{ x: Math.round(x0 + ((x1 - x0) * i) / steps), y: Math.round(y0 + ((y1 - y0) * i) / steps), id: 1 }]);
+        await sleep(12);
+      }
+      await t('touchEnd', []);
+      await sleep(450);
+    };
+    // 静态钉：池页根+列表区 touch-action=pan-y（修法的直接落点）
+    const ta = await tpage.evaluate(() => ({
+      pool: getComputedStyle(document.querySelector('[data-kfm-pool]')).touchAction,
+      zone: (() => { const z = document.querySelector('[data-pool-zone]'); return z ? getComputedStyle(z).touchAction : null; })(),
+    }));
+    check('B13b 池页根/列表区 touch-action=pan-y（禁 pan-x 原生接管；纵向列表滚动保持原生）',
+      ta.pool === 'pan-y' && ta.zone === 'pan-y', JSON.stringify(ta));
+    // 病灶腿：池页列表行上真触摸右滑 → 全流到手（无 cancel）+ 池页关
+    const cb = await tpage.evaluate(() => { const e = document.querySelector('[data-kfm-pool]').getBoundingClientRect(); return { x: Math.round(e.x + Math.min(e.width / 2, 420)), y: Math.round(e.y + Math.min(e.height / 2, 300)) }; });
+    await tstroke(cb.x, cb.y, cb.x + 190, cb.y);
+    const tape1 = await tpage.evaluate(() => { const t = window.__ttape; window.__ttape = []; return { down: t.filter((x) => x === 'pointerdown').length, up: t.filter((x) => x === 'pointerup').length, cancel: t.filter((x) => x === 'pointercancel').length }; });
+    const st1 = await tp();
+    await tpage.screenshot({ path: join(SHOT_DIR, 'config-pool-b13-touch-rightswipe-closed.png') });
+    check('B13c 真触摸右滑关池（列表行上横拖全流到手 cancels=0 → POOL_CLOSED）',
+      st1.startsWith('POOL_CLOSED') && tape1.down === 1 && tape1.cancel === 0 && tape1.up >= 1,
+      `st=${st1} tape=${JSON.stringify(tape1)}`);
+    // 对照腿：真触摸垂直拖=原生列表滚动接管（cancel 允许），池页不动（P1 矩阵行）
+    {
+      const c = await tpage.evaluate(() => { const e = document.querySelector('.nz-term').getBoundingClientRect(); return { x: Math.min(e.x + e.width / 2, 420), y: Math.max(8, Math.min(e.y + e.height / 2, 400)) }; });
+      await tpage.mouse.move(c.x, c.y);
+      await tpage.mouse.down();
+      for (let i = 1; i <= 14; i++) { await tpage.mouse.move(c.x - (180 * i) / 14, c.y); await sleep(8); }
+      await tpage.mouse.up();
+      await sleep(450);
+    }
+    const cz = await tpage.evaluate(() => { const e = document.querySelector('[data-kfm-pool]').getBoundingClientRect(); return { x: Math.round(e.x + Math.min(e.width / 2, 420)), y: Math.round(e.y + Math.min(e.height / 2, 300)) }; });
+    await tstroke(cz.x, cz.y, cz.x, cz.y - 150);
+    const st2 = await tp();
+    const tape2 = await tpage.evaluate(() => { const t = window.__ttape; window.__ttape = []; return { cancel: t.filter((x) => x === 'pointercancel').length, up: t.filter((x) => x === 'pointerup').length }; });
+    check('B13d 对照：真触摸垂直拖=池区列表原生滚动接管（cancel 允许），池页保持开着（方向裁决 P1：垂直不关池）',
+      st2.startsWith('POOL_OPEN') && (tape2.cancel === 1 || tape2.up >= 1), `st=${st2} tape=${JSON.stringify(tape2)}`);
+    await tctx.close();
   }
 
   check('⓪-尾 全程零页面异常', pageErrors.length === 0, pageErrors.slice(0, 3).join(' | '));
