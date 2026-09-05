@@ -139,6 +139,7 @@ export function createAiChatLink(onUpdate: () => void, env?: { page?: () => Page
         const data = (await res.json()) as {
           messages: ChatMessage[];
           session: { providerId?: string | null; modelId?: string | null };
+          total?: number;
         };
         // A2a.5 §2.4 + 卡顿修复（2026-09-05 用户实测「加载会话卡住」）：
         // 大会话（实测 1745 条/131 万 tok）全量直挂=一次渲染上千节点，主线程
@@ -303,8 +304,71 @@ export function createAiChatLink(onUpdate: () => void, env?: { page?: () => Page
       disposed = true;
       gen++;
       try { abort?.abort(); } catch { /* 已断即达意 */ }
+      // §1.6 订阅腿 teardown（随链接生灭，防泄漏）
+      clearTimeout(poolWsRetry);
+      document.removeEventListener('visibilitychange', onPoolVis);
+      try { poolWs?.close(); } catch { /* 已断即达意 */ }
     },
   };
+
+  // ---- pool/changed 订阅腿（§1.6 第二消费者；2026-09-05「茉莉的测试2」bug）----
+  // 根因：总账变更无传播——面板只在挂载/手动切时读账，池页激活后绑定永不
+  // 跟随（真机 CDP 三路实证：账=测试2，钩=测试）。修法=订阅既有广播
+  // （tmux-sessions/pool 同款订阅票），事件驱动覆盖一切激活来源，不做
+  // raise/menu 时机枚举。nz 唯一写入方（2026-09-05 拍板：仲裁②外部写入
+  // 边界永不建）；重连腿只为手机现实兜底（熄屏 ws 冻结/断线，C13 同款）。
+  // deleted 不动绑定：relied 守卫（409）使删正显示的会话必须先切走激活，
+  // 而切换恰由 activated 腿跟随；P18 推迟窗内的删除由流毕 realign 收口。
+  let poolWs: WebSocket | null = null;
+  let poolWsRetry: ReturnType<typeof setTimeout> | undefined;
+
+  /** 总账对齐：读激活账，sessionId 变了且空闲则跟随（所见即所附） */
+  async function realignLedger(why: string): Promise<void> {
+    if (disposed || state.phase !== 'IDLE') return; // P18 流式中不动绑定
+    try {
+      const r = await fetch('/pool/active');
+      if (!r.ok) return;
+      const led = (await r.json()) as { sessionId?: string };
+      if (typeof led.sessionId === 'string' && led.sessionId && led.sessionId !== link.sessionId) {
+        pushRing(`pool:realign(${why})`, -1);
+        await link.loadSession(led.sessionId);
+      }
+    } catch { /* 总账不可得=保持现状（离线不清绑） */ }
+  }
+
+  function connectPoolWatch(): void {
+    if (disposed) return;
+    const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/term`;
+    poolWs = new WebSocket(url);
+    poolWs.onopen = () => {
+      poolWs?.send(JSON.stringify({ t: 'pool-watch' }));
+      void realignLedger('resync'); // 新建/重连补一拍（断线期漏事件兜底）
+    };
+    poolWs.onmessage = (ev) => {
+      let m: { t?: string; pool?: string; id?: string; op?: string };
+      try { m = JSON.parse(String(ev.data)); } catch { return; }
+      if (m.t !== 'pool-changed') return;
+      pushRing(`pool:${m.op}`, -1);
+      // 激活帧是账级事件（/pool/active POST → {pool:'active',id:'active'}，
+      // §1.6 C10 不带会话 id）——读账跟随即契约（pool 页 refetch 同款）。
+      // CRUD 帧不动绑定：删正显示会话被 relied 守卫（409）拦，P18 推迟窗
+      // 由流毕 realign('idle') 收口。
+      if (m.op === 'activated') void realignLedger('activated');
+    };
+    poolWs.onclose = () => {
+      poolWs = null;
+      if (!disposed) poolWsRetry = setTimeout(connectPoolWatch, 3000);
+    };
+    poolWs.onerror = () => { try { poolWs?.close(); } catch { /* 重试腿接管 */ } };
+  }
+
+  // 熄屏期定时器冻结=重试腿停走，回前台立即补连（pool-link C13 同款）
+  const onPoolVis = (): void => {
+    if (disposed || document.visibilityState !== 'visible') return;
+    if (!poolWs || poolWs.readyState > WebSocket.OPEN) { clearTimeout(poolWsRetry); connectPoolWatch(); }
+  };
+  document.addEventListener('visibilitychange', onPoolVis);
+  connectPoolWatch();
 
   /** error 事件入流收尾（A7/A9 补不上；reducer 把文案写成消息内容——不是 toast） */
   function failIntoStream(message: string): void {
@@ -312,6 +376,7 @@ export function createAiChatLink(onUpdate: () => void, env?: { page?: () => Page
     state.phase = 'IDLE';
     lastError = message;
     pushRing('error', run ? run.cursor : -1);
+    void realignLedger('idle'); // 同 applyFrame：流终对账
     onUpdate();
   }
 
@@ -326,6 +391,7 @@ export function createAiChatLink(onUpdate: () => void, env?: { page?: () => Page
     applyEvent(state, event); // A5：原地 mutate 消息核（reducer 语义）
     if (event.type === 'done') state.phase = 'IDLE'; // A6
     if (event.type === 'error') { state.phase = 'IDLE'; lastError = event.content ?? ''; } // A7
+    if (state.phase === 'IDLE') void realignLedger('idle'); // 流毕对账：流式中被 P18 推迟的激活在此跟随
     pushRing(event.type, index);
     onUpdate();
   }

@@ -46,6 +46,10 @@
  *       容器外壳 padding-top 仍随 sat 生效（edge-to-edge 链不动）
  *   补流钉  A1 转换：run 进行中切出 AI 页再切回 → attach from=N 补流不丢帧
  *   P7  皮内零硬编码色值（源码 grep；变异抽检的靶子）
+ *   B20 §1.6 第二消费者（2026-09-05「茉莉的测试2」bug）：AI 绑定订阅
+ *       pool-changed 跟随总账——激活事件腿跟随且不重挂（观测环收
+ *       pool:activated 帧为证）+ P18 推迟窗（流式中激活不拆流，流毕
+ *       realign 跟随）+ 自反激活不重水合（消息数组引用恒定）
  *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后 / 终端态发送自动开页 / picker 一级 / picker 二级默认行 / picker 点外即关前后 / 输入栏两行文字 / 一行标题栏下拉（角色/会话两入口）/ sat=33px 下标题栏仍一行页顶贴视口顶
  *
  * 慢流杠杆（B3/B5/补流需要确定性时间窗）：page.evaluate 设
@@ -938,6 +942,58 @@ check('P7 皮内零硬编码色值/阴影/时长字面量（全走 --kfm-* token
     && /echo/i.test(btnBefore) && /echo/i.test(btnAfter),
     `ledger=${JSON.stringify(ledger)} before="${btnBefore}" after="${btnAfter}"`);
   await page.click('[data-kfm-aichat-orb]').catch(() => {}); // 关 AI 页收尾
+}
+
+// ========== B20：§1.6 第二消费者——AI 绑定订阅 pool-changed 跟随总账 ==========
+// 红先证据（2026-09-05 用户报「激活茉莉的测试2 AI 窗口没切换」，真机 CDP
+// 三路实证：账=测试2/钩=测试/环无 loadSession）：旧码面板只在挂载/手动切
+// 时读账，绑定永不跟随。新码=订阅 /ws/term {t:'pool-changed'}（tmux-
+// sessions/pool 同款订阅票），事件驱动覆盖一切激活来源。
+{
+  await page.evaluate(() => { window.__b20origin = performance.timeOrigin; });
+  // 播种两个会话壳（走池 API=唯一写入咽喉）
+  const mkSession = (t) => page.evaluate(async (title) => {
+    const r = await fetch('/pool/session/create', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ entry: { title } }) });
+    return r.status;
+  }, t);
+  const mk1 = await mkSession('B20甲');
+  const mk2 = await mkSession('B20乙');
+  const seeded = (s) => s === 200 || s === 409; // 409=已存在（重跑幂等）
+  check('B20-0 会话壳播种（池 API create，甲/乙）', seeded(mk1) && seeded(mk2), `甲=${mk1} 乙=${mk2}`);
+
+  // B20a 激活事件腿：面板在场（非重挂）时池激活乙 → 绑定跟随
+  await page.evaluate(async () => {
+    await fetch('/pool/active', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sessionId: 'B20乙' }) });
+  });
+  const followed = await page.waitForFunction(() => window.__kfmNzAiChat?.().sessionId === 'B20乙', null, { timeout: 8000, polling: 200 }).then(() => true).catch(() => false);
+  const noRemount = await page.evaluate(() => window.__b20origin === performance.timeOrigin);
+  const ringEvt = await page.evaluate(() => (window.__kfmNzAiChat?.().lastEvents ?? []).some((e) => e.type === 'pool:activated'));
+  check('B20a 激活事件腿：面板在场时池激活乙 → 绑定跟随且不重挂', followed && noRemount, `followed=${followed} noRemount=${noRemount}`);
+  check('B20a2 观测环收 pool:activated 帧（事件腿实证，非轮询/时机钩）', ringEvt, `ringEvt=${ringEvt}`);
+
+  // B20b P18 推迟窗：流式中激活甲不拆流，流毕 realign('idle') 跟随
+  // （phase 真路径=run.phase——hook 顶层无 phase，B6 助手同款映射）
+  await page.waitForFunction(() => { const r = window.__kfmNzAiChat?.(); return (r?.run?.phase ?? 'IDLE') === 'IDLE'; }, null, { timeout: 8000, polling: 200 }).catch(() => {});
+  setLever(150);
+  await sendViaComposer('B20慢流锚');
+  const streaming = await page.waitForFunction(() => { const p = window.__kfmNzAiChat?.().run?.phase; return p === 'STREAMING' || p === 'WAITING'; }, null, { timeout: 8000, polling: 100 }).then(() => true).catch(() => false);
+  await page.evaluate(async () => {
+    await fetch('/pool/active', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sessionId: 'B20甲' }) });
+  });
+  await page.waitForTimeout(700); // activated 帧必已到达并被 P18 闸住
+  const during = await page.evaluate(() => window.__kfmNzAiChat?.().sessionId);
+  const doneFollow = await page.waitForFunction(() => { const r = window.__kfmNzAiChat?.(); return (r?.run?.phase ?? 'IDLE') === 'IDLE' && r?.sessionId === 'B20甲'; }, null, { timeout: 20000, polling: 200 }).then(() => true).catch(() => false);
+  check('B20b P18 推迟窗：流式中激活甲不拆流，流毕跟随甲', streaming && during === 'B20乙' && doneFollow, `streaming=${streaming} during=${during} doneFollow=${doneFollow}`);
+  await page.evaluate(() => { window.__kfmNzAiChatTestLever = undefined; });
+
+  // B20c 自反激活（id==当前）不重水合：消息数组引用不变（真水合必换新数组）
+  const refSame = await page.evaluate(async () => {
+    const before = window.__kfmNzAiChat().messages;
+    await fetch('/pool/active', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sessionId: 'B20甲' }) });
+    await new Promise((r) => setTimeout(r, 600));
+    return window.__kfmNzAiChat().messages === before;
+  });
+  check('B20c 自反激活（id==当前）不重水合（消息数组引用恒定）', refSame === true, `refSame=${refSame}`);
 }
 
 // ========== 汇总 ==========
