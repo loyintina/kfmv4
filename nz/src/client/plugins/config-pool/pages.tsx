@@ -78,21 +78,27 @@ function TextField(props: {
 }
 
 /** 上详情区骨架（选择制：常驻载当前编辑目标；§四 修订①）
- *  loading=目标未定（数据在途）：藏存/取消/新建钮防误存 */
+ *  固定区间：本区占上半（flex 1 1 50%），内容长→**区内滚动**（老角色卡
+ *  formSection 同款），下池区独立滚——页面永不整体滚（用户 2026-09-06 拍板）。
+ *  loading=目标未定（数据在途）：藏存/取消/新建钮防误存。
+ *  select=顶端下拉栏（切换配置好的子池条目——老卡 createCustomSelect 同位） */
 function DetailZone(props: {
   title: string; newMode: boolean; error: string | null;
   loading?: boolean;
+  select?: { value: string; options: Array<{ value: string; label: string }>; onChange(v: string): void };
   onSave(): void; onCancel(): void; onNew(): void; children?: React.ReactNode;
 }): React.ReactElement {
-  const { title, newMode, error, loading, onSave, onCancel, onNew, children } = props;
+  const { title, newMode, error, loading, select, onSave, onCancel, onNew, children } = props;
   return createElement('div', {
     'data-pool-config': '1',
     style: {
-      flexShrink: 0, margin: '8px 10px 0', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px',
+      flex: '1 1 50%', minHeight: '160px', margin: '8px 10px 0', padding: '10px',
+      display: 'flex', flexDirection: 'column', gap: '8px',
       background: 'var(--kfm-surface)', border: '1px solid var(--kfm-line)', borderRadius: 'var(--kfm-radius-lg)',
+      overflow: 'hidden',
     },
   },
-  createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
+  createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 } },
     createElement('div', { style: { fontSize: '12.5px', color: 'var(--kfm-ink-2)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, title),
     newMode || loading ? null : createElement('button', {
       'data-pool-new': '1', type: 'button', onClick: onNew,
@@ -103,11 +109,30 @@ function DetailZone(props: {
       },
     }, '＋ 新建'),
   ),
-  loading ? createElement('div', { style: { fontSize: '11.5px', color: 'var(--kfm-ink-3)' } }, '列表加载中…') : children,
-  error !== null
-    ? createElement('div', { 'data-pool-form-error': '1', style: { fontSize: '11.5px', color: 'var(--kfm-red)' } }, error)
+  select
+    ? createElement('select', {
+        'data-pool-select': '1',
+        value: select.value,
+        onChange: (e: React.ChangeEvent<HTMLSelectElement>) => select.onChange(e.target.value),
+        style: {
+          flexShrink: 0, width: '100%', background: 'var(--kfm-field)', color: 'var(--kfm-ink)',
+          border: '1px solid var(--kfm-line)', borderRadius: 'var(--kfm-radius-sm)',
+          padding: '5px 8px', fontSize: '12.5px', outline: 'none',
+        },
+      },
+      select.options.map((o) => createElement('option', { key: o.value, value: o.value }, o.label)),
+      )
     : null,
-  loading ? null : createElement('div', { style: { display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
+  createElement('div', {
+    'data-pool-config-scroll': '1',
+    style: { flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' },
+  },
+  loading ? createElement('div', { style: { fontSize: '11.5px', color: 'var(--kfm-ink-3)' } }, '列表加载中…') : children,
+  ),
+  error !== null
+    ? createElement('div', { 'data-pool-form-error': '1', style: { fontSize: '11.5px', color: 'var(--kfm-red)', flexShrink: 0 } }, error)
+    : null,
+  loading ? null : createElement('div', { style: { display: 'flex', gap: '8px', justifyContent: 'flex-end', flexShrink: 0 } },
     createElement(Btn, { 'data-x': undefined, 'data-pool-cancel': '1', onClick: onCancel }, '取消'),
     createElement('button', {
       'data-pool-save': '1', type: 'button', onClick: (e: React.MouseEvent) => { e.stopPropagation(); onSave(); },
@@ -556,6 +581,16 @@ function ProviderView(props: ViewProps): React.ReactElement {
     createElement(ProviderDetail, {
       key: `provider:${editing?.id ?? '__new__'}:${rev}:${editing?.isNew ? 'n' : 's'}`,
       entry: current, isNew: !!editing?.isNew, error: formError, loading: !editing,
+      select: {
+        value: !editing || editing.isNew ? '__new__' : String(editing.id),
+        options: [{ value: '__new__', label: '＋ 新建…' }, ...entries.map((e) => ({ value: String(e.id), label: String(e.name ?? e.id) }))],
+        onChange: (v: string) => {
+          if (v === '__new__') link.core.selectDetail({ id: null, isNew: true });
+          else link.core.selectDetail({ id: v, isNew: false });
+          setFormError(null); bump();
+        },
+      },
+      activeModel: provAlive?.id === current?.id || (!editing?.isNew && editing?.id && provAlive?.id === editing.id) ? active.modelId : null,
       onSave: save,
       onCancel: () => {
         link.core.cancelEdit();
@@ -597,11 +632,13 @@ function ProviderView(props: ViewProps): React.ReactElement {
 
 const ProviderDetail = (props: {
   entry: PoolEntry | null; isNew: boolean; error: string | null; loading?: boolean;
+  select?: { value: string; options: Array<{ value: string; label: string }>; onChange(v: string): void };
+  activeModel?: string | null;
   onSave(entry: PoolEntry, isNew: boolean): Promise<void>;
   onActivateModel(provId: string, model: string): void;
   onCancel(): void; onNew(): void;
 }): React.ReactElement => {
-  const { entry, isNew, error, loading, onSave, onActivateModel, onCancel, onNew } = props;
+  const { entry, isNew, error, loading, select, activeModel, onSave, onActivateModel, onCancel, onNew } = props;
   const [id, setId] = useState(entry ? String(entry.id) : '');
   const [name, setName] = useState(entry ? String(entry.name ?? '') : '');
   const [baseUrl, setBaseUrl] = useState(entry ? String(entry.baseUrl ?? '') : '');
@@ -616,7 +653,7 @@ const ProviderDetail = (props: {
   };
   return createElement(DetailZone, {
     title: isNew ? '新建 Provider' : `详情：${entry?.id ?? ''}`,
-    newMode: isNew, error, loading,
+    newMode: isNew, error, loading, select,
     onSave: () => { void onSave({ id, name, baseUrl, apiKey, models }, isNew); },
     onCancel, onNew,
     children: [
@@ -641,17 +678,30 @@ const ProviderDetail = (props: {
             : '密钥明文只在保存瞬间落 .env（chmod 600），池文件只留 ${VAR} 代字'),
       ),
       createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px' } },
-        createElement('div', { style: { fontSize: '11px', color: 'var(--kfm-ink-3)' } }, 'models（点行内「激活」=二元组激活，与 picker 二级同构）'),
-        models.map((m) => createElement('div', {
-          key: m, 'data-pool-model-row': m,
-          style: { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--kfm-ink)' },
-        },
-        createElement('span', { style: { flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, m),
-        !isNew && savedModels.includes(m)
-          ? createElement(Btn, { primary: true, onClick: () => onActivateModel(String(entry!.id), m) }, '激活')
-          : null,
-        createElement(Btn, { danger: true, onClick: () => setModels(models.filter((x) => x !== m)) }, '×'),
-        )),
+        createElement('div', { style: { fontSize: '11px', color: 'var(--kfm-ink-3)' } }, 'models（点标签=激活该模型；×=移除）'),
+        createElement('div', { 'data-pool-model-tags': '1', style: { display: 'flex', flexWrap: 'wrap', gap: '4px' } },
+          models.map((m) => {
+            const activatable = !isNew && savedModels.includes(m) && !!entry;
+            const isActive = activeModel === m;
+            return createElement('span', {
+              key: m, 'data-pool-model-tag': m,
+              ...(isActive ? { 'data-pool-model-active': m } : {}),
+              onClick: activatable ? () => onActivateModel(String(entry!.id), m) : undefined,
+              style: {
+                display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '2px 7px',
+                borderRadius: 'var(--kfm-radius-sm)', fontSize: '11px', cursor: activatable ? 'pointer' : 'default',
+                background: 'var(--kfm-chip-bg)', color: 'var(--kfm-ink)',
+                border: `1px solid ${isActive ? 'var(--kfm-accent)' : 'var(--kfm-line)'}`,
+              },
+            },
+            m,
+            createElement('span', {
+              onClick: (e: React.MouseEvent) => { e.stopPropagation(); setModels(models.filter((x) => x !== m)); },
+              style: { cursor: 'pointer', opacity: 0.5, fontSize: '11px', padding: '0 1px' },
+            }, '×'),
+            );
+          }),
+        ),
         createElement('div', { style: { display: 'flex', gap: '4px' } },
           createElement('div', { style: { flex: 1 } },
             createElement(TextField, { 'data-x': 'model-add', value: modelDraft, placeholder: '新增 model 名', onChange: setModelDraft, onCommit: addModel })),
@@ -693,6 +743,15 @@ function PromptView(props: ViewProps): React.ReactElement {
     createElement(PromptDetail, {
       key: `prompt:${editing?.id ?? '__new__'}:${rev}:${editing?.isNew ? 'n' : 's'}`,
       entry: current, isNew: !!editing?.isNew, error: formError, loading: !editing,
+      select: {
+        value: !editing || editing.isNew ? '__new__' : String(editing.id),
+        options: [{ value: '__new__', label: '＋ 新建…' }, ...entries.map((e) => ({ value: String(e.id), label: String(e.name ?? e.id) }))],
+        onChange: (v: string) => {
+          if (v === '__new__') link.core.selectDetail({ id: null, isNew: true });
+          else link.core.selectDetail({ id: v, isNew: false });
+          setFormError(null); bump();
+        },
+      },
       onSave: save,
       onCancel: () => {
         link.core.cancelEdit();
@@ -774,13 +833,14 @@ function PromptView(props: ViewProps): React.ReactElement {
 
 const PromptDetail = (props: {
   entry: PoolEntry | null; isNew: boolean; error: string | null; loading?: boolean;
+  select?: { value: string; options: Array<{ value: string; label: string }>; onChange(v: string): void };
   onSave(entry: PoolEntry, isNew: boolean): Promise<void>;
   onCancel(): void; onNew(): void;
   onDraftRef(api: { get(): { files: string[]; dynFiles: string[] }; set(files: string[], dynFiles: string[]): void } | null): void;
   onOpenDialog(path: string, zone: ZoneId): void;
   onPick(zone: ZoneId): void;
 }): React.ReactElement => {
-  const { entry, isNew, error, loading, onSave, onCancel, onNew, onDraftRef, onOpenDialog, onPick } = props;
+  const { entry, isNew, error, loading, select, onSave, onCancel, onNew, onDraftRef, onOpenDialog, onPick } = props;
   const [id, setId] = useState(entry ? String(entry.id) : '');
   const [name, setName] = useState(entry ? String(entry.name ?? '') : '');
   const [files, setFiles] = useState<string[]>(entry && Array.isArray(entry.promptFiles) ? (entry.promptFiles as string[]).map(String) : []);
@@ -797,7 +857,7 @@ const PromptDetail = (props: {
   }, [onDraftRef]);
   return createElement(DetailZone, {
     title: isNew ? '新建角色（id=文件名裸名，可中文）' : `详情：${entry?.id ?? ''}`,
-    newMode: isNew, error, loading,
+    newMode: isNew, error, loading, select,
     onSave: () => { void onSave({ id, name, promptFiles: files, dynamicPromptFiles: dynFiles }, isNew); },
     onCancel, onNew,
     children: [
@@ -833,6 +893,15 @@ function SessionView(props: ViewProps): React.ReactElement {
     createElement(SessionDetail, {
       key: `session:${editing?.id ?? '__new__'}:${rev}:${editing?.isNew ? 'n' : 's'}`,
       entry: current, isNew: !!editing?.isNew, error: formError, loading: !editing,
+      select: {
+        value: !editing || editing.isNew ? '__new__' : String(editing.id),
+        options: [{ value: '__new__', label: '＋ 新建…' }, ...entries.map((e) => ({ value: String(e.id), label: String(e.title ?? e.id) }))],
+        onChange: (v: string) => {
+          if (v === '__new__') link.core.selectDetail({ id: null, isNew: true });
+          else link.core.selectDetail({ id: v, isNew: false });
+          setFormError(null); bump();
+        },
+      },
       onSave: save,
       onCancel: () => {
         link.core.cancelEdit();
@@ -876,14 +945,15 @@ function SessionView(props: ViewProps): React.ReactElement {
 
 const SessionDetail = (props: {
   entry: PoolEntry | null; isNew: boolean; error: string | null; loading?: boolean;
+  select?: { value: string; options: Array<{ value: string; label: string }>; onChange(v: string): void };
   onSave(entry: PoolEntry, isNew: boolean): Promise<void>;
   onCancel(): void; onNew(): void;
 }): React.ReactElement => {
-  const { entry, isNew, error, loading, onSave, onCancel, onNew } = props;
+  const { entry, isNew, error, loading, select, onSave, onCancel, onNew } = props;
   const [title, setTitle] = useState(isNew ? '' : String(entry?.title ?? ''));
   return createElement(DetailZone, {
     title: isNew ? '新建空会话（壳）' : `详情：${entry?.id ?? ''}`,
-    newMode: isNew, error, loading,
+    newMode: isNew, error, loading, select,
     onSave: () => { void onSave(isNew ? { id: title, title } : { id: String(entry?.id), title }, isNew); },
     onCancel, onNew,
     children: [
