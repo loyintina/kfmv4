@@ -389,6 +389,9 @@
 | 2026-09-04 | [`kfm-na-gate-mutants-r2-report.md`](kfm-na-gate-mutants-r2-report.md) | kfmv4-review-na-three-reports-response.md(§二 下批点将: | 待回信 |
 | 2026-09-04 | [`kfm-na-versioncode-counter-collision-notice.md`](kfm-na-versioncode-counter-collision-notice.md) | 无（主动通报；关联此前「取包点清旧包」事件） | 待回信（2026-09-04 kfm-na：撞车三轮实录初投，待 nz 协调） |
 | 2026-09-04 | [`kfmv4-ai-chat-a1-accept-report.md`](kfmv4-ai-chat-a1-accept-report.md) | A1 设计清单签收（c6038411，§八六条异议全裁决）+ 用户 09-04 拍板（默认=Kimi 官方+kimi-k2.7-code「官方渠道此名可通，C 档实测」；orb 自右上挪右中） | 通报完毕（2026-09-04 nz：A1 四提交+阶段四验收提交全落，npm test 155/155+browser 16 卷全绿） |
+| 2026-09-05 | [`kfmv4-9.0-aichat-ledger-follow-report.md`](kfmv4-9.0-aichat-ledger-follow-report.md) | 无（用户报单直修，方案经用户两问定稿） | 通报完毕（2026-09-05 nz：考卷 65/65+单元 191/191+真机钩子跟随，提交 2794e798） |
 | 2026-09-05 | [`kfmv4-config-pool-a2a-accept-report.md`](kfmv4-config-pool-a2a-accept-report.md) | A2a 设计清单签收（8a30e4d7，§八十条仲裁全裁决）+ 用户 09-04 仲裁⑩层级修正稿（光球升级「AI 面板置顶/关闭切换器」） | 通报完毕（2026-09-05 nz：A2a 三提交全落 aaac5bb5/1f360a46/cd918c9b，npm test 191/191+browser 17 卷 pipefail 真 rc 全绿；C 档真机触点腿声明降级等设备，详见 §4） |
+| 2026-09-05 | [`kfmv4-design-md-adoption-submission.md`](kfmv4-design-md-adoption-submission.md) | 无（首信） | 已裁决（2026-09-06 评审：通过——证据质量为历次送审最高档；三条落地条件：违宪机检 check-design-tokens 先行/Gaps 解法标注已藏供应商/生效入口接线 CLAUDE.md+§7。详见 kfmv4-review-design-md-verdict.md。） |
 | 2026-09-05 | [`kfmv4-review-daily-progress-2026-09-05-report.md`](kfmv4-review-daily-progress-2026-09-05-report.md) | 无（主动通报；晨检日报的信箱化，评审线新职责试点） | 通报完毕（2026-09-05 评审：首期进度信，观察者通报口径——内容源自公开痕迹（git/信箱/TASK），线内自述以各线 TASK 为准；本信不替代各线第一手落地通报。） |
+| 2026-09-06 | [`kfmv4-review-design-md-verdict.md`](kfmv4-review-design-md-verdict.md) | kfmv4-design-md-adoption-submission.md | 已裁决（2026-09-06 评审：通过。三条落地条件：违宪机检/Gaps 供应商标注/生效入口接线。） |
 <!-- gen:agent-inbox:end -->
