@@ -100,14 +100,6 @@ function DetailZone(props: {
   },
   createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 } },
     createElement('div', { style: { fontSize: '12.5px', color: 'var(--kfm-ink-2)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, title),
-    newMode || loading ? null : createElement('button', {
-      'data-pool-new': '1', type: 'button', onClick: onNew,
-      style: {
-        flexShrink: 0, padding: '2px 10px', fontSize: '11.5px', cursor: 'pointer',
-        borderRadius: 'var(--kfm-radius-sm)', border: '1px dashed var(--kfm-line-strong)',
-        background: 'none', color: 'var(--kfm-ink-2)',
-      },
-    }, '＋ 新建'),
   ),
   select
     ? createElement('select', {
@@ -132,16 +124,31 @@ function DetailZone(props: {
   error !== null
     ? createElement('div', { 'data-pool-form-error': '1', style: { fontSize: '11.5px', color: 'var(--kfm-red)', flexShrink: 0 } }, error)
     : null,
-  loading ? null : createElement('div', { style: { display: 'flex', gap: '8px', justifyContent: 'flex-end', flexShrink: 0 } },
-    createElement(Btn, { 'data-x': undefined, 'data-pool-cancel': '1', onClick: onCancel }, '取消'),
+  loading ? null : createElement('div', { style: { display: 'flex', gap: '8px', flexShrink: 0 } },
+    newMode ? null : createElement('button', {
+      'data-pool-new': '1', type: 'button', onClick: onNew,
+      style: {
+        flex: 1, padding: '6px 0', fontSize: '12px', cursor: 'pointer',
+        borderRadius: 'var(--kfm-radius-sm)', border: '1px solid var(--kfm-line)',
+        background: 'none', color: 'var(--kfm-ink-2)',
+      },
+    }, '新建'),
     createElement('button', {
       'data-pool-save': '1', type: 'button', onClick: (e: React.MouseEvent) => { e.stopPropagation(); onSave(); },
       style: {
-        padding: '3px 14px', fontSize: '12px', cursor: 'pointer',
+        flex: 1, padding: '6px 0', fontSize: '12px', cursor: 'pointer',
         borderRadius: 'var(--kfm-radius-sm)', border: '1px solid var(--kfm-ink)',
         background: 'var(--kfm-ink)', color: 'var(--kfm-page)',
       },
     }, '保存'),
+    createElement('button', {
+      'data-pool-cancel': '1', type: 'button', onClick: onCancel,
+      style: {
+        flex: 1, padding: '6px 0', fontSize: '12px', cursor: 'pointer',
+        borderRadius: 'var(--kfm-radius-sm)', border: '1px solid var(--kfm-line)',
+        background: 'none', color: 'var(--kfm-ink-2)',
+      },
+    }, '取消'),
   ));
 }
 
@@ -190,10 +197,31 @@ function ListRow(props: {
 }
 
 function CheckMark(): React.ReactElement {
+  // 「当前」徽章（老卡同款：渐变/accent 底小圆角标）
   return createElement('span', {
     'data-pool-check': '1',
-    style: { color: 'var(--kfm-accent-ink)', fontSize: '13px', flexShrink: 0 },
-  }, '✓');
+    style: {
+      fontSize: '10px', color: 'var(--kfm-page)', flexShrink: 0,
+      background: 'var(--kfm-accent)', borderRadius: 'var(--kfm-radius-sm)', padding: '1px 5px',
+    },
+  }, '当前');
+}
+
+/** 行尾红 × 删除钮（老卡同款：60% 红；确认走 OVERLAY_DELETE） */
+function DeleteX(props: { id: string; onDelete(): void }): React.ReactElement {
+  const { id, onDelete } = props;
+  return createElement('span', {
+    'data-pool-delete': id,
+    onClick: (e: { stopPropagation(): void }) => {
+      e.stopPropagation(); // 行点击=切换编辑目标；删 × 不许冒泡改写机态（B5a 实锤）
+      onDelete();
+    },
+    title: '删除',
+    style: {
+      color: 'var(--kfm-red)', opacity: 0.6, cursor: 'pointer',
+      fontSize: '15px', lineHeight: 1, padding: '2px 5px', flexShrink: 0,
+    },
+  }, '×');
 }
 
 // ========== prompt 双区文件对象（§3.3 修订②） ==========
@@ -218,14 +246,15 @@ const previewOf = (content: string): string =>
 
 type ZoneId = 'static' | 'dyn';
 
-/** 文件芯片：拖柄 + 文件名 + 内容预览两行（点芯片开全文对话框） */
+/** 文件芯片：点阵拖柄 + 文件名（右上角 × 移除引用）+ 内容预览两行（点芯片开全文对话框） */
 function FileChip(props: {
   path: string; zone: ZoneId; index: number; preview: string | null;
   dragging: boolean; dy: number;
   onHandleDown(e: React.PointerEvent): void;
   onOpen(): void;
+  onRemove(): void;
 }): React.ReactElement {
-  const { path, preview, dragging, dy, onHandleDown, onOpen } = props;
+  const { path, preview, dragging, dy, onHandleDown, onOpen, onRemove } = props;
   return createElement('div', {
     'data-pool-file-chip': path,
     'data-pool-file-zone': props.zone,
@@ -243,7 +272,7 @@ function FileChip(props: {
       } : {}),
     },
   },
-  // 拖柄（24px；pointer capture 自拖拽——老角色卡同款交互）
+  // 点阵拖柄（24px；pointer capture 自拖拽——老角色卡同款交互）
   createElement('div', {
     'data-pool-file-handle': path,
     onPointerDown: onHandleDown,
@@ -251,14 +280,28 @@ function FileChip(props: {
     style: {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       width: '26px', flexShrink: 0, cursor: 'grab', userSelect: 'none',
-      color: 'var(--kfm-ink-3)', borderRight: '1px solid var(--kfm-line)',
+      borderRight: '1px solid var(--kfm-line)',
       touchAction: 'none',
     },
-  }, '≡'),
-  createElement('div', { style: { flex: 1, minWidth: 0, padding: '5px 8px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1px' } },
-    createElement('div', {
-      style: { fontSize: '12px', color: 'var(--kfm-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--kfm-font-mono, monospace)' },
-    }, path),
+  }, createElement('div', {
+    style: {
+      width: '9px', height: '24px', opacity: 0.75,
+      backgroundImage: 'radial-gradient(circle, var(--kfm-ink-3) 1.1px, transparent 1.2px)',
+      backgroundSize: '5px 6px',
+    },
+  })),
+  createElement('div', { style: { flex: 1, minWidth: 0, padding: '4px 8px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1px' } },
+    createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '4px' } },
+      createElement('div', {
+        style: { flex: 1, minWidth: 0, fontSize: '12px', color: 'var(--kfm-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--kfm-font-mono, monospace)' },
+      }, path),
+      createElement('span', {
+        'data-pool-file-chip-x': path,
+        onClick: (e: React.MouseEvent) => { e.stopPropagation(); onRemove(); },
+        title: '移除引用',
+        style: { color: 'var(--kfm-red)', opacity: 0.6, cursor: 'pointer', fontSize: '13px', lineHeight: 1, padding: '0 2px', flexShrink: 0 },
+      }, '×'),
+    ),
     createElement('div', {
       style: {
         fontSize: '10px', color: 'var(--kfm-ink-3)', whiteSpace: 'pre-wrap', overflow: 'hidden',
@@ -276,8 +319,9 @@ function DualZoneFiles(props: {
   onChangeDynFiles(files: string[]): void;
   onOpenDialog(path: string, zone: ZoneId): void;
   onPick(zone: ZoneId): void;
+  onRemoveChip(path: string, zone: ZoneId): void;
 }): React.ReactElement {
-  const { files, dynFiles, onChangeFiles, onChangeDynFiles, onOpenDialog, onPick } = props;
+  const { files, dynFiles, onChangeFiles, onChangeDynFiles, onOpenDialog, onPick, onRemoveChip } = props;
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [drag, setDrag] = useState<{ zone: ZoneId; idx: number; dy: number } | null>(null);
   const [overZone, setOverZone] = useState<ZoneId | null>(null);
@@ -382,6 +426,7 @@ function DualZoneFiles(props: {
         dy: drag?.zone === id && drag.idx === i ? drag.dy : 0,
         onHandleDown: onHandleDown(id, i),
         onOpen: () => onOpenDialog(p, id),
+        onRemove: () => onRemoveChip(p, id),
       })),
       ),
       createElement('div', { style: { fontSize: '10px', color: 'var(--kfm-ink-3)' } }, hint),
@@ -619,11 +664,10 @@ function ProviderView(props: ViewProps): React.ReactElement {
           'data-pool-activate': String(e.id),
           onClick: () => { void link.activate({ providerId: String(e.id), modelId: models[0] ?? '' }).then(() => bump()); },
         }, '设为激活'),
-        createElement(Btn, {
-          danger: true,
-          'data-pool-delete': String(e.id),
-          onClick: () => { link.core.askDelete(String(e.id)); bump(); },
-        }, '删除'),
+        createElement(DeleteX, {
+          id: String(e.id),
+          onDelete: () => { link.core.askDelete(String(e.id)); bump(); },
+        }),
         );
       }),
     }),
@@ -785,11 +829,10 @@ function PromptView(props: ViewProps): React.ReactElement {
           'data-pool-activate': String(e.id),
           onClick: () => { void link.activate({ roleFile: String(e.id) }).then(() => bump()); },
         }, '设为激活'),
-        createElement(Btn, {
-          danger: true,
-          'data-pool-delete': String(e.id),
-          onClick: () => { link.core.askDelete(String(e.id)); bump(); },
-        }, '删除'),
+        createElement(DeleteX, {
+          id: String(e.id),
+          onDelete: () => { link.core.askDelete(String(e.id)); bump(); },
+        }),
         );
       }),
     }),
@@ -871,6 +914,10 @@ const PromptDetail = (props: {
         files, dynFiles,
         onChangeFiles: setFiles, onChangeDynFiles: setDynFiles,
         onOpenDialog, onPick,
+        onRemoveChip: (path, zone) => {
+          if (zone === 'static') setFiles((cur) => cur.filter((x) => x !== path));
+          else setDynFiles((cur) => cur.filter((x) => x !== path));
+        },
       }),
     ],
   });
@@ -932,11 +979,10 @@ function SessionView(props: ViewProps): React.ReactElement {
           'data-pool-activate': String(e.id),
           onClick: () => { void link.activate({ sessionId: String(e.id) }).then(() => bump()); },
         }, '设为激活'),
-        createElement(Btn, {
-          danger: true,
-          'data-pool-delete': String(e.id),
-          onClick: () => { link.core.askDelete(String(e.id)); bump(); },
-        }, '删除'),
+        createElement(DeleteX, {
+          id: String(e.id),
+          onDelete: () => { link.core.askDelete(String(e.id)); bump(); },
+        }),
         );
       }),
     }),
