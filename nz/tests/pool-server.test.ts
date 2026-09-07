@@ -123,8 +123,8 @@ test('/pool/list：池描述表投影四池齐全（pool/title/readonly/count）
       assert(status === 200, `/pool/list 应 200，实际 ${status}`);
       assert(Array.isArray(json), '投影应为数组');
       const ids = json.map((p: any) => p.pool).sort();
-      assert(JSON.stringify(ids) === JSON.stringify(['basic', 'prompt', 'provider', 'session']),
-        `四池应在册，实际 ${ids.join(',')}`);
+      assert(JSON.stringify(ids) === JSON.stringify(['basic', 'provider', 'session']),
+        `三池应在册（prompt 2026-09-07 退役），实际 ${ids.join(',')}`);
       for (const p of json) {
         assert(typeof p.title === 'string' && p.title.length > 0, `${p.pool} 应有 title`);
         assert(typeof p.count === 'number', `${p.pool} 应有 count`);
@@ -133,8 +133,6 @@ test('/pool/list：池描述表投影四池齐全（pool/title/readonly/count）
       assert(basic.readonly === true, '基本池应为只读聚合视图（§3.1）');
       const provider = json.find((p: any) => p.pool === 'provider');
       assert(provider.count === 1, `provider count 应为 1，实际 ${provider.count}`);
-      const prompt = json.find((p: any) => p.pool === 'prompt');
-      assert(prompt.count === 1, `prompt count 应为 1，实际 ${prompt.count}`);
     } finally { rig.close(); }
   });
 });
@@ -168,38 +166,6 @@ test('provider CRUD round-trip + 数组保序（A6 同源：文件顺序=数组�
       assert(ghost.status === 404, `删不存在条目应 404，实际 ${ghost.status}`);
       const dup = await req(rig.port, 'POST', '/pool/provider/create', { entry: mk('PC') });
       assert(dup.status === 409, `重复 id create 应 409，实际 ${dup.status}`);
-    } finally { rig.close(); }
-  });
-});
-
-test('role CRUD round-trip：目录型一文件一条目落盘互证（§3.3 schema 原样）', async () => {
-  const dir = mkConfigDir();
-  await withEnv({ NZ_AI_CONFIG_DIR: dir }, async () => {
-    const rig = await startRig(dir);
-    try {
-      const entry = { id: '茉莉-测试', name: '茉莉-测试', promptFiles: ['/a.md', '/b.md'], dynamicPromptFiles: ['/dyn.md'] };
-      const c = await req(rig.port, 'POST', '/pool/prompt/create', { entry });
-      assert(c.status === 200, `role create 应 200，实际 ${c.status} ${c.raw}`);
-      assert(typeof c.json.entry.createdAt === 'string' && typeof c.json.entry.updatedAt === 'string', '服务端应补时间戳');
-      const file = join(dir, 'agents', 'roles', '茉莉-测试.json');
-      assert(existsSync(file), 'agents/roles/<id>.json 应落盘（一文件一条目，可中文 id）');
-      const onDisk = JSON.parse(readFileSync(file, 'utf-8')) as any;
-      assert(JSON.stringify(onDisk.promptFiles) === JSON.stringify(['/a.md', '/b.md']), 'promptFiles 有序保真');
-      assert(JSON.stringify(onDisk.dynamicPromptFiles) === JSON.stringify(['/dyn.md']), 'dynamicPromptFiles 保真（眼睛挂载点）');
-      let list = (await req(rig.port, 'GET', '/pool/prompt')).json as any[];
-      assert(list.length === 1 && list[0].id === '茉莉-测试', 'list 应见新 role');
-      const u = await req(rig.port, 'POST', '/pool/prompt/茉莉-测试/update', {
-        entry: { ...entry, promptFiles: ['/b.md', '/a.md', '/c.md'] },
-      });
-      assert(u.status === 200, `role update 应 200，实际 ${u.status} ${u.raw}`);
-      const onDisk2 = JSON.parse(readFileSync(file, 'utf-8')) as any;
-      assert(JSON.stringify(onDisk2.promptFiles) === JSON.stringify(['/b.md', '/a.md', '/c.md']), 'update 后磁盘同步');
-      assert(onDisk2.createdAt === onDisk.createdAt, 'update 不动 createdAt');
-      const d = await req(rig.port, 'POST', '/pool/prompt/茉莉-测试/delete');
-      assert(d.status === 200, 'role delete 应 200');
-      assert(!existsSync(file), 'delete 后条目文件应摘除');
-      list = (await req(rig.port, 'GET', '/pool/prompt')).json as any[];
-      assert(list.length === 0, 'delete 后列表空（空池=诚实形态，§八⑨）');
     } finally { rig.close(); }
   });
 });
@@ -257,12 +223,10 @@ test('basic 池：只读聚合视图（激活总账 UI 化）+ 失效槽位降�
     try {
       const { status, json } = await req(rig.port, 'GET', '/pool/basic');
       assert(status === 200, 'GET /pool/basic 应 200');
-      assert(Array.isArray(json) && json.length === 3, '基本池=三个激活槽位行（§3.1）');
+      assert(Array.isArray(json) && json.length === 2, '基本池=两个激活槽位行（§3.1；role 槽 2026-09-07 退役）');
       const slotP = json.find((s: any) => s.id === 'provider');
       assert(slotP.providerId === 'P1' && slotP.modelId === 'm1' && slotP.dangling === false,
         `provider 槽位应有效，实际 ${JSON.stringify(slotP)}`);
-      const slotR = json.find((s: any) => s.id === 'role');
-      assert(slotR.roleFile === 'r1' && slotR.dangling === false, 'role 槽位应有效');
       const slotS = json.find((s: any) => s.id === 'session');
       assert(slotS.sessionId === 'ghost-session' && slotS.dangling === true,
         `失效激活会话应标 dangling 不崩（§2.5 降级首个兑现），实际 ${JSON.stringify(slotS)}`);
@@ -438,8 +402,6 @@ test('激活中条目视同 relied 禁删（先切走再删）：provider/role/s
       const dP = await req(rig.port, 'POST', '/pool/provider/P1/delete');
       assert(dP.status === 409 && dP.json.reliedBy.some((r: any) => r.pool === 'active'),
         `激活中 provider 禁删，实际 ${dP.status} ${dP.raw}`);
-      const dR = await req(rig.port, 'POST', '/pool/prompt/r1/delete');
-      assert(dR.status === 409, '激活中 role 禁删');
       const dS = await req(rig.port, 'POST', '/pool/session/s1/delete');
       assert(dS.status === 409, '激活中 session 禁删');
       // 切走后放行
@@ -545,9 +507,6 @@ test('坏 role/session/provider 条目 → 400 人话；session messages 非空 
     const rig = await startRig(dir);
     try {
       const cases: Array<[string, unknown, string]> = [
-        ['/pool/prompt/create', { entry: { id: 'x', promptFiles: [], dynamicPromptFiles: [] } }, 'role 缺 name'],
-        ['/pool/prompt/create', { entry: { id: 'x', name: 'x', promptFiles: 'not-array', dynamicPromptFiles: [] } }, 'promptFiles 非数组'],
-        ['/pool/prompt/create', { entry: { id: 'x', name: 'x', promptFiles: [1, 2], dynamicPromptFiles: [] } }, 'promptFiles 非字符串数组'],
         ['/pool/session/create', { entry: { title: 't', messages: [{ role: 'user', content: [] }] } }, 'messages 非空禁写'],
         ['/pool/provider/create', { entry: { id: 'x', name: 'x', baseUrl: 'https://x', apiKey: '', models: 'm' } }, 'models 非数组'],
         ['/pool/provider/create', { entry: { name: 'x', baseUrl: 'https://x', apiKey: '', models: [] } }, 'provider 缺 id'],

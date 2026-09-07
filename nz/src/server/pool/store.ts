@@ -5,7 +5,7 @@
  *   ├── providers.json           provider-model 池（单文件数组——§八③例外）
  *   ├── .env                     密钥明文唯一落点（chmod 600，fuse-on-save）
  *   ├── active.json              激活总账（nz 侧 /pool/active 唯一门，仲裁②）
- *   ├── agents/roles/<id>.json   agent-prompt 池（一文件一条目）
+ *   ├── agents/roles/<id>.json   （prompt 池 2026-09-07 退役，历史数据留盘）
  *   └── sessions/<id>.json       session 池（一文件一条目，v0 壳）
  *
  * 激活总账纪律（§2.4）：

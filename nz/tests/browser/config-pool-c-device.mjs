@@ -7,10 +7,10 @@
  *      .env 600（真 key 不碰：假 key，收尾 .env 逐字节复原）
  *   C3 激活闭环：池页设为激活 智谱 → picker ✓ 同步 → 不经 picker 选择发一条
  *      → /tmp/nz-ai-chat.log start 记录 provider=智谱（L2 互证）
- *   C4 标题栏入口定位：点「角色」→ prompt 池 / 点「会话」→ session 池
+ *   C4 标题栏入口定位：点「会话」→ session 池（role 组 2026-09-07 退役）
  *   C5 orb 三态（仲裁⑩）：池页盖 AI 点球=AI 页提上来（池页不关）→再点球=
  *      关 AI（池页复现）→右滑关池页
- *   四池 CRUD 一轮（provider 表单+409 relied 守卫 UI / prompt / session 壳）
+ *   三池 CRUD 一轮（provider 表单+409 relied 守卫 UI / session 壳；prompt 池退役）
  *
  * 纪律（AGENTS.md L3 + cdp-device.mjs 先例）：
  *   · localhost:8026 直连（8026 只听 ::1），按 attached:true 精确选 live 目标，
@@ -170,7 +170,7 @@ try {
     check('C1 真机终端正文左滑 → POOL_OPEN（默认基本池）', h1?.page === 'POOL_OPEN' && h1?.pool === 'basic', JSON.stringify(h1));
     await shot('1-swipe-open-basic');
     const slots = await evalRaw(`[...document.querySelectorAll('[data-pool-slot]')].map((e) => e.getAttribute('data-pool-slot'))`);
-    check('C1b basic 只读聚合三槽位在场', JSON.stringify(slots) === JSON.stringify(['provider', 'role', 'session']), JSON.stringify(slots));
+    check('C1b basic 只读聚合两槽位在场（role 槽退役）', JSON.stringify(slots) === JSON.stringify(['provider', 'session']), JSON.stringify(slots));
   }
 
   // ========== 四池 CRUD 一轮 ==========
@@ -222,30 +222,6 @@ try {
     await sleep(900);
     const goneAfter = !((await api('/pool/provider')).json ?? []).some((e) => e.id === SCRATCH);
     check('C2f 清理：引用解除后 provider 删除成功（守卫解除即删）', del1.status === 200 && goneAfter, `del=${del1.status} gone=${goneAfter}`);
-  }
-  // prompt 池：新建 scratch 角色 → 激活 → 复原激活 → 删
-  {
-    await tapSel('[data-pool-tab="prompt"]', 'prompt 标签');
-    await tapSel('[data-pool-new]', '新建');
-    await fillField('id', SCRATCH);
-    await fillField('name', 'C3 临考角色');
-    await tapSel('[data-pool-save]', '保存');
-    await sleep(900);
-    const made = ((await api('/pool/prompt')).json ?? []).some((e) => e.id === SCRATCH);
-    await tapSel(`[data-pool-activate="${SCRATCH}"]`, '设为激活');
-    await sleep(900);
-    const led1 = (await api('/pool/active')).json;
-    await tapSel(`[data-pool-activate="${led1?.roleFile === SCRATCH ? '茉莉-kfmv4' : ''}"]`, '复原激活 茉莉-kfmv4');
-    await sleep(900);
-    const led2 = (await api('/pool/active')).json;
-    await tapSel(`[data-pool-delete="${SCRATCH}"]`, '删除');
-    await sleep(400);
-    await tapSel('[data-pool-overlay-confirm]', '确认删除');
-    await sleep(900);
-    const gone = !((await api('/pool/prompt')).json ?? []).some((e) => e.id === SCRATCH);
-    check('C-prompt 池一轮：新建→激活→复原激活→删（激活标移动+守卫放行）', made && led1?.roleFile === SCRATCH && led2?.roleFile === '茉莉-kfmv4' && gone,
-      `made=${made} act=${led1?.roleFile} restore=${led2?.roleFile} gone=${gone}`);
-    await shot('2-pool-prompt-done');
   }
   // session 池：新建 scratch 壳 → 激活 → 复原激活 → 删
   {
@@ -326,22 +302,22 @@ try {
     const raisedGone = await attrRaised();
     check('C5b orb 三态·再点球 → AI 页关（池页复现仍 POOL_OPEN）', (await aiHook())?.page === 'TERMINAL' && hC5b?.page === 'POOL_OPEN' && raisedGone === false, `pool=${hC5b?.page}/${hC5b?.pool} raised=${raisedGone}`);
     await shot('4-pool-restored');
-    // orb 再开 AI（提顶）→ 标题栏「角色」→ 池页定位 prompt（已开转 C3 形状）
+    // orb 再开 AI（提顶）→ 标题栏「管理 session 池…」→ 池页定位 session（已开转 C3 形状；role 组 09-07 退役）
     await tapSel('[data-kfm-aichat-orb]', 'orb');
     await sleep(700);
     await tapSel('[data-aichat-config-btn]', '标题下拉');
     await sleep(400);
-    await tapSel('[data-aichat-config-entry="role"]', '「角色」入口');
+    await tapSel('[data-aichat-config-entry="session:manage"]', '「管理 session 池…」入口');
     await sleep(900);
     const hRole = await poolHook();
-    check('C4a 标题栏点「角色」→ 池页定位 prompt 池（AI 页不收起）', hRole?.page === 'POOL_OPEN' && hRole?.pool === 'prompt' && (await aiHook())?.page === 'AI_PAGE', JSON.stringify(hRole));
-    await shot('4-entry-role-prompt');
+    check('C4a 标题栏点「管理 session 池…」→ 池页定位 session 池（AI 页不收起）', hRole?.page === 'POOL_OPEN' && hRole?.pool === 'session' && (await aiHook())?.page === 'AI_PAGE', JSON.stringify(hRole));
+    await shot('4-entry-session-pool');
     // 「会话」：池页盖 AI → orb 提顶 → 标题栏可点 → 点「会话」
     await tapSel('[data-kfm-aichat-orb]', 'orb 提顶');
     await sleep(700);
     await tapSel('[data-aichat-config-btn]', '标题下拉');
     await sleep(400);
-    await tapSel('[data-aichat-config-entry="session"]', '「会话」入口');
+    await tapSel('[data-aichat-config-entry="session:manage"]', '「会话」入口');
     await sleep(900);
     const hSess = await poolHook();
     check('C4b 标题栏点「会话」→ 池页切 session 池', hSess?.page === 'POOL_OPEN' && hSess?.pool === 'session', JSON.stringify(hSess));
@@ -378,7 +354,7 @@ try {
   }
   // 3) scratch 残余对账（session 引用会话/scratch 三池条目）
   const left = [];
-  for (const p of ['provider', 'prompt', 'session']) {
+  for (const p of ['provider', 'session']) {
     const arr = (await api(`/pool/${p}`)).json ?? [];
     if (arr.some((e) => String(e.id ?? '').includes(SCRATCH) || String(e.title ?? '').includes(SCRATCH))) left.push(p);
   }

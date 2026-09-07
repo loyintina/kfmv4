@@ -18,19 +18,19 @@
  *
  * v0 引用图（§2.5，箭头只向下）：
  *   session.providerId/modelId → provider 池条目；
- *   激活总账 providerId/roleFile/sessionId → 对应池条目（视同 relied）；
- *   role 池 v0 无池内引用者（组合池未来是消费者，接口已就位）。
+ *   激活总账 providerId/sessionId → 对应池条目（视同 relied）；
+ *   （roleFile 随 prompt 池 2026-09-07 退役，总账字段保留不消费）
  */
 import { readFileSync, readdirSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  providersPath, rolesDir, sessionsDir,
+  providersPath, sessionsDir,
   readActive, atomicWriteJson,
   type ActiveLedger,
 } from './store.ts';
 import { fuseApiKey, isEnvRef } from './fuse.ts';
 
-export type PoolId = 'basic' | 'provider' | 'prompt' | 'session';
+export type PoolId = 'basic' | 'provider' | 'session'; // prompt 2026-09-07 退役
 
 export interface PoolEntry {
   id: string;
@@ -171,39 +171,6 @@ const providerPool: PoolDescriptor = {
   },
 };
 
-/** agent-prompt 池（§3.3）：role schema 原样，不存文本存有序文件引用 */
-const promptPool: PoolDescriptor = {
-  pool: 'prompt',
-  title: '角色·Prompt',
-  reliers: [], // v0 无池内引用者（组合池未来是消费者，接口已就位）
-  list: dirList(rolesDir, (raw, id) => ({
-    id,
-    name: isStr(raw.name) ? raw.name : id,
-    promptFiles: isStrArr(raw.promptFiles) ? raw.promptFiles : [],
-    dynamicPromptFiles: isStrArr(raw.dynamicPromptFiles) ? raw.dynamicPromptFiles : [],
-    createdAt: isStr(raw.createdAt) ? raw.createdAt : '',
-    updatedAt: isStr(raw.updatedAt) ? raw.updatedAt : '',
-  })),
-  prepare(e) {
-    return {
-      promptFiles: [], dynamicPromptFiles: [],
-      ...e,
-      createdAt: isStr(e.createdAt) ? e.createdAt : now(),
-      updatedAt: now(),
-    };
-  },
-  validate(e) {
-    if (!isBareName(e.id)) return 'role 条目缺 id（文件名裸名，可中文，禁路径分隔符）';
-    if (!isStr(e.name) || e.name.length === 0) return `role「${e.id}」缺 name（非空字符串）`;
-    if (!isStrArr(e.promptFiles)) return `role「${e.id}」的 promptFiles 应是有序字符串数组`;
-    if (!isStrArr(e.dynamicPromptFiles)) return `role「${e.id}」的 dynamicPromptFiles 应是有序字符串数组`;
-    return null;
-  },
-  loadRaw: dirLoadRaw(rolesDir),
-  saveEntry: dirSaveEntry(rolesDir),
-  deleteEntry: dirDeleteEntry(rolesDir),
-};
-
 /** session 池（§3.4）：核心壳，messages 恒空禁写（仲裁①/P5） */
 const sessionPool: PoolDescriptor = {
   pool: 'session',
@@ -259,7 +226,6 @@ const basicPool: PoolDescriptor = {
   list(dir) {
     const ledger = readActive(dir);
     const providers = providerPool.loadAll!(dir);
-    const roles = promptPool.list(dir);
     const sessions = sessionPool.list(dir);
     const providerAlive = ledger.providerId !== ''
       && providers.some((p) => providerPool.matchRef!(p, ledger.providerId));
@@ -275,12 +241,6 @@ const basicPool: PoolDescriptor = {
         dangling: ledger.providerId !== '' && (!providerAlive || !modelAlive),
       },
       {
-        id: 'role',
-        title: '激活角色',
-        roleFile: ledger.roleFile,
-        dangling: ledger.roleFile !== '' && !roles.some((r) => r.id === ledger.roleFile),
-      },
-      {
         id: 'session',
         title: '激活会话',
         sessionId: ledger.sessionId,
@@ -293,11 +253,11 @@ const basicPool: PoolDescriptor = {
   },
 };
 
-/** 池注册表（server 侧同源，§1.5）——新池=表内加一条 */
+/** 池注册表（server 侧同源，§1.5）——新池=表内加一条。
+ *  prompt 池 2026-09-07 随 AI 配置面瘦身退役（角色数据留盘不删） */
 export const POOLS: Readonly<Record<PoolId, PoolDescriptor>> = {
   basic: basicPool,
   provider: providerPool,
-  prompt: promptPool,
   session: sessionPool,
 };
 
@@ -307,10 +267,9 @@ export function getPool(pool: string): PoolDescriptor | null {
 
 // ========== relied 守卫 + 断引用降级（§2.5，唯一执行点=server 池数据层） ==========
 
-/** 激活总账各池对应字段（激活中条目视同 relied） */
+/** 激活总账各池对应字段（激活中条目视同 relied；roleFile 随 prompt 池退役） */
 const ACTIVE_FIELD_OF: Record<PoolId, keyof ActiveLedger | null> = {
   provider: 'providerId',
-  prompt: 'roleFile',
   session: 'sessionId',
   basic: null,
 };

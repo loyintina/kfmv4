@@ -36,9 +36,9 @@
  *   B16 拍板⑭ composer 回车=换行不发送（draft 含 \n、run 未起），发送
  *       唯一路径=发送按钮；多行内容发送后气泡换行保真
  *   B17 拍板⑯ 标题栏压一行+标题即下拉（菜单机 CLOSED↔CONFIG_OPEN 新
- *       词汇）：一行高期值+内容区顶=栏底；下拉开合+角色/会话两入口；
- *       B17c 入口接真（A2a 阶段三，占位退役）：点「角色」→ 池页开+定位
- *       prompt 池+占位元素不存在；B17c2 仲裁⑩ orb 提顶（池页盖 AI 点球=
+ *       词汇）：一行高期值+内容区顶=栏底；下拉开合（role 组 2026-09-07
+ *       随 prompt 池退役，仅 session 组）；B17c 入口接真（A2a 阶段三，占
+ *       位退役）：点「管理 session 池…」→ 池页开+定位 session 池；B17c2 仲裁⑩ orb 提顶（池页盖 AI 点球=
  *       AI 页上来）+点「会话」→ 池页切 session；点外关闭+动作同发（⑬同款）
  *   B18 拍板⑰ AI 页标题栏不避挖孔屏：注入 --sat=33px 模拟刘海地形
  *       （headless env(safe-area-inset-top)=0 复现不了）→ AI 页顶=
@@ -50,7 +50,7 @@
  *       pool-changed 跟随总账——激活事件腿跟随且不重挂（观测环收
  *       pool:activated 帧为证）+ P18 推迟窗（流式中激活不拆流，流毕
  *       realign 跟随）+ 自反激活不重水合（消息数组引用恒定）
- *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后 / 终端态发送自动开页 / picker 一级 / picker 二级默认行 / picker 点外即关前后 / 输入栏两行文字 / 一行标题栏下拉（角色/会话两入口）/ sat=33px 下标题栏仍一行页顶贴视口顶
+ *   截图存证：composer 钉底终端态 / 键盘上浮贴键盘顶 / 滑入中间帧 / AI 页开无 tmux 控件 / 长对话滚到底末条完整可见 / 上滚态→点输入栏追底后 / 终端态发送自动开页 / picker 一级 / picker 二级默认行 / picker 点外即关前后 / 输入栏两行文字 / 一行标题栏下拉（会话快选）/ sat=33px 下标题栏仍一行页顶贴视口顶
  *
  * 慢流杠杆（B3/B5/补流需要确定性时间窗）：page.evaluate 设
  * window.__kfmNzAiChatTestLever = { echoPaceMs } → client 在 echo start 载荷
@@ -553,15 +553,17 @@ await page.click('[data-aichat-config-btn]').catch(() => {});
 await page.waitForTimeout(300); // 等一帧上屏再截图（headless paint 教训）
 const mCfg = (await hook())?.menu;
 const entries = await page.evaluate(() => [...document.querySelectorAll('[data-aichat-config-entry]')].map((el) => `${el.getAttribute('data-aichat-config-entry')}:${el.textContent.trim()}`));
-check('B17b 拍板⑯②+A2a.5 快选化：点标题下拉钮 → CONFIG_OPEN + 角色/会话两组条目在场（role:manage 路由项+session 快选/管理项）',
-      mCfg === 'CONFIG_OPEN' && entries.some((e) => e.startsWith('role:manage'))
+check('B17b 拍板⑯②+A2a.5 快选化：点标题下拉钮 → CONFIG_OPEN + session 组条目在场（role 组 09-07 退役）',
+      mCfg === 'CONFIG_OPEN' && !entries.some((e) => e.startsWith('role:'))
         && entries.some((e) => e.startsWith('session:manage')) && entries.some((e) => e.startsWith('session:s-')),
       `menu=${mCfg} entries=${JSON.stringify(entries)}`);
 // B17b2 真机截图实证钉（2026-09-05 同日三连 L1/L3 缝隙）：菜单容器**无裁剪**
 // ——maxHeight 百分比于 33px 标题栏内≈20px，把条目全裁进滚动区（DOM 在场而
 // 像素不可见）。播种角色后断言 scrollHeight ≤ clientHeight+4 且首条目在视口内
 await page.evaluate(async () => {
-  await fetch('/pool/prompt/create', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ entry: { id: 'clip-probe', name: '裁剪探针角色', promptFiles: [], dynamicPromptFiles: [] } }) }).catch(() => {});
+  for (let i = 0; i < 8; i++) {
+    await fetch('/pool/session/create', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ entry: { title: `clip-probe-${i}` } }) }).catch(() => {});
+  }
   document.querySelector('[data-aichat-config-btn]')?.click(); // 关
   await new Promise((r) => setTimeout(r, 300));
   document.querySelector('[data-aichat-config-btn]')?.click(); // 重开（快选重拉）
@@ -570,25 +572,25 @@ await page.evaluate(async () => {
 const menuClip = await page.evaluate(() => {
   const m = document.querySelector('[data-aichat-config-menu]');
   if (!m) return null;
-  const entry = [...m.querySelectorAll('[data-aichat-config-entry]')].find((el) => el.getAttribute('data-aichat-config-entry') === 'role:clip-probe');
+  const entry = [...m.querySelectorAll('[data-aichat-config-entry]')].find((el) => el.getAttribute('data-aichat-config-entry') === 'session:clip-probe-0');
   const er = entry?.getBoundingClientRect();
   const vh = window.innerHeight; // 视口高（documentElement rect 在部分 headless 页高为 0，不可作参照）
   return { sh: m.scrollHeight, ch: m.clientHeight, inVp: er ? (er.top >= -2 && er.bottom <= vh + 2) : false, entries: m.querySelectorAll('[data-aichat-config-entry]').length, er: er ? { top: Math.round(er.top), bottom: Math.round(er.bottom) } : null, vh, menuRect: (() => { const r = m.getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom) }; })() };
 });
-check('B17b2 菜单无裁剪（真机截图实证钉）：角色条目可见于视口内+容器无溢出裁切（maxHeight 禁百分比回归）',
+check('B17b2 菜单无裁剪（真机截图实证钉）：会话条目可见于视口内+容器无溢出裁切（maxHeight 禁百分比回归）',
       !!menuClip && menuClip.sh <= menuClip.ch + 4 && menuClip.inVp && menuClip.entries >= 3,
       `menu=${JSON.stringify(menuClip)}`);
 const shotCfg = join(SHOT_DIR, 'ai-chat-config-dropdown.png');
 await page.screenshot({ path: shotCfg });
 console.log('shot:', shotCfg);
-await page.click('[data-aichat-config-entry="role:manage"]').catch(() => {});
+await page.click('[data-aichat-config-entry="session:manage"]').catch(() => {});
 await page.waitForTimeout(500);
 const mRole = (await hook())?.menu;
 const poolRole = await page.evaluate(() => { const f = window.__kfmNzPool; const r = f ? f() : null; return { page: r?.page, pool: r?.pool }; });
 const phGone = await page.evaluate(() => !document.querySelector('[data-aichat-config-placeholder]'));
 const aiStillRole = (await hook())?.page;
-check('B17c A2a 阶段三接真+A2a.5 快选化：点「管理 prompt 池…」→ 池页开+定位 prompt 池 + 占位元素不存在 + 菜单 CLOSED + AI 页不收起（池页盖其上）',
-      mRole === 'CLOSED' && poolRole?.page === 'POOL_OPEN' && poolRole?.pool === 'prompt' && phGone && aiStillRole === 'AI_PAGE',
+check('B17c A2a 阶段三接真+A2a.5 快选化：点「管理 session 池…」→ 池页开+定位 session 池 + 占位元素不存在 + 菜单 CLOSED + AI 页不收起（池页盖其上）',
+      mRole === 'CLOSED' && poolRole?.page === 'POOL_OPEN' && poolRole?.pool === 'session' && phGone && aiStillRole === 'AI_PAGE',
       `menu=${mRole} pool=${JSON.stringify(poolRole)} phGone=${phGone} ai=${aiStillRole}`);
 // B17c2（仲裁⑩ orb 提顶档）：池页盖 AI → 点球=AI 页提到池页上（池页降 41
 // 不关）→ 标题栏恢复可点 → 点「会话」→ 池页切 session 池（C12 已开转切池）

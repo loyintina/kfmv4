@@ -85,16 +85,7 @@ function buildRegistry(link: PoolLink): PoolPageRegistry {
       await link.activate({ providerId: id, modelId: models[0] ?? '' }); // 激活单位=二元组（§3.2）
     },
   } satisfies PoolPage);
-  registry.register({
-    pool: 'prompt',
-    title: '角色·Prompt',
-    list: () => link.fetchPool('prompt'),
-    edit: (entry: PoolEntry | null) => {
-      link.core.selectDetail(entry ? { id: String(entry.id), isNew: false } : { id: null, isNew: true });
-    },
-    activeId: async () => link.active.roleFile || null,
-    activate: async (id: string) => { await link.activate({ roleFile: id }); },
-  } satisfies PoolPage);
+  // prompt 池 2026-09-07 随 AI 配置面瘦身退役（角色数据留盘不删）
   registry.register({
     pool: 'session',
     title: '会话',

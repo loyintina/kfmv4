@@ -415,6 +415,11 @@ interface PoolDescriptor {
 >   两端点只读不 emit。
 > - 考卷同日改判：pool-reducer（L4）整卷按选择制重写；config-pool B 档
 >   BROWSE/EDITING 断言改 DETAIL；C 档真机重验另行跑。
+>
+> **修订②（2026-09-07，用户拍板方向转向：AI 配置面瘦身）**：prompt 池从
+> server/client 双侧注册表退役（agent-prompt 数据留盘不删）；/pool/files*
+> 两端点随选择器退役；四池→三池（基本/provider/session），基本池 role 槽
+> 摘除。B14 双区文件对象卷摘除，B3/B8/B12e 路由腿改判。
 
 **状态枚举**：
 

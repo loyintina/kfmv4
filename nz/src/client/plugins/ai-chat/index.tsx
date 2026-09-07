@@ -123,19 +123,12 @@ export function createAiChatPlugin(): UiPlugin {
         const [kbRise, setKbRise] = useState(0);
         const [, setTick] = useState(0);
         // A2a.5 §五 下拉快选（D1-D7）：条目来自池，当前项来自总账；notice=D2
-        // 系统提示条（不进消息核不落盘，§3.4）
+        // 系统提示条（不进消息核不落盘，§3.4）。角色组 2026-09-07 随 prompt
+        // 池退役，quick 只剩会话组
         const [quick, setQuick] = useState<{
-          roles: Array<{ id: string; name: string }>;
           sessions: Array<{ id: string; title: string; messageCount?: number }>;
-          active: { roleFile: string; sessionId: string };
-        }>({ roles: [], sessions: [], active: { roleFile: '', sessionId: '' } });
-        const [notice, setNotice] = useState<string | null>(null);
-        const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-        const showNotice = (text: string): void => {
-          setNotice(text);
-          if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
-          noticeTimerRef.current = setTimeout(() => setNotice(null), 3500);
-        };
+          active: { sessionId: string };
+        }>({ sessions: [], active: { sessionId: '' } });
         const listWrapRef = useRef<HTMLDivElement>(null);
         const barRef = useRef<HTMLDivElement>(null);
         const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -354,31 +347,20 @@ export function createAiChatPlugin(): UiPlugin {
           if (menu !== 'CONFIG_OPEN') return;
           void (async () => {
             try {
-              const [pr, ss, act] = await Promise.all([
-                fetch('/pool/prompt'), fetch('/pool/session'), fetch('/pool/active'),
+              const [ss, act] = await Promise.all([
+                fetch('/pool/session'), fetch('/pool/active'),
               ]);
-              const roles = pr.ok ? ((await pr.json()) as Array<{ id: string; name?: string }>).map((e) => ({ id: e.id, name: e.name ?? e.id })) : [];
               const sessions = ss.ok ? ((await ss.json()) as Array<{ id: string; title?: string; messageCount?: number }>).map((e) => ({ id: e.id, title: e.title ?? e.id, messageCount: e.messageCount })) : [];
-              const led = act.ok ? ((await act.json()) as { roleFile?: string; sessionId?: string }) : { roleFile: '', sessionId: '' };
+              const led = act.ok ? ((await act.json()) as { sessionId?: string }) : { sessionId: '' };
               setQuick({
-                roles,
                 sessions,
-                active: { roleFile: led.roleFile ?? '', sessionId: led.sessionId ?? '' },
+                active: { sessionId: led.sessionId ?? '' },
               });
             } catch { /* 池不可得：菜单显示空表 */ }
           })();
         }, [menu]);
-        // A2a.5 D2/D3 动作：切角色（只写总账 roleFile，D2 语义）/切会话（水合+恢复绑定）
-        const selectRole = (id: string, name: string): void => {
-          if (link.state.phase !== 'IDLE') return; // P18 同族：流式中不改配置
-          void fetch('/pool/active', {
-            method: 'POST', headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ roleFile: id }),
-          }).catch(() => { /* 尽力而为：总账写失败不影响菜单关闭 */ });
-          setQuick((q) => ({ ...q, active: { ...q.active, roleFile: id } }));
-          showNotice(`角色已切换为「${name}」，下一条消息起生效`);
-          onMenu('CLOSED');
-        };
+        // A2a.5 D3 动作：切会话（水合+恢复绑定）。selectRole 2026-09-07 随
+        // prompt 池退役
         const selectSession = (id: string, _title: string): void => {
           if (link.state.phase !== 'IDLE') return; // P18 流式禁切会话
           void link.loadSession(id).then((ok) => {
@@ -542,46 +524,7 @@ export function createAiChatPlugin(): UiPlugin {
                   borderRadius: 'var(--kfm-radius-lg)', boxShadow: 'var(--kfm-shadow-raised)', padding: '4px',
                 },
               },
-              // —— 角色组（快选：条目=agent-prompt 池，✓=激活 roleFile） ——
-              createElement('div', {
-                style: { padding: '4px 8px', fontSize: '11px', color: 'var(--kfm-ink-3)' },
-              }, `角色 · ${quick.roles.length}`),
-              ...quick.roles.map((r) =>
-                createElement('button', {
-                  key: `role-${r.id}`,
-                  'data-aichat-config-entry': `role:${r.id}`,
-                  type: 'button',
-                  onClick: () => selectRole(r.id, r.name),
-                  style: {
-                    display: 'flex', alignItems: 'center', gap: '6px', width: '100%', padding: '6px 8px',
-                    border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
-                    borderRadius: 'var(--kfm-radius-sm)', fontSize: '12.5px', color: 'var(--kfm-ink)',
-                    opacity: link.state.phase === 'IDLE' ? 1 : 0.45, // P18 流式禁切
-                  },
-                },
-                createElement('span', { style: { width: '12px', color: 'var(--kfm-accent)' } },
-                  quick.active.roleFile === r.id ? '✓' : ''),
-                r.name,
-                quick.active.roleFile === r.id ? createElement('span', { style: { fontSize: '10px', color: 'var(--kfm-ink-3)' } }, '· 激活') : null),
-              ),
-              quick.roles.length === 0
-                ? createElement('div', { style: { padding: '4px 8px', fontSize: '11.5px', color: 'var(--kfm-ink-3)' } }, '（空）agent-prompt 池')
-                : null,
-              createElement('button', {
-                key: 'role-manage',
-                'data-aichat-config-entry': 'role:manage',
-                type: 'button',
-                onClick: () => {
-                  onMenu('CLOSED');
-                  aiRaisedRef.current = false;
-                  window.dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'prompt' } }));
-                },
-                style: {
-                  display: 'flex', width: '100%', padding: '6px 8px', border: 'none', background: 'none',
-                  cursor: 'pointer', textAlign: 'left', borderRadius: 'var(--kfm-radius-sm)',
-                  fontSize: '11.5px', color: 'var(--kfm-ink-3)',
-                },
-              }, '管理 prompt 池…'),
+              // —— 角色组 2026-09-07 随 prompt 池退役（AI 冻结在对话客户端形态） ——
               // —— 会话组（快选：条目=session 池壳，✓=激活 sessionId；P18 置灰） ——
               createElement('div', {
                 style: { padding: '4px 8px', borderTop: '1px solid var(--kfm-aichat-line)', marginTop: '2px', fontSize: '11px', color: 'var(--kfm-ink-3)' },
@@ -624,17 +567,6 @@ export function createAiChatPlugin(): UiPlugin {
                 },
               }, '管理 session 池…'),
               )
-            : null,
-          // A2a.5 D2 系统提示条：角色切换一次性提示（不进消息核不落盘，§3.4）
-          notice
-            ? createElement('div', {
-                'data-aichat-notice': '1',
-                style: {
-                  position: 'absolute', left: 0, right: 0, top: '100%', marginTop: '0',
-                  padding: '3px 10px', fontSize: '11.5px', color: 'var(--kfm-ink-3)',
-                  background: 'var(--kfm-surface)', borderBottom: '1px solid var(--kfm-aichat-line)',
-                },
-              }, notice)
             : null,
           ),
           createElement('div', {

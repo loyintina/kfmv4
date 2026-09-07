@@ -6,7 +6,7 @@
  *       ALT 态左滑照进池（仲裁⑪）/标签排横滑不触发且标签排照滚/keybar·composer·orb 落点
  *       不响应/AI_PAGE 态不响应）
  *   B2  C2 返回双通道（右滑 / × 钮）+ EDITING 中右滑草稿蒸发
- *   B3  C3 标签行四池切换 + client 注册表 ⊆ server /pool/list 互证
+ *   B3  C3 标签行三池切换 + client 注册表 ⊆ server /pool/list 互证
  *   B4  picker 同源互证（拍板⑫联动）：池页加 model → /ai/providers 即变 →
  *       picker 二级同形；picker 选中 → 总账变 → 池页 ✓ 同步
  *   B5  C7/C8 relied 禁删 UI（409 人话展 reliedBy+条目仍在）+ 断引用「已失效」
@@ -15,7 +15,7 @@
  *       .env 600 落明文，回填=代字空输入）
  *   B8  C12 标题栏入口路由（拍板⑯）：kfm-nz-pool-open 事件 → POOL_OPEN 直达
  *       对应池 + AI 页不收起；B8c 入口接真（阶段三）：标题栏点「角色」→ 池页
- *       开+定位 prompt 池+占位元素退役；B8d orb 置顶/关闭切换器先咬
+ *       开+定位对应池+占位元素退役；B8d orb 置顶/关闭切换器先咬
  *   B9  P6/P9 词汇表+观测钩+动画 token（ring 状态名 ⊆ 枚举/≥50 拍；
  *       动画时长跟随 --kfm-dur-normal；/tmp 夹具 nz-pool.log JSONL 互证）
  *   B10 C11/C13 推送校准（第二页 CRUD → 本页 pool/changed refetch；WS 断+
@@ -34,10 +34,7 @@
  *       病灶：body none 罩不进「触点元素自身即可滚动容器」子树，横拖
  *       ~slop 即被原生接管 → pointercancel → 手势核小位移判 null（真机
  *       右滑不响、mouse 合成事件钉全绿的原因）。
- *   B14 prompt 双区文件对象（§3.3 修订② 2026-09-05 老池卡信息组织复刻）：
- *       双区在场+种子角色自动选首条+芯片内容预览；点芯片开全文对话框；
- *       选择器宇宙=rolesDir 平铺+加文件入草稿+取消回存档（C6 rev 重挂）；
- *       保存落盘（C5）静态/动态区互不牵连。拖柄跟手帧归 C 档真机。
+ *   （B14 双区文件对象卷随 prompt 池 2026-09-07 退役摘除）
  *
  * 跑法：node tests/browser/config-pool.test.mjs（自起隔离 server 实例：
  * NZ_AI_CONFIG_DIR=临时夹具、独立端口、NZ_POOL_LOG=夹具内——零接触真机
@@ -63,7 +60,7 @@ const shot = async (page, name) => { const p = join(SHOT_DIR, `config-pool-${nam
 // ---------- 词汇表（设计 §四，P6 唯一真源；B9 全程采样判定用） ----------
 const PAGE_VOCAB = ['POOL_CLOSED', 'POOL_OPEN'];
 const INNER_VOCAB = ['DETAIL', 'OVERLAY_DELETE']; // 修订①（2026-09-05）：两态退役→选择制
-const POOL_VOCAB = ['basic', 'provider', 'prompt', 'session'];
+const POOL_VOCAB = ['basic', 'provider', 'session']; // prompt 2026-09-07 退役
 
 // ---------- 隔离 server 实例（夹具目录 + 私有端口 + 夹具日志） ----------
 const FIXTURE = await mkdtemp(join(tmpdir(), 'nz-pool-b-'));
@@ -96,7 +93,6 @@ const api = async (path, body) => {
 if (srvUp) {
   await api('/pool/provider/create', { entry: { id: 'examprov', name: 'Exam Provider', baseUrl: 'https://exam.example/v1', apiKey: '', models: ['exam-model-a', 'exam-model-b'] } });
   await api('/pool/provider/create', { entry: { id: 'otherprov', name: 'Other Provider', baseUrl: 'https://other.example/v1', apiKey: '', models: ['other-model-1'] } });
-  await api('/pool/prompt/create', { entry: { id: '考试角色', name: '考试角色' } });
   await api('/pool/session/create', { entry: { title: '依赖会话', providerId: 'examprov', modelId: 'exam-model-a' } });
   await api('/pool/session/create', { entry: { title: '断头会话', providerId: 'ghost-prov' } });
 }
@@ -159,7 +155,7 @@ const closePoolBySwipe = async () => { await swipe(400, 300, 170, 0); };
 
 try {
   // ========== ⓪ 环境就绪 ==========
-  check('⓪ 隔离 server 起来 + 夹具播种（/pool/list 四池）', srvUp && (await api('/pool/list')).json?.length === 4,
+  check('⓪ 隔离 server 起来 + 夹具播种（/pool/list 三池，prompt 退役）', srvUp && (await api('/pool/list')).json?.length === 3,
     `srvUp=${srvUp} pools=${JSON.stringify((await api('/pool/list')).json?.map((p) => p.pool))}`);
   check('⓪ __kfmNzPool 观测钩在场', hookAlive);
   if (!hookAlive) throw new Error('hook missing — 后续钉全不成立');
@@ -303,7 +299,7 @@ try {
     await closePoolBySwipe();
   }
 
-  // ========== B3：C3 标签行四池切换 + 注册表互证 ==========
+  // ========== B3：C3 标签行三池切换 + 注册表互证 ==========
   {
     const serverList = (await api('/pool/list')).json;
     const serverPools = serverList.map((p) => p.pool).sort();
@@ -312,7 +308,7 @@ try {
     await openPoolBySwipe();
     const shots = [];
     const allSwitched = [];
-    for (const p of ['provider', 'prompt', 'session', 'basic']) {
+    for (const p of ['provider', 'session', 'basic']) {
       await page.click(`[data-pool-tab="${p}"]`).catch(() => {});
       await sleep(350);
       const h = await hook();
@@ -320,9 +316,9 @@ try {
       if (p === 'provider' || p === 'basic') { shots.push(p); await shot(page, `b3-tab-${p}`); }
     }
     check('B3 标签集=池注册表枚举且 client ⊆ server /pool/list（互证）',
-      JSON.stringify(tabPools) === JSON.stringify(serverPools) && tabPools.length === 4,
+      JSON.stringify(tabPools) === JSON.stringify(serverPools) && tabPools.length === 3,
       `tabs=${JSON.stringify(tabPools)} server=${JSON.stringify(serverPools)}`);
-    check('B3 C3 四池点切各达 DETAIL（草稿不跨池）', allSwitched.every(Boolean), `switched=${JSON.stringify(allSwitched)}`);
+    check('B3 C3 三池点切各达 DETAIL（草稿不跨池）', allSwitched.every(Boolean), `switched=${JSON.stringify(allSwitched)}`);
   }
 
   // ========== B4：picker 同源互证（拍板⑫联动） ==========
@@ -498,7 +494,7 @@ try {
     await page.click('[data-kfm-aichat-orb]').catch(() => {});
     await sleep(500);
     const aiOpen = await aiHook();
-    await page.evaluate(() => (window).dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'prompt' } })));
+    await page.evaluate(() => (window).dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'provider' } })));
     await sleep(400);
     const hPrompt = await hook();
     const aiStill = await aiHook();
@@ -510,23 +506,23 @@ try {
     await page.click('[data-pool-close]').catch(() => {});
     await sleep(400);
     const aiBack = await aiHook();
-    check('B8 C12 入口事件 → POOL_OPEN 直达对应池（prompt→session）',
-      aiOpen?.page === 'AI_PAGE' && hPrompt?.page === 'POOL_OPEN' && hPrompt?.pool === 'prompt'
+    check('B8 C12 入口事件 → POOL_OPEN 直达对应池（provider→session）',
+      aiOpen?.page === 'AI_PAGE' && hPrompt?.page === 'POOL_OPEN' && hPrompt?.pool === 'provider'
       && hSession?.pool === 'session' && hPrompt?.pageState === 'DETAIL',
-      `prompt=${hPrompt?.pool} session=${hSession?.pool}`);
+      `provider=${hPrompt?.pool} session=${hSession?.pool}`);
     check('B8b C12 路径 AI 页不收起（池页关后 ai-chat 仍在 AI_PAGE）',
       aiStill?.page === 'AI_PAGE' && aiDom && aiBack?.page === 'AI_PAGE',
       `during=${aiStill?.page} dom=${aiDom} after=${aiBack?.page}`);
-    // 拍板⑯接真 + A2a.5 §五快选化：条目=选择（role:<id> 激活），「管理…」=
-    // C12 路由真发（AI 页开着→池页开+直达 prompt 池），占位骨架元素不存在
+    // 拍板⑯接真 + A2a.5 §五快选化：「管理…」=C12 路由真发（AI 页开着→
+    // 池页开+直达 session 池），占位骨架元素不存在（role 组 09-07 退役）
     await page.click('[data-aichat-config-btn]').catch(() => {});
     await sleep(300);
-    await page.click('[data-aichat-config-entry="role:manage"]').catch(() => {});
+    await page.click('[data-aichat-config-entry="session:manage"]').catch(() => {});
     await sleep(500);
     const hRole = await hook();
     const phGone = await page.evaluate(() => !document.querySelector('[data-aichat-config-placeholder]'));
-    check('B8c 入口接真（拍板⑯+A2a.5 快选化）：标题栏「管理 prompt 池…」→ 池页开+定位 prompt 池 + 占位元素不存在',
-      hRole?.page === 'POOL_OPEN' && hRole?.pool === 'prompt' && phGone,
+    check('B8c 入口接真（拍板⑯+A2a.5 快选化）：标题栏「管理 session 池…」→ 池页开+定位 session 池 + 占位元素不存在',
+      hRole?.page === 'POOL_OPEN' && hRole?.pool === 'session' && phGone,
       `pool=${hRole?.pool}/${hRole?.page} phGone=${phGone}`);
     // orb 新逻辑收尾链（三态详钉=B12）：池页盖 AI → 点球=提顶（AI_PAGE 保持）
     // → 再点球=关 AI（池页不关）→ 右滑关池页回全关
@@ -725,15 +721,15 @@ try {
     check('B12d 提顶档稳定性：池页在场重渲染（路由 bump）不误清提顶账（AI 仍在池页上）',
       stD.raised === true && stD.poolZ === 41 && stD.hit === true, JSON.stringify(stD));
     // B12e 入口召回（C12 语义）：外发路由事件=入口意图 → 池页回 AI 之上
-    await page.evaluate(() => (window).dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'prompt' } })));
+    await page.evaluate(() => (window).dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'session' } })));
     await sleep(500);
     const stE = await page.evaluate(() => ({
       raised: document.documentElement.hasAttribute('data-kfm-aichat-raised'),
       poolZ: Number(getComputedStyle(document.querySelector('[data-kfm-pool]')).zIndex),
       pool: (window).__kfmNzPool().pool,
     }));
-    check('B12e 入口召回：路由事件（C12）把池页召回 AI 之上（提顶账清、池页 z44、切 prompt 池）',
-      stE.raised === false && stE.poolZ === 44 && stE.pool === 'prompt', JSON.stringify(stE));
+    check('B12e 入口召回：路由事件（C12）把池页召回 AI 之上（提顶账清、池页 z44、切 session 池）',
+      stE.raised === false && stE.poolZ === 44 && stE.pool === 'session', JSON.stringify(stE));
     // 收尾：右滑关池页回全关态（此刻池页在顶可滑）
     await closePoolBySwipe();
     check('B12-收 池页右滑关闭回全关态', await poolClosed());
@@ -909,72 +905,6 @@ try {
 } catch (e) {
   check('考卷执行中断', false, String(e).slice(0, 300));
 } finally {
-  // ========== B14：prompt 双区文件对象（§3.3 修订② 2026-09-05 老池卡信息组织复刻） ==========
-  {
-    // 播种：roles 目录两个 md + 一个角色（走池 API=唯一写入咽喉；
-    // rolesDir=$FIXTURE/agents/roles——选择器宇宙与装配线锚点同目录）
-    const agentsDir = join(FIXTURE, 'agents', 'roles');
-    mkdirSync(agentsDir, { recursive: true });
-    writeFileSync(join(agentsDir, 'pool-exam-a.md'), '甲文件第一行 pool-exam-alpha\n第二行内容\n第三行\n');
-    writeFileSync(join(agentsDir, 'pool-exam-b.md'), '乙文件第一行 seed-b\n');
-    await api('/pool/prompt/create', { entry: { id: '卷角色', name: '卷角色', promptFiles: ['pool-exam-a.md'], dynamicPromptFiles: [] } });
-    const p14 = await browser.newPage({ viewport: { width: 900, height: 620 } });
-    p14.on('pageerror', (e) => pageErrors.push(String(e).slice(0, 160)));
-    await p14.goto(`${BASE}/?nosplash`, { waitUntil: 'domcontentloaded', timeout: 40000 }).catch(() => {});
-    await p14.waitForFunction(() => !!(window).__kfmNzPool && !!document.querySelector('.nz-term'), null, { timeout: 20000, polling: 250 });
-    await sleep(2000);
-    await p14.evaluate(() => (window).dispatchEvent(new CustomEvent('kfm-nz-pool-open', { detail: { pool: 'prompt' } })));
-    await p14.waitForFunction(() => { const r = (window).__kfmNzPool(); return r.page === 'POOL_OPEN' && r.pool === 'prompt' && !!r.editing && !!document.querySelector('[data-pool-file-chip]'); }, null, { timeout: 10000, polling: 250 }).catch(() => {});
-    const zones = await p14.evaluate(() => ({
-      staticZone: !!document.querySelector('[data-pool-filezone="static"]'),
-      dynZone: !!document.querySelector('[data-pool-filezone="dyn"]'),
-      chips: [...document.querySelectorAll('[data-pool-file-chip]')].map((e) => e.getAttribute('data-pool-file-chip')),
-      preview: document.querySelector('[data-pool-file-chip]')?.textContent ?? '',
-    }));
-    check('B14a 双区在场（static/dyn）+ 种子角色自动选中 + 文件芯片带内容预览',
-      zones.staticZone && zones.dynZone && zones.chips.includes('pool-exam-a.md') && zones.preview.includes('pool-exam-alpha'),
-      JSON.stringify(zones));
-    // B14b 点芯片开全文对话框（种子正文在场）→ 关闭
-    await p14.click('[data-pool-file-chip="pool-exam-a.md"]').catch(() => {});
-    await sleep(500);
-    const dlg = await p14.evaluate(() => ({
-      open: !!document.querySelector('[data-pool-file-dialog]'),
-      content: document.querySelector('[data-pool-file-content]')?.value ?? document.querySelector('[data-pool-file-content]')?.textContent ?? '',
-    }));
-    await p14.click('[data-pool-file-dialog-close]').catch(() => {});
-    await sleep(300);
-    check('B14b 点芯片开全文对话框（种子正文在场）+ 可关',
-      dlg.open && dlg.content.includes('pool-exam-alpha'), `content=${JSON.stringify(String(dlg.content).slice(0, 40))}`);
-    // B14c 加文件（选择器）→ 草稿 +1 → 取消=回存档（C6 rev 重挂）
-    await p14.click('[data-pool-file-add="static"]').catch(() => {});
-    await p14.waitForFunction(() => !!document.querySelector('[data-pool-file-picker]'), null, { timeout: 6000 }).catch(() => {});
-    await p14.waitForFunction(() => document.querySelectorAll('[data-pool-file-pick]').length > 0, null, { timeout: 6000 }).catch(() => {}); // 等行渲染（fetch 在途竞态）
-    const pickable = await p14.evaluate(() => [...document.querySelectorAll('[data-pool-file-pick]')].map((e) => e.getAttribute('data-pool-file-pick')));
-    await p14.click('[data-pool-file-pick="pool-exam-b.md"]').catch(() => {});
-    await sleep(400);
-    const afterAdd = await p14.evaluate(() => [...document.querySelectorAll('[data-pool-file-chip]')].map((e) => e.getAttribute('data-pool-file-chip')));
-    await p14.click('[data-pool-cancel]').catch(() => {});
-    await sleep(400);
-    const afterCancel = await p14.evaluate(() => [...document.querySelectorAll('[data-pool-file-chip]')].map((e) => e.getAttribute('data-pool-file-chip')));
-    check('B14c 选择器宇宙=rolesDir 平铺（b 文件可选）+ 加文件入草稿 + 取消回存档（C6）',
-      pickable.includes('pool-exam-b.md') && afterAdd.includes('pool-exam-b.md') && !afterCancel.includes('pool-exam-b.md') && afterCancel.includes('pool-exam-a.md'),
-      `pickable=${JSON.stringify(pickable)} add=${JSON.stringify(afterAdd)} cancel=${JSON.stringify(afterCancel)}`);
-    // B14d 动态区加文件 → 保存落盘（C5 保持载入）；拖柄跟手帧归 C 档真机
-    await p14.click('[data-pool-file-add="dyn"]').catch(() => {});
-    await p14.waitForFunction(() => !!document.querySelector('[data-pool-file-picker]'), null, { timeout: 6000 }).catch(() => {});
-    await p14.click('[data-pool-file-pick="pool-exam-b.md"]').catch(() => {});
-    await sleep(400);
-    await p14.click('[data-pool-save]').catch(() => {});
-    await sleep(600);
-    const roleAfter = (await api('/pool/prompt')).json.find((e) => e.id === '卷角色');
-    check('B14d 保存落盘（C5）：动态区引用 b 文件持久化 + 静态区不被牵连',
-      Array.isArray(roleAfter?.dynamicPromptFiles) && roleAfter.dynamicPromptFiles.includes('pool-exam-b.md')
-      && Array.isArray(roleAfter?.promptFiles) && roleAfter.promptFiles.includes('pool-exam-a.md') && !roleAfter.promptFiles.includes('pool-exam-b.md'),
-      JSON.stringify(roleAfter));
-    await p14.screenshot({ path: join(SHOT_DIR, 'config-pool-b14-dualzone.png') });
-    await p14.close();
-  }
-
   // ---------- 清场：tmux 临时会话 + 隔离 server + 夹具 ----------
   for (let i = 0; i < 6; i++) spawn('tmux', ['kill-session', '-t', `pool-exam-${i}`], { stdio: 'ignore' });
   await browser.close().catch(() => {});
