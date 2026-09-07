@@ -21,6 +21,8 @@ import { createElement, useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { UiPlugin, UiPluginHandle } from '../../kernel/ui-kernel.js';
+import { getLinkTracker } from '../../term/link-state.js';
+import { registryAddLive, registryMissing, registryRemove } from '../../term/session-registry.js';
 
 export interface TmuxSessionInfo {
   name: string;
@@ -30,6 +32,9 @@ export interface TmuxSessionInfo {
 
 /** 状态机词汇表（docs/tmux-tabs-v2-state-machine.md §一，清单外名字禁止） */
 export type TmuxTabsState = 'HANDLE' | 'EXPANDED' | 'OVERLAY_NEW' | 'OVERLAY_CLOSE';
+
+/** R1 附着陆账键：reload 后自动重进的依据（sessionStorage 世内存续） */
+const AS_KEY = 'nzTmuxAttached';
 
 // ========== 脑（纯 TS：会话表 WS + 重试 + 发帧 + 环境事件，不碰 DOM） ==========
 
@@ -336,10 +341,19 @@ export function createTmuxTabsPlugin(): UiPlugin {
         const setAttached = (name: string | null): void => {
           attachedRef.current = name;
           setAttachedSession(name);
+          // R1：附着陆账（sessionStorage 世内存续）——reload 后自动重进的依据
+          try {
+            if (name) sessionStorage.setItem(AS_KEY, name);
+            else sessionStorage.removeItem(AS_KEY);
+          } catch { /* 隐私模式：重进腿退化为手动点标签 */ }
         };
         const expandedRef = useRef(false);
         const overlayRef = useRef<null | 'OVERLAY_NEW' | 'OVERLAY_CLOSE'>(null);
         const sessionsRef = useRef<TmuxSessionInfo[]>([]);
+        /** R1：缺失名单重算口（sessions effect 里落实体，ignore 腿即刷用） */
+        const missingRef = useRef<() => void>(() => {});
+        /** R1：会话表至少到过一帧（自动重进裁决的前提，防空表竞态误判） */
+        const sessionsSeenRef = useRef(false);
         const termInject = (s2: string): void => {
           (window as unknown as Record<string, unknown>).__kfmNzTermInject?.(s2);
         };
@@ -355,12 +369,13 @@ export function createTmuxTabsPlugin(): UiPlugin {
           };
           push({ t: Date.now(), state: runtimeRef.current.state, expanded: expandedRef.current, n: sessionsRef.current.length });
         };
-        const enterSession = (name: string): void => {
+        const enterSession = (name: string, quiet = false): void => {
           const attach = (): void => {
             termInject(`tmux new-session -A -s ${name}\r`);
             setAttached(name);
-            expandedRef.current = true;
-            setExpanded(true);
+            // quiet=R1 自动重进腿：恢复现场但不抢注意力（标签排保持收起）
+            expandedRef.current = !quiet;
+            setExpanded(!quiet);
             refreshRuntime();
           };
           if (attachedRef.current) {
@@ -405,9 +420,19 @@ export function createTmuxTabsPlugin(): UiPlugin {
         };
 
         useEffect(() => {
+          const recomputeMissing = (): void => {
+            getLinkTracker().setMissing(
+              registryMissing(sessionsRef.current.map((s) => s.name)),
+            );
+          };
+          missingRef.current = recomputeMissing;
           const link = openSessionsLink(() => {
             sessionsRef.current = [...link.sessions];
             setSessions([...link.sessions]);
+            sessionsSeenRef.current = true;
+            // R1：活会话自动入账 + 注册表 diff 喂链路状态机（DEGRADED 源）
+            registryAddLive(sessionsRef.current.map((s) => s.name));
+            recomputeMissing();
             // 附着会话消失（被杀/外部）→ 塌回终端态
             if (attachedRef.current && !link.sessions.some((s) => s.name === attachedRef.current)) {
               setAttached(null);
@@ -418,6 +443,64 @@ export function createTmuxTabsPlugin(): UiPlugin {
           });
           linkRef.current = link;
           return () => link.close();
+        }, []);
+
+        // R1 自动重进（2026-09-08 判据稿④）：reload 后账上有附着会话 →
+        // 等两项事实齐了再动手——①term boot 落了 __kfmNzTermResumed
+        // （true=续命成功：PTY 尾迹里 tmux 现场还在，只回填视觉账，防
+        // tmux 套 tmux；false=全新 PTY：tmux 会话若还活着就真重进）；
+        // ②会话表已到（活没活以表为准）。超时 10s 放弃（退化手动点）。
+        useEffect(() => {
+          let saved: string | null = null;
+          try { saved = sessionStorage.getItem(AS_KEY); } catch { /* 无账 */ }
+          if (!saved) return;
+          let tries = 0;
+          const timer = setInterval(() => {
+            tries++;
+            const win = window as unknown as Record<string, unknown>;
+            const resumed = win.__kfmNzTermResumed;
+            // 两项事实都齐才裁决：resumed 落值 + 会话表至少到过一帧
+            //（防 race：resumed 早到、表未到 → 空表误判「会话没了」清账）
+            if (typeof resumed !== 'boolean' || !sessionsSeenRef.current) {
+              if (tries > 40) clearInterval(timer);
+              return;
+            }
+            clearInterval(timer);
+            const live = sessionsRef.current.map((s) => s.name);
+            if (resumed) {
+              if (live.includes(saved!)) setAttached(saved); // 现场已在，回填账
+              else setAttached(null);
+            } else if (live.includes(saved!)) {
+              enterSession(saved!, true); // 全新 PTY+会话活着 → 真重进
+            } else {
+              setAttached(null);
+            }
+          }, 250);
+          return () => clearInterval(timer);
+          // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, []);
+
+        // R1 横幅动作接线：link-banner 只报事件（插件间零直连），重建/
+        // 忽略在这里落地——新建走既有 newSession 管线；忽略=出账+即刷
+        useEffect(() => {
+          const namesOf = (e: Event): string[] => {
+            const d = (e as CustomEvent).detail as { names?: unknown } | undefined;
+            const ns = d?.names;
+            return Array.isArray(ns) ? ns.filter((n): n is string => typeof n === 'string') : [];
+          };
+          const onRebuild = (e: Event): void => {
+            for (const n of namesOf(e)) linkRef.current?.newSession(n);
+          };
+          const onIgnore = (e: Event): void => {
+            for (const n of namesOf(e)) registryRemove(n);
+            missingRef.current();
+          };
+          document.addEventListener('kfm-nz-link-rebuild', onRebuild);
+          document.addEventListener('kfm-nz-link-ignore', onIgnore);
+          return () => {
+            document.removeEventListener('kfm-nz-link-rebuild', onRebuild);
+            document.removeEventListener('kfm-nz-link-ignore', onIgnore);
+          };
         }, []);
 
         // 0902 用户仲裁：选择态（EXPANDED）下点/滚/敲键盘等「开始操作屏幕」
@@ -482,6 +565,8 @@ export function createTmuxTabsPlugin(): UiPlugin {
         };
         const onCloseConfirm = (s: TmuxSessionInfo): void => {
           linkRef.current?.killSession(s.name);
+          registryRemove(s.name); // R1：显式杀 = 出账（缺失名单随之少一个）
+          missingRef.current();
           overlayRef.current = null;
           setOverlay(null); // T9
           refreshRuntime();

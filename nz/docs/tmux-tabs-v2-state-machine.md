@@ -108,3 +108,19 @@ E4 服务器推送校准——推送源从 tmux-state 改为 tmux-sessions）。
 | ⑧ | T14 点屏幕空白 | 展开后点 `[data-tmux-backdrop]`→收起回 HANDLE |
 | ⑨ | T15 操作屏幕 | 展开后在终端/keybar 滚动或键盘输入→收起回 HANDLE |
 | ⑩ | kernel 注册+词汇表 | kernel list + ring 状态名全在枚举内+末拍互证 |
+
+## 附：R1 断链自愈附属行为（2026-09-08，T 词汇零增改）
+
+- **注册表**：活会话自动入账（localStorage `nzTmuxRegistry`，封顶 16
+  FIFO）；×确认杀（T9）= 出账；横幅「忽略」= 出账。见
+  `src/client/term/session-registry.ts`。
+- **缺失喂达**：每拍会话表到 → 注册表 diff 活表 → 喂
+  `LinkTracker.setMissing`（DEGRADED 相态源）。
+- **附着陆账**：setAttached 同步 sessionStorage `nzTmuxAttached`（T2/
+  T2s/T3 全走此口，账随语义自动对错）。
+- **自动重进**（boot 一次）：账上有名 → 等 `__kfmNzTermResumed` 落值 +
+  会话表到：resumed=true 只回填视觉账（PTY 尾迹里 tmux 现场还在，防
+  tmux 套 tmux）；false 且会话活 → `enterSession(name, quiet=true)`
+  真重进（标签排不展开）。超时 10s 放弃。
+- **横幅动作**：`kfm-nz-link-rebuild`/`kfm-nz-link-ignore` 事件在本
+  插件落地（banner 零直连）。

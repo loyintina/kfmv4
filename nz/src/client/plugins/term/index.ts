@@ -33,9 +33,13 @@ import { TermWsBridge } from '../../term/bridge.js';
 import { mapText } from '../../term/keymap.js';
 import { KEYBAR_H, MOD_ALT, MOD_CTRL, MOD_SHIFT } from '../../term/keybar.js';
 import { mountKeybar } from '../../term/KeybarApp.js';
+import { getLinkTracker } from '../../term/link-state.js';
+import { mountLinkBanner } from '../../term/link-banner.js';
 
 const COLS = 80;
 const ROWS = 24;
+/** 横幅已挂旗（模块级：applyTermBundle 重复 apply 不重复建容器） */
+let bannerMounted = false;
 /**
  * scrollback 历史行数（审计漂移#1 终裁 kfmv4-audit-term-parity-final-
  * verdict：各钉各的——na 10000 长日志场景，nz 钉 1000）。理由：nz 每行
@@ -152,6 +156,7 @@ export function applyTermBundle(ctx: Context): void {
   const onSessionDead = (reason: string): void => {
     try {
       sessionStorage.removeItem(SS_KEY);
+      getLinkTracker().note('session-dead: ' + reason);
       const last = Number(sessionStorage.getItem('nzTermDeadReload') ?? 0);
       if (Date.now() - last > 5000) {
         sessionStorage.setItem('nzTermDeadReload', String(Date.now()));
@@ -167,6 +172,7 @@ export function applyTermBundle(ctx: Context): void {
    *  onSessionDead 共用 5s 防循环闸（两腿不叠加刷）。 */
   const onSilentDead = (reason: string): void => {
     try {
+      getLinkTracker().note('silent-dead: ' + reason);
       const last = Number(sessionStorage.getItem('nzTermDeadReload') ?? 0);
       if (Date.now() - last > 5000) {
         sessionStorage.setItem('nzTermDeadReload', String(Date.now()));
@@ -181,6 +187,19 @@ export function applyTermBundle(ctx: Context): void {
   // （2026-08-23 复盘裁决①：骨架常驻、专症字段随症收口、角标移除）。
   const dbg = { viewportEvents: 0, resizesApplied: 0 };
 
+  // R1 断链自愈（2026-09-08 判据稿签收）：onLink 悬空插座接进链路状态机，
+  // 断因分层+横幅见 term/link-state.ts。bridge 自身重连/心跳语义零改动。
+  const linkTracker = getLinkTracker();
+  // 横幅容器走 host persistent 层（分层宪章；裸挂 body 被 layout 层根
+  // z100 压住=按钮可见不可点，B 档卷 elementFromPoint 实锤）。
+  // 模块级旗标防重复挂载（applyTermBundle 每页面一世一跑）。
+  if (!bannerMounted) {
+    bannerMounted = true;
+    const bannerContainer = createContainer(ctx, {
+      kind: 'persistent', slot: 'link-banner', owner: 'term',
+    });
+    mountLinkBanner(linkTracker, bannerContainer.el);
+  }
   const bridge = new TermWsBridge(`${location.origin.replace(/^http/, 'ws')}/ws/term`, {
     onOutput(id, data, replay) {
       for (const inst of instances.values()) {
@@ -207,6 +226,9 @@ export function applyTermBundle(ctx: Context): void {
         inst.scheduleRender(64); // 退出提示走平常档，立即上屏
         inst.followOutput();
       }
+    },
+    onLink(up) {
+      linkTracker.wsLink(up);
     },
     onSessionDead,
     onSilentDead,
@@ -1067,14 +1089,22 @@ export function applyTermBundle(ctx: Context): void {
         // 预置 sessionId：attach 的 tail 回放按 inst.sessionId 匹配实例，
         // 不预置则回放帧找不到主人（时序坑）
         card.sessionId = saved;
-        if (await bridge.attachSession(saved)) {
+        const attachOk = await bridge.attachSession(saved);
+        if (attachOk) {
           sessionId = saved;
+          // R1：续命成功=PTY 还活着（tmux 现场在 tail 里），tabs 插件
+          // 据此只回填视觉账不再注入（防 tmux 套 tmux）
+          try { (window as unknown as Record<string, unknown>).__kfmNzTermResumed = true; } catch { /* 钩失败不挡 */ }
         } else {
           card.sessionId = null;
           console.warn('[term] 续命 attach 失败（服务端重启过？），开新会话');
+          try { (window as unknown as Record<string, unknown>).__kfmNzTermResumed = false; } catch { /* 钩失败不挡 */ }
         }
       }
       if (!sessionId) sessionId = await bridge.open({ command: opts.command, cols: card.cols, rows: card.rows });
+      // R1：全新 PTY（含无账/摘账重开）显式落 false——tabs 自动重进的
+      // 等待腿靠这个布尔分辨「续命回填」vs「真重进」，缺席会白等超时
+      try { (window as unknown as Record<string, unknown>).__kfmNzTermResumed = false; } catch { /* 钩失败不挡 */ }
       mark('ws-open-pty');
       try { sessionStorage.setItem(SS_KEY, sessionId); } catch { /* 隐私模式等，热更退化为断线重开 */ }
       card.sessionId = sessionId;

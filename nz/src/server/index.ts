@@ -105,6 +105,14 @@ export function createNzServer(): Server {
   return createServer((req, res) => {
     if (handleAiChat(req, res)) return;
     if (handlePool(req, res)) return;
+    // R1 断链自愈（2026-09-08 判据稿签收）：健康探针——客户端链路状态机
+    // 在 WS 断期间以本端点分层断因（HTTP 通=服务进程在，只是 WS 掉；
+    // HTTP 死=网断或服务器死）。零依赖零 IO，no-store 防中间缓存说谎。
+    if (req.method === 'GET' && (req.url ?? '').split('?')[0] === '/healthz') {
+      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      res.end(JSON.stringify({ ok: true, uptime: Math.round(process.uptime()) }));
+      return;
+    }
     // 诊断取证端点（IME 事件流探针，评审取证信）：?debug 客户端把
     // compositionstart/update/end + input + viewport 事件逐条 sendBeacon
     // 到此处，原样追加落盘——真实 IME 序列 headless 模拟不出，只能真机抓。
