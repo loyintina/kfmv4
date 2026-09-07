@@ -87,3 +87,14 @@
 - 2026-09-01 ✅ 入口文档体检通过（3 臂：实错 0.00/臂 LCA 0/3 硬破界 0/3 质疑 0/3）
 - 2026-09-03 04:17 ⚠️ 7 条待裁决（SEM001×6 SEM002×1；本轮新增 0，跑 0 跳 30，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
 - 2026-09-02 ✅ 入口文档体检通过（3 臂：实错 0.00/臂 LCA 0/3 硬破界 0/3 质疑 1/3）
+- 2026-09-04 04:17 ⚠️ 7 条待裁决（SEM001×6 SEM002×1；本轮新增 0，跑 4 跳 26，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
+- 2026-09-03 ⚠️ 入口文档体检 FAIL（3 臂：实错 0.67/臂 LCA 1/3 硬破界 0/3 质疑 0.6666666666666666/3）→ 走 onboarding.md 修复轮
+- 2026-09-05 04:17 ⚠️ 7 条待裁决（SEM001×6 SEM002×1；本轮新增 0，跑 0 跳 30，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
+- 2026-09-04 ✅ 入口文档体检通过（3 臂：实错 0.00/臂 LCA 0/3 硬破界 0/3 质疑 1/3）
+- 2026-09-06 04:17 ⚠️ 7 条待裁决（SEM001×6 SEM002×1；本轮新增 0，跑 0 跳 30，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
+- 2026-09-05 ✅ 入口文档体检通过（3 臂：实错 0.00/臂 LCA 0/3 硬破界 0/3 质疑 0.3333333333333333/3）
+- 2026-09-07 04:17 ⚠️ 7 条待裁决（SEM001×6 SEM002×1；本轮新增 0，跑 0 跳 30，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
+- 2026-09-07 04:23 ⚠️ 7 条待裁决（SEM001×6 SEM002×1；本轮新增 0，跑 0 跳 30，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
+- 2026-09-07 04:23 📏 基准校准：召回（并集）：2/28 · NC 误报：1/3 · 变异面之外额外发现：0 条
+- 2026-09-06 📊 - LLM 调用：81 次 · 成功 39 · 失败 42 · 平均 102s/次
+- 2026-09-06 ✅ 入口文档体检通过（3 臂：实错 0.00/臂 LCA 0/3 硬破界 0/3 质疑 1/3）

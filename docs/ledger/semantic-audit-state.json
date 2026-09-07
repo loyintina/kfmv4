@@ -57,8 +57,8 @@
       "attempts": 1
     },
     "inter-readme-codemap": {
-      "hash": "77f2de288cc134d3981413a2a03f7c001ca27027",
-      "lastRun": "2026-08-28",
+      "hash": "e4a7ccb77d12aa9189ceda70cedb46fbc6fb86fe",
+      "lastRun": "2026-09-03",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -93,8 +93,8 @@
       "attempts": 1
     },
     "vision-vs-maps": {
-      "hash": "16e1d9ea61c72d1e0a614f3ba7e1d6d0f91c513d",
-      "lastRun": "2026-08-28",
+      "hash": "e2a6dd90f06c4fd527da4ac84b85e583f9399b69",
+      "lastRun": "2026-09-03",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -135,8 +135,8 @@
       "attempts": 1
     },
     "claude-vs-docs": {
-      "hash": "3a41712f0e18fc1529b856770a3ab95394bfbfc7",
-      "lastRun": "2026-08-30",
+      "hash": "32e93aeabb55f74d669a17550407544812fec69e",
+      "lastRun": "2026-09-03",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -299,8 +299,8 @@
       "attempts": 1
     },
     "crossdomain-vs-inventory": {
-      "hash": "9bb0771b73159fa50fb5b7a32bd0d3a8af3f7d2a",
-      "lastRun": "2026-08-28",
+      "hash": "711dfb99016fea4142ac838d23c3de35a1486b13",
+      "lastRun": "2026-09-03",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -1271,6 +1271,41 @@
     },
     {
       "date": "2026-09-02",
+      "ran": 0,
+      "skipped": 30,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-09-03",
+      "ran": 4,
+      "skipped": 26,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-09-04",
+      "ran": 0,
+      "skipped": 30,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-09-05",
+      "ran": 0,
+      "skipped": 30,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-09-06",
+      "ran": 0,
+      "skipped": 30,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-09-06",
       "ran": 0,
       "skipped": 30,
       "kept": 0,
