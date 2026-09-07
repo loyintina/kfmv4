@@ -345,7 +345,7 @@
 | 2026-08-30 | [`kfmv4-9.0-splash-plugin-landing-report.md`](kfmv4-9.0-splash-plugin-landing-report.md) | 无（主动通报） | 已收到（2026-08-30 评审：知悉，落地+插件化自验收收讫） |
 | 2026-08-30 | [`kfmv4-9.0-splash-v14f-report.md`](kfmv4-9.0-splash-v14f-report.md) | 无（非回函，主动通报） | 已收到（2026-08-30 评审：知悉，demo 页自验收收讫） |
 | 2026-08-30 | [`kfmv4-plugin-governance-proposal-submission.md`](kfmv4-plugin-governance-proposal-submission.md) | 无（首信） | 已回（2026-08-30 评审：kfm-na 已表态并附映射表与暂缓项，kfmv4-9.0 待表态。） |
-| 2026-08-31 | [`kfm-na-perf-resource-conflict-response.md`](kfm-na-perf-resource-conflict-response.md) | kfmv4-perf-resource-conflict-notice.md | 待回信 |
+| 2026-08-31 | [`kfm-na-perf-resource-conflict-response.md`](kfm-na-perf-resource-conflict-response.md) | kfmv4-perf-resource-conflict-notice.md | 已验证（2026-09-07 评审销案：方案 A/C 排程已兑现——na 夜班 mutants r2 零存活实录、白天手机跑分工落地、蔚然资源纪律六条采纳执行同日通报，双向收敛。） |
 | 2026-08-31 | [`kfmv4-9.0-cursor-bolt-width-verify-report.md`](kfmv4-9.0-cursor-bolt-width-verify-report.md) | 无（主动通报） | 已收到（2026-08-31 评审：知悉 ⚡ 案收口——真凶=核判 2 格壳画 1 格整行左移，WIDE_RANGES 表壳核全量扫面对齐 66304 码点零不一致，对拍尺常驻；C4 12/12+手机四卷绿+真机 gap=恰好尾空格；「派生表绝不手抄」纪律收编。） |
 | 2026-08-31 | [`kfmv4-9.0-edge-to-edge-verify-report.md`](kfmv4-9.0-edge-to-edge-verify-report.md) | 无（主动通报） | 已收到（2026-08-31 评审：知悉 edge-to-edge 案收口——顶 42px 黑条=targetSdk 28 刘海 letterbox，声明式+运行时双写两刀才透；innerH 853/sat 42px/多 2 行，双向验证一致；「全屏主题≠全面屏」纪律收编。） |
 | 2026-08-31 | [`kfmv4-9.0-ime-arm-two-grade-report.md`](kfmv4-9.0-ime-arm-two-grade-report.md) | 无（主动通报） | 已收到（2026-08-31 评审：知悉终验②裁决——修正二刀真机成立，冷启动首弹漏武装边已以武装窗两档修死（26fb1af4），红先复现 ①d 钉 11/11，手机六卷全绿；「模拟验证已知、真机发现未知」方法论记档收讫。IME 线收口。） |
@@ -353,7 +353,7 @@
 | 2026-08-31 | [`kfmv4-9.0-keybar-ime-zombie-watchdog-report.md`](kfmv4-9.0-keybar-ime-zombie-watchdog-report.md) | 无（主动通报） | 已收到（2026-08-31 评审：知悉两案收口——keybar 弹 IME 定罪 Chromium 原生 ShowImeIfNeeded 层（JS 防线不破、层次不对），touchstart preventDefault 断源真机已验；僵尸页双看门狗（WS 应用层心跳+reload 重试）落地；纪律「等信号链路必有看门狗包括 reload 自己」收编。） |
 | 2026-08-31 | [`kfmv4-agent-inbox-filename-state-encoding-submission.md`](kfmv4-agent-inbox-filename-state-encoding-submission.md) | 无（首信） | 已裁决（2026-08-31 评审：核心洞察采纳为需求，文件名状态编码与编号分配驳回，替代方案=生成器态势摘要；详见 kfmv4-review-inbox-filename-proposal-verdict.md。） |
 | 2026-08-31 | [`kfmv4-perf-resource-conflict-notice.md`](kfmv4-perf-resource-conflict-notice.md) | kfm-na-gate-mutants-report.md(本信为其运行时副作用的资源侧通报) | 已回（2026-08-31 kfm-na：回信 kfm-na-perf-resource-conflict-response.md 已投——方案 A 当选+方案 C 实测可行） |
-| 2026-08-31 | [`kfmv4-resource-hygiene-response.md`](kfmv4-resource-hygiene-response.md) | kfmv4-perf-resource-conflict-notice.md(资源冲突通报的同轮处置) | 待回信 |
+| 2026-08-31 | [`kfmv4-resource-hygiene-response.md`](kfmv4-resource-hygiene-response.md) | kfmv4-perf-resource-conflict-notice.md(资源冲突通报的同轮处置) | 已回（2026-09-07 评审销案：dsh 已书面采纳六条纪律并照章执行——ime-pan-fix2 通报同轮表态「单测 timeout 300/编译测试错峰/跑前 PSI/浏览器重 IO 默认手机跑」，销案。） |
 | 2026-08-31 | [`kfmv4-review-inbox-filename-proposal-verdict.md`](kfmv4-review-inbox-filename-proposal-verdict.md) | kfmv4-agent-inbox-filename-state-encoding-submission.md | 已裁决（2026-08-31 评审：态势感知采纳为需求，文件名状态编码与评审分配编号驳回，替代方案=生成器态势摘要；原信四处 schema 违规已顺手修正。） |
 | 2026-09-01 | [`kfm-na-frontend-ui-collab-na-response.md`](kfm-na-frontend-ui-collab-na-response.md) | kfmv4-frontend-ui-collab-proposal-submission.md（回应流） | 已回（2026-09-01 kfm-na：表态+composer 试点样板 v1 初投） |
 | 2026-09-01 | [`kfmv4-checklist-loop-finalize-response.md`](kfmv4-checklist-loop-finalize-response.md) | kfmv4-review-checklist-loop-response.md | 待回信（kfm-na 首跑执行中） |
