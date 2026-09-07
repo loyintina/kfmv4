@@ -22,6 +22,7 @@
  */
 import { createElement, useEffect, useRef, useState } from 'react';
 import type { PoolLink, PoolEntry, ActiveLedger, ReliedBy } from './pool-link.js';
+import { SelectMenu } from '../../ui/select-menu.js';
 
 export interface ViewProps {
   link: PoolLink;
@@ -92,28 +93,17 @@ function DetailZone(props: {
   return createElement('div', {
     'data-pool-config': '1',
     style: {
-      flex: '1 1 50%', minHeight: '160px', margin: '8px 10px 0', padding: '10px',
+      flex: '1 1 50%', minHeight: 0, margin: '8px 10px 0', padding: '10px',
       display: 'flex', flexDirection: 'column', gap: '8px',
       background: 'var(--kfm-surface)', border: '1px solid var(--kfm-line)', borderRadius: 'var(--kfm-radius-lg)',
-      overflow: 'hidden',
+      boxSizing: 'border-box',
     },
   },
   createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 } },
     createElement('div', { style: { fontSize: '12.5px', color: 'var(--kfm-ink-2)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, title),
   ),
   select
-    ? createElement('select', {
-        'data-pool-select': '1',
-        value: select.value,
-        onChange: (e: React.ChangeEvent<HTMLSelectElement>) => select.onChange(e.target.value),
-        style: {
-          flexShrink: 0, width: '100%', background: 'var(--kfm-field)', color: 'var(--kfm-ink)',
-          border: '1px solid var(--kfm-line)', borderRadius: 'var(--kfm-radius-sm)',
-          padding: '5px 8px', fontSize: '12.5px', outline: 'none',
-        },
-      },
-      select.options.map((o) => createElement('option', { key: o.value, value: o.value }, o.label)),
-      )
+    ? createElement(SelectMenu, { 'data-x': 'detail', value: select.value, options: select.options, onChange: select.onChange })
     : null,
   createElement('div', {
     'data-pool-config-scroll': '1',
@@ -124,7 +114,7 @@ function DetailZone(props: {
   error !== null
     ? createElement('div', { 'data-pool-form-error': '1', style: { fontSize: '11.5px', color: 'var(--kfm-red)', flexShrink: 0 } }, error)
     : null,
-  loading ? null : createElement('div', { style: { display: 'flex', gap: '8px', flexShrink: 0 } },
+  loading ? null : createElement('div', { 'data-pool-config-actions': '1', style: { display: 'flex', gap: '8px', flexShrink: 0 } },
     newMode ? null : createElement('button', {
       'data-pool-new': '1', type: 'button', onClick: onNew,
       style: {
@@ -152,11 +142,11 @@ function DetailZone(props: {
   ));
 }
 
-/** 下池列表骨架 */
+/** 下池列表骨架（选择制 1:1：与详情区各占一半——flex-basis 对齐保证严格对分） */
 function PoolZone(props: { children: React.ReactNode }): React.ReactElement {
   return createElement('div', {
     'data-pool-zone': '1',
-    style: { flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '6px' },
+    style: { flex: '1 1 50%', minHeight: 0, overflowY: 'auto', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '6px', boxSizing: 'border-box' },
   }, props.children);
 }
 
@@ -192,7 +182,10 @@ function ListRow(props: {
       borderRadius: 'var(--kfm-radius-sm)', padding: '0 4px', flexShrink: 0,
     },
   }, '已失效') : null,
-  children,
+  createElement('div', {
+    'data-pool-row-actions': '1',
+    style: { display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 },
+  }, children),
   );
 }
 

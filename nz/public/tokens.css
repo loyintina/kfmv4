@@ -338,6 +338,18 @@
   z-index: 41 !important;
 }
 
+/* 池页光球安全带（2026-09-07 B5a 实锤：1:1 分栏后行尾可点件滚进光球带被
+ * z45 恒顶截胡——删除 × 点不进，删除请求根本没发出）。池页开时行尾按钮
+ * 簇与详情区底部钮排右缩一个光球带宽：可点件永不进带，光球恒顶可点不动
+ * （C5 宪法不破）。带宽=orb right 12px + 直径 ~44px + 余量。作用在
+ * wrapper 上——行 inline padding 会压过 CSS（B11 轮实测） */
+:root[data-kfm-pool-open] [data-pool-row-actions] {
+  padding-right: 56px;
+}
+:root[data-kfm-pool-open] [data-pool-config-actions] {
+  padding-right: 56px;
+}
+
 /* 未来主题切换示例（现在不启用）：
 :root[data-theme="light"] {
   --kfm-page: #fafafb;
