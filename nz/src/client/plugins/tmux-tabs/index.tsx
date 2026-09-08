@@ -22,7 +22,7 @@ import { createRoot } from 'react-dom/client';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { UiPlugin, UiPluginHandle } from '../../kernel/ui-kernel.js';
 import { getLinkTracker } from '../../term/link-state.js';
-import { registryAddLive, registryMissing, registryRemove } from '../../term/session-registry.js';
+import { registryAdd, registryMissing, registryRemove, registrySnapshotIfEmpty } from '../../term/session-registry.js';
 
 export interface TmuxSessionInfo {
   name: string;
@@ -430,8 +430,9 @@ export function createTmuxTabsPlugin(): UiPlugin {
             sessionsRef.current = [...link.sessions];
             setSessions([...link.sessions]);
             sessionsSeenRef.current = true;
-            // R1：活会话自动入账 + 注册表 diff 喂链路状态机（DEGRADED 源）
-            registryAddLive(sessionsRef.current.map((s) => s.name));
+            // R1：首装空账快照一次（只认显式语义，不旁观收账）+ diff 喂
+            // 链路状态机（DEGRADED 源）
+            registrySnapshotIfEmpty(sessionsRef.current.map((s) => s.name));
             recomputeMissing();
             // 附着会话消失（被杀/外部）→ 塌回终端态
             if (attachedRef.current && !link.sessions.some((s) => s.name === attachedRef.current)) {
@@ -555,6 +556,7 @@ export function createTmuxTabsPlugin(): UiPlugin {
           // 客户端先查重（tmux 拒绝重名=静默失败的静默源，0902 清单 T5）
           if (name && !sessionsRef.current.some((s) => s.name === name)) {
             linkRef.current?.newSession(name);
+            registryAdd(name); // R1：显式创建 = 入账（重建名单的唯一合法来源）
             // 0902 用户仲裁：建完应直接进入并聚焦到新会话，而非收起等再点
             enterSession(name);
           }

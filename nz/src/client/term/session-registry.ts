@@ -3,9 +3,10 @@
  *
  * 「应存在哪些会话」的本地账（localStorage）：服务器重启/机器重启 tmux
  * 死透后，这张账是重建名单的唯一来源（na 实录：四窗全靠手敲逐个建）。
- * 登记策略（v1 从简）：一切活会话自动登记（agent 手敲建的也算用户资产），
- * 标签 × 杀死/横幅「忽略」= 显式除名；容量封顶 FIFO（防病态膨胀）。
- * storage 可注入（A 档考卷用 Map 账本，不碰真 localStorage）。
+ * 登记策略（2026-09-08 真机教训修订）：**只认显式语义**——＋按钮创建入
+ * 账、首装空账快照一次、× 杀死/横幅「忽略」出账；绝不自动登记旁观到的
+ * 活会话（测试夹具/chain 临时会话会污染账本，死后横幅永久喊丢失）。
+ * 容量封顶 FIFO（防病态膨胀）。storage 可注入（A 档考卷用 Map 账本）。
  */
 const REG_KEY = 'nzTmuxRegistry';
 export const REGISTRY_CAP = 16;
@@ -37,20 +38,23 @@ export function saveRegistry(names: string[], storage?: KvStorage): void {
   }
 }
 
-/** 并入活会话（保序：账上旧名在前，新名接尾），超帽掐头。返回新账。 */
-export function registryAddLive(live: string[], storage?: KvStorage): string[] {
+/** 并入单名（显式创建语义：＋按钮建的才入账）。返回新账。 */
+export function registryAdd(name: string, storage?: KvStorage): string[] {
   const cur = loadRegistry(storage);
-  const set = new Set(cur);
-  let changed = false;
-  for (const n of live) {
-    if (!set.has(n)) {
-      cur.push(n);
-      set.add(n);
-      changed = true;
-    }
-  }
-  const next = cur.length > REGISTRY_CAP ? cur.slice(cur.length - REGISTRY_CAP) : cur;
-  if (changed || next.length !== cur.length) saveRegistry(next, storage);
+  if (cur.includes(name)) return cur;
+  const next = [...cur, name].slice(Math.max(0, cur.length + 1 - REGISTRY_CAP));
+  saveRegistry(next, storage);
+  return next;
+}
+
+/** 首次空账快照（2026-09-08 真机教训：自动登记一切活会话=把测试夹具/
+ *  chain 临时会话全收进账，死后横幅永久喊丢失。改为：账空且活表非空时
+ *  快照一次（首装即捕获用户既有四窗），此后只认显式创建。返回新账。 */
+export function registrySnapshotIfEmpty(live: string[], storage?: KvStorage): string[] {
+  const cur = loadRegistry(storage);
+  if (cur.length || !live.length) return cur;
+  const next = live.slice(0, REGISTRY_CAP);
+  saveRegistry(next, storage);
   return next;
 }
 

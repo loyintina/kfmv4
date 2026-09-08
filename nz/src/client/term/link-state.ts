@@ -122,7 +122,13 @@ export class LinkTracker {
     } else {
       this._wsUp = false;
       this._retries++;
-      this._set('RECONNECTING', 'ws-close');
+      // DOWN 相不被后续 ws-close 打回（C 档真机实锤：每次重试 close 都把
+      // DOWN 打回 RECONNECTING=横幅闪烁回归）。DOWN 只认 probe-ok 升级。
+      if (this._phase !== 'DOWN') {
+        this._set('RECONNECTING', 'ws-close');
+      } else {
+        this._emit(); // 保持 DOWN，retries 变了刷快照
+      }
       this._startProbe();
     }
   }

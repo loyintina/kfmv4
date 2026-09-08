@@ -20,9 +20,10 @@ import {
 import {
   loadRegistry,
   saveRegistry,
-  registryAddLive,
+  registryAdd,
   registryRemove,
   registryMissing,
+  registrySnapshotIfEmpty,
   REGISTRY_CAP,
   type KvStorage,
 } from '../src/client/term/session-registry.ts';
@@ -67,6 +68,11 @@ test('③断一拍可见 RECONNECTING；连续败 2 拍降 DOWN（failsToDown=2�
   await sleep(70); // ≥3 拍
   assert(t.phase === 'DOWN', `连续败 2 拍后应 DOWN，实际 ${t.phase}`);
   assert(probeCalls >= 3, `探测应持续走表（calls=${probeCalls}）`);
+  // C 档真机实锤回归钉：DOWN 期间后续 ws-close 不得打回 RECONNECTING
+  t.wsLink(false);
+  t.wsLink(false);
+  assert(t.phase === 'DOWN', `DOWN 期间 ws-close 不得降级，实际 ${t.phase}`);
+  assert(t.snapshot().retries === 3, `retries 应递增（${t.snapshot().retries}）`);
   t.stop();
 });
 
@@ -123,7 +129,7 @@ test('⑦可见性：DOWN/DEGRADED 恒可见，重连后 OK 不可见', async ()
   t.stop();
 });
 
-test('⑧注册表：并账保序/封顶 FIFO/出账/diff', () => {
+test('⑧注册表：显式入账/快照语义/封顶 FIFO/出账/diff', () => {
   const backing = new Map<string, string>();
   const store: KvStorage = {
     getItem: (k) => backing.get(k) ?? null,
@@ -131,30 +137,38 @@ test('⑧注册表：并账保序/封顶 FIFO/出账/diff', () => {
     removeItem: (k) => void backing.delete(k),
   };
   assert(loadRegistry(store).length === 0, '空账');
-  let reg = registryAddLive(['dsh', 'amp'], store);
-  assert(JSON.stringify(reg) === '["dsh","amp"]', `并账保序：${JSON.stringify(reg)}`);
-  reg = registryAddLive(['dsh', 'omp', 'psh'], store);
-  assert(JSON.stringify(reg) === '["dsh","amp","omp","psh"]', `去重接尾：${JSON.stringify(reg)}`);
-  // 封顶 FIFO：灌满+1，最旧（dsh）被掐
-  const flood: string[] = [];
-  for (let i = 0; i < REGISTRY_CAP + 1; i++) flood.push(`s${i}`);
-  reg = registryAddLive(flood, store);
-  assert(reg.length === REGISTRY_CAP, `封顶 ${REGISTRY_CAP}，实际 ${reg.length}`);
-  assert(!reg.includes('dsh') && !reg.includes('amp'), 'FIFO 掐最旧');
-  assert(reg[0] === 's1', `掐头后新首=${reg[0]}`);
+  // 快照语义：账空 + 活表非空 → 快照一次；非空账不动
+  let reg = registrySnapshotIfEmpty(['dsh', 'amp'], store);
+  assert(JSON.stringify(reg) === '["dsh","amp"]', `首装快照：${JSON.stringify(reg)}`);
+  reg = registrySnapshotIfEmpty(['dsh', 'amp', 'omp'], store);
+  assert(JSON.stringify(reg) === '["dsh","amp"]', `非空账不得被快照覆盖：${JSON.stringify(reg)}`);
+  // 显式入账：＋创建语义，去重接尾
+  registryAdd('omp', store);
+  registryAdd('dsh', store);
+  reg = loadRegistry(store);
+  assert(JSON.stringify(reg) === '["dsh","amp","omp"]', `显式入账去重：${JSON.stringify(reg)}`);
+  // 封顶 FIFO：连灌至超帽，最旧被掐
+  for (let i = 0; i < REGISTRY_CAP; i++) registryAdd(`s${i}`, store);
+  const flooded = loadRegistry(store);
+  assert(flooded.length === REGISTRY_CAP, `封顶 ${REGISTRY_CAP}，实际 ${flooded.length}`);
+  assert(!flooded.includes('dsh') && !flooded.includes('amp') && !flooded.includes('omp'), 'FIFO 掐最旧');
+  assert(flooded[0] === 's0' && flooded[flooded.length - 1] === `s${REGISTRY_CAP - 1}`, 'FIFO 序正确');
   // 出账落盘
   registryRemove('s1', store);
   assert(!loadRegistry(store).includes('s1'), '出账必须落盘');
-  // diff：账上有、活表没有 → missing 保账序（此时账=[s2,s4,s5..s16]）
+  // diff：账上有、活表没有 → missing 保账序（期值=账长−活表覆盖数，不抄魔数）
   registryRemove('s3', store);
-  const missing = registryMissing(['s2', 's4'], store);
+  const before = loadRegistry(store).length;
+  const missing = registryMissing(['s0', 's2', 's4'], store);
   assert(
-    missing.length === REGISTRY_CAP - 4 && missing[0] === 's5' &&
-      !missing.includes('s2') && !missing.includes('s4'),
+    missing.length === before - 3 && !missing.includes('s0') && !missing.includes('s4'),
     `diff 精确性异常：${JSON.stringify(missing)}`,
   );
   const missing2 = registryMissing([], store);
   assert(missing2.length === loadRegistry(store).length, '活表全灭 = 账全缺');
+  // 空活表不触发快照（污染账靠忽略/出账清，快照不背锅）
+  registrySnapshotIfEmpty([], store);
+  assert(loadRegistry(store).length === REGISTRY_CAP - 2, '空活表不触发快照');
 });
 
 test('⑨getLinkTracker 单例 + __kfmNzLink 钩子（浏览器态）', () => {
