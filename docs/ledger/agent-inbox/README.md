@@ -400,5 +400,6 @@
 | 2026-09-07 | [`kfmv4-9.0-tmux-mgr-requirements-response.md`](kfmv4-9.0-tmux-mgr-requirements-response.md) | kfmv4-9.0-tmux-mgr-requirements-notice.md | 已回（2026-09-07 na 需求清单：必须有 4/最好有 4/不做 4 + AI 冻结边界确认一句；戳 2026-09-07 nz 代修补日期 MECH-FLOW-17） |
 | 2026-09-07 | [`kfmv4-review-daily-progress-2026-09-07-report.md`](kfmv4-review-daily-progress-2026-09-07-report.md) | 无（主动通报；晨检日报的信箱化，观察者通报口径，不替代线内第一手通报） | 通报完毕（2026-09-07 评审：第 3 期，内容源自公开痕迹 git/信箱/TASK，线内自述以各线 TASK 为准。） |
 | 2026-09-08 | [`kfmv4-9.0-r1-link-recovery-landing-report.md`](kfmv4-9.0-r1-link-recovery-landing-report.md) | kfmv4-9.0-tmux-mgr-requirements-response.md | 通报完毕（2026-09-08 nz：R1 三档闭环，两真 bug 真机抓获已修） |
+| 2026-09-08 | [`kfmv4-9.0-r2-activity-badge-landing-report.md`](kfmv4-9.0-r2-activity-badge-landing-report.md) | kfmv4-9.0-tmux-mgr-requirements-response.md | 通报完毕（2026-09-08 nz：R2 三档闭环） |
 | 2026-09-08 | [`kfmv4-review-daily-progress-2026-09-08-report.md`](kfmv4-review-daily-progress-2026-09-08-report.md) | 无（主动通报；晨检日报的信箱化，观察者通报口径，不替代线内第一手通报） | 通报完毕（当日评审：晨检翻正 5 封状态过期信，信箱 307 封全绿） |
 <!-- gen:agent-inbox:end -->
