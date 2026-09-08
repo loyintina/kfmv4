@@ -186,6 +186,10 @@ export class TmuxControl {
 /** 服务端总线挂载：控制通道工厂（UI 步的 WS 桥按此开门） */
 export function mountTmuxConnection(ctx: Context): void {
   ctx.provide('tmuxControlOpen', (opts: TmuxControlOpts) => new TmuxControl(opts));
+  // R2 多会话活动指示（2026-09-08 判据稿签收）：activity 标志依赖
+  // monitor-activity（默认 off，不开则永远全 0）。幂等置全局 on——副作用
+  // 明示过用户：CLI tmux 状态栏也会开始提示后台窗活动（增益向）。
+  execFile('tmux', ['set','-g','monitor-activity','on'], { timeout: 4000 }, () => { /* 失败静默：标志恒 0=徽标恒隐，不挡服务 */ });
 }
 
 // ========== 会话表（0902 用户拍板：标签=会话；标签条改用本服务） ==========
@@ -196,20 +200,46 @@ export interface TmuxSessionInfo {
   name: string;
   windows: number;
   attached: boolean;
+  /** R2：任一窗有输出（activity）或响铃（bell）——非聚焦徽标的信号源 */
+  activity: boolean;
 }
 
-const SESSIONS_FMT = '#{session_name}\x1f#{session_windows}\x1f#{session_attached}';
+/** R2 窗级格式：list-windows -a 逐窗出列，聚合出会话级 activity。
+ *  字段序：name / act / bell / attached-count / windows-count */
+const WINDOWS_FMT =
+  '#{session_name}\x1f#{window_activity_flag}\x1f#{window_bell_flag}\x1f#{session_attached}\x1f#{session_windows}';
 
-/** 全服务器会话表快照（一次 exec；无会话服务器=空表不视为错） */
+/** 纯聚合（A 档直考）：窗级行 → 会话表。activity=任一窗 act 或 bell 置位；
+ *  attached/windows 取自会话级字段（逐窗重复，首见即准）。 */
+export function aggregateWindowsToSessions(stdout: string): TmuxSessionInfo[] {
+  const byName = new Map<string, TmuxSessionInfo>();
+  for (const line of String(stdout).split('\n').filter(Boolean)) {
+    const p = tmuxUnescape(line).split('\x1f');
+    const name = p[0] ?? '';
+    if (!name) continue;
+    const act = p[1] === '1';
+    const bell = p[2] === '1';
+    const attachedCount = Number(p[3]) || 0;
+    const windowsCount = Number(p[4]) || 0;
+    let s = byName.get(name);
+    if (!s) {
+      s = { name, windows: windowsCount, attached: attachedCount > 0, activity: false };
+      byName.set(name, s);
+    }
+    if (act || bell) s.activity = true;
+    if (attachedCount > 0) s.attached = true;
+    if (windowsCount > s.windows) s.windows = windowsCount;
+  }
+  return [...byName.values()];
+}
+
+/** 全服务器会话表快照（一次 exec；无会话服务器=空表不视为错）。
+ *  R2：改走窗级列聚合（同一次 exec 同一时长），activity 随行带出。 */
 export function listSessions(tmuxBin = 'tmux'): Promise<TmuxSessionInfo[]> {
   return new Promise((resolve) => {
-    execFile(tmuxBin, ['ls', '-F', SESSIONS_FMT], { timeout: 4000 }, (err, stdout) => {
+    execFile(tmuxBin, ['list-windows', '-a', '-F', WINDOWS_FMT], { timeout: 4000 }, (err, stdout) => {
       if (err) return resolve([]);
-      const sessions = String(stdout).split('\n').filter(Boolean).map((l) => {
-        const parts = tmuxUnescape(l).split('\x1f');
-        return { name: parts[0] ?? '', windows: Number(parts[1]) || 0, attached: parts[2] === '1' };
-      }).filter((s) => s.name !== '');
-      resolve(sessions);
+      resolve(aggregateWindowsToSessions(String(stdout)));
     });
   });
 }

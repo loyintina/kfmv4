@@ -28,6 +28,14 @@ export interface TmuxSessionInfo {
   name: string;
   windows: number;
   attached: boolean;
+  /** R2：任一窗有输出/响铃——非聚焦徽标信号源 */
+  activity: boolean;
+}
+
+/** R2 徽标可见性（A 档直考纯规则）：有活动 且 不是当前附着中的会话
+ *  （附着中=内容就在屏幕上，无需提示） */
+export function activityBadgeVisible(info: TmuxSessionInfo, attachedSession: string | null): boolean {
+  return !!info.activity && info.name !== attachedSession;
 }
 
 /** 状态机词汇表（docs/tmux-tabs-v2-state-machine.md §一，清单外名字禁止） */
@@ -211,9 +219,18 @@ function TmuxTabs(props: {
         padding: '5px 12px 5px 14px', borderRadius: 'var(--kfm-radius-md)', fontSize: '12px',
         background: attachedSession === s.name ? BAR_ACCENT : 'var(--kfm-chip-bg)',
         color: attachedSession === s.name ? 'var(--kfm-ink)' : 'var(--kfm-ink-2)', cursor: 'pointer', whiteSpace: 'nowrap',
-        display: 'flex', alignItems: 'center', gap: '6px',
+        display: 'flex', alignItems: 'center', gap: '6px', position: 'relative' as const,
       },
     },
+      // R2 活动点（判据稿③）：非聚焦会话有输出/响铃 → 名前青点；
+      // 附着中不亮（内容在屏上）；点进会话自然清除
+      activityBadgeVisible(s, attachedSession) ? createElement('span', {
+        'data-activity': '1',
+        style: {
+          width: '6px', height: '6px', borderRadius: '50%', flex: '0 0 auto',
+          background: BAR_ACCENT, display: 'inline-block',
+        },
+      }) : null,
       s.name,
       // 窗口数仅 >1 时显示（常态单窗口，·1 是纯噪音，2026-09-03 用户拍板）
       s.windows > 1 ? createElement('span', {
