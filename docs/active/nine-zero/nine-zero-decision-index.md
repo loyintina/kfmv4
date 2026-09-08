@@ -1,6 +1,6 @@
-# 9.0 决策索引（跨线评审信箱 307 封信 → 决策一张表）
+# 9.0 决策索引（跨线评审信箱 308 封信 → 决策一张表）
 
-> 这是什么：`docs/ledger/agent-inbox/` 307 封信的**决策级索引**——信箱是
+> 这是什么：`docs/ledger/agent-inbox/` 308 封信的**决策级索引**——信箱是
 > ledger（只追加不删改），裁决史散在信里；本表把**已拍板决策**提取成一张表，
 > 「为什么这么定」从这里查、细节回信里读。信仍在，本表只索引不替代。
 > 别的去哪找：契约全文 → `nine-zero-phase1-contracts.md` / `nine-zero-phase2-contracts.md`；
@@ -80,6 +80,7 @@
 | agent-inbox 文件名状态编码提案裁决（2026-08-31 评审） | 核心洞察（`ls` 态势感知）采纳为需求；文件名状态编码/评审分配编号/编号引用三项驳回——双状态源必漂移 + ASCII 纪律冲突（MECH-FLOW-12）+ git rename 噪音与正文引用断链；「ls 可感知」已有等价物且更强（README 投影 + MECH-FLOW-16 停滞机检）；替代方案 = gen-agent-inbox 态势摘要节，触发制立项不预建；原信四处 schema 违规（流型/致线名/状态词/文件名末词）已顺手修正并重命名 -submission | `kfmv4-review-inbox-filename-proposal-verdict.md` | ✅ 已裁决（提案方如有异议走新信征集流） | docs/ledger/agent-inbox/kfmv4-agent-inbox-filename-state-encoding-submission.md |
 | 跨线运维公约三条（重IO窗口制/gen投影回写归属/push遇阻分流） | 两线均已收编执行；后经资源冲突三连实录升级——白天重负载只准手机跑、服务器仅 01:00-07:00 窗口、SIGSTOP 必须闭环 kill、杀链先杀父、后台任务默认 timeout 闸门 | `kfmv4-review-ops-convention-verdict.md` + kfmv4-perf-resource-conflict-notice.md | ✅ 已落地执行中 | na/kfmv4 两线 TASK 运维公约节 |
 | nz 观测手段统一登记（史官制度·手段总表） | nz TASK §2.7 立总表：11 手段×入口/边界/前后台限制 + CDP 四纪律 + 判卷层纪律；新规=新手段必须登记后才能用；后续焦点简报/softShot 等均照规登记 | `kfmv4-9.0-nz-observation-registry-report.md` | ✅ 已核（2026-09-04 销案补登） | nz/TASK.md §2.7 |
+| na 变异抽检 r2 销案补登（2026-09-08 晨检） | 评审点将三函数 46 针/45 抓/0 存活/1 废实录已由后续销案链收录（母信销案 09-05+perf-resource-conflict 销案 09-07 已验证均以其为落地形态），原信状态待回信→已核 | `kfm-na-gate-mutants-r2-report.md` | ✅ 已核（2026-09-08 销案补登） | kfm-na 夜班实录（state.md） |
 
 ---
 

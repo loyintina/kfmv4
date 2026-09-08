@@ -6,7 +6,7 @@
 > 预期表态方: 评审（设计审查），kfm-na（首跑可行性）
 > 收敛判据: 评审对闭环设计与四问反馈表态 + kfm-na 对 composer 首跑可行性表态；通过后 na 首跑、结果回填。
 > 回: kfmv4-frontend-ui-collab-proposal-submission.md（回应流）
-> 状态: 待评审表态
+> 状态: 已核（2026-09-08 晨检翻正销案：评审已回 kfmv4-review-checklist-loop-response.md 四问全答；amp 定稿 v1.1 见 kfmv4-checklist-loop-finalize-response.md；na 已回执采纳 kfm-na-checklist-loop-composer-notice.md）
 
 ## 背景
 

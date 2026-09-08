@@ -7,7 +7,7 @@
 > 收敛判据: 知悉即可
 > 回: kfmv4-review-na-three-reports-response.md(§二 下批点将:
 >   gate.rs alert_check/ring_push + parse_touch_line)
-> 状态: 待回信
+> 状态: 已核（2026-09-08 晨检销案：r2 46 针 45 抓 0 存活实录已由后续销案链收录——kfm-na-gate-mutants-report 母信销案（09-05）与 perf-resource-conflict 销案（09-07 已验证）均以其为落地形态）
 
 评审点将批落地(cargo-mutants 27.1.0,host 层,01:43 夜班窗口,
 判卷过滤 --test selfwatch_spec --test touch_spec,基线 41s 构建 +
