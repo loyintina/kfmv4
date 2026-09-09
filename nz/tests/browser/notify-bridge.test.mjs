@@ -3,7 +3,7 @@
  * 判据稿签收；na 需求必须②「长任务通知」浏览器级复演）。
  *
  * 自起隔离实例（link-recover 同款骨架）+ 页面注入假 NzNative 桥捕获调用，
- * 四枚钉：
+ * 六枚钉：
  *   ①POST /__tmux-notify → 假桥收到 notify（标题含会话名、文案透传）
  *   ②节流：同会话窗内第二条被吞（调用数不变）
  *   ③缺省文案：无 message → 「有任务需要你」
@@ -71,12 +71,18 @@ const browser = await launchBrowser();
 const context = await browser.newContext({ viewport: { width: 900, height: 620 } });
 await context.addInitScript(() => {
   window.__notifyCalls = [];
-  window.NzNative = { notify: (t, b) => window.__notifyCalls.push([String(t), String(b)]) };
+  window.NzNative = { pushNotice: (t, b) => window.__notifyCalls.push([String(t), String(b)]) };
 });
 const page = await context.newPage();
 await page.goto(`${BASE}/?nosplash`, { waitUntil: 'domcontentloaded', timeout: 40000 }).catch(() => {});
 await page.waitForSelector('.nz-term', { timeout: 20000 }).catch(() => {});
 await page.waitForFunction(() => !!(window).__kfmNzTmuxTabs, null, { timeout: 20000, polling: 250 }).catch(() => {});
+
+// 页面默认置 hidden：交付类钉在「用户不在看」语义下验证（⑤再单验 visible 抑制）
+const setVis = (state) => page.evaluate((st) => {
+  Object.defineProperty(document, 'visibilityState', { configurable: true, value: st });
+}, state);
+await setVis('hidden');
 
 // ① 非 focuse 会话 POST → 假桥收到（标题含会话名、文案透传）
 {
@@ -131,6 +137,24 @@ await page.waitForFunction(() => !!(window).__kfmNzTmuxTabs, null, { timeout: 20
   const after = await page.evaluate(() => (window).__notifyCalls?.length ?? 0);
   check('④附着中的会话通知被抑制', appeared && attached && before === after, `appeared=${appeared} attached=${attached} ${before}→${after}`);
   tmux(`kill-session -t ${U3}`);
+}
+
+// ⑤⑥ 可见性闸回归钉（09-09 十四连响案）：visible=抑制 / hidden=放行
+{
+  const U4 = `${U1}-vis`;
+  await setVis('visible');
+  await post(`session=${U4}&message=可见态应抑制`);
+  await sleep(2000);
+  const mid = await page.evaluate(() => (window).__notifyCalls?.length ?? 0);
+  check('⑤visible 态通知被抑制', mid === 2, `calls=${mid}（期望仍=2）`);
+  await setVis('hidden');
+  const U5 = `${U1}-hid`;
+  await post(`session=${U5}&message=隐藏态应放行`);
+  const got = await page.waitForFunction(
+    (n) => ((window).__notifyCalls?.length ?? 0) > n,
+    mid, { timeout: 8000, polling: 250 },
+  ).then(() => true).catch(() => false);
+  check('⑥hidden 态通知放行', got);
 }
 
 // ---------- 清场 ----------

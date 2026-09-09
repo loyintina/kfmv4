@@ -348,7 +348,8 @@ public class MainActivity extends Activity {
                             .setContentText(body == null ? "" : body)
                             .setSmallIcon(android.R.drawable.ic_dialog_info)
                             .setAutoCancel(true);
-                    nm.notify((int) (System.currentTimeMillis() % 100000), b.build());
+                    // 稳定 id=标题哈希：同会话再通知=替换旧条（不堆叠刷屏）
+                    nm.notify((title == null ? "nz" : title).hashCode(), b.build());
                     mark("notify-posted");
                 } catch (Exception e) {
                     mark("notify-fail");

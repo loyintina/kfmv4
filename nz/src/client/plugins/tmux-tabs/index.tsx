@@ -93,6 +93,9 @@ export function openSessionsLink(
       // 浏览器/Via 静默降级只靠 R2 活动点）。附着中=内容在屏上，不扰。
       if (m.t === 'notify' && m.session) {
         if (isAttached() === m.session) return;
+        // 可见性闸：用户正看着 nz → 系统通知全抑（R2 活动点已可感知）；
+        // 切后台/息屏（hidden）才上通知栏
+        if (document.visibilityState === 'visible') return;
         try {
           const win = window as unknown as { NzNative?: { pushNotice?: (t: string, b: string) => void } };
           win.NzNative?.pushNotice?.(`nz · ${m.session}`, m.message || '有任务需要你');
