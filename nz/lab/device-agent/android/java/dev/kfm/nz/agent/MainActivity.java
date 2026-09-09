@@ -58,6 +58,59 @@ public class MainActivity extends Activity {
     private static final String MARKS_URL = TERM_URL + "__boot-marks";
     private static final String SPLASH_URL = "file:///android_asset/splash/index.html";
 
+    // ========== R3 排障黑匣子+启动面包屑（2026-09-09 闪退案）：同步遗言
+    // ========== （异步 mark 会被紧随的进程死亡掐断）。静态旗防重入。
+
+    private static boolean crashBoxInstalled = false;
+
+    public static void installCrashBlackbox() {
+        if (crashBoxInstalled) return;
+        crashBoxInstalled = true;
+        final Thread.UncaughtExceptionHandler prev = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((th, ex) -> {
+            try {
+                java.io.StringWriter sw = new java.io.StringWriter();
+                ex.printStackTrace(new java.io.PrintWriter(sw));
+                String stack = sw.toString().replace('\n', '|');
+                if (stack.length() > 900) stack = stack.substring(0, 900);
+                syncCrashPost("crash:" + stack);
+            } catch (Throwable ignore) { /* 遗言写不出就算了 */ }
+            if (prev != null) prev.uncaughtException(th, ex);
+        });
+    }
+
+    /** 同步面包屑（闪退定位：崩到哪步，最后一枚停在哪） */
+    private static void dbg(String tag) { syncCrashPost("dbg:" + tag); }
+
+    /** 遗言公开口（服务/接收器的 catch 用） */
+    public static void syncCrashPostPublic(String mark) { syncCrashPost(mark); }
+
+    /** 同步遗言（网络走工作线程+join(4s)：主线程直发必抛 NOME 被吞） */
+    private static void syncCrashPost(String mark) {
+        Thread w = new Thread(() -> {
+            try {
+                java.net.HttpURLConnection c = (java.net.HttpURLConnection)
+                        new java.net.URL(MARKS_URL).openConnection();
+                c.setRequestMethod("POST");
+                c.setConnectTimeout(2000);
+                c.setReadTimeout(2000);
+                c.setDoOutput(true);
+                byte[] body = ("{\"wall\":" + System.currentTimeMillis()
+                        + ",\"rel\":-1,\"mark\":\"" + mark.replace("\"", "'") + "\"}").getBytes();
+                c.setFixedLengthStreamingMode(body.length);
+                c.setRequestProperty("Content-Type", "application/json");
+                java.io.OutputStream os = c.getOutputStream();
+                os.write(body);
+                os.flush();
+                os.close();
+                c.getResponseCode();
+            } catch (Throwable ignore) { /* 网络不通也死得成 */ }
+        });
+        w.start();
+        try { w.join(4000); } catch (InterruptedException ignore) { /* 等不到就算了 */ }
+    }
+
+
     /** 点击（onCreate）墙钟——全程启动账的零点 */
     private long t0;
     private WebView termWeb;
@@ -82,8 +135,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         t0 = System.currentTimeMillis();
+        installCrashBlackbox();
+        try {
         super.onCreate(savedInstanceState);
-
         // 自毁钩子（冷启动闭环测试：ssh am start --ez nz_exit true → 旧
         // 进程自杀，下一次 am start 即真冷启动）
         if (getIntent().getBooleanExtra("nz_exit", false)) {
@@ -91,7 +145,6 @@ public class MainActivity extends Activity {
             return;
         }
         mark("onCreate");
-
         // edge-to-edge（2026-08-31 用户拍板全面屏）：窗口铺进刘海区。
         // 现状=主题 Fullscreen 但刘海模式默认 DEFAULT——状态栏隐藏时
         // 短边刘海区拉黑信box（真机实锤：屏 854 而 innerH=812，顶 42px
@@ -181,7 +234,6 @@ public class MainActivity extends Activity {
         termWeb.loadUrl(TERM_URL + "?nosplash&_tApk=" + t0);
         splashWeb.loadUrl(splashUrl);
         mark("loadUrl");
-
         // 开屏看门狗（2026-08-30 实踩定罪：用户卡开屏进不去——网络 flap
         // 期 WebView 吃旧缓存 bundle，无 NzNative 桥调用=摘屏信号永远
         // 不到）。壳层开屏绝不能有「卡死永远出不去」的路径：15s 无
@@ -200,6 +252,10 @@ public class MainActivity extends Activity {
 
         // CDP 中继：自己进程（同 uid）连自己的 devtools socket，SELinux 无障
         CdpRelay.start();
+        } catch (Throwable eBoot) {
+            syncCrashPost("crash-oncreate:" + eBoot);
+            throw eBoot;
+        }
     }
 
     private void configWeb(WebView w) {
@@ -271,12 +327,10 @@ public class MainActivity extends Activity {
             });
         }
 
-        /** R3 长任务通知（2026-09-09 判据稿签收）：页面在非聚焦会话有
-         *  「需要注意」事件时调。自带独立通道（IMPORTANCE_DEFAULT，横幅/
-         *  锁屏可达；保活通道是 MIN 不复用）。POST_NOTIFICATIONS 未授时
-         *  notify 静默无效（Android 13+ 行为），页面侧无感不挡。 */
+        /** R3 长任务通知（判据稿签收；方法名 pushNotice 避 Object.notify
+         *  撞名雷区）：页面非聚焦会话有「需要注意」事件时调。 */
         @JavascriptInterface
-        public void notify(final String title, final String body) {
+        public void pushNotice(final String title, final String body) {
             runOnUiThread(() -> {
                 try {
                     android.app.NotificationManager nm =
@@ -286,9 +340,9 @@ public class MainActivity extends Activity {
                             ch, "nz 任务通知", android.app.NotificationManager.IMPORTANCE_DEFAULT));
                     android.app.Notification.Builder b;
                     if (android.os.Build.VERSION.SDK_INT >= 26) {
-                        b = new android.app.Notification.Builder(this, ch);
+                        b = new android.app.Notification.Builder(MainActivity.this, ch);
                     } else {
-                        b = new android.app.Notification.Builder(this);
+                        b = new android.app.Notification.Builder(MainActivity.this);
                     }
                     b.setContentTitle(title == null ? "nz" : title)
                             .setContentText(body == null ? "" : body)

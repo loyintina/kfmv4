@@ -94,8 +94,8 @@ export function openSessionsLink(
       if (m.t === 'notify' && m.session) {
         if (isAttached() === m.session) return;
         try {
-          const win = window as unknown as { NzNative?: { notify?: (t: string, b: string) => void } };
-          win.NzNative?.notify?.(`nz · ${m.session}`, m.message || '有任务需要你');
+          const win = window as unknown as { NzNative?: { pushNotice?: (t: string, b: string) => void } };
+          win.NzNative?.pushNotice?.(`nz · ${m.session}`, m.message || '有任务需要你');
         } catch { /* 桥缺席/失败=降级，不挡 */ }
       }
     };

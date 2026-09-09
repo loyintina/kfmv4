@@ -50,13 +50,21 @@ rm -rf "$BUILD"
 mkdir -p "$BUILD/classes" "$BUILD/dex" "$BUILD/stage"
 
 $JAVAC -source 8 -target 8 -cp "$AJAR" -d "$BUILD/classes" \
-    android/java/dev/kfm/nz/agent/*.java 2>&1 | grep -v 'bootstrap class path' || true
-# javac 的告警（-source 8 过时）不挡路，编译失败才挡
-[ "${PIPESTATUS[0]}" -eq 0 ] || { echo "❌ Java 皮编译不过"; exit 1; }
+    android/java/dev/kfm/nz/agent/*.java 2>&1 | grep -v 'bootstrap class path'
+# javac 的告警（-source 8 过时）不挡路，编译失败才挡。
+# 09-09 闪退案教训：原写法 `... | grep || true` 会把 PIPESTATUS 清零，
+# 编译失败被静默吞掉→空 dex 出货→装上即无痕秒死。守卫必须独立成句。
+JAVAC_RC=${PIPESTATUS[0]}
+[ "$JAVAC_RC" -eq 0 ] || { echo "❌ Java 皮编译不过"; exit 1; }
 
 echo "=== [2/5] d8（class → dex） ==="
 "$D8" --min-api "$MIN_API" --lib "$AJAR" --output "$BUILD/dex" \
     $(find "$BUILD/classes" -name '*.class')
+
+# 空 dex 拒出货（09-09 闪退案第二闸：8488B 空壳 dex 曾被静默装进手机）
+[ -f "$BUILD/dex/classes.dex" ] || { echo "❌ d8 未产出 classes.dex"; exit 1; }
+DEXSIZE=$(stat -c%s "$BUILD/dex/classes.dex")
+[ "$DEXSIZE" -gt 20000 ] || { echo "❌ classes.dex 仅 ${DEXSIZE}B，疑似空 dex，拒装"; exit 1; }
 
 echo "=== [3/5] aapt2 compile+link + 装 dex ==="
 # 动画本体同步（8.8.6 唯一真源纪律）：asset 开屏页的 splash-core.js 一律

@@ -39,6 +39,8 @@ public class KeepAliveService extends Service {
 
     @Override
     public void onCreate() {
+        MainActivity.installCrashBlackbox();
+        try {
         super.onCreate();
         Notification.Builder b;
         if (Build.VERSION.SDK_INT >= 26) {
@@ -60,6 +62,10 @@ public class KeepAliveService extends Service {
         mWakeLock.acquire();
         ensureObservingWeb();
         startGatePoll();
+        } catch (Throwable eSvc) {
+            MainActivity.syncCrashPostPublic("crash-service:" + eSvc);
+            throw eSvc;
+        }
     }
 
     /** P2 闸门第一片信号（2026-08-27，na gate.rs restart-req 同语义）：

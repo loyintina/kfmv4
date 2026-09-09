@@ -29,9 +29,9 @@ NAME="nz-agent-$VERSION_CODE.apk"
 if [ -d /data/data/com.termux ]; then
     # 手机上本地跑：包就在本机，直接拷共享存储调安装器
     echo "=== [deploy] 手机本地模式：$NAME ==="
-    cp "$APK" "$PHONE_SHARED/$NAME"
+    cp "$APK" "$PHONE_SHARED/Download/$NAME"
     am start -a android.intent.action.VIEW \
-        -d "file://$PHONE_SHARED/$NAME" \
+        -d "file://$PHONE_SHARED/Download/$NAME" \
         -t application/vnd.android.package-archive
     echo "=== [deploy] ✅ 安装器已调起：点「安装」（$NAME）==="
     exit 0
@@ -43,11 +43,18 @@ echo "=== [deploy 1/3] 送包到手机（$NAME） ==="
 scp -P $SSH_PORT -o BatchMode=yes "$APK" "$SSH_HOST:$PHONE_TMP/$NAME"
 
 echo "=== [deploy 2/3] 拷进共享存储（安装器要读） ==="
-$SSH "cp $PHONE_TMP/$NAME $PHONE_SHARED/$NAME"
+$SSH "cp $PHONE_TMP/$NAME $PHONE_SHARED/Download/$NAME"
 
+echo "=== [deploy 2.5/3] 手机侧 md5 对拍（防幽灵安装） ==="
+$SSH "md5sum $PHONE_SHARED/Download/$NAME" | awk "{print \\$1}" > /tmp/nz-deploy-remote.md5
+md5sum "$APK" | awk '{print $1}' > /tmp/nz-deploy-local.md5
+if ! diff -q /tmp/nz-deploy-remote.md5 /tmp/nz-deploy-local.md5 >/dev/null; then
+    echo "❌ 手机侧 md5 与构建不一致——存储腿静默失败，中止（09-09 幽灵安装案教训）"
+    exit 1
+fi
 echo "=== [deploy 3/3] 调起系统安装器 ==="
 $SSH "am start -a android.intent.action.VIEW \
-    -d file://$PHONE_SHARED/$NAME \
+    -d file://$PHONE_SHARED/Download/$NAME \
     -t application/vnd.android.package-archive"
 
 echo "=== [deploy] ✅ 安装器已调起：手机上点「安装」（$NAME） ==="
