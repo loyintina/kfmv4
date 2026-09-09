@@ -31,6 +31,7 @@ import './pool-swipe.test.ts';
 import './pool-reducer.test.ts';
 import './link-state.test.ts';
 import './tmux-activity.test.ts';
+import './notify-gate.test.ts';
 import { runAll } from './runner.ts';
 
 await runAll();

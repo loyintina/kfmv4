@@ -271,6 +271,37 @@ public class MainActivity extends Activity {
             });
         }
 
+        /** R3 长任务通知（2026-09-09 判据稿签收）：页面在非聚焦会话有
+         *  「需要注意」事件时调。自带独立通道（IMPORTANCE_DEFAULT，横幅/
+         *  锁屏可达；保活通道是 MIN 不复用）。POST_NOTIFICATIONS 未授时
+         *  notify 静默无效（Android 13+ 行为），页面侧无感不挡。 */
+        @JavascriptInterface
+        public void notify(final String title, final String body) {
+            runOnUiThread(() -> {
+                try {
+                    android.app.NotificationManager nm =
+                            getSystemService(android.app.NotificationManager.class);
+                    final String ch = "nz_notify";
+                    nm.createNotificationChannel(new android.app.NotificationChannel(
+                            ch, "nz 任务通知", android.app.NotificationManager.IMPORTANCE_DEFAULT));
+                    android.app.Notification.Builder b;
+                    if (android.os.Build.VERSION.SDK_INT >= 26) {
+                        b = new android.app.Notification.Builder(this, ch);
+                    } else {
+                        b = new android.app.Notification.Builder(this);
+                    }
+                    b.setContentTitle(title == null ? "nz" : title)
+                            .setContentText(body == null ? "" : body)
+                            .setSmallIcon(android.R.drawable.ic_dialog_info)
+                            .setAutoCancel(true);
+                    nm.notify((int) (System.currentTimeMillis() % 100000), b.build());
+                    mark("notify-posted");
+                } catch (Exception e) {
+                    mark("notify-fail");
+                }
+            });
+        }
+
         /** 软件层截屏（na 线提案 2026-09-03，实验②）：LAYER_TYPE_SOFTWARE
          *  强制软件光栅后 webView.draw(canvas)。实测边界：前台 DOM 活、
          *  canvas 黑（软件光栅不吃 canvas/WebGL）；后台=冻结帧（隐藏态

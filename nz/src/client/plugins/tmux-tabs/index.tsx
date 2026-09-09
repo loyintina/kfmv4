@@ -53,7 +53,11 @@ export interface SessionsLink {
   close(): void;
 }
 
-export function openSessionsLink(onUpdate: () => void): SessionsLink {
+export function openSessionsLink(
+  onUpdate: () => void,
+  /** R3：当前附着会话查询（通知抑制用——附着中=内容在屏上不扰） */
+  isAttached: () => string | null = () => null,
+): SessionsLink {
   const state: SessionsLink = {
     sessions: [],
     newSession(name: string): void {
@@ -79,11 +83,20 @@ export function openSessionsLink(onUpdate: () => void): SessionsLink {
     ws = new WebSocket(url);
     ws.onopen = () => ws!.send(JSON.stringify({ t: 'tmux-sessions-open' }));
     ws.onmessage = (ev) => {
-      let m: { t?: string; sessions?: TmuxSessionInfo[] };
+      let m: { t?: string; sessions?: TmuxSessionInfo[]; session?: string; message?: string };
       try { m = JSON.parse(String(ev.data)); } catch { return; }
       if (m.t === 'tmux-sessions' && Array.isArray(m.sessions)) {
         state.sessions = m.sessions;
         onUpdate();
+      }
+      // R3 通知帧：非聚焦会话的「需要注意」事件 → 系统通知（有桥才响，
+      // 浏览器/Via 静默降级只靠 R2 活动点）。附着中=内容在屏上，不扰。
+      if (m.t === 'notify' && m.session) {
+        if (isAttached() === m.session) return;
+        try {
+          const win = window as unknown as { NzNative?: { notify?: (t: string, b: string) => void } };
+          win.NzNative?.notify?.(`nz · ${m.session}`, m.message || '有任务需要你');
+        } catch { /* 桥缺席/失败=降级，不挡 */ }
       }
     };
     ws.onclose = () => { onUpdate(); scheduleRetry(); };
@@ -458,7 +471,7 @@ export function createTmuxTabsPlugin(): UiPlugin {
               setExpanded(false);
               refreshRuntime();
             }
-          });
+          }, () => attachedRef.current);
           linkRef.current = link;
           return () => link.close();
         }, []);

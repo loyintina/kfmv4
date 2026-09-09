@@ -70,6 +70,7 @@ import { mountAiChatRoutes } from './ai/route.ts';
 // 配置池 A2a 阶段一：统一池数据层（/pool/* 路由族 + 激活总账 + relied 守卫
 // + fuse-on-save 写侧，设计 docs/config-pool-a2a-design.md §二）
 import { mountPoolRoutes } from './pool/route.ts';
+import { mountNotifyRoutes, registerBellHook } from './notify.ts';
 
 // ========== 静态服务 ==========
 
@@ -102,9 +103,12 @@ export function createNzServer(): Server {
   const handleAiChat = mountAiChatRoutes();
   // 配置池 A2a 阶段一：/pool/* 统一池数据层（同在静态服务分支之前）
   const handlePool = mountPoolRoutes();
+  // R3 长任务通知（2026-09-09 判据稿签收）：/__tmux-notify 端点
+  const handleNotify = mountNotifyRoutes();
   return createServer((req, res) => {
     if (handleAiChat(req, res)) return;
     if (handlePool(req, res)) return;
+    if (handleNotify(req, res)) return;
     // R1 断链自愈（2026-09-08 判据稿签收）：健康探针——客户端链路状态机
     // 在 WS 断期间以本端点分层断因（HTTP 通=服务进程在，只是 WS 掉；
     // HTTP 死=网断或服务器死）。零依赖零 IO，no-store 防中间缓存说谎。
@@ -243,6 +247,9 @@ if (isMain) {
   });
   server.listen(port, host, () => {
     slog(`HTTP 静态服务已起：http://${host}:${port}/（public/，越界 fail-closed）`);
+    // R3：alert-bell hook 指向本端点（pane printf '\a' 即通知信号，
+    // 后台窗也炸）；幂等 set -g，失败静默（直 POST 通道不受影响）
+    registerBellHook(port);
   });
   // gate 值守（镜 na gate.rs restart_check）：restart-req 在 → 摘触发 +
   // 同步遗言（exit(0) 不给异步入队留活路，BAR-022 教训同款）→ exit(0)。

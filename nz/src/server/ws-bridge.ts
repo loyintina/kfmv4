@@ -28,6 +28,7 @@ import type { Duplex } from 'node:stream';
 import type { Context } from 'cordis';
 import { TmuxControl, listSessions, tmuxSessionCmd } from './tmux-connection.js';
 import { onPoolChanged, type PoolChangedEvent } from './pool/bus.ts';
+import { onNotify } from './notify.ts';
 
 type Msg =
   | { t: 'open'; command?: string; cols?: number; rows?: number }
@@ -56,6 +57,13 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
     for (const w of poolWatchers) w.send({ t: 'pool-changed', pool: ev.pool, id: ev.id, op: ev.op });
   });
 
+  // R3 通知广播腿（2026-09-09 判据稿）：__tmux-notify/alert-bell 两源经
+  // NotifyGate 节流后从这里推给每条连接；连接断开在各自 close 里退订
+  const offNotify = onNotify((session, kind, message) => {
+    for (const w of [...clients]) w.send({ t: 'notify', session, kind, message });
+  });
+  const clients = new Set<{ send: (m: Record<string, unknown>) => void }>();
+
   server.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     if ((req.url ?? '').split('?')[0] !== path) {
       socket.destroy();
@@ -72,9 +80,9 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
     /** 会话表轮询器（0902 标签=会话；变化才推，3s 一拍） */
     let sessionsTimer: ReturnType<typeof setInterval> | undefined;
     let sessionsSig = '';
-    const send = (m: Record<string, unknown>) => {
-      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m));
-    };
+    const me = { send: (m: Record<string, unknown>) => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m)); } };
+    clients.add(me);
+    const send = me.send;
     /** pool-watch 订阅票（§1.6）：进 poolWatchers 后才收 pool-changed 帧 */
     const watcher = { send };
     const sessionsTick = async (): Promise<void> => {
@@ -211,9 +219,10 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
       for (const c of tmuxes.values()) c.close();
       tmuxes.clear();
       poolWatchers.delete(watcher);
+      clients.delete(me);
       if (sessionsTimer) { clearInterval(sessionsTimer); sessionsTimer = undefined; }
     });
   });
 
-  ctx.effect(() => () => { offPoolChanged(); wss.close(); });
+  ctx.effect(() => () => { offPoolChanged(); offNotify(); wss.close(); });
 }
