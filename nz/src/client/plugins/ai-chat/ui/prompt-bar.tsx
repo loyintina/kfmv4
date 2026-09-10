@@ -23,12 +23,33 @@
  * 2026-09-04 拍板⑭：composer 回车=换行不发送（textarea 自然换行，不
  * 拦截即 IME 守卫语义），发送唯一路径=发送按钮（流式期间仍是停止钮）。
  * P2：WAITING/STREAMING 中发送钮恒为停止钮（A8 入口）。
+ *
+ * 2026-09-11 @ 文件引用弹窗（v1 判据稿 §四 Phase 2）：键入 '@'（词首）
+ * → 弹浮层（composer 上方 pop-in 入场）；query 空=浏览档（/api/fs/list
+ * 首屏=根目录列表，目录行下钻/‥ 上级/「» 浏览完整文件树…」发
+ * kfm-nz-fstree-open），query 非空=全量索引模糊（fuzzySearch 前 20，
+ * 索引客户端只拉一次）；↑↓选择 / Enter·Tab 确认（**优先于拍板⑭**——
+ * 弹窗开着时 Enter 是引用插入语义，拍板⑭管发送语义，弹窗关时不变）/
+ * Esc·点外关（拍板⑬ 同款捕获监听，那一指动作同时生效）；确认=替换
+ * [@(词首), 光标) 为 `@<相对路径>`，光标置后（§4.3）。跨插件回流：
+ * kfm-nz-aichat-insert 事件（file-tree 预览浮层「插入 @引用」走此路）。
+ * 观测钩：__kfmNzFsAt() 报 {open,query,dir,rows,sel,busy,indexFetches}。
  */
 import { createElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ProvidersInfo, RunPhase } from '../chat-link.js';
+import { fetchFsList, loadFsIndex, fsStats } from '../../../fs/api.js';
+import { fuzzySearch } from '../../../fs/fuzzy.js';
 
 /** 菜单机词汇（§3.3） */
 export type MenuState = 'CLOSED' | 'MODEL_OPEN' | 'CONFIG_OPEN';
+
+/** @ 引用弹窗行词汇（v1 判据稿 §四）：browse=浏览档（query=''），hit=模糊档 */
+type AtRowKind = 'browse-dir' | 'browse-file' | 'hit' | 'up' | 'tree';
+interface AtRow {
+  kind: AtRowKind;
+  label: string;
+  path: string | null; // dir 行=可下钻路径；up/tree=null
+}
 
 export interface PromptBarProps {
   phase: RunPhase;
@@ -62,7 +83,117 @@ export function PromptBar(props: PromptBarProps): React.ReactElement {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { if (menu === 'CLOSED') setDrill(null); }, [menu]);
 
-  // 自动长高（借 prompt-bar.tsx 方案：height 归零量 scrollHeight，min/max 夹取）
+  // —— @ 文件引用（v1 判据稿 §四）——
+  // at=null 弹窗关；{pos,query}=开，pos=draft 中 '@' 下标（确认替换
+  // [pos, 光标) 区间）。触发词法 (?:^|\s)@([^\s@]*)$：@ 须词首，query
+  // 含空白断词自动关弹。atDir=浏览档当前目录（query='' 时走 list 下钻）
+  const [at, setAt] = useState<{ pos: number; query: string } | null>(null);
+  const [atDir, setAtDir] = useState('');
+  const [atRows, setAtRows] = useState<AtRow[]>([]);
+  const [atSel, setAtSel] = useState(0);
+  const [atBusy, setAtBusy] = useState(false);
+  const pendingCursorRef = useRef<number | null>(null);
+
+  // 数据腿：query='' → 浏览档 /api/fs/list（首屏=根目录列表 §4.1）；
+  // query≠'' → 全量索引模糊（loadFsIndex 客户端会话级缓存只拉一次）。
+  // alive 闸防竞态：旧 query 的慢响应不得覆盖新 query 的行
+  useEffect(() => {
+    if (!at) return;
+    let alive = true;
+    setAtBusy(true);
+    const run = at.query === ''
+      ? fetchFsList(atDir).then((entries) => {
+          const rows: AtRow[] = [{ kind: 'tree', label: '浏览完整文件树…', path: null }];
+          if (atDir !== '') rows.push({ kind: 'up', label: '‥ 上级', path: null });
+          for (const e of entries) {
+            rows.push({
+              kind: e.type === 'dir' ? 'browse-dir' : 'browse-file',
+              label: e.name,
+              path: atDir === '' ? e.name : `${atDir}/${e.name}`,
+            });
+          }
+          return rows;
+        })
+      : loadFsIndex().then((paths) =>
+          fuzzySearch(paths, at.query, 20).map((h) => ({ kind: 'hit' as const, label: h.path, path: h.path })));
+    void run
+      .then((rows) => {
+        if (!alive) return;
+        setAtRows(rows);
+        setAtSel((s) => Math.min(s, Math.max(0, rows.length - 1)));
+        setAtBusy(false);
+      })
+      .catch(() => { if (alive) { setAtRows([]); setAtBusy(false); } });
+    return () => { alive = false; };
+  }, [at, atDir]);
+
+  // 确认插入（§4.3）：替换 [@(词首), 光标) 为 `@<相对路径>`，光标置后
+  const atConfirm = (path: string): void => {
+    const el = inputRef.current;
+    setAt(null);
+    if (!el || !at) return;
+    const end = el.selectionStart ?? el.value.length;
+    const insertText = `@${path}`;
+    pendingCursorRef.current = at.pos + insertText.length;
+    setDraft(el.value.slice(0, at.pos) + insertText + el.value.slice(end));
+    el.focus();
+  };
+
+  const atPick = (row: AtRow): void => {
+    if (row.kind === 'browse-dir') { if (row.path) { setAtDir(row.path); setAtSel(0); } return; }
+    if (row.kind === 'up') {
+      const slash = atDir.lastIndexOf('/');
+      setAtDir(slash === -1 ? '' : atDir.slice(0, slash));
+      setAtSel(0);
+      return;
+    }
+    if (row.kind === 'tree') {
+      setAt(null);
+      window.dispatchEvent(new CustomEvent('kfm-nz-fstree-open')); // 树页入口（§七 定案）
+      return;
+    }
+    if (row.path) atConfirm(row.path);
+  };
+
+  // 点外即关且那一指动作同时生效（拍板⑬ 同款：document 捕获 passive，
+  // 不 preventDefault 下层点击照走；弹窗 DOM 与输入框自身豁免）
+  const atOpen = at !== null;
+  useEffect(() => {
+    if (!atOpen) return;
+    const onPointer = (e: PointerEvent): void => {
+      const t = e.target;
+      if (t instanceof Element && t.closest('[data-fsat-popup], [data-aichat-input]')) return;
+      setAt(null);
+    };
+    document.addEventListener('pointerdown', onPointer, { passive: true, capture: true });
+    return () => document.removeEventListener('pointerdown', onPointer, { capture: true });
+  }, [atOpen]);
+
+  // 跨插件引用回流（file-tree 预览「插入 @引用」）：光标处插文本，
+  // 真源=textarea DOM 值（不经 draft 闭包，避免陈旧读）
+  useEffect(() => {
+    const onInsert = (e: Event): void => {
+      const detail = (e as CustomEvent).detail as { text?: unknown } | null;
+      if (!detail || typeof detail.text !== 'string' || detail.text === '') return;
+      const el = inputRef.current;
+      const pos = el?.selectionStart ?? el?.value.length ?? 0;
+      const end = el?.selectionEnd ?? pos;
+      pendingCursorRef.current = pos + detail.text.length;
+      setDraft(el ? el.value.slice(0, pos) + detail.text + el.value.slice(end) : detail.text);
+      el?.focus();
+    };
+    window.addEventListener('kfm-nz-aichat-insert', onInsert);
+    return () => window.removeEventListener('kfm-nz-aichat-insert', onInsert);
+  }, []);
+
+  // 判卷钩子（可观测性约束，公共契约）
+  (window as unknown as Record<string, unknown>).__kfmNzFsAt = () => ({
+    open: at !== null, query: at?.query ?? null, dir: atDir,
+    rows: atRows.length, sel: atSel, busy: atBusy, ...fsStats(),
+  });
+
+  // 自动长高（借 prompt-bar.tsx 方案：height 归零量 scrollHeight，min/max 夹取）；
+  // 尾部消费待落光标（@ 确认/回流插入后光标置于插入文本之后）
   useLayoutEffect(() => {
     const input = inputRef.current;
     if (!input) return;
@@ -70,6 +201,10 @@ export function PromptBar(props: PromptBarProps): React.ReactElement {
     const contentHeight = input.scrollHeight;
     input.style.height = `${Math.min(Math.max(contentHeight, MIN_H), MAX_H)}px`;
     input.style.overflowY = contentHeight > MAX_H ? 'auto' : 'hidden';
+    if (pendingCursorRef.current != null) {
+      input.selectionStart = input.selectionEnd = pendingCursorRef.current;
+      pendingCursorRef.current = null;
+    }
   }, [draft]);
 
   const busy = phase !== 'IDLE';
@@ -177,11 +312,45 @@ export function PromptBar(props: PromptBarProps): React.ReactElement {
       )
     : null;
 
+  // @ 引用弹窗（§4.1：输入栏上方浮层；行=atRows，选中行 chip 底；
+  // onPointerDown preventDefault 保 textarea 焦点——点选不打断输入法）
+  const atMenu = at
+    ? createElement('div', {
+        'data-fsat-popup': '1',
+        style: {
+          position: 'absolute', left: '8px', right: '8px', bottom: '100%', marginBottom: '6px', zIndex: 10,
+          maxHeight: '40vh', overflowY: 'auto', background: 'var(--kfm-surface)',
+          borderRadius: 'var(--kfm-radius-lg)', boxShadow: 'var(--kfm-shadow-raised)', padding: '4px',
+        },
+      },
+      atBusy
+        ? createElement('div', { style: { padding: '6px 8px', fontSize: '11.5px', color: 'var(--kfm-ink-3)' } }, '索引加载中…')
+        : null,
+      atRows.map((row, i) => createElement('button', {
+        key: `${row.kind}:${row.path ?? row.label}`,
+        'data-fsat-row': row.path ?? row.label,
+        'data-fsat-row-kind': row.kind,
+        type: 'button',
+        onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); }, // 保焦点
+        onClick: () => atPick(row),
+        style: { ...rowStyle, background: i === atSel ? 'var(--kfm-chip-bg)' : 'none' },
+      },
+      createElement('span', { style: { width: '14px', flexShrink: 0, color: 'var(--kfm-ink-3)', fontSize: '11px' } },
+        row.kind === 'browse-dir' ? '▸' : row.kind === 'up' ? '‥' : row.kind === 'tree' ? '»' : ''),
+      createElement('span', { style: rowTextStyle }, row.label),
+      )),
+      !atBusy && atRows.length === 0
+        ? createElement('div', { 'data-fsat-empty': '1', style: { padding: '6px 8px', fontSize: '11.5px', color: 'var(--kfm-ink-3)' } }, '无匹配文件')
+        : null,
+      )
+    : null;
+
   return createElement('div', {
     // 全局钉底条内边距（sab 由下方 keybar 承担，本条不再叠安全区——拍板①装配）
     style: { position: 'relative', flexShrink: 0, padding: '6px 10px 10px' },
   },
   modelMenu,
+  atMenu,
   createElement('div', {
     'data-aichat-composer': '1',
     style: {
@@ -197,8 +366,29 @@ export function PromptBar(props: PromptBarProps): React.ReactElement {
     rows: 1,
     value: draft,
     placeholder: busy ? '回复生成中…' : '发消息给 AI…',
-    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => setDraft(e.target.value),
+    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const el = e.target;
+      setDraft(el.value);
+      // @ 触发词法（§4.1）：光标前文 (?:^|\s)@([^\s@]*)$ ——@ 词首才触发；
+      // query 含空白断词自动关弹（_paths 可含空格的极端场景 v1 不支援）
+      const pos = el.selectionStart ?? el.value.length;
+      const m = /(?:^|\s)@([^\s@]*)$/.exec(el.value.slice(0, pos));
+      if (m) { setAt({ pos: pos - m[1].length - 1, query: m[1] }); setAtSel(0); }
+      else setAt(null);
+    },
     onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      // @ 弹窗键盘语义（§4.1）：↑↓选择 / Enter·Tab 确认 / Esc 关——
+      // 优先于菜单 Esc 与拍板⑭（弹窗开着时 Enter=引用插入，非换行非发送）
+      if (at) {
+        if (e.key === 'ArrowDown') { e.preventDefault(); setAtSel((s) => Math.min(s + 1, atRows.length - 1)); return; }
+        if (e.key === 'ArrowUp') { e.preventDefault(); setAtSel((s) => Math.max(s - 1, 0)); return; }
+        if (e.key === 'Enter' || e.key === 'Tab') {
+          const row = atRows[atSel];
+          if (row) { e.preventDefault(); atPick(row); }
+          return;
+        }
+        if (e.key === 'Escape') { setAt(null); return; }
+      }
       if (e.key === 'Escape' && menu !== 'CLOSED') { onMenu('CLOSED'); return; } // A10（拍板⑯：关任意开着的菜单）
       // 拍板⑭（2026-09-04）：Enter=换行不发送——不拦截即 textarea 自然换行，
       // IME 组词中 Enter 确认组词也不被拦（不拦截即守卫语义保留）；发送

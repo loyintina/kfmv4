@@ -23,6 +23,7 @@ import { reactSmokePlugin } from './kernel/react-adapter.js';
 import { createTmuxTabsPlugin } from './plugins/tmux-tabs/index.js';
 import { createAiChatPlugin } from './plugins/ai-chat/index.js';
 import { createConfigPoolPlugin } from './plugins/config-pool/index.js';
+import { createFileTreePlugin } from './plugins/file-tree/index.js';
 
 // ========== 内核件接线：宿主给盒子，手势管输入，broker 管卡类型户口 ==========
 const host = new RenderHost();
@@ -132,6 +133,14 @@ uiKernel.mount('ai-chat', createAiChatPlugin(), aiChatContainer.el);
 // 手势注册走 rootCtx（registerGesture ctx.effect 白送摘除——仲裁④ PageSwipe:500）。
 const poolContainer = host.create(rootCtx, { kind: 'overlay', owner: 'config-pool', slot: 'config-pool' });
 uiKernel.mount('config-pool', createConfigPoolPlugin(rootCtx), poolContainer.el);
+
+// file-tree（文件树 v1 判据稿 §三/§七）：全屏树页 z44（池页同档互斥态），
+// 入口=@ 弹窗「浏览完整文件树…」行发的 kfm-nz-fstree-open 事件（v1 不绑
+// 左滑手势——PageSwipe:500 已归 config-pool）。槽位同落 overlay 层（同款
+// 教训：挂 body 会被 layout 层整面盖住）；挂 config-pool 之后=同层 DOM
+// 后位（两页并开时树页在上）。
+const fsTreeContainer = host.create(rootCtx, { kind: 'overlay', owner: 'file-tree', slot: 'file-tree' });
+uiKernel.mount('file-tree', createFileTreePlugin(), fsTreeContainer.el);
 
 // ========== 热更自刷（前端腿：build → 页面自动换血，会话靠续命 attach 不断） ==========
 // boot 记当前 builtAt，10s 轮询 /build-info.json（build.mjs 每次构建重写），
