@@ -1097,6 +1097,9 @@ export function applyTermBundle(ctx: Context): void {
           try { (window as unknown as Record<string, unknown>).__kfmNzTermResumed = true; } catch { /* 钩失败不挡 */ }
         } else {
           card.sessionId = null;
+          // 续命失败=旧 PTY 成孤儿（服务端无 reaper 设计）：显式收尸，
+          // 防 21 僵尸式累积（09-10 排障实证）。旧会话已死时 close 无害。
+          try { bridge.close(saved); } catch { /* 已死即达意 */ }
           console.warn('[term] 续命 attach 失败（服务端重启过？），开新会话');
           try { (window as unknown as Record<string, unknown>).__kfmNzTermResumed = false; } catch { /* 钩失败不挡 */ }
         }
