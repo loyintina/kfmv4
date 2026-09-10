@@ -404,4 +404,5 @@
 | 2026-09-08 | [`kfmv4-review-daily-progress-2026-09-08-report.md`](kfmv4-review-daily-progress-2026-09-08-report.md) | 无（主动通报；晨检日报的信箱化，观察者通报口径，不替代线内第一手通报） | 通报完毕（当日评审：晨检翻正 5 封状态过期信，信箱 307 封全绿） |
 | 2026-09-09 | [`kfmv4-9.0-r3-task-notify-landing-report.md`](kfmv4-9.0-r3-task-notify-landing-report.md) | kfmv4-9.0-tmux-mgr-requirements-response.md | 通报完毕（2026-09-09 nz：R3 三档闭环 + 幽灵安装案双闸修复） |
 | 2026-09-09 | [`kfmv4-review-daily-progress-2026-09-09-report.md`](kfmv4-review-daily-progress-2026-09-09-report.md) | 无（主动通报；晨检日报的信箱化，观察者通报口径，不替代线内第一手通报） | 通报完毕（当日评审：晨检全绿无红，310 封，无停滞在途） |
+| 2026-09-10 | [`kfmv4-review-daily-progress-2026-09-10-report.md`](kfmv4-review-daily-progress-2026-09-10-report.md) | 无（主动通报；晨检日报的信箱化，观察者通报口径，不替代线内第一手通报） | 通报完毕（当日评审：晨检全绿无红，312 封，无停滞在途） |
 <!-- gen:agent-inbox:end -->
