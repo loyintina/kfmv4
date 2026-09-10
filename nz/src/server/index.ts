@@ -71,6 +71,7 @@ import { mountAiChatRoutes } from './ai/route.ts';
 // + fuse-on-save 写侧，设计 docs/config-pool-a2a-design.md §二）
 import { mountPoolRoutes } from './pool/route.ts';
 import { mountNotifyRoutes, registerBellHook } from './notify.ts';
+import { mountFsRoutes } from './fs.ts';
 
 // ========== 静态服务 ==========
 
@@ -105,10 +106,13 @@ export function createNzServer(): Server {
   const handlePool = mountPoolRoutes();
   // R3 长任务通知（2026-09-09 判据稿签收）：/__tmux-notify 端点
   const handleNotify = mountNotifyRoutes();
+  // 文件树卡片 + @ 文件引用（v1 判据稿 §二）：fail-closed 文件 API
+  const handleFs = mountFsRoutes();
   return createServer((req, res) => {
     if (handleAiChat(req, res)) return;
     if (handlePool(req, res)) return;
     if (handleNotify(req, res)) return;
+    if (handleFs(req, res)) return;
     // R1 断链自愈（2026-09-08 判据稿签收）：健康探针——客户端链路状态机
     // 在 WS 断期间以本端点分层断因（HTTP 通=服务进程在，只是 WS 掉；
     // HTTP 死=网断或服务器死）。零依赖零 IO，no-store 防中间缓存说谎。
