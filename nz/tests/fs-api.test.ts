@@ -15,6 +15,7 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { test, group, assert } from './runner.ts';
 import { createNzServer } from '../src/server/index.ts';
+import { resolveRoots } from '../src/server/fs.ts';
 import { fuzzyScore, fuzzySearch } from '../src/client/fs/fuzzy.ts';
 import type { AddressInfo } from 'node:net';
 
@@ -144,4 +145,23 @@ test('⑪服务卸载（先掐 keep-alive 连接再 close）', async () => { con
   await sleep(50);
   await new Promise<void>((r) => server.close(() => r()));
   assert(true, '收尾');
+});
+
+test('⑫默认根收窄（§七⑨）：库存在→收窄 / 库缺→退回 HOME', async () => { console.log("[fs-api] 钉⑫ 进");
+  const savedRoots = process.env.NZ_FS_ROOTS;
+  const savedHome = process.env.HOME;
+  try {
+    delete process.env.NZ_FS_ROOTS;
+    const fakeHome = path.join(FIXTURE, 'fake-home');
+    await fsp.mkdir(path.join(fakeHome, '00-Loyintina'), { recursive: true });
+    process.env.HOME = fakeHome;
+    assert(JSON.stringify(resolveRoots()) === JSON.stringify([path.join(fakeHome, '00-Loyintina')]),
+      `库存在→默认收窄到库，实得 ${JSON.stringify(resolveRoots())}`);
+    await fsp.rm(path.join(fakeHome, '00-Loyintina'), { recursive: true });
+    assert(JSON.stringify(resolveRoots()) === JSON.stringify([path.resolve(fakeHome)]),
+      '库不存在→退回 HOME');
+  } finally {
+    process.env.NZ_FS_ROOTS = savedRoots; // 其余考卷不触 /api/fs/*，仍归还现场
+    process.env.HOME = savedHome;
+  }
 });

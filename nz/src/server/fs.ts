@@ -14,15 +14,21 @@
  *
  * 挂载：index.ts 静态分支之前 `const handleFs = mountFsRoutes();`
  */
-import { promises as fsp } from 'node:fs';
+import { existsSync, promises as fsp } from 'node:fs';
 import path from 'node:path';
 
 /** 判据稿 §2.1 排除目录（段级命中即整枝剪除） */
 const EXCLUDE_DIRS = new Set(['.obsidian', '.smart-env', '.trash', 'node_modules', '.git']);
 
-/** 允许根解析（每请求读取——考卷可在运行时改 env） */
+/** 允许根解析（每请求读取——考卷可在运行时改 env）。
+ * 默认根收窄（§七⑨，2026-09-11 8.3MB 索引实锤）：NZ_FS_ROOTS 未设时默认
+ * $HOME/00-Loyintina（库本体——HOME 全量把源码树/toolchain 全索进去，
+ * @ 弹窗首拉 8.3MB 不可用）；库不存在退回 HOME；NZ_FS_ROOTS 显式放宽。 */
 export function resolveRoots(): string[] {
-  const spec = process.env.NZ_FS_ROOTS ?? process.env.HOME ?? '/';
+  const home = process.env.HOME ?? '/';
+  const spec = process.env.NZ_FS_ROOTS
+    ?? (existsSync(path.join(home, '00-Loyintina')) ? path.join(home, '00-Loyintina') : home)
+    ?? '/';
   return spec.split(':').filter(Boolean).map((p) => path.resolve(p));
 }
 

@@ -173,3 +173,7 @@ v1.1。该文本对 AI 的语义（读取文件内容作为上下文）属 AI �
    `npm run build`——考卷吃 public/bundle.js，不 build=考旧代码）。
    观测双源：页面侧 addInitScript 包 fetch 计数（独立于插件的网络真值）
    + __kfmNzFsTree()/__kfmNzFsAt() 插件记账钩子。
+9. **默认根收窄**（2026-09-11 活实例实锤）：§2.1「默认=HOME」修正为
+   「默认=$HOME/00-Loyintina（库存在时）」——HOME 全量索引 8.3MB/几十万
+   文件（源码树+toolchain 全进索引），@ 弹窗首拉不可用；库不存在退回
+   HOME；NZ_FS_ROOTS 显式放宽不变。考卷 fs-api ⑫ 钉。na 照抄此语义。
