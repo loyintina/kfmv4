@@ -95,14 +95,17 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
       if (subs.has(id)) return;
       const sess = ctx.termConn.attach(id);
       if (!sess) return;
+      // R3-reaper 订阅记账：有人看=存活宽限持续刷新（退订/exit 双路扣减，幂等）
+      ctx.termConn.subscriberAdd(id);
       const offOut = sess.onOutput((data) => send({ t: 'output', id, data }));
       const offExit = sess.onExit((code) => {
         send({ t: 'exit', id, code });
         // 退订挪到 exit 之后：exit 帧发得出，订阅才收尸
+        ctx.termConn.subscriberRemove(id);
         subs.get(id)?.();
         subs.delete(id);
       });
-      subs.set(id, () => { offOut(); offExit(); });
+      subs.set(id, () => { offOut(); offExit(); ctx.termConn.subscriberRemove(id); });
     };
 
     ws.on('message', (raw: Buffer): void => {

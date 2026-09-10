@@ -59,6 +59,10 @@ interface SessionInner {
   exitCbs: Set<(code: number) => void>;
   tail: string;
   exited: boolean;
+  /** R3-reaper：活跃订阅者数（ws 订阅/退订维护） */
+  subscriberCount: number;
+  /** 最近一次有订阅者的时刻（收割宽限起点） */
+  lastSubscribedAt: number;
 }
 
 const DEFAULT_COLS = 80;
@@ -88,10 +92,60 @@ export function resolveLoginShell(): string {
 
 export class TermConnectionService {
   private _sessions = new Map<string, SessionInner>();
+  /** R3-reaper：会话 → 活跃订阅者计数 */
+  private _subs = new Map<string, number>();
   private _shell: string;
 
-  constructor(private _ctx: Context, opts: { shell?: string } = {}) {
+  private _reapTimer: ReturnType<typeof setInterval> | undefined;
+
+  constructor(
+    private _ctx: Context,
+    opts: { shell?: string; /** 订阅者缺席收割阈值 ms（0=禁用；默认 10min） */ reapAfterMs?: number; sweepMs?: number } = {},
+  ) {
     this._shell = opts.shell ?? resolveLoginShell();
+    // R3-reaper（2026-09-10 用户签收）：无订阅者超时收割。观测 web 的 WS
+    // 常连=天然保活（应用活着永不误杀）；应用死亡→WS 断→超时收割。
+    // tmux 内工作无损（tmux 独立守护），重进走 new-session -A 自动重附。
+    const reapAfterMs = opts.reapAfterMs ?? 600_000;
+    if (reapAfterMs > 0) {
+      this._reapTimer = setInterval(
+        () => this._sweepUnsubscribed(reapAfterMs),
+        opts.sweepMs ?? 60_000,
+      );
+      this._reapTimer.unref?.();
+    }
+  }
+
+  /** 巡检：有订阅者→刷新宽限起点；缺席超阈值→收割（对尸 kill，exit 事件自然走） */
+  private _sweepUnsubscribed(reapAfterMs: number): void {
+    const now = Date.now();
+    for (const [id, inner] of this._sessions) {
+      if ((this._subs.get(id) ?? 0) > 0) {
+        inner.lastSubscribedAt = now;
+        continue;
+      }
+      if (now - inner.lastSubscribedAt > reapAfterMs) {
+        this._ctx.emit('term/output', id, `\r\n[reaper] 无订阅者超时，终端已回收（tmux 会话不受影响，重进即自动重附）\r\n`);
+        try { inner.proc.kill(); } catch { /* 已死不阻断 */ }
+        this._sessions.delete(id);
+        this._subs.delete(id);
+      }
+    }
+  }
+
+  /** ws 订阅记账（ws-bridge subscribe 接线；幂等计数） */
+  subscriberAdd(id: string): void {
+    const inner = this._sessions.get(id);
+    if (!inner) return;
+    this._subs.set(id, (this._subs.get(id) ?? 0) + 1);
+    inner.lastSubscribedAt = Date.now();
+  }
+
+  /** ws 退订记账（幂等，地板 0） */
+  subscriberRemove(id: string): void {
+    const n = (this._subs.get(id) ?? 0) - 1;
+    if (n <= 0) this._subs.delete(id);
+    else this._subs.set(id, n);
   }
 
   /** 默认 shell 解析结果（判卷/取证锚点，pty-login-shell-review A 档） */
@@ -125,6 +179,7 @@ export class TermConnectionService {
     });
     const inner: SessionInner = {
       id, proc, outCbs: new Set(), exitCbs: new Set(), tail: '', exited: false,
+      subscriberCount: 0, lastSubscribedAt: Date.now(),
     };
     proc.onData((data) => {
       inner.tail = (inner.tail + data).slice(-TAIL_CAP);
@@ -133,6 +188,7 @@ export class TermConnectionService {
     });
     proc.onExit(({ exitCode }) => {
       inner.exited = true;
+      this._subs.delete(id);
       for (const cb of inner.exitCbs) cb(exitCode);
       this._ctx.emit('term/exit', id, exitCode);
     });
@@ -157,6 +213,9 @@ export class TermConnectionService {
 
   /** 服务卸载清理：全杀（登记类逆序摘的对应动作） */
   closeAll(): void {
+    this._reapTimer?.unref?.();
+    clearInterval(this._reapTimer);
+    this._subs.clear();
     for (const inner of this._sessions.values()) {
       try { inner.proc.kill(); } catch { /* 已死不阻断其余 */ }
     }
@@ -193,7 +252,7 @@ export class TermConnectionService {
 /** 挂载到服务端总线（main 挂 serverCtx；考题挂测试 ctx）。
  *  权限引擎在册时登记 'term.open' = exec 级户口（影子期登记即审计源）；
  *  引擎缺席（早期骨架/裸测试）则跳过登记与判定。 */
-export function mountTermConnection(ctx: Context, opts: { shell?: string } = {}): void {
+export function mountTermConnection(ctx: Context, opts: { shell?: string; reapAfterMs?: number; sweepMs?: number } = {}): void {
   const svc = new TermConnectionService(ctx, opts);
   ctx.provide('termConn', svc);
   ctx.effect(() => () => svc.closeAll());
