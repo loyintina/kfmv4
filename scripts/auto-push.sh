@@ -37,6 +37,11 @@ if git push origin master >> "$LOG" 2>&1; then
   echo "$STAMP 推送 master 成功" >> "$LOG"
 else
   echo "$STAMP 推送 master 失败（pre-push 检查未过或网络问题）" >> "$LOG"
+  # R3 通知管线（09-09 上线）：失败即手机推送，不再静默积压（幽灵积压案教训）
+  curl -s -m 3 -X POST http://127.0.0.1:8023/__tmux-notify \
+    --data-urlencode 'session=服务器推送' \
+    --data-urlencode "message=auto-push 推送失败（闸未过或网络），积压见 /var/log/kfmv4-autopush.log" \
+    >/dev/null 2>&1 || true
   exit 1
 fi
 
