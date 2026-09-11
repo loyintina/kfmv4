@@ -2034,3 +2034,27 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   补硬证据前置钉（附着指示+状态行双在才准塌回断言）。回归：v5 9/9
   （③attach 653ms，⑤T2s 换名，⑥双证，⑧词汇表末拍互证）；浏览器核心
   卷+node 套件见下一行记录。
+
+## 0.9 B-线 · 浏览器器官（2026-09-11 立项；维护态豁免新卡=用户亲自拍板）
+
+> **一句话**：把「实机可控浏览器」做成 nz 的第二个运行模式（浏览器全屏+
+> 终端浮窗化），能力归 agent 公共器官（CDP 眼/手），不再给内置 AI 配外设。
+
+### 已落地（本日）
+- 壳 Java（device-agent MainActivity）：browserWeb 全屏层 + floatContainer
+  浮窗层（右下四分之一/50dp 边距/12dp 圆角/可拖拽）+ holdBtn（点=折叠/
+  按住=透明让位，多触点穿透）+ 原生 orb（普通态右中召唤；浏览器态停靠
+  浮窗上沿=退回）+ NzNative 三桥（enterBrowser/exitBrowser/browserState）
+  + onBackPressed 浏览器模式优先。编译通过，APK 已出货。
+- SPA：browser 插件双形态——普通态管理面板（地址/尾随会话/打开/关闭/
+  原生态轮询）；浮窗专态（?float=1&fs=会话）左竖线会话标签（3s 轮询
+  /api/tmux/sessions + detach 轮询重进）。服务端 /api/tmux/sessions 路由。
+- AI 系摘除（4729a917）：ai-chat/config-pool 卸载，bundle -17%。
+
+### 待修（下会话第一事）
+- **④ 浮窗切会话竞态**：标签点击 → C-b d + 'detached' 轮询 + 重进的
+  注入链在实跑中仍偶发字符竞态（'dux'/'dtmux' 撕咬；屏序录像+detachShot
+  取证钩已埋在 browser-organ.test.mjs ④，6/7 卡于此钉）。嫌疑=注入与
+  tmux client 拆卸的字节竞态，需屏稳定判据调参或改服务端 tmux-cmd 通路。
+- 浮窗 IME 避让（无 insets 监听，v0 接受 adjustPan）。
+- 壳 APK 装机 + C 档真机全链（气泡召唤/透明穿透/返回键/我方 CDP 眼）。

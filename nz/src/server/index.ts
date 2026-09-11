@@ -72,6 +72,7 @@ import { mountAiChatRoutes } from './ai/route.ts';
 import { mountPoolRoutes } from './pool/route.ts';
 import { mountNotifyRoutes, registerBellHook } from './notify.ts';
 import { mountFsRoutes } from './fs.ts';
+import { listSessions } from './tmux-connection.js';
 
 // ========== 静态服务 ==========
 
@@ -113,6 +114,18 @@ export function createNzServer(): Server {
     if (handlePool(req, res)) return;
     if (handleNotify(req, res)) return;
     if (handleFs(req, res)) return;
+    // 浏览器器官浮窗（B-线）：tmux 会话名表（浮窗左竖线标签轮询用；
+    // 只出名不出内容，no-store）
+    if (req.method === 'GET' && (req.url ?? '').split('?')[0] === '/api/tmux/sessions') {
+      void listSessions().then((ss) => {
+        res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+        res.end(JSON.stringify({ sessions: ss.map((s) => s.name) }));
+      }).catch(() => {
+        res.writeHead(500, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ sessions: [] }));
+      });
+      return true;
+    }
     // R1 断链自愈（2026-09-08 判据稿签收）：健康探针——客户端链路状态机
     // 在 WS 断期间以本端点分层断因（HTTP 通=服务进程在，只是 WS 掉；
     // HTTP 死=网断或服务器死）。零依赖零 IO，no-store 防中间缓存说谎。

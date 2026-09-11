@@ -1,0 +1,298 @@
+/**
+ * src/client/plugins/browser/index.tsx — 浏览器器官（B-线 v0，2026-09-11
+ * 用户拍板立项）。两个挂载形态，按页面查询参数二选一（main.ts 装配）：
+ *
+ *   · 普通模式（默认）：createBrowserPanelPlugin() —— 全屏管理面板
+ *     （kfm-browser-panel-open 事件召唤；地址+尾随会话+打开/关闭浏览器
+ *     +原生态轮询）。打开/关闭经 NzNative.enterBrowser/exitBrowser 调
+ *     壳三层堆叠（browserWeb 全屏目标站 + floatWeb 终端浮窗）。
+ *   · 浮窗专态（?float=1&fs=<会话>）：createBrowserFloatPlugin(session)
+ *     —— 左竖线会话标签（3s 轮询 /api/tmux/sessions；点击经
+ *     __kfmNzTermInject 走 detach+attach 真链路切会话）。本 WebView 是
+ *     第二世界，attach 同一 tmux 会话=多路复用（结项记录「双开=设计内」）。
+ *
+ * UI 判据（设计基础判据 + 色彩专项 + tokens 单源）：间距 4px 刻度、字阶
+ * 12/14、深色无纯黑纯白（--kfm-page/--kfm-ink）、强调稀缺（一屏一处
+ * accent）、层级=字重>颜色>字号。
+ *
+ * 观测钩：__kfmBrowser() 报 {panel, native, url, session}。
+ */
+import { createElement, useEffect, useRef, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import type { UiPlugin, UiPluginHandle } from '../../kernel/ui-kernel.js';
+
+const native = (): NzNativeLike | null => {
+  const nz = (window as unknown as Record<string, unknown>).NzNative as NzNativeLike | undefined;
+  return nz ?? null;
+};
+
+interface NzNativeLike {
+  enterBrowser?: (url: string, session: string) => void;
+  exitBrowser?: () => void;
+  browserState?: () => string;
+}
+
+/** 管理面板（普通模式） */
+export function createBrowserPanelPlugin(): UiPlugin {
+  return {
+    id: 'browser',
+    stateMachine: 'docs/browser-v0-design.md',
+    mount(slot: HTMLElement): UiPluginHandle {
+      const root = createRoot(slot);
+
+      function Panel(): React.ReactElement {
+        const [open, setOpen] = useState(false);
+        const [url, setUrl] = useState('https://');
+        const [session, setSession] = useState('dsh');
+        const [nativeState, setNativeState] = useState('（无桥=浏览器环境，打开仅记录）');
+        const urlRef = useRef<HTMLInputElement | null>(null);
+
+        useEffect(() => {
+          const onOpen = (): void => {
+            setOpen(true);
+            try {
+              const s = (window as unknown as Record<string, unknown>).__kfmNzTmuxTabs as
+                (() => { attachedSession: string | null }) | undefined;
+              const cur = s?.().attachedSession;
+              if (cur) setSession(cur);
+            } catch { /* 无标签条不挡 */ }
+          };
+          window.addEventListener('kfm-browser-panel-open', onOpen);
+          return () => window.removeEventListener('kfm-browser-panel-open', onOpen);
+        }, []);
+
+        useEffect(() => {
+          if (!open) return;
+          const t = setInterval(() => {
+            try { setNativeState(native()?.browserState?.() ?? '（无桥）'); } catch { /* 轮询失败不挡 */ }
+          }, 2000);
+          return () => clearInterval(t);
+        }, [open]);
+
+        const doOpen = (): void => {
+          const n = native();
+          if (!n?.enterBrowser) { setNativeState('（NzNative 不在场——headless/浏览器环境仅记录）'); return; }
+          n.enterBrowser(url, session);
+          setOpen(false);
+        };
+        const doCloseBrowser = (): void => {
+          try { native()?.exitBrowser?.(); } catch { /* 无桥不挡 */ }
+        };
+
+        // 判据：间距 4px 刻度（8/16/24）；字阶 12/14；强调一屏一处（打开钮）；
+        // 深色无纯黑纯白（--kfm-page/--kfm-ink/--kfm-field）。
+        return createElement('div', {
+          'data-browser-panel': '1',
+          style: {
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 44,
+            background: 'var(--kfm-page)', color: 'var(--kfm-ink)',
+            display: open ? 'flex' : 'none', flexDirection: 'column',
+            fontFamily: 'var(--kfm-font-sans)', padding: '16px',
+          },
+        },
+        createElement('div', { style: { display: 'flex', alignItems: 'center', marginBottom: '24px' } },
+          createElement('div', { style: { flex: 1, fontSize: '16px', fontWeight: 500 } }, '浏览器'),
+          createElement('button', {
+            type: 'button', onClick: () => setOpen(false),
+            style: {
+              width: '30px', height: '30px', borderRadius: '50%', border: '1px solid var(--kfm-line)',
+              background: 'var(--kfm-bar-bg)', color: 'var(--kfm-ink-2)', fontSize: '14px', cursor: 'pointer',
+            },
+          }, '×'),
+        ),
+        createElement('div', { style: { fontSize: '11px', color: 'var(--kfm-ink-3)', marginBottom: '8px' } }, '地址'),
+        createElement('input', {
+          'data-browser-url': '1',
+          value: url,
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => setUrl(e.target.value),
+          onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') doOpen(); },
+          placeholder: 'https://…',
+          style: {
+            height: '40px', background: 'var(--kfm-field)', border: '1px solid var(--kfm-aichat-line)',
+            borderRadius: '12px', padding: '0 12px', fontSize: '14px', color: 'var(--kfm-ink)',
+            outline: 'none', marginBottom: '16px',
+          },
+        }),
+        createElement('div', { style: { fontSize: '11px', color: 'var(--kfm-ink-3)', marginBottom: '8px' } }, '终端浮窗尾随会话'),
+        createElement('input', {
+          'data-browser-session': '1',
+          value: session,
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => setSession(e.target.value),
+          style: {
+            height: '36px', background: 'var(--kfm-field)', border: '1px solid var(--kfm-aichat-line)',
+            borderRadius: '12px', padding: '0 12px', fontSize: '14px', color: 'var(--kfm-ink)',
+            outline: 'none', marginBottom: '24px',
+          },
+        }),
+        createElement('div', { style: { display: 'flex', gap: '12px', marginBottom: '24px' } },
+          createElement('button', {
+            'data-browser-open': '1', type: 'button', onClick: doOpen,
+            style: {
+              flex: 1, height: '40px', borderRadius: '8px', border: 'none',
+              background: 'var(--kfm-accent)', color: 'var(--kfm-page)',
+              fontSize: '14px', fontWeight: 500, cursor: 'pointer',
+            },
+          }, '打开浏览器'),
+          createElement('button', {
+            'data-browser-close': '1', type: 'button', onClick: doCloseBrowser,
+            style: {
+              height: '40px', padding: '0 16px', borderRadius: '8px', border: '1px solid var(--kfm-line)',
+              background: 'var(--kfm-bar-bg)', color: 'var(--kfm-ink-2)', fontSize: '14px', cursor: 'pointer',
+            },
+          }, '关闭浏览器'),
+        ),
+        createElement('div', { style: { fontSize: '12px', color: 'var(--kfm-ink-3)', lineHeight: 1.6 } },
+          '原生态：', nativeState,
+          createElement('div', null, '浮窗=完整终端（可打字/滑历史/左竖线切会话）；控制钮点按折叠、按住透明。'),
+        ),
+        );
+      }
+
+      root.render(createElement(Panel));
+      (window as unknown as Record<string, unknown>).__kfmBrowser = () => ({
+        panelMounted: true, native: !!native(),
+      });
+      return {
+        unmount: () => {
+          root.unmount();
+          delete (window as unknown as Record<string, unknown>).__kfmBrowser;
+        },
+      };
+    },
+  };
+}
+
+/** 浮窗专态：左竖线会话标签（3s 轮询；点击走 inject 真链路切会话） */
+export function createBrowserFloatPlugin(session: string): UiPlugin {
+  return {
+    id: 'browser-float',
+    stateMachine: 'docs/browser-v0-design.md',
+    mount(slot: HTMLElement): UiPluginHandle {
+      const root = createRoot(slot);
+
+      function FloatTabs(): React.ReactElement {
+        const [sessions, setSessions] = useState<string[]>([session]);
+        const [active, setActive] = useState(session);
+        useEffect(() => {
+          sessionsRef.current = sessions; activeRef.current = active;
+          if (attachedRefBridge) attachedRefBridge.current = attachedRef.current;
+        });
+
+        useEffect(() => {
+          const pull = async (): Promise<void> => {
+            try {
+              const r = await fetch('/api/tmux/sessions', { cache: 'no-store' });
+              if (r.ok) {
+                const j = (await r.json()) as { sessions: string[] };
+                if (Array.isArray(j.sessions)) {
+                  setSessions(j.sessions.includes(active) || j.sessions.length === 0 ? j.sessions : [...j.sessions, active]);
+                }
+              }
+            } catch { /* 服务器不在=保持现值 */ }
+          };
+          void pull();
+          const t = setInterval(pull, 3000);
+          return () => clearInterval(t);
+          // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, []);
+
+        // 附着账（浮窗世界起家=裸 zsh 未进 tmux）：首挂由下面的就绪轮询
+        // 完成；切换时才需要 C-b d 脱离舞步（已附着前提下）
+        const attachedRef = useRef(session);
+        const readyRef = useRef(false); // 首挂注入完成=门闩开
+        useEffect(() => {
+          // 首挂就绪轮询：终端钩在场且屏非空（shell prompt 已画）才注入
+          const t = setInterval(() => {
+            const w = window as unknown as Record<string, unknown>;
+            if (typeof w.__kfmNzTermInject !== 'function') return;
+            if (((w.__kfmNzTermScreen as () => string)?.() ?? '').trim() === '') return;
+            clearInterval(t);
+            w.__kfmNzTermInject(`tmux new-session -A -s ${session}\r`);
+            attachedRef.current = session;
+            readyRef.current = true; // 门闩开：此后标签切换才生效
+          }, 300);
+          return () => clearInterval(t);
+          // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, []);
+        const switchTo = (name: string): void => {
+          if (!readyRef.current) return; // 首挂未完成：点击无效（防与初始注入竞态）
+          if (name === attachedRef.current) return;
+          const inject = (window as unknown as Record<string, unknown>).__kfmNzTermInject as ((s: string) => void) | undefined;
+          if (!inject) return;
+          if (attachedRef.current) {
+            // 已附着：C-b d 脱离 → 轮询屏现 detached → 命令重进（tmux-tabs
+            // 同款；盲等 350ms 在慢分离时会漏字符进 shell——「dux 命令」案）
+            inject('\u0002d');
+            let attempts = 0;
+            const t = setInterval(() => {
+              attempts++;
+              const scr = (window as unknown as Record<string, unknown>).__kfmNzTermScreen as (() => string) | undefined;
+              const sNow = scr?.() ?? '';
+              if (sNow.includes('detached') && !(window as unknown as Record<string, unknown>).__detachShot)
+                (window as unknown as Record<string, unknown>).__detachShot = sNow;
+              // 稳定才注入：屏含 detached 且连续 2 拍（250ms）不变=shell
+              // prompt 已重绘完毕，此刻注入零竞态（tm 被撕咬案终结方案）
+              if (sNow.includes('detached')) {
+                const w2 = window as unknown as Record<string, unknown>;
+                if (w2.__lastScr !== sNow) { w2.__lastScr = sNow; w2.__stable = 0; }
+                else w2.__stable = (Number(w2.__stable ?? 0)) + 1;
+                if (Number(w2.__stable ?? 0) >= 2 || attempts > 25) {
+                  clearInterval(t);
+                  w2.__switchInjectedAt = new Date().toISOString().slice(11, 19);
+                  inject(`tmux new-session -A -s ${name}\r`);
+                  attachedRef.current = name;
+                  setActive(name);
+                }
+              }
+            }, 125);
+          } else {
+            inject(`tmux new-session -A -s ${name}\r`);
+            attachedRef.current = name;
+            setActive(name);
+          }
+        };
+
+        return createElement('div', {
+          'data-browser-float-tabs': '1',
+          style: {
+            position: 'fixed', left: 0, top: 0, bottom: 0, width: '26px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+            paddingTop: '8px', pointerEvents: 'auto',
+          },
+        },
+        sessions.map((name) => createElement('div', {
+          key: name,
+          'data-browser-float-tab': name,
+          onClick: () => switchTo(name),
+          style: {
+            writingMode: 'vertical-rl', fontSize: '10px', letterSpacing: '1px',
+            padding: '8px 3px', borderRadius: '0 6px 6px 0', cursor: 'pointer',
+            background: name === active ? 'rgba(10,132,255,0.28)' : 'rgba(35,36,39,0.85)',
+            opacity: 1, // 就绪态；未就绪由 switchTo 门闩兜底
+            color: name === active ? '#E0E0E0' : '#A5A8AD',
+            border: '1px solid #3A3B3F', borderLeft: 'none',
+            maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis',
+          },
+        }, name)),
+        );
+      }
+
+      root.render(createElement(FloatTabs));
+      (window as unknown as Record<string, unknown>).__kfmBrowserFloat = () => ({
+        session: activeRef.current, sessions: sessionsRef.current,
+        attached: attachedRefBridge.current,
+      });
+      return {
+        unmount: () => {
+          root.unmount();
+          delete (window as unknown as Record<string, unknown>).__kfmBrowserFloat;
+        },
+      };
+    },
+  };
+}
+
+// 浮窗标签的实时读数（render 域写、钩读——mount 域桥接，file-tree listElBridge 同款）
+const sessionsRef: { current: string[] } = { current: [] };
+const activeRef: { current: string } = { current: '' };
+const attachedRefBridge: { current: string } = { current: '' };

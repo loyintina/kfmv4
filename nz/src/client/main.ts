@@ -22,6 +22,7 @@ import { createUiKernel } from './kernel/ui-kernel.js';
 import { reactSmokePlugin } from './kernel/react-adapter.js';
 import { createTmuxTabsPlugin } from './plugins/tmux-tabs/index.js';
 import { createFileTreePlugin } from './plugins/file-tree/index.js';
+import { createBrowserPanelPlugin, createBrowserFloatPlugin } from './plugins/browser/index.js';
 
 // ========== 内核件接线：宿主给盒子，手势管输入，broker 管卡类型户口 ==========
 const host = new RenderHost();
@@ -57,8 +58,10 @@ plugtest.register('eyes', (ctx) => applyEyesBundle(ctx));
 // 壳管 DOM 挂载/唤醒通道/服务。开机自播（?nosplash 关）：intro 时长按
 // localStorage 上次实测预测，终端 first-frame 到达=complete() 收口退场；
 // ?splash / __kfmNzSplash 可手动重播（基准速度，不挂收口）。
-applySplashBundle(rootCtx);
-plugtest.register('splash', (ctx) => applySplashBundle(ctx));
+if (!floatMode) {
+  applySplashBundle(rootCtx);
+  plugtest.register('splash', (ctx) => applySplashBundle(ctx));
+}
 
 // 8.8.3：开屏面板只在 ?debug 时存在意义——无 ?debug 不启轮询渲染
 // （bootLog 照常异步填充，守视走 __kfmNz.bootLog eval 直读，不受影响）
@@ -99,6 +102,11 @@ if (termCards) {
 // 供守视 eval 直读
 (window as unknown as Record<string, unknown>).__kfmNz = { rootCtx, bootLog, isHelloCleaned, host, gestures, cardTypes, permissions, plugtest };
 
+// 浏览器器官浮窗专态（B-线 2026-09-11）：?float=1&fs=<会话> = 本 WebView
+// 只做浮窗终端（无标签排/文件树/开屏），会话切换走浮窗左竖线标签
+const floatMode = new URLSearchParams(location.search).get('float') === '1';
+const floatSession = new URLSearchParams(location.search).get('fs') ?? 'dsh';
+
 // ========== UI 内核（plugin-contract §6 Step 1，2026-09-01 宪法 v0） ==========
 // 契约 docs/plugin-contract.md：UI 插件 = { id, mount(slot, ctx) → handle }。
 // 本步零 UI 变化：只建内核+暴露观测钩子，不自动 mount 任何东西（term 等
@@ -117,15 +125,24 @@ const uiKernel = createUiKernel({ host: document.body, debug: debugOn });
 // 槽位落 overlay 层（z=300 层系正主，create 自动开回 pointerEvents）——
 // 挂 body 会被 layout 层（z=100）整面盖住（tmux-tabs ③考卷实锤）。
 const tmuxContainer = host.create(rootCtx, { kind: 'overlay', owner: 'tmux-tabs', slot: 'tmux-tabs' });
-uiKernel.mount('tmux-tabs', createTmuxTabsPlugin(), tmuxContainer.el);
+if (!floatMode) uiKernel.mount('tmux-tabs', createTmuxTabsPlugin(), tmuxContainer.el);
 
 // file-tree（文件树 v1 判据稿 §三/§七 + §七⑩ 右滑入口）：全屏树页 z44，
 // 入口=右滑手势（GestureLayer.FileTree:700）或 @ 弹窗「浏览完整文件树…」
 // 行发的 kfm-nz-fstree-open 事件。槽位落 overlay 层（挂 body 会被 layout
 // 层整面盖住的教训）。AI 系（ai-chat/config-pool）2026-09-11 随结项摘除，
 // 插件代码留仓可翻案（git log 643054dc 前史）。
-const fsTreeContainer = host.create(rootCtx, { kind: 'overlay', owner: 'file-tree', slot: 'file-tree' });
-uiKernel.mount('file-tree', createFileTreePlugin(rootCtx), fsTreeContainer.el);
+if (!floatMode) {
+  const fsTreeContainer = host.create(rootCtx, { kind: 'overlay', owner: 'file-tree', slot: 'file-tree' });
+  uiKernel.mount('file-tree', createFileTreePlugin(rootCtx), fsTreeContainer.el);
+}
+
+// 浏览器器官（B-线）：普通态=管理面板；浮窗专态=左竖线会话标签
+{
+  const bc = host.create(rootCtx, { kind: 'overlay', owner: 'browser', slot: 'browser' });
+  if (floatMode) uiKernel.mount('browser-float', createBrowserFloatPlugin(floatSession), bc.el);
+  else uiKernel.mount('browser', createBrowserPanelPlugin(), bc.el);
+}
 
 // ========== 热更自刷（前端腿：build → 页面自动换血，会话靠续命 attach 不断） ==========
 // boot 记当前 builtAt，10s 轮询 /build-info.json（build.mjs 每次构建重写），

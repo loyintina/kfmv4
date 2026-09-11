@@ -685,22 +685,26 @@ export function applyTermBundle(ctx: Context): void {
       // 2026-09-03 迁皮（keybar-v3-state-machine.md 装配方案 A）：mountKeybar
       // 现由 term/KeybarApp.tsx 提供（reactMount 桥接），KeybarHandle 形状
       // 不变——下方 takeMods/syncMods 调用点零改动。
+      const floatKeybar = new URLSearchParams(location.search).get('float') !== '1';
       const barStripEl = document.createElement('div');
-      barStripEl.style.cssText = `position:absolute;left:0;right:0;bottom:var(--kfm-aichat-composer-h, 0px);height:${KEYBAR_H}px;pointer-events:auto;`;
-      container.el.appendChild(barStripEl);
-      const keybar = mountKeybar(barStripEl, {
-        send: (bytes) => { if (card.sessionId) { card.inputToBottom(); bridge.input(card.sessionId, bytes); } },
-        appCursor: () => card.core.app_cursor(),
-      });
-      // K8：宿主 ctx 摘时卸 React 根（清 listener/重复定时器+摘 DOM）
-      ctx.effect(() => () => keybar.unmount());
-      // 一次性粘滞联动：落字前读走修饰位（有则 mapText 变换 + 灭灯）
-      const takeMods = (text: string): string => {
-        const bits = keybar.mods.take();
-        if (!bits) return text;
-        keybar.syncMods();
-        return mapText((bits & MOD_CTRL) !== 0, (bits & MOD_ALT) !== 0, (bits & MOD_SHIFT) !== 0, text);
-      };
+      let takeMods = (text: string): string => text; // 无键栏（浮窗专态）=原样透传
+      if (floatKeybar) {
+        barStripEl.style.cssText = `position:absolute;left:0;right:0;bottom:var(--kfm-aichat-composer-h, 0px);height:${KEYBAR_H}px;pointer-events:auto;`;
+        container.el.appendChild(barStripEl);
+        const keybar = mountKeybar(barStripEl, {
+          send: (bytes) => { if (card.sessionId) { card.inputToBottom(); bridge.input(card.sessionId, bytes); } },
+          appCursor: () => card.core.app_cursor(),
+        });
+        // K8：宿主 ctx 摘时卸 React 根（清 listener/重复定时器+摘 DOM）
+        ctx.effect(() => () => keybar.unmount());
+        // 一次性粘滞联动：落字前读走修饰位（有则 mapText 变换 + 灭灯）
+        takeMods = (text: string): string => {
+          const bits = keybar.mods.take();
+          if (!bits) return text;
+          keybar.syncMods();
+          return mapText((bits & MOD_CTRL) !== 0, (bits & MOD_ALT) !== 0, (bits & MOD_SHIFT) !== 0, text);
+        };
+      }
 
       // 实验台 P0 可编程钩子（2026-08-26 nz-device-agent-p0-review，用户
       // 拍板最高优先；§0.5 P0「能动手」前提）：

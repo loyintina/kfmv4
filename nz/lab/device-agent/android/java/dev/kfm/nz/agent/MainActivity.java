@@ -9,6 +9,10 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.TextView;
+import android.view.Gravity;
+import android.view.View;
+import android.view.MotionEvent;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -116,6 +120,25 @@ public class MainActivity extends Activity {
     private WebView termWeb;
     private WebView splashWeb;
     private FrameLayout root;
+
+    // ── 浏览器器官（B-线 2026-09-11 用户拍板）：三层堆叠 ──
+    // termWeb(nz SPA) ← browserWeb(全屏目标站) ← floatContainer(浮窗=完整
+    // 终端专态，第二 WebView 世界 attach 同一 tmux 会话=多路复用) + 原生
+    // 控制钮(折叠/按住透明/多触点穿透) + 原生 orb(召唤/退回开关)
+    private WebView browserWeb;
+    private WebView floatWeb;
+    private FrameLayout floatContainer;
+    private TextView holdBtn;
+    private View dragBar;
+    private TextView orbBtn;
+    private boolean browserMode = false;
+    private boolean floatCollapsed = false;
+    private boolean holdHidden = false;
+    private boolean holdPressed = false;
+    private int floatLeft = 0, floatTop = 0;   // 浮窗位置（px，可拖拽）
+    private int floatW = 0, floatH = 0;
+    private int imeBottom = 0;                 // IME insets（浮窗避键盘钳位）
+    private int dpv = 3;                       // 密度换算（onCreate 取真值）
     private boolean dismissed = false;
 
     /** 自毁：退进程（冷启动闭环测试用，见头注 4） */
@@ -192,6 +215,9 @@ public class MainActivity extends Activity {
         });
         root.addView(termWeb, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        dpv = Math.max(1, Math.round(getResources().getDisplayMetrics().density));
+        buildBrowserStack();
 
         // ---- 顶层：splash WebView（asset 本地页，零网络等待即播动画）----
         splashWeb = new WebView(this);
@@ -395,6 +421,27 @@ public class MainActivity extends Activity {
             }
             return out[0];
         }
+
+        /** 浏览器器官：进浏览器模式（目标站全屏+终端浮窗化）。session=
+         *  浮窗终端附着的 tmux 会话名（nz 面板传当前附着会话）。 */
+        @JavascriptInterface
+        public void enterBrowser(final String url, final String session) {
+            runOnUiThread(() -> doEnterBrowser(url, session));
+        }
+
+        /** 浏览器器官：退回普通模式 */
+        @JavascriptInterface
+        public void exitBrowser() {
+            runOnUiThread(() -> doExitBrowser());
+        }
+
+        /** 观测钩（C 档/守视直读） */
+        @JavascriptInterface
+        public String browserState() {
+            return "mode=" + (browserMode ? "on" : "off")
+                    + ";collapsed=" + floatCollapsed
+                    + ";hidden=" + holdHidden;
+        }
     }
 
     /** 幂等摘层：removeView+destroy+入账，各路（complete 回报/bye 硬摘/
@@ -453,8 +500,179 @@ public class MainActivity extends Activity {
         c.disconnect();
     }
 
+    private void doEnterBrowser(String url, String session) {
+        runOnUiThread(() -> {
+            if (url == null || url.length() < 4) return;
+            browserMode = true;
+            floatCollapsed = false;
+            holdHidden = false;
+            browserWeb.setVisibility(View.VISIBLE);
+            browserWeb.loadUrl(url);
+            String fs = "dsh";
+            try { fs = java.net.URLEncoder.encode(session == null || session.length() == 0 ? "dsh" : session, "UTF-8"); } catch (Exception e) { /* 编码失败回落 dsh */ }
+            floatWeb.loadUrl(TERM_URL + "?nosplash&float=1&fs=" + fs);
+            floatContainer.setVisibility(View.VISIBLE);
+            holdBtn.setVisibility(View.VISIBLE);
+            layoutFloat();
+            android.view.inputmethod.InputMethodManager imm =
+                    (android.view.inputmethod.InputMethodManager)
+                            getSystemService(INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(termWeb.getWindowToken(), 0);
+            mark("browser-enter");
+        });
+    }
+
+    private void doExitBrowser() {
+        runOnUiThread(() -> {
+            browserMode = false;
+            holdHidden = false;
+            holdPressed = false;
+            browserWeb.setVisibility(View.GONE);
+            browserWeb.loadUrl("about:blank");
+            floatContainer.setVisibility(View.GONE);
+            holdBtn.setVisibility(View.GONE);
+            layoutFloat();
+            mark("browser-exit");
+        });
+    }
+
+    // ── 浏览器器官：堆叠构建/布局/手势 ──
+
+    private void buildBrowserStack() {
+        browserWeb = new WebView(this);
+        configWeb(browserWeb);
+        browserWeb.setVisibility(View.GONE);
+        root.addView(browserWeb, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        floatContainer = new FrameLayout(this);
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+        bg.setColor(0xF217181A);
+        bg.setCornerRadius(12 * dpv);
+        floatContainer.setBackground(bg);
+        floatContainer.setClipToOutline(true);
+        floatContainer.setElevation(8 * dpv);
+        floatContainer.setVisibility(View.GONE);
+        root.addView(floatContainer, new FrameLayout.LayoutParams(1, 1));
+
+        floatWeb = new WebView(this);
+        configWeb(floatWeb);
+        floatWeb.setBackgroundColor(0x00000000);
+        floatContainer.addView(floatWeb, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        dragBar = new View(this);
+        dragBar.setBackground(new android.graphics.drawable.ColorDrawable(0x00000000));
+        floatContainer.addView(dragBar, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 22 * dpv, Gravity.TOP));
+        View pill = new View(this);
+        android.graphics.drawable.GradientDrawable grab = new android.graphics.drawable.GradientDrawable();
+        grab.setColor(0xFF3A3B3F); grab.setCornerRadius(2 * dpv);
+        pill.setBackground(grab);
+        FrameLayout.LayoutParams pillLp = new FrameLayout.LayoutParams(36 * dpv, 4 * dpv, Gravity.CENTER_HORIZONTAL | Gravity.TOP);
+        pillLp.topMargin = 5 * dpv;
+        floatContainer.addView(pill, pillLp);
+        dragBar.setOnTouchListener(dragTouch);
+
+        holdBtn = new TextView(this);
+        holdBtn.setText("端");
+        holdBtn.setGravity(Gravity.CENTER);
+        holdBtn.setTextColor(0xFFA5A8AD);
+        holdBtn.setTextSize(11);
+        android.graphics.drawable.GradientDrawable hbg = new android.graphics.drawable.GradientDrawable();
+        hbg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        hbg.setColor(0xE8232427); hbg.setStroke(Math.max(1, dpv), 0xFF3A3B3F);
+        holdBtn.setBackground(hbg);
+        holdBtn.setOnTouchListener(holdTouch);
+        holdBtn.setVisibility(View.GONE);
+        root.addView(holdBtn, new FrameLayout.LayoutParams(40 * dpv, 40 * dpv));
+
+        orbBtn = new TextView(this);
+        orbBtn.setText("浏");
+        orbBtn.setGravity(Gravity.CENTER);
+        orbBtn.setTextColor(0xFFE0E0E0);
+        orbBtn.setTextSize(12);
+        android.graphics.drawable.GradientDrawable obg = new android.graphics.drawable.GradientDrawable();
+        obg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        obg.setColor(0xE8232427); obg.setStroke(Math.max(1, dpv), 0xFF3A3B3F);
+        orbBtn.setBackground(obg);
+        orbBtn.setOnClickListener(v -> {
+            if (browserMode) { doExitBrowser(); return; }
+            if (termWeb != null) termWeb.evaluateJavascript(
+                    "window.dispatchEvent(new CustomEvent('kfm-browser-panel-open'))", null);
+        });
+        root.addView(orbBtn, new FrameLayout.LayoutParams(36 * dpv, 36 * dpv));
+        orbBtn.post(() -> layoutFloat());
+    }
+
+    private void layoutFloat() {
+        if (floatContainer == null || root == null) return;
+        int W = root.getWidth(), H = root.getHeight() - imeBottom;
+        if (W <= 0 || H <= 0) return;
+        if (floatW == 0) {
+            floatW = (int) (W * 0.48f); floatH = (int) (H * 0.44f);
+            floatLeft = W - floatW - dpv * 50;
+            floatTop = H - floatH - dpv * 50;
+        }
+        floatLeft = Math.max(dpv * 8, Math.min(floatLeft, W - floatW - dpv * 8));
+        floatTop = Math.max(dpv * 60, Math.min(floatTop, H - floatH - dpv * 8));
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) floatContainer.getLayoutParams();
+        lp.leftMargin = floatLeft; lp.topMargin = floatTop; lp.width = floatW; lp.height = floatH;
+        floatContainer.setLayoutParams(lp);
+        FrameLayout.LayoutParams hb = (FrameLayout.LayoutParams) holdBtn.getLayoutParams();
+        hb.leftMargin = floatLeft + floatW - dpv * 44;
+        hb.topMargin = floatTop + floatH - dpv * 44;
+        holdBtn.setLayoutParams(hb);
+        FrameLayout.LayoutParams ob = (FrameLayout.LayoutParams) orbBtn.getLayoutParams();
+        if (browserMode) { ob.leftMargin = floatLeft + floatW / 2 - dpv * 18; ob.topMargin = Math.max(dpv * 8, floatTop - dpv * 44); }
+        else { ob.leftMargin = W - dpv * 12 - dpv * 36; ob.topMargin = H / 2 - dpv * 18; }
+        orbBtn.setLayoutParams(ob);
+    }
+
+    private final View.OnTouchListener dragTouch = new View.OnTouchListener() {
+        private float downRawX, downRawY; private int baseLeft, baseTop;
+        @Override public boolean onTouch(View v, MotionEvent e) {
+            switch (e.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    downRawX = e.getRawX(); downRawY = e.getRawY();
+                    baseLeft = floatLeft; baseTop = floatTop; return true;
+                case MotionEvent.ACTION_MOVE:
+                    floatLeft = baseLeft + (int) (e.getRawX() - downRawX);
+                    floatTop = baseTop + (int) (e.getRawY() - downRawY);
+                    layoutFloat(); return true;
+            }
+            return false;
+        }
+    };
+
+    private final View.OnTouchListener holdTouch = new View.OnTouchListener() {
+        @Override public boolean onTouch(View v, MotionEvent e) {
+            switch (e.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    holdPressed = true;
+                    v.postDelayed(() -> { if (holdPressed) { holdHidden = true; floatContainer.setVisibility(View.INVISIBLE); } }, 400);
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL: {
+                    boolean wasHold = holdHidden;
+                    holdPressed = false;
+                    if (wasHold) floatContainer.setVisibility(floatCollapsed ? View.GONE : View.VISIBLE);
+                    else toggleCollapse();
+                    return true;
+                }
+            }
+            return false;
+        }
+    };
+
+    private void toggleCollapse() {
+        floatCollapsed = !floatCollapsed;
+        floatContainer.setVisibility(floatCollapsed ? View.GONE : View.VISIBLE);
+    }
+
     @Override
     public void onBackPressed() {
+        if (browserMode) { doExitBrowser(); return; }
         if (termWeb != null && termWeb.canGoBack()) {
             termWeb.goBack();
         } else {
