@@ -100,4 +100,7 @@ echo "=== [5/5] apksigner（debug.keystore） ==="
     --out "$OUT" "$BUILD/aligned.apk"
 
 ls -lh "$OUT"
+# 成功戳（2026-09-11 陈旧产物险些出货案）：version-code 在开头自增、
+# 本戳只在**全链成功收尾**写——deploy 靠两值相等判定「这包真是刚打的」
+echo "$VERSION_CODE" > build/packaged-code.current
 echo "=== [package] ✅ $OUT (versionCode=$VERSION_CODE) ==="

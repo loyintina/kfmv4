@@ -2096,6 +2096,26 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   4s 不动）；主终端切窗=同会话当前窗切换，浮窗镜像重绘是 tmux 会话
   语义非 bug——实用口径=浮窗用左竖线挑**别的**会话挂着看，同会话
   镜像别指望安静。B 卷 6/7（④仍挂）。新包 1789129963/md5 abe5ffe3。
+- 浮窗二轮改造（2026-09-11 晚，用户反馈三件）：
+  ①**顶条三合一**——holdBtn 退役，功能并入浮窗顶条：拖拽=移动；点按=
+  折叠/展开（收起=24dp 浮标，pill 把手看护，WebView 摘显保活）；长按
+  400ms 且位移<slop=临时隐身让位看浏览器（alpha 0.12 而**非 INVISIBLE**
+  ——INVISIBLE 连触摸一起关，隐身中还要能拖），松手恢复；②orb 去字改
+  **线框地球图标**（原生 Path 手绘：外圆+赤道+中央经线椭圆，「不要加字
+  至少画个 svg」）；③**浮窗标签朝外**——终端层 kfm-layer-layout 右移
+  26px 成 DOM 圆角窗（自画底色/描边），左檐 26px 透明挂外置标签轨不再
+  盖终端，多会话触摸滚动（滚动条隐藏）；原生容器透明化+宽=窗+檐；gutter
+  26dp 两头同步约定（MainActivity layoutFloat ↔ FloatTabs effect）。
+- **陈旧产物险些出货案**（2026-09-11 晚，幽灵安装案同门新变种）：javac
+  红（本轮实错=调用了不存在的 applyCollapse）被**外层调用管道**吞掉——
+  `bash package.sh | tail && md5sum && deploy` 的 tail 把脚本 rc 清成 0，
+  旧 apk 顶着新 versionCode 名义送装（md5 与上版全同才暴露）。同 `|| true`
+  病根的新形态：**守卫在脚本内，rc 死在调用方管道里**。三件修复：
+  ①调用纪律=取 rc 用 `echo RC=${PIPESTATUS[0]}`，禁隔管道断成败；
+  ②package.sh 成功戳 `packaged-code.current`（只在全链成功收尾写）+
+  deploy 新鲜闸（version-code≠packaged-code=拒送装）；③假故障演习过
+  （坏 java→package RC=1 拦下；deploy 拒陈旧品实录）。垃圾包
+  nz-agent-1789131070.apk 留在 Download 是死品勿装。
 - 浮窗 IME 避让（无 insets 监听，v0 接受 adjustPan）。
 - 壳 APK 装机（新包 versionCode=1789127333 / 70262B /
   md5 5a4b0f9a08ec3b36234c2587fe8a0c57，含 orb 定位修复；装机后先 L0

@@ -185,6 +185,34 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           if (attachedRefBridge) attachedRefBridge.current = attachedRef.current;
         });
 
+        // 窗体外挂改造（2026-09-11 用户拍板「标签朝外，盖住终端很难看」）：
+        // 终端层右移 26px 成圆角窗体（DOM 自画底色/描边），左檐 26px 透明=
+        // 外挂标签轨，页面透底露出下层 browserWeb。26px 与壳 gutter 同值
+        // （MainActivity layoutFloat 注释有同步约定，改需两头同步）
+        useEffect(() => {
+          const d = document.documentElement, b = document.body;
+          const prevHtml = d.style.background, prevBody = b.style.background;
+          d.style.background = 'transparent'; b.style.background = 'transparent';
+          const layer = document.getElementById('kfm-layer-layout');
+          if (layer) {
+            layer.style.left = '26px';
+            layer.style.width = 'auto';
+            layer.style.right = '0px';
+            layer.style.borderRadius = '12px';
+            layer.style.overflow = 'hidden';
+            layer.style.background = '#17181A';
+            layer.style.boxShadow = '0 0 0 1px #3A3B3F';
+          }
+          // 标签轨滚动条隐藏（多会话滚动不做可视滚动条，触摸即可滚）
+          const st = document.createElement('style');
+          st.textContent = '[data-browser-float-tabs]::-webkit-scrollbar{display:none}';
+          document.head.appendChild(st);
+          return () => {
+            d.style.background = prevHtml; b.style.background = prevBody;
+            st.remove();
+          };
+        }, []);
+
         useEffect(() => {
           const pull = async (): Promise<void> => {
             try {
@@ -264,7 +292,8 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           style: {
             position: 'fixed', left: 0, top: 0, bottom: 0, width: '26px',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-            paddingTop: '8px', pointerEvents: 'auto',
+            padding: '8px 0', pointerEvents: 'auto',
+            overflowY: 'auto', overflowX: 'hidden', // 多会话：标签轨触摸滚动
           },
         },
         sessions.map((name) => createElement('div', {

@@ -22,6 +22,14 @@ fi
 APK=build/nz-agent.apk
 [ -f "$APK" ] || { echo "❌ $APK 不存在，先打包（或用 --build）"; exit 1; }
 
+# 制品新鲜闸（2026-09-11 陈旧产物险些出货案）：version-code 打包开头自增、
+# packaged-code 只在打包成功收尾写。两值不等=上次打包中途死（典型 javac 红）
+# 或 apk 是旧货——拒送装，防止旧包顶着新版本号名义装机
+[ -f build/packaged-code.current ] || { echo "❌ 无成功打包记录（packaged-code.current 缺）"; exit 1; }
+PKG_CODE=$(cat build/packaged-code.current)
+CUR_CODE=$(cat build/version-code.current 2>/dev/null || echo 0)
+[ "$PKG_CODE" = "$CUR_CODE" ] || { echo "❌ 制品陈旧：version-code=$CUR_CODE 但成功记录=$PKG_CODE——上次打包失败？重跑 package.sh"; exit 1; }
+
 VERSION_CODE=$(cat build/version-code.current 2>/dev/null)
 [ -n "$VERSION_CODE" ] || { echo "❌ build/version-code.current 不存在，先打包"; exit 1; }
 NAME="nz-agent-$VERSION_CODE.apk"

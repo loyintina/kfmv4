@@ -123,18 +123,21 @@ public class MainActivity extends Activity {
 
     // ── 浏览器器官（B-线 2026-09-11 用户拍板）：三层堆叠 ──
     // termWeb(nz SPA) ← browserWeb(全屏目标站) ← floatContainer(浮窗=完整
-    // 终端专态，第二 WebView 世界 attach 同一 tmux 会话=多路复用) + 原生
-    // 控制钮(折叠/按住透明/多触点穿透) + 原生 orb(召唤/退回开关)
+    // 终端专态，第二 WebView 世界 attach 同一 tmux 会话=多路复用；透明壳，
+    // 窗体由页面 DOM 绘制、左檐 26px 透明挂外置会话标签轨) + 顶条三合一
+    // (拖拽/点按折叠/长按隐身让位) + 原生 orb(线框地球图标，召唤/退回)
     private WebView browserWeb;
     private WebView floatWeb;
     private FrameLayout floatContainer;
-    private TextView holdBtn;
     private View dragBar;
-    private TextView orbBtn;
+    private View pillBar;
+    private View orbBtn;
     private boolean browserMode = false;
     private boolean floatCollapsed = false;
-    private boolean holdHidden = false;
-    private boolean holdPressed = false;
+    private boolean ghostDown = false;   // 顶条按下中（长按判定窗）
+    private boolean ghostOn = false;     // 隐身态（透明让位看浏览器，松手恢复）
+    private float ghostTrav = 0;         // 本次按下的累计位移（防拖拽误触发隐身）
+    private int slopPx = 8;              // 触摸 slop（onCreate 取真值）
     private int floatLeft = 0, floatTop = 0;   // 浮窗位置（px，可拖拽）
     private int floatW = 0, floatH = 0;
     private int imeBottom = 0;                 // IME insets（浮窗避键盘钳位）
@@ -440,7 +443,7 @@ public class MainActivity extends Activity {
         public String browserState() {
             return "mode=" + (browserMode ? "on" : "off")
                     + ";collapsed=" + floatCollapsed
-                    + ";hidden=" + holdHidden;
+                    + ";ghost=" + ghostOn;
         }
     }
 
@@ -505,14 +508,15 @@ public class MainActivity extends Activity {
             if (url == null || url.length() < 4) return;
             browserMode = true;
             floatCollapsed = false;
-            holdHidden = false;
+            ghostOn = false;
+            floatContainer.setAlpha(1f);
             browserWeb.setVisibility(View.VISIBLE);
             browserWeb.loadUrl(url);
             String fs = "dsh";
             try { fs = java.net.URLEncoder.encode(session == null || session.length() == 0 ? "dsh" : session, "UTF-8"); } catch (Exception e) { /* 编码失败回落 dsh */ }
             floatWeb.loadUrl(TERM_URL + "?nosplash&float=1&fs=" + fs);
             floatContainer.setVisibility(View.VISIBLE);
-            holdBtn.setVisibility(View.VISIBLE);
+            floatWeb.setVisibility(View.VISIBLE); // 上次折叠态可能摘显，进场恒展开
             layoutFloat();
             android.view.inputmethod.InputMethodManager imm =
                     (android.view.inputmethod.InputMethodManager)
@@ -525,12 +529,12 @@ public class MainActivity extends Activity {
     private void doExitBrowser() {
         runOnUiThread(() -> {
             browserMode = false;
-            holdHidden = false;
-            holdPressed = false;
+            ghostOn = false;
+            ghostDown = false;
+            floatContainer.setAlpha(1f);
             browserWeb.setVisibility(View.GONE);
             browserWeb.loadUrl("about:blank");
             floatContainer.setVisibility(View.GONE);
-            holdBtn.setVisibility(View.GONE);
             layoutFloat();
             mark("browser-exit");
         });
@@ -546,11 +550,10 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         floatContainer = new FrameLayout(this);
-        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
-        bg.setColor(0xF217181A);
-        bg.setCornerRadius(12 * dpv);
-        floatContainer.setBackground(bg);
-        floatContainer.setClipToOutline(true);
+        // 透明容器（2026-09-11 标签朝外改）：窗体底色/圆角/描边由页面 DOM
+        // 绘制——终端层右移 26px 成圆角窗，左檐 26px 透明=外挂标签轨，容器
+        // 只当定位/手势壳。不裁剪不设底，WebView 透底处露出下层 browserWeb
+        floatContainer.setClipToOutline(false);
         floatContainer.setElevation(8 * dpv);
         floatContainer.setVisibility(View.GONE);
         root.addView(floatContainer, new FrameLayout.LayoutParams(1, 1));
@@ -564,41 +567,40 @@ public class MainActivity extends Activity {
         dragBar = new View(this);
         dragBar.setBackground(new android.graphics.drawable.ColorDrawable(0x00000000));
         floatContainer.addView(dragBar, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 22 * dpv, Gravity.TOP));
-        View pill = new View(this);
+                ViewGroup.LayoutParams.MATCH_PARENT, 24 * dpv, Gravity.TOP));
+        pillBar = new View(this);
         android.graphics.drawable.GradientDrawable grab = new android.graphics.drawable.GradientDrawable();
         grab.setColor(0xFF3A3B3F); grab.setCornerRadius(2 * dpv);
-        pill.setBackground(grab);
-        FrameLayout.LayoutParams pillLp = new FrameLayout.LayoutParams(36 * dpv, 4 * dpv, Gravity.CENTER_HORIZONTAL | Gravity.TOP);
-        pillLp.topMargin = 5 * dpv;
-        floatContainer.addView(pill, pillLp);
-        dragBar.setOnTouchListener(dragTouch);
+        pillBar.setBackground(grab);
+        FrameLayout.LayoutParams pillLp = new FrameLayout.LayoutParams(36 * dpv, 4 * dpv, Gravity.TOP);
+        pillLp.topMargin = 6 * dpv;
+        floatContainer.addView(pillBar, pillLp);
+        // 顶条三合一（用户拍板「端钮功能并进浮窗顶」）：拖拽=移动；点按=
+        // 折叠/展开；长按=临时隐身让位（隐身中可继续拖动，松手恢复）
+        dragBar.setOnTouchListener(barTouch);
 
-        holdBtn = new TextView(this);
-        holdBtn.setText("端");
-        holdBtn.setGravity(Gravity.CENTER);
-        // 高对比版（2026-09-11 用户实拍「右下角按钮没有，无法点击」——首版
-        // 配色 0xE8232427/0xFF3A3B3F 落在浮窗 0xF217181A 底上=保护色隐形，
-        // 逻辑一直在场只是看不见）：提亮填充/描边/字
-        holdBtn.setTextColor(0xFFE8E9EB);
-        holdBtn.setTextSize(13);
-        android.graphics.drawable.GradientDrawable hbg = new android.graphics.drawable.GradientDrawable();
-        hbg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
-        hbg.setColor(0xF23A3B3F); hbg.setStroke(Math.max(1, dpv), 0xFF6A6C70);
-        holdBtn.setBackground(hbg);
-        holdBtn.setOnTouchListener(holdTouch);
-        holdBtn.setVisibility(View.GONE);
-        root.addView(holdBtn, new FrameLayout.LayoutParams(40 * dpv, 40 * dpv));
-
-        orbBtn = new TextView(this);
-        orbBtn.setText("浏");
-        orbBtn.setGravity(Gravity.CENTER);
-        orbBtn.setTextColor(0xFFE0E0E0);
-        orbBtn.setTextSize(12);
+        // 线框地球图标（用户拍板「不要加字，至少画个 svg」：原生侧 Path
+        // 手绘——外圆+赤道线+中央经线椭圆，无字）
+        orbBtn = new View(this) {
+            @Override protected void onDraw(android.graphics.Canvas c) {
+                android.graphics.Paint p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+                p.setStyle(android.graphics.Paint.Style.STROKE);
+                p.setStrokeWidth(1.4f * dpv);
+                p.setColor(0xFFD8DADE);
+                float cx = getWidth() / 2f, cy = getHeight() / 2f;
+                float r = Math.min(getWidth(), getHeight()) / 2f - 6 * dpv;
+                c.drawCircle(cx, cy, r, p);
+                c.drawLine(cx - r, cy, cx + r, cy, p);
+                android.graphics.RectF mer = new android.graphics.RectF(
+                        cx - r * 0.45f, cy - r, cx + r * 0.45f, cy + r);
+                c.drawOval(mer, p);
+            }
+        };
         android.graphics.drawable.GradientDrawable obg = new android.graphics.drawable.GradientDrawable();
         obg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
         obg.setColor(0xE8232427); obg.setStroke(Math.max(1, dpv), 0xFF3A3B3F);
         orbBtn.setBackground(obg);
+        slopPx = android.view.ViewConfiguration.get(this).getScaledTouchSlop();
         orbBtn.setOnClickListener(v -> {
             if (browserMode) { doExitBrowser(); return; }
             if (termWeb != null) termWeb.evaluateJavascript(
@@ -622,58 +624,64 @@ public class MainActivity extends Activity {
         if (floatContainer == null || root == null) return;
         int W = root.getWidth(), H = root.getHeight() - imeBottom;
         if (W <= 0 || H <= 0) return;
+        int gutter = 26 * dpv;   // 窗外左檐=外挂标签轨宽（页面 DOM 同值，改需两头同步）
         if (floatW == 0) {
             // 0.34：首版 0.44 用户实拍「有点长，短一点」（2026-09-11 浮窗首轮反馈）
             floatW = (int) (W * 0.48f); floatH = (int) (H * 0.34f);
             floatLeft = W - floatW - dpv * 50;
             floatTop = H - floatH - dpv * 50;
         }
-        floatLeft = Math.max(dpv * 8, Math.min(floatLeft, W - floatW - dpv * 8));
+        int boxW = floatW + gutter;
+        floatLeft = Math.max(dpv * 8, Math.min(floatLeft, W - boxW - dpv * 8));
         floatTop = Math.max(dpv * 60, Math.min(floatTop, H - floatH - dpv * 8));
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) floatContainer.getLayoutParams();
-        lp.leftMargin = floatLeft; lp.topMargin = floatTop; lp.width = floatW; lp.height = floatH;
+        lp.leftMargin = floatLeft; lp.topMargin = floatTop;
+        lp.width = boxW; lp.height = floatCollapsed ? 24 * dpv : floatH;
         floatContainer.setLayoutParams(lp);
-        FrameLayout.LayoutParams hb = (FrameLayout.LayoutParams) holdBtn.getLayoutParams();
-        // 跨角悬挂（中心骑在浮窗右下角上，半出半入=kfmv4 卡角光球同款语）：
-        // 44dp 内嵌版整颗泡在浮窗深底里也是「找不到」的共犯
-        hb.leftMargin = floatLeft + floatW - dpv * 20;
-        hb.topMargin = floatTop + floatH - dpv * 20;
-        holdBtn.setLayoutParams(hb);
+        // 把手居窗体中缝（左檐不是窗，不参与居中）
+        if (pillBar != null) {
+            FrameLayout.LayoutParams pl = (FrameLayout.LayoutParams) pillBar.getLayoutParams();
+            pl.leftMargin = gutter + (floatW - 36 * dpv) / 2;
+            pillBar.setLayoutParams(pl);
+        }
         FrameLayout.LayoutParams ob = (FrameLayout.LayoutParams) orbBtn.getLayoutParams();
-        if (browserMode) { ob.leftMargin = floatLeft + floatW / 2 - dpv * 18; ob.topMargin = Math.max(dpv * 8, floatTop - dpv * 44); }
+        if (browserMode) { ob.leftMargin = floatLeft + gutter + floatW / 2 - dpv * 18; ob.topMargin = Math.max(dpv * 8, floatTop - dpv * 44); }
         else { ob.leftMargin = W - dpv * 12 - dpv * 36; ob.topMargin = H / 2 - dpv * 18; }
         orbBtn.setLayoutParams(ob);
     }
 
-    private final View.OnTouchListener dragTouch = new View.OnTouchListener() {
+    // 顶条三合一（2026-09-11 用户拍板，holdBtn 退役）：拖拽=移动；点按=
+    // 折叠/展开；长按(400ms 且位移<slop)=临时隐身让位看浏览器。隐身用
+    // alpha 0.12 而非 INVISIBLE——INVISIBLE 连触摸一起关，隐身期间还要能拖
+    private final View.OnTouchListener barTouch = new View.OnTouchListener() {
         private float downRawX, downRawY; private int baseLeft, baseTop;
         @Override public boolean onTouch(View v, MotionEvent e) {
             switch (e.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
                     downRawX = e.getRawX(); downRawY = e.getRawY();
-                    baseLeft = floatLeft; baseTop = floatTop; return true;
-                case MotionEvent.ACTION_MOVE:
-                    floatLeft = baseLeft + (int) (e.getRawX() - downRawX);
-                    floatTop = baseTop + (int) (e.getRawY() - downRawY);
-                    layoutFloat(); return true;
-            }
-            return false;
-        }
-    };
-
-    private final View.OnTouchListener holdTouch = new View.OnTouchListener() {
-        @Override public boolean onTouch(View v, MotionEvent e) {
-            switch (e.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                    holdPressed = true;
-                    v.postDelayed(() -> { if (holdPressed) { holdHidden = true; floatContainer.setVisibility(View.INVISIBLE); } }, 400);
+                    baseLeft = floatLeft; baseTop = floatTop;
+                    ghostTrav = 0; ghostDown = true;
+                    v.postDelayed(() -> {
+                        if (ghostDown && ghostTrav < slopPx) {
+                            ghostOn = true;
+                            floatContainer.setAlpha(0.12f);
+                        }
+                    }, 400);
                     return true;
+                case MotionEvent.ACTION_MOVE: {
+                    float dx = e.getRawX() - downRawX, dy = e.getRawY() - downRawY;
+                    ghostTrav = Math.max(ghostTrav, (float) Math.hypot(dx, dy));
+                    floatLeft = baseLeft + (int) dx;
+                    floatTop = baseTop + (int) dy;
+                    layoutFloat(); return true;
+                }
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL: {
-                    boolean wasHold = holdHidden;
-                    holdPressed = false;
-                    if (wasHold) floatContainer.setVisibility(floatCollapsed ? View.GONE : View.VISIBLE);
-                    else toggleCollapse();
+                    boolean wasGhost = ghostOn;
+                    boolean isUp = e.getActionMasked() == MotionEvent.ACTION_UP;
+                    ghostDown = false;
+                    if (wasGhost) { ghostOn = false; floatContainer.setAlpha(1f); }
+                    else if (isUp) toggleCollapse();
                     return true;
                 }
             }
@@ -681,9 +689,14 @@ public class MainActivity extends Activity {
         }
     };
 
+    /** 折叠/展开：收起=压成窗体顶条（24dp 视口把页面圆角窗压扁成浮标，
+     *  原生 pill 把手在上看护），终端 WebView 摘显示保活；展开复原。
+     *  高度统一由 layoutFloat 落。 */
     private void toggleCollapse() {
         floatCollapsed = !floatCollapsed;
-        floatContainer.setVisibility(floatCollapsed ? View.GONE : View.VISIBLE);
+        floatWeb.setVisibility(floatCollapsed ? View.GONE : View.VISIBLE);
+        layoutFloat();
+        mark("float-collapse-" + floatCollapsed);
     }
 
     @Override
