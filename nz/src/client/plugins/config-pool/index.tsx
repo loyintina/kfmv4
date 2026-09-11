@@ -42,8 +42,9 @@ import type { PoolPage } from './pool-page.js';
 import { PoolPageView, DeleteOverlay } from './pages.js';
 
 /** 左滑手势落点排除面（§1.2-3 targetFilter；池页本体不排除——右滑返回要在
- *  池页上成立；删除罩层排除=C7 罩层模态不右滑关） */
-const POOL_SWIPE_EXCLUDE = [
+ *  池页上成立；删除罩层排除=C7 罩层模态不右滑关）。导出单源：file-tree
+ *  右滑入口（B1 后续手势仲裁）复用同一排除面，列表变更两处同源。 */
+export const POOL_SWIPE_EXCLUDE = [
   '[data-tmux-strip]', '[data-kfm-keybar]', '[data-kfm-aichat-bar]', '[data-kfm-aichat-orb]',
   '[data-aichat-model-menu]', '[data-aichat-config-menu]', '[data-pool-overlay]',
 ].join(',');
@@ -153,6 +154,13 @@ export function createConfigPoolPlugin(ctx: Context): UiPlugin {
         bump();
       };
       window.addEventListener('kfm-nz-pool-open', onRouteOpen);
+      // 手势仲裁转发（2026-09-11 file-tree 右滑入口配套）：手势核单次手势
+      // 只锁一个 handler——双闭态（树关+池关）由 file-tree 层claim，其
+      // onEnd 判出左滑时在此还原池页的左滑开（openBySwipe 原语义不漂移）
+      const onSwipeOpen = (): void => {
+        if (core.state.page === 'POOL_CLOSED') { core.openBySwipe(); bump(); }
+      };
+      window.addEventListener('kfm-nz-pool-swipe-open', onSwipeOpen);
 
       function PoolApp(): React.ReactElement {
         const [, setTick] = useState(0);
@@ -306,6 +314,7 @@ export function createConfigPoolPlugin(ctx: Context): UiPlugin {
       return {
         unmount: () => {
           window.removeEventListener('kfm-nz-pool-open', onRouteOpen);
+          window.removeEventListener('kfm-nz-pool-swipe-open', onSwipeOpen);
           link.close();
           root.unmount();
           document.documentElement.removeAttribute('data-kfm-pool-open');

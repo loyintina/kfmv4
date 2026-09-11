@@ -30,8 +30,11 @@
  */
 import { createElement, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import type { Context } from 'cordis';
 import type { UiPlugin, UiPluginHandle } from '../../kernel/ui-kernel.js';
+import { GestureLayer, registerGesture } from '../../gesture.js';
 import { fetchFsList, fetchFsRead, type FsEntry } from '../../fs/api.js';
+import { POOL_SWIPE_EXCLUDE } from '../config-pool/index.js';
 
 // ---------- §3.1 令牌表（na 照抄即同手感；参数文档化=规格本体） ----------
 
@@ -47,10 +50,11 @@ const indentPx = (d: number): number => {
   return Math.min(sum, INDENT_CAP);
 };
 
-/** 逐层加深（嵌套叠加出纵深；深层更浓不是更淡）——§3.1 公式直译 */
+/** 逐层加深（嵌套叠加出纵深；深层更浓不是更淡）——§3.1 公式直译。
+ *  2026-09-11 用户裁决：逐行渐变太花，行底改纯色平涂——纵深保留（α 仍
+ *  随深度加深），α=原渐变顶底均值（0.05 + density·0.26），na 同步改。 */
 const densityOf = (d: number): number => 1 - shift(d) / 18; // 浅≈0 → 深→0.89
-const topAlpha = (d: number): number => 0.02 + densityOf(d) * 0.18; // 容器渐变顶
-const botAlpha = (d: number): number => 0.08 + densityOf(d) * 0.35; // 容器渐变底
+const flatAlpha = (d: number): number => 0.05 + densityOf(d) * 0.26; // 行底纯色
 const borderOp = (d: number): number => 0.3 + densityOf(d) * 0.5; // 左强调边框
 
 const ROW_H = 26; // 行高恒定（虚拟化自算的基石）
@@ -107,7 +111,7 @@ const readDurNormalMs = (): number => {
   return s ? Number.parseFloat(s[1]) * 1000 : 250;
 };
 
-export function createFileTreePlugin(): UiPlugin {
+export function createFileTreePlugin(ctx: Context): UiPlugin {
   return {
     id: 'file-tree',
     stateMachine: 'docs/file-tree-v1-design.md',
@@ -159,6 +163,35 @@ export function createFileTreePlugin(): UiPlugin {
       // ---- 入口路由（kfm-nz-fstree-open 事件；挂/摘同一具名引用，effect
       //      本体住 TreeApp——hooks 不出组件） ----
       const onOpenEvent = (): void => openPage();
+
+      // ---- 右滑入口（2026-09-11 用户拍板；§七 注记 10）----
+      // 手势核单次手势只锁一个 handler：本层 FileTree:700 压过 config-pool
+      // 的 PageSwipe:500，条件互斥设计——
+      //   池页开 → 不 claim（池页右滑返回归池页自理）；
+      //   树开   → 全权：左滑=关（树页自左抽屉入，左滑推回）；右滑=零动作；
+      //   双闭   → 右滑=开树；左滑=转发 kfm-nz-pool-swipe-open（config-pool
+      //            收到后走自家 openBySwipe，左滑开池语义零漂移）。
+      // 阈值与池页同单：|dx|≥64 且 |dx|>2|dy|（垂直滚动自然落选）。
+      const judgeFstreeSwipe = (dx: number, dy: number): 'left' | 'right' | null => {
+        if (Math.abs(dx) < 64 || Math.abs(dx) <= 2 * Math.abs(dy)) return null;
+        return dx > 0 ? 'right' : 'left';
+      };
+      registerGesture(ctx, {
+        id: 'file-tree:page-swipe',
+        layer: GestureLayer.FileTree,
+        targetFilter: (target) => !target.closest(POOL_SWIPE_EXCLUDE),
+        condition: () => S.open || !document.documentElement.hasAttribute('data-kfm-pool-open'),
+        onEnd: (_e, dx, dy) => {
+          const v = judgeFstreeSwipe(dx, dy);
+          if (S.open) {
+            if (v === 'left') closePage(); // 树页推回左抽屉
+            return; // 右滑零动作；池页开态已被条件排除
+          }
+          if (document.documentElement.hasAttribute('data-kfm-pool-open')) return; // 条件外保险
+          if (v === 'right') openPage();
+          else if (v === 'left') window.dispatchEvent(new CustomEvent('kfm-nz-pool-swipe-open'));
+        },
+      });
 
       // ---- 交互 ----
       const toggle = (row: TreeRow): void => {
@@ -300,9 +333,11 @@ export function createFileTreePlugin(): UiPlugin {
               position: 'relative', height: `${ROW_H}px`, display: 'flex', alignItems: 'center', gap: '5px',
               paddingLeft: `${6 + indentPx(row.depth)}px`, paddingRight: '8px',
               cursor: 'pointer', overflow: 'hidden',
-              // 容器块近似：同深度行共享色带（§3.1 渐变公式），兄弟首尾圆角
+              // 容器块近似：同深度行共享色带，兄弟首尾圆角（§3.1）
               borderRadius: `${row.first ? 4 : 0}px ${row.first ? 4 : 0}px ${row.last ? 4 : 0}px ${row.last ? 4 : 0}px`,
-              background: `linear-gradient(180deg, rgba(255,255,255,${topAlpha(row.depth).toFixed(3)}), rgba(255,255,255,${botAlpha(row.depth).toFixed(3)}))`,
+              // 行底纯色（2026-09-11 用户裁决：逐行渐变太花）——纵深保留
+              // （α 仍随深度逐层加深），α=原渐变顶底均值公式（§3.1 已同步）
+              background: `rgba(255,255,255,${flatAlpha(row.depth).toFixed(3)})`,
               ...(delay !== null ? { animationDelay: delay } : {}),
             },
           },

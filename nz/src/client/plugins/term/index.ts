@@ -435,7 +435,12 @@ export function applyTermBundle(ctx: Context): void {
       // /0 兜底）
       const scrollEl = document.createElement('div');
       scrollEl.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:calc(${KEYBAR_H}px + var(--kfm-aichat-composer-h, 0px));`
-        + 'overflow:auto;display:flex;flex-direction:column;';
+        + 'overflow:auto;display:flex;flex-direction:column;'
+        // 横向手势放行（2026-09-11 file-tree 右滑入口配套；池页同款防治）：
+        // overflowY:auto 触点默认 touch-action=auto，横拖 ~slop 即被浏览器
+        // 原生接管 → pointercancel，手势核收不到完整横向流。pan-y=纵向
+        // scrollback 滚动保持原生，横向流完整到手。
+        + 'touch-action:pan-y;';
       container.el.appendChild(scrollEl);
       // 实测定尺寸（写死 80×24 时代结束）：先用与壳同字体的探针量字格，
       // 再按容器可视面积算行列——手机有多宽终端就有多少列，不再裁字。

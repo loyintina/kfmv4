@@ -140,7 +140,7 @@ uiKernel.mount('config-pool', createConfigPoolPlugin(rootCtx), poolContainer.el)
 // 教训：挂 body 会被 layout 层整面盖住）；挂 config-pool 之后=同层 DOM
 // 后位（两页并开时树页在上）。
 const fsTreeContainer = host.create(rootCtx, { kind: 'overlay', owner: 'file-tree', slot: 'file-tree' });
-uiKernel.mount('file-tree', createFileTreePlugin(), fsTreeContainer.el);
+uiKernel.mount('file-tree', createFileTreePlugin(rootCtx), fsTreeContainer.el);
 
 // ========== 热更自刷（前端腿：build → 页面自动换血，会话靠续命 attach 不断） ==========
 // boot 记当前 builtAt，10s 轮询 /build-info.json（build.mjs 每次构建重写），

@@ -259,6 +259,39 @@ await page.keyboard.type('@');
   check('⑪索引只拉一次：indexFetches=1 且网络计数=1', h?.indexFetches === 1 && net === 1, `hook=${h?.indexFetches} net=${net}`);
 }
 
+// ⑫⑬ 手势入口（2026-09-11 右滑拍板）：FileTree:700 层 claim——
+// 双闭态右滑=开树；树开左滑=关；再左滑=转发开池（池语义零漂移）；
+// 池开右滑=池页自家关闭（file-tree 条件让位不抢）
+{
+  const swipe = async (x, y, dx, dy, steps = 14) => {
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    for (let i = 1; i <= steps; i++) await page.mouse.move(x + (dx * i) / steps, y + (dy * i) / steps);
+    await page.mouse.up();
+  };
+  const poolPage = () => page.evaluate(() => (window).__kfmNzPool?.()?.page ?? 'POOL_CLOSED');
+  await swipe(450, 260, 260, 0); // 右滑
+  const opened = await page.waitForFunction(() => (window).__kfmNzFsTree?.().open === true, null, { timeout: 8000, polling: 200 }).then(() => true).catch(() => false);
+  await sleep(500); // 入场动画落定
+  await swipe(450, 260, -260, 0); // 左滑关树
+  const closed = await page.waitForFunction(() => (window).__kfmNzFsTree?.().open === false, null, { timeout: 8000, polling: 200 }).then(() => true).catch(() => false);
+  await sleep(600); // 收起尾巴落定
+  await swipe(450, 260, -260, 0); // 再左滑 → 转发开池
+  const poolOpened = await page.waitForFunction(() => (window).__kfmNzPool?.()?.page === 'POOL_OPEN', null, { timeout: 8000, polling: 200 }).then(() => true).catch(() => false);
+  await sleep(700); // 池页挂载+入场动画落定再裁决
+  const diag = await page.evaluate(() => ({
+    attr: document.documentElement.hasAttribute('data-kfm-pool-open'),
+    at: (() => { const el = document.elementFromPoint(450, 260); return el ? `${el.tagName}|${(el.closest('[data-kfm-pool]') ? 'pool' : 'other')}` : 'NONE'; })(),
+    treeClosing: (window).__kfmNzFsTree?.().closing,
+  }));
+  await swipe(450, 260, 260, 0); // 池开右滑 → 池页自家关闭（file-tree 让位）
+  const poolClosed = await page.waitForFunction(() => (window).__kfmNzPool?.()?.page === 'POOL_CLOSED', null, { timeout: 8000, polling: 200 }).then(() => true).catch(() => false);
+  const treeFinal = (await hookTree())?.open;
+  check('⑫⑬手势：右滑开树/左滑关树/左滑转发开池/池开右滑池自理',
+    opened && closed && poolOpened && poolClosed && treeFinal === false,
+    `open=${opened} close=${closed} poolOpen=${poolOpened} poolClose=${poolClosed} treeFinal=${treeFinal} diag=${JSON.stringify(diag)}`);
+}
+
 // ---------- 清场 ----------
 await browser.close().catch(() => {});
 await killServer();

@@ -357,16 +357,16 @@
 
 /* ── file-tree 皮（文件树 v1 判据稿 §三/§七；[data-kfm-fstree]=树页、
  * [data-fstree-row]=平面行、[data-fsat-popup]=@ 引用弹窗（住全局 composer
- * 条）。颜色/时长/曲线唯一来源本文件（P8/P9）：树页入场=抽屉滑入
- * --kfm-ease-spring（即 §3.3 贝塞尔），收起走 .kfm-closing 换名照播
- * （ai-chat/池页同款机关）── */
+ * 条）。颜色/时长/曲线唯一来源本文件（P8/P9）：树页=**左抽屉**（右滑
+ * 入口方向一致，2026-09-11 拍板；与池页右抽屉互为镜像），收起走
+ * .kfm-closing 换名照播（ai-chat/池页同款机关）── */
 @keyframes kfm-fstree-page-in {
-  from { transform: translateX(100%); }
+  from { transform: translateX(-100%); }
   to   { transform: translateX(0); }
 }
 @keyframes kfm-fstree-page-out {
   from { transform: translateX(0); }
-  to   { transform: translateX(100%); }
+  to   { transform: translateX(-100%); }
 }
 [data-kfm-fstree] {
   animation: kfm-fstree-page-in var(--kfm-fstree-dur-in) var(--kfm-ease-spring) both;
