@@ -195,6 +195,15 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
     detailB = `calls=${JSON.stringify(calls)}`;
   }
   check('⑦b 顶条拖拽接线：floatDragBy 必达+(0,0)收笔提交', okB, detailB);
+  // ⑦c 卡身内缩（2026-09-12 「向内」终案回归钉）：浮窗态终端卡身必须
+  // left:26px 跟檐——卡身 fixed 锚视口不内缩时 canvas 全宽画进檐区，
+  // 文字压在芯片底下（合成眼实拍定罪）
+  const insetOk = await gpage.evaluate(() => {
+    const c = document.querySelector('.kfm-layout');
+    return !!c && c.style.left === '26px' && getComputedStyle(c).position === 'fixed';
+  });
+  check('⑦c 卡身内缩：float 态终端卡身 left=26px', insetOk,
+    `left=${await gpage.evaluate(() => document.querySelector('.kfm-layout')?.style.left)}`);
   await gctx.close().catch(() => {});
 }
 

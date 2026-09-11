@@ -287,7 +287,14 @@ export function applyTermBundle(ctx: Context): void {
       // 以 padding box 为包含块，scrollEl/barStrip 自动缩进，行数测量
       // （scrollEl.clientHeight）同源自洽。box-sizing:border-box 保
       // height=vv.height 语义不被 padding 撑破。变量单源=index.html :root。
-      container.el.style.cssText = 'position:fixed;left:0;right:0;top:0;height:100%;overflow:hidden;'
+      // 浮窗专态（B-线 ?float=1）：字号降档 13→10 + 免键栏底部预留 + 卡身
+      // 跟随檐宽内缩。第三件是「向内」观感真身（2026-09-12 合成眼定罪）：
+      // 卡身 position:fixed 锚视口、无视层 26px 位移 → canvas 全宽把文字
+      // 画进檐区芯片底下；第一帧左侧无字所以看着正常，输出一到就「变回
+      // 去」。isFloat 单源在此，下游（fonts/probe/scrollEl/shell/RO）共用
+      const isFloat = new URLSearchParams(location.search).get('float') === '1';
+      const termFs = isFloat ? 10 : 13;
+      container.el.style.cssText = `position:fixed;left:${isFloat ? 26 : 0}px;right:0;top:0;height:100%;overflow:hidden;`
         + 'box-sizing:border-box;padding-top:var(--sat,0px);padding-bottom:var(--sab,0px);';
       // 终端卡全屏期间锁死背景页滚动（boot 页比屏幕高，不锁会和终端抢
       // 滚动、被 scrollIntoView 类行为带着跑——实测闪烁根因之一）
@@ -393,11 +400,7 @@ export function applyTermBundle(ctx: Context): void {
       };
       pinToVv();
       updateImeState(); // 基线即立：冷启动 500ms 内弹键盘也有「无键盘高」可比对
-      // 浮窗专态（B-线 ?float=1）：字号降档 13→10 + 免键栏底部预留——小窗
-      // 里行列才够看（2026-09-11 浮窗首轮反馈「字基本不可用/看不了内容」；
-      // 实测 13px 时浮窗仅 22 行×35 列且 84px 预留白吃 22% 高）
-      const isFloat = new URLSearchParams(location.search).get('float') === '1';
-      const termFs = isFloat ? 10 : 13;
+      // （termFs/isFloat 单源=卡身装配处，字体门/探针/scrollEl/shell/RO 全部共用）
       // 实测定尺寸（写死 80×24 时代结束）：先用与壳同字体的探针量字格，
       // 再按容器可视面积算行列——手机有多宽终端就有多少列，不再裁字。
       // 探针字体栈=壳渲染栈（TERM_FONT_STACK 同源——换字体后度量自动跟
