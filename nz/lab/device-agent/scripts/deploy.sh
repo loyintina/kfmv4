@@ -46,7 +46,7 @@ echo "=== [deploy 2/3] 拷进共享存储（安装器要读） ==="
 $SSH "cp $PHONE_TMP/$NAME $PHONE_SHARED/Download/$NAME"
 
 echo "=== [deploy 2.5/3] 手机侧 md5 对拍（防幽灵安装） ==="
-$SSH "md5sum $PHONE_SHARED/Download/$NAME" | awk "{print \\$1}" > /tmp/nz-deploy-remote.md5
+$SSH "md5sum $PHONE_SHARED/Download/$NAME" | awk '{print $1}' > /tmp/nz-deploy-remote.md5
 md5sum "$APK" | awk '{print $1}' > /tmp/nz-deploy-local.md5
 if ! diff -q /tmp/nz-deploy-remote.md5 /tmp/nz-deploy-local.md5 >/dev/null; then
     echo "❌ 手机侧 md5 与构建不一致——存储腿静默失败，中止（09-09 幽灵安装案教训）"

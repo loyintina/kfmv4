@@ -602,7 +602,17 @@ public class MainActivity extends Activity {
                     "window.dispatchEvent(new CustomEvent('kfm-browser-panel-open'))", null);
         });
         root.addView(orbBtn, new FrameLayout.LayoutParams(36 * dpv, 36 * dpv));
-        orbBtn.post(() -> layoutFloat());
+        // 首定位必须等 root 真有尺寸：onCreate 期 View.post 走
+        // HandlerActionQueue，随首次 traversal 的 dispatchAttachedToWindow
+        // 执行——在 performLayout **之前**，root.getWidth()==0，layoutFloat
+        // 早退，orb 永远停 (0,0) 且此后无人再调（2026-09-11 装机案预修）。
+        // 未布局就重排队，量到尺寸才定位
+        orbBtn.post(new Runnable() {
+            @Override public void run() {
+                if (root.getWidth() == 0) { orbBtn.post(this); return; }
+                layoutFloat();
+            }
+        });
     }
 
     private void layoutFloat() {

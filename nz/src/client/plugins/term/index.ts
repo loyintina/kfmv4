@@ -431,8 +431,9 @@ export function applyTermBundle(ctx: Context): void {
       // 底部预留 = KEYBAR_H + --kfm-aichat-composer-h（2026-09-04 真机拍板①
       // +同日二拍换序：composer 钉最底、keybar 钉 composer 正上方——预留总量
       // 不变、内部次序颠倒，终端内容区仍避开两条不盖 shell 提示符——§3.0/P10；
-      // var 由 ai-chat 插件 RO 实测单源下发，插件未挂 = tokens.css 静态默认
-      // /0 兜底）
+      // var 由 ai-chat 插件 RO 实测单源下发；ai-chat 卸场（2026-09-11 摘除）
+      // 后 var 无定义 = fallback 0 生效，tokens.css 静态 116px 默认已退役
+      // （墓碑注在该文件），翻案回挂 ai-chat 时 RO 首拍重新下发）
       const scrollEl = document.createElement('div');
       scrollEl.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:calc(${KEYBAR_H}px + var(--kfm-aichat-composer-h, 0px));`
         + 'overflow:auto;display:flex;flex-direction:column;'

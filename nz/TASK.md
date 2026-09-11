@@ -2050,6 +2050,21 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   原生态轮询）；浮窗专态（?float=1&fs=会话）左竖线会话标签（3s 轮询
   /api/tmux/sessions + detach 轮询重进）。服务端 /api/tmux/sessions 路由。
 - AI 系摘除（4729a917）：ai-chat/config-pool 卸载，bundle -17%。
+- 装机案两修（2026-09-11 晚，用户报「无浏览器气泡+终端不全屏」）：
+  ①**页底幽灵 116px**——ai-chat 卸场后 tokens.css 静态
+  `--kfm-aichat-composer-h: 116px` 无人覆写，keybar/scrollEl 的 var()
+  消费端永远吃到 116px（真机 CDP 实测键栏 bottom 恒 116 定罪）→ 静态
+  定义退役留墓碑注，消费端 fallback 0 生效（term/index.ts 注释同步）；
+  回归钉 layout-composer-ghost 4/4（var 失源/键栏贴底/终端区吃满）+
+  真机 reload 复测（stripBottom=853=视口底，scrollBottom=769=853-84）+
+  前后截图存证 docs/active/nine-zero/assets/2026-09-11-composer-ghost-
+  {before,after}.png。**L0 纪律再验值**：装机里是 B-线 v0 之前的旧壳
+  （live 页 NzNative.browserState 不存在 + base.apk md5 对拍不合），
+  「装新包后功能消失」第一动作=L0 指纹对拍，不许先跑代码排障。
+  ②**壳 orb 首定位时序**——onCreate 期 View.post 走 HandlerActionQueue、
+  随首次 traversal 的 dispatchAttachedToWindow 在 performLayout **之前**
+  执行：root.getWidth()=0 → layoutFloat 早退，orb 永 (0,0)（新包装机
+  必踩的第二颗雷，装机前预修）→ post 自旋等 root 有尺寸才 layoutFloat。
 
 ### 待修（下会话第一事）
 - **④ 浮窗切会话竞态**：标签点击 → C-b d + 'detached' 轮询 + 重进的
@@ -2057,4 +2072,7 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   取证钩已埋在 browser-organ.test.mjs ④，6/7 卡于此钉）。嫌疑=注入与
   tmux client 拆卸的字节竞态，需屏稳定判据调参或改服务端 tmux-cmd 通路。
 - 浮窗 IME 避让（无 insets 监听，v0 接受 adjustPan）。
-- 壳 APK 装机 + C 档真机全链（气泡召唤/透明穿透/返回键/我方 CDP 眼）。
+- 壳 APK 装机（新包 versionCode=1789127333 / 70262B /
+  md5 5a4b0f9a08ec3b36234c2587fe8a0c57，含 orb 定位修复；装机后先 L0
+  指纹对拍+browserState 桥存在性探针，再 C 档真机全链）+ C 档真机全链
+  （气泡召唤/透明穿透/返回键/我方 CDP 眼）。
