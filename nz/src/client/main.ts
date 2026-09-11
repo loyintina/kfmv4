@@ -21,8 +21,6 @@ import { applyTermBundle } from './plugins/term/index.js';
 import { createUiKernel } from './kernel/ui-kernel.js';
 import { reactSmokePlugin } from './kernel/react-adapter.js';
 import { createTmuxTabsPlugin } from './plugins/tmux-tabs/index.js';
-import { createAiChatPlugin } from './plugins/ai-chat/index.js';
-import { createConfigPoolPlugin } from './plugins/config-pool/index.js';
 import { createFileTreePlugin } from './plugins/file-tree/index.js';
 
 // ========== 内核件接线：宿主给盒子，手势管输入，broker 管卡类型户口 ==========
@@ -121,24 +119,11 @@ const uiKernel = createUiKernel({ host: document.body, debug: debugOn });
 const tmuxContainer = host.create(rootCtx, { kind: 'overlay', owner: 'tmux-tabs', slot: 'tmux-tabs' });
 uiKernel.mount('tmux-tabs', createTmuxTabsPlugin(), tmuxContainer.el);
 
-// ai-chat（设计 §2.2/§3.0 + 2026-09-04 真机拍板改版）：常驻 orb（右中，唯一
-// 开关）+ 滑入式 AI 页 + 全局钉底 composer，槽位同落 overlay 层（tmux-tabs
-// 同款教训：挂 body 会被 layout 层整面盖住）。
-const aiChatContainer = host.create(rootCtx, { kind: 'overlay', owner: 'ai-chat', slot: 'ai-chat' });
-uiKernel.mount('ai-chat', createAiChatPlugin(), aiChatContainer.el);
-
-// config-pool（设计 docs/config-pool-a2a-design.md §一/§三）：左滑进入的
-// 全屏池页（z44，AI 页之上、输入栏+光球恒顶之下——仲裁⑩）+ 四池标签行。
-// 槽位同落 overlay 层（tmux-tabs 同款教训）；挂 ai-chat 之后=同层 DOM 后位，
-// 手势注册走 rootCtx（registerGesture ctx.effect 白送摘除——仲裁④ PageSwipe:500）。
-const poolContainer = host.create(rootCtx, { kind: 'overlay', owner: 'config-pool', slot: 'config-pool' });
-uiKernel.mount('config-pool', createConfigPoolPlugin(rootCtx), poolContainer.el);
-
-// file-tree（文件树 v1 判据稿 §三/§七）：全屏树页 z44（池页同档互斥态），
-// 入口=@ 弹窗「浏览完整文件树…」行发的 kfm-nz-fstree-open 事件（v1 不绑
-// 左滑手势——PageSwipe:500 已归 config-pool）。槽位同落 overlay 层（同款
-// 教训：挂 body 会被 layout 层整面盖住）；挂 config-pool 之后=同层 DOM
-// 后位（两页并开时树页在上）。
+// file-tree（文件树 v1 判据稿 §三/§七 + §七⑩ 右滑入口）：全屏树页 z44，
+// 入口=右滑手势（GestureLayer.FileTree:700）或 @ 弹窗「浏览完整文件树…」
+// 行发的 kfm-nz-fstree-open 事件。槽位落 overlay 层（挂 body 会被 layout
+// 层整面盖住的教训）。AI 系（ai-chat/config-pool）2026-09-11 随结项摘除，
+// 插件代码留仓可翻案（git log 643054dc 前史）。
 const fsTreeContainer = host.create(rootCtx, { kind: 'overlay', owner: 'file-tree', slot: 'file-tree' });
 uiKernel.mount('file-tree', createFileTreePlugin(rootCtx), fsTreeContainer.el);
 

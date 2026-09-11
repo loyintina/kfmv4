@@ -18,12 +18,15 @@
  *   · 懒加载：展开才 fetch /api/fs/list，children 缓存 per dir（fetchLog
  *     记账=「一目录只 fetch 一次」观测源）；展开/收起动画期 240/180ms
  *     全局锁（§3.2：锁只防视觉抖动，DOM+CSS transition 无竞态面）；
- *   · 点文件=预览浮层（/api/fs/read：binary 拒显+截断标注），浮层内
- *     「插入 @引用」→ kfm-nz-aichat-insert 事件（composer 消费）+关树。
+ *   · 点文件=预览浮层（/api/fs/read：binary 拒显+截断标注）。
  *   · 长按行（550ms，位移>10px 取消）=复制该行相对路径到剪贴板
  *     （2026-09-11 用户拍板）：Clipboard API→execCommand 三级链（WebView
  *     非 https 环境无 async Clipboard，execCommand 走用户手势同步执行），
  *     toast 回执+振动。长按消费掉该次 click（不触发预览/展开）。
+ *   · 【2026-09-11 结项摘除】AI 系（ai-chat/config-pool）随结项卸载：
+ *     @ 弹窗（寄生 composer）随之退役，树页入口=右滑手势（唯一）；
+ *     「插入 @引用」按钮与 kfm-nz-aichat-insert 回流随之退役（翻案看
+ *     git 643054dc 前史）。
  *
  * 结构纪律：机态全部住 mount 域闭包（config-pool 的 core 同款），组件
  * 函数体内只有 tick+listRef 两个 hooks——hooks 出组件即 Invalid hook
@@ -38,7 +41,13 @@ import type { Context } from 'cordis';
 import type { UiPlugin, UiPluginHandle } from '../../kernel/ui-kernel.js';
 import { GestureLayer, registerGesture } from '../../gesture.js';
 import { fetchFsList, fetchFsRead, type FsEntry } from '../../fs/api.js';
-import { POOL_SWIPE_EXCLUDE } from '../config-pool/index.js';
+
+/** 手势落点排除面（原 config-pool POOL_SWIPE_EXCLUDE 单继承——池页已随
+ *  AI 系退役，横向手势让位对象：tmux 标签排/键栏/composer(已摘)/光球(已摘)） */
+const FSTREE_SWIPE_EXCLUDE = [
+  '[data-tmux-strip]', '[data-kfm-keybar]', '[data-kfm-aichat-bar]', '[data-kfm-aichat-orb]',
+  '[data-aichat-model-menu]', '[data-aichat-config-menu]', '[data-pool-overlay]',
+].join(',');
 
 // ---------- §3.1 令牌表（na 照抄即同手感；参数文档化=规格本体） ----------
 
@@ -202,8 +211,7 @@ export function createFileTreePlugin(ctx: Context): UiPlugin {
       // 的 PageSwipe:500，条件互斥设计——
       //   池页开 → 不 claim（池页右滑返回归池页自理）；
       //   树开   → 全权：左滑=关（树页自左抽屉入，左滑推回）；右滑=零动作；
-      //   双闭   → 右滑=开树；左滑=转发 kfm-nz-pool-swipe-open（config-pool
-      //            收到后走自家 openBySwipe，左滑开池语义零漂移）。
+      //   双闭   → 右滑=开树；左滑=零动作（历史转发池页分支随 AI 系摘除退役）。
       // 阈值与池页同单：|dx|≥64 且 |dx|>2|dy|（垂直滚动自然落选）。
       const judgeFstreeSwipe = (dx: number, dy: number): 'left' | 'right' | null => {
         if (Math.abs(dx) < 64 || Math.abs(dx) <= 2 * Math.abs(dy)) return null;
@@ -212,7 +220,7 @@ export function createFileTreePlugin(ctx: Context): UiPlugin {
       registerGesture(ctx, {
         id: 'file-tree:page-swipe',
         layer: GestureLayer.FileTree,
-        targetFilter: (target) => !target.closest(POOL_SWIPE_EXCLUDE),
+        targetFilter: (target) => !target.closest(FSTREE_SWIPE_EXCLUDE),
         condition: () => S.open || !document.documentElement.hasAttribute('data-kfm-pool-open'),
         onEnd: (_e, dx, dy) => {
           const v = judgeFstreeSwipe(dx, dy);
@@ -222,7 +230,7 @@ export function createFileTreePlugin(ctx: Context): UiPlugin {
           }
           if (document.documentElement.hasAttribute('data-kfm-pool-open')) return; // 条件外保险
           if (v === 'right') openPage();
-          else if (v === 'left') window.dispatchEvent(new CustomEvent('kfm-nz-pool-swipe-open'));
+          // 左滑零动作（池页转发分支随 AI 系摘除退役，2026-09-11）
         },
       });
 
@@ -257,11 +265,6 @@ export function createFileTreePlugin(ctx: Context): UiPlugin {
               bump();
             }
           });
-      };
-
-      const quote = (path: string): void => {
-        window.dispatchEvent(new CustomEvent('kfm-nz-aichat-insert', { detail: { text: `@${path}` } }));
-        closePage();
       };
 
       // ---- 虚拟化窗口（§3.2：行高恒 26px 自算，可视区±屏高，不引库） ----
@@ -459,7 +462,7 @@ export function createFileTreePlugin(ctx: Context): UiPlugin {
           className: S.closing ? 'kfm-closing' : '',
           style: {
             position: 'fixed', top: 0, left: 0, right: 0,
-            bottom: 'var(--kfm-aichat-composer-h, 116px)', // 页底=composer 顶（§七 定案）
+            bottom: 0, // AI 系摘除后 composer 不在场，页底=视口底（2026-09-11）
             zIndex: 44,
             background: 'var(--kfm-page)', color: 'var(--kfm-ink)',
             display: 'flex', flexDirection: 'column',
@@ -558,17 +561,7 @@ export function createFileTreePlugin(ctx: Context): UiPlugin {
               },
             },
             createElement('span', { style: { flex: 1, fontSize: '10px', color: 'var(--kfm-ink-3)' } },
-              preview.loading ? '' : preview.binary ? '不可引用' : preview.truncated ? '内容已截断' : ''),
-            createElement('button', {
-              'data-fstree-quote': '1', type: 'button',
-              disabled: preview.loading || !!preview.binary,
-              onClick: () => quote(preview.path),
-              style: {
-                flexShrink: 0, padding: '5px 10px', borderRadius: 'var(--kfm-radius-md)',
-                border: 'none', background: 'var(--kfm-accent)', color: '#fff',
-                fontSize: '12px', cursor: 'pointer', opacity: preview.loading || preview.binary ? 0.5 : 1,
-              },
-            }, '插入 @引用'),
+              preview.loading ? '' : preview.binary ? '二进制文件' : preview.truncated ? '内容已截断' : ''),
             ),
             )
           : null,

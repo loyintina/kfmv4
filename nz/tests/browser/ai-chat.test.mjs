@@ -102,6 +102,15 @@ const startPayloads = [];
 page.on('request', (r) => { if (r.url().includes('/ai/chat/start')) startPayloads.push(r.postData() ?? ''); });
 
 await page.goto(PAGE_URL, { waitUntil: 'domcontentloaded', timeout: 40000 }).catch(() => {});
+{ // 维护态闸（2026-09-11 nz 结项）：AI 系插件已摘除 → 本卷整体跳过
+  await new Promise((r) => setTimeout(r, 2000));
+  const alive = await page.evaluate(() => typeof (window).__kfmNzAiChat === 'function' || typeof (window).__kfmNzPool === 'function').catch(() => false);
+  if (!alive) {
+    console.log('[skip] ai 系插件已摘除（nz 维护态）——本卷整体跳过');
+    if (typeof browser !== 'undefined') await browser.close().catch(() => {});
+    process.exit(0);
+  }
+}
 const hookAlive = await page.waitForFunction(() => !!window.__kfmNzAiChat, null, { timeout: 15000, polling: 250 })
   .then(() => true).catch(() => false);
 

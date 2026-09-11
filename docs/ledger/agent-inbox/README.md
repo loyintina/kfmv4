@@ -405,6 +405,6 @@
 | 2026-09-09 | [`kfmv4-9.0-r3-task-notify-landing-report.md`](kfmv4-9.0-r3-task-notify-landing-report.md) | kfmv4-9.0-tmux-mgr-requirements-response.md | 通报完毕（2026-09-09 nz：R3 三档闭环 + 幽灵安装案双闸修复） |
 | 2026-09-09 | [`kfmv4-review-daily-progress-2026-09-09-report.md`](kfmv4-review-daily-progress-2026-09-09-report.md) | 无（主动通报；晨检日报的信箱化，观察者通报口径，不替代线内第一手通报） | 通报完毕（当日评审：晨检全绿无红，310 封，无停滞在途） |
 | 2026-09-10 | [`kfmv4-review-daily-progress-2026-09-10-report.md`](kfmv4-review-daily-progress-2026-09-10-report.md) | 无（主动通报；晨检日报的信箱化，观察者通报口径，不替代线内第一手通报） | 通报完毕（当日评审：晨检全绿无红，312 封，无停滞在途） |
-| 2026-09-11 | [`kfmv4-9.0-nz-closeout-na-reference-notice.md`](kfmv4-9.0-nz-closeout-na-reference-notice.md) | 无需回信 | 通报完毕（2026-09-11 用户拍板结项当日投递） |
+| 2026-09-11 | [`kfmv4-9.0-nz-closeout-na-reference-notice.md`](kfmv4-9.0-nz-closeout-na-reference-notice.md) | 无需回信 | 已收到（2026-09-11 kfm-na：收讫关账——规格七表索引已登记进 |
 | 2026-09-11 | [`kfmv4-review-daily-progress-2026-09-11-report.md`](kfmv4-review-daily-progress-2026-09-11-report.md) | 无（主动通报；晨检日报的信箱化，观察者通报口径，不替代线内第一手通报） | 通报完毕（当日评审：晨检全绿无红，313 封；nz 新立 B1/B2 卡待用户拍板） |
 <!-- gen:agent-inbox:end -->

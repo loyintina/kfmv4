@@ -18,6 +18,15 @@ const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 900, height: 620 } });
 page.setDefaultTimeout(60000);
 await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 40000 });
+{ // 维护态闸（2026-09-11 nz 结项）：AI 系插件已摘除 → 本卷整体跳过
+  await new Promise((r) => setTimeout(r, 2000));
+  const alive = await page.evaluate(() => typeof (window).__kfmNzAiChat === 'function' || typeof (window).__kfmNzPool === 'function').catch(() => false);
+  if (!alive) {
+    console.log('[skip] ai 系插件已摘除（nz 维护态）——本卷整体跳过');
+    if (typeof browser !== 'undefined') await browser.close().catch(() => {});
+    process.exit(0);
+  }
+}
 await page.waitForFunction(() => !!window.__kfmNzAiChat, null, { timeout: 30000 });
 
 const hook = () => page.evaluate(() => window.__kfmNzAiChat());

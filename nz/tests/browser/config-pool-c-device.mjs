@@ -51,6 +51,10 @@ const live = list.find((t) => t.description.includes('"attached":true'));
 if (!live) { console.error('❌ 无 attached live 目标（真机没开页？）'); process.exit(2); }
 const ws = new WebSocket(live.webSocketDebuggerUrl);
 let idc = 0;
+{ // 维护态闸（2026-09-11 nz 结项）：AI 系插件已摘除 → 本卷整体跳过
+  const probe = await (() => { const id0 = ++idc; ws.send(JSON.stringify({ id: id0, method: 'Runtime.evaluate', params: { expression: "typeof __kfmNzPool === 'function' || typeof __kfmNzAiChat === 'function'" } })); return new Promise((res) => { const h = (ev) => { const m = JSON.parse(ev.data); if (m.id === id0) { ws.removeEventListener('message', h); res(m.result?.result?.value === true); } }; ws.addEventListener('message', h); }); })();
+  if (!probe) { console.log('[skip] ai 系插件已摘除（nz 维护态）——本 C 档卷整体跳过'); process.exit(0); }
+}
 const pending = new Map();
 ws.addEventListener('message', (ev) => {
   const m = JSON.parse(ev.data);
