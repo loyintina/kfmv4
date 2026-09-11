@@ -32,6 +32,9 @@ interface NzNativeLike {
   browserState?: () => string;
 }
 
+/** 默认直达页（2026-09-11 用户拍板：limestart；点 orb 直进不落中间页） */
+const DEFAULT_URL = 'https://www.limestart.cn/';
+
 /** 管理面板（普通模式） */
 export function createBrowserPanelPlugin(): UiPlugin {
   return {
@@ -42,20 +45,24 @@ export function createBrowserPanelPlugin(): UiPlugin {
 
       function Panel(): React.ReactElement {
         const [open, setOpen] = useState(false);
-        const [url, setUrl] = useState('https://');
+        const [url, setUrl] = useState(DEFAULT_URL);
         const [session, setSession] = useState('dsh');
         const [nativeState, setNativeState] = useState('（无桥=浏览器环境，打开仅记录）');
         const urlRef = useRef<HTMLInputElement | null>(null);
 
         useEffect(() => {
           const onOpen = (): void => {
-            setOpen(true);
+            // 2026-09-11 用户拍板「不要中间页」：点 orb 直进浏览器模式
+            // （默认页 DEFAULT_URL + 尾随当前附着会话）；无桥（headless/
+            // 纯浏览器环境）才落管理面板兜底
             try {
               const s = (window as unknown as Record<string, unknown>).__kfmNzTmuxTabs as
                 (() => { attachedSession: string | null }) | undefined;
               const cur = s?.().attachedSession;
-              if (cur) setSession(cur);
-            } catch { /* 无标签条不挡 */ }
+              const n = native();
+              if (n?.enterBrowser) { n.enterBrowser(DEFAULT_URL, cur || 'dsh'); return; }
+            } catch { /* 桥不在场，落面板 */ }
+            setOpen(true);
           };
           window.addEventListener('kfm-browser-panel-open', onOpen);
           return () => window.removeEventListener('kfm-browser-panel-open', onOpen);

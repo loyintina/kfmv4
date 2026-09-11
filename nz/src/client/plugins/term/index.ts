@@ -393,6 +393,11 @@ export function applyTermBundle(ctx: Context): void {
       };
       pinToVv();
       updateImeState(); // 基线即立：冷启动 500ms 内弹键盘也有「无键盘高」可比对
+      // 浮窗专态（B-线 ?float=1）：字号降档 13→10 + 免键栏底部预留——小窗
+      // 里行列才够看（2026-09-11 浮窗首轮反馈「字基本不可用/看不了内容」；
+      // 实测 13px 时浮窗仅 22 行×35 列且 84px 预留白吃 22% 高）
+      const isFloat = new URLSearchParams(location.search).get('float') === '1';
+      const termFs = isFloat ? 10 : 13;
       // 实测定尺寸（写死 80×24 时代结束）：先用与壳同字体的探针量字格，
       // 再按容器可视面积算行列——手机有多宽终端就有多少列，不再裁字。
       // 探针字体栈=壳渲染栈（TERM_FONT_STACK 同源——换字体后度量自动跟
@@ -403,8 +408,8 @@ export function applyTermBundle(ctx: Context): void {
       // 回落系统 mono，几何仍自洽）。
       try {
         await Promise.all([
-          document.fonts.load(`13px 'NaMain'`, '0'),
-          document.fonts.load(`13px 'NaCJK'`, '中'),
+          document.fonts.load(`${termFs}px 'NaMain'`, '0'),
+          document.fonts.load(`${termFs}px 'NaCJK'`, '中'),
         ]);
         mark('fonts-ready');
       } catch { /* 字体 404/受限 → fallback 栈，度量与渲染仍同源 */ }
@@ -413,7 +418,7 @@ export function applyTermBundle(ctx: Context): void {
       const measureCell = () => {
         const probe = document.createElement('div');
         probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;'
-          + `font:13px/1.25 ${TERM_FONT_STACK};`;
+          + `font:${termFs}px/1.25 ${TERM_FONT_STACK};`;
         probe.textContent = '0'.repeat(20);
         container.el.appendChild(probe);
         cellW = probe.getBoundingClientRect().width / 20;
@@ -434,8 +439,11 @@ export function applyTermBundle(ctx: Context): void {
       // var 由 ai-chat 插件 RO 实测单源下发；ai-chat 卸场（2026-09-11 摘除）
       // 后 var 无定义 = fallback 0 生效，tokens.css 静态 116px 默认已退役
       // （墓碑注在该文件），翻案回挂 ai-chat 时 RO 首拍重新下发）
+      const scrollBottom = isFloat
+        ? '0' // 浮窗无键栏：84px 预留也免（小窗里 22% 高白吃，实测量刑）
+        : `calc(${KEYBAR_H}px + var(--kfm-aichat-composer-h, 0px))`;
       const scrollEl = document.createElement('div');
-      scrollEl.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:calc(${KEYBAR_H}px + var(--kfm-aichat-composer-h, 0px));`
+      scrollEl.style.cssText = `position:absolute;left:0;right:0;top:0;bottom:${scrollBottom};`
         + 'overflow:auto;display:flex;flex-direction:column;'
         // 横向手势放行（2026-09-11 file-tree 右滑入口配套；池页同款防治）：
         // overflowY:auto 触点默认 touch-action=auto，横拖 ~slop 即被浏览器
@@ -470,7 +478,7 @@ export function applyTermBundle(ctx: Context): void {
       // scrollEl=滚动视口（flex 列底锚），termEl=壳画布（历史块+屏幕行）。
       const termEl = document.createElement('div');
       scrollEl.appendChild(termEl);
-      const shell = new TermShell(core, termEl, { cols: size.cols, rows: size.rows });
+      const shell = new TermShell(core, termEl, { cols: size.cols, rows: size.rows, fontSize: termFs });
       liveShell = shell; // 字格单源：此后 measure/checkDrift 吃壳渲染尺
       // 底锚定两件套（构造后补——构造函数会重写 cssText，属性级补设不冲）
       termEl.style.marginTop = 'auto';
@@ -686,7 +694,7 @@ export function applyTermBundle(ctx: Context): void {
       // 2026-09-03 迁皮（keybar-v3-state-machine.md 装配方案 A）：mountKeybar
       // 现由 term/KeybarApp.tsx 提供（reactMount 桥接），KeybarHandle 形状
       // 不变——下方 takeMods/syncMods 调用点零改动。
-      const floatKeybar = new URLSearchParams(location.search).get('float') !== '1';
+      const floatKeybar = !isFloat;
       const barStripEl = document.createElement('div');
       let takeMods = (text: string): string => text; // 无键栏（浮窗专态）=原样透传
       if (floatKeybar) {

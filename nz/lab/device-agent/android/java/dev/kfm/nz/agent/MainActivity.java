@@ -577,11 +577,14 @@ public class MainActivity extends Activity {
         holdBtn = new TextView(this);
         holdBtn.setText("端");
         holdBtn.setGravity(Gravity.CENTER);
-        holdBtn.setTextColor(0xFFA5A8AD);
-        holdBtn.setTextSize(11);
+        // 高对比版（2026-09-11 用户实拍「右下角按钮没有，无法点击」——首版
+        // 配色 0xE8232427/0xFF3A3B3F 落在浮窗 0xF217181A 底上=保护色隐形，
+        // 逻辑一直在场只是看不见）：提亮填充/描边/字
+        holdBtn.setTextColor(0xFFE8E9EB);
+        holdBtn.setTextSize(13);
         android.graphics.drawable.GradientDrawable hbg = new android.graphics.drawable.GradientDrawable();
         hbg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
-        hbg.setColor(0xE8232427); hbg.setStroke(Math.max(1, dpv), 0xFF3A3B3F);
+        hbg.setColor(0xF23A3B3F); hbg.setStroke(Math.max(1, dpv), 0xFF6A6C70);
         holdBtn.setBackground(hbg);
         holdBtn.setOnTouchListener(holdTouch);
         holdBtn.setVisibility(View.GONE);
@@ -620,7 +623,8 @@ public class MainActivity extends Activity {
         int W = root.getWidth(), H = root.getHeight() - imeBottom;
         if (W <= 0 || H <= 0) return;
         if (floatW == 0) {
-            floatW = (int) (W * 0.48f); floatH = (int) (H * 0.44f);
+            // 0.34：首版 0.44 用户实拍「有点长，短一点」（2026-09-11 浮窗首轮反馈）
+            floatW = (int) (W * 0.48f); floatH = (int) (H * 0.34f);
             floatLeft = W - floatW - dpv * 50;
             floatTop = H - floatH - dpv * 50;
         }
@@ -630,8 +634,10 @@ public class MainActivity extends Activity {
         lp.leftMargin = floatLeft; lp.topMargin = floatTop; lp.width = floatW; lp.height = floatH;
         floatContainer.setLayoutParams(lp);
         FrameLayout.LayoutParams hb = (FrameLayout.LayoutParams) holdBtn.getLayoutParams();
-        hb.leftMargin = floatLeft + floatW - dpv * 44;
-        hb.topMargin = floatTop + floatH - dpv * 44;
+        // 跨角悬挂（中心骑在浮窗右下角上，半出半入=kfmv4 卡角光球同款语）：
+        // 44dp 内嵌版整颗泡在浮窗深底里也是「找不到」的共犯
+        hb.leftMargin = floatLeft + floatW - dpv * 20;
+        hb.topMargin = floatTop + floatH - dpv * 20;
         holdBtn.setLayoutParams(hb);
         FrameLayout.LayoutParams ob = (FrameLayout.LayoutParams) orbBtn.getLayoutParams();
         if (browserMode) { ob.leftMargin = floatLeft + floatW / 2 - dpv * 18; ob.topMargin = Math.max(dpv * 8, floatTop - dpv * 44); }
