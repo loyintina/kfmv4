@@ -34,6 +34,7 @@ import './tmux-activity.test.ts';
 import './notify-gate.test.ts';
 import './pty-reaper.test.ts';
 import './fs-api.test.ts';
+import './static-cache.test.ts';
 import { runAll } from './runner.ts';
 
 await runAll();

@@ -203,7 +203,14 @@ export function createNzServer(): Server {
         // URL 固定无 hash，wasm 重编后函数表移位，immutable 一年强缓存让
         // 真机抱着旧 wasm 配新 glue → "null pointer passed to rust"。
         // no-cache 代价只是协商 304（wasm 643KB 不重传），变更才全量。
-        const NO_CACHE_BASE = new Set(['splash-core.js', 'kfm_term_core.js', 'kfm_term_core_bg.wasm']);
+        // bundle.js/tokens.css 加名单（2026-09-11 缓存键吃 query 案）：
+        // 这俩靠 ?v=hash 破缓存+immutable 一年，但这台 WebView 缓存键吞
+        // query——?v=0d222d75 命中上一轮 4250b7a1 旧字节真机实锤，新包
+        // 永远进不来。改 no-cache=协商 304，正确性不再赌缓存键行为
+        const NO_CACHE_BASE = new Set([
+          'splash-core.js', 'kfm_term_core.js', 'kfm_term_core_bg.wasm',
+          'bundle.js', 'tokens.css',
+        ]);
         const immutable = !NO_CACHE_BASE.has(basename(abs)) &&
           ['.ttf', '.woff2', '.wasm', '.js', '.css', '.png', '.svg', '.map'].includes(ext);
         // 编码协商（2026-09-01 bundle 增重插曲）：构建期预压缩兄弟文件

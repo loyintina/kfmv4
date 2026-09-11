@@ -477,6 +477,44 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** 浮窗页专用桥（子集）：chrome 手势哑原语 + 观测钩。刻意不含
+     *  firstFrame/tap/ime——float 页调它们没意义且 firstFrame 会把开屏
+     *  bye 预测锚拉歪。方法名与 NzNative 保持同形，页面代码无差别 */
+    private class NzFloatBridge {
+        @JavascriptInterface
+        public void floatDragBy(final int dx, final int dy) {
+            runOnUiThread(() -> {
+                floatLeft += dx;
+                floatTop += dy;
+                layoutFloat();
+            });
+        }
+
+        @JavascriptInterface
+        public void floatCollapse(final boolean c) {
+            runOnUiThread(() -> {
+                floatCollapsed = c;
+                layoutFloat();
+                mark("float-collapse-" + c);
+            });
+        }
+
+        @JavascriptInterface
+        public void floatGhost(final boolean on) {
+            runOnUiThread(() -> {
+                ghostOn = on;
+                floatContainer.setAlpha(on ? 0.12f : 1f);
+            });
+        }
+
+        @JavascriptInterface
+        public String browserState() {
+            return "mode=" + (browserMode ? "on" : "off")
+                    + ";collapsed=" + floatCollapsed
+                    + ";ghost=" + ghostOn;
+        }
+    }
+
     /** 幂等摘层：removeView+destroy+入账，各路（complete 回报/bye 硬摘/
      *  看门狗）共用，先到先摘后到空转 */
     private void removeSplashNow() {
@@ -589,6 +627,12 @@ public class MainActivity extends Activity {
         floatWeb = new WebView(this);
         configWeb(floatWeb);
         floatWeb.setBackgroundColor(0x00000000);
+        // 浮窗页也必须有桥：chrome 手势在页面 DOM，靠哑原语三桥驱动壳。
+        // 但不给全量 NzNative——float 页的 firstFrame 会把开屏 bye 预测
+        // 锚拉歪（浮窗首帧远晚于终端页），tap/ime 对浮窗也无意义，只挂
+        // NzFloatBridge 子集（2026-09-11 手势失灵案：浮窗无桥，effect
+        // 首行判空直接 return，监听器没装）
+        floatWeb.addJavascriptInterface(new NzFloatBridge(), "NzNative");
         floatContainer.addView(floatWeb, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 

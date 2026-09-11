@@ -2,7 +2,7 @@
  * tests/browser/browser-organ.test.mjs — 浏览器器官 B-线 v0 B 档考卷
  * （2026-09-11 立项；file-tree 同款自起隔离实例骨架）。
  *
- * 六枚钉：
+ * 七枚钉：
  *   ① 普通态：kfm-browser-panel-open 事件 → 管理面板可见
  *   ② 打开链路：mock NzNative.enterBrowser → 点「打开浏览器」→ 桥收到
  *     (url, session) 且面板自隐（headless 无壳，桥以 mock 断言调用面）
@@ -11,6 +11,9 @@
  *   ④ 浮窗切会话：点左竖线标签 ftB → 终端屏真换到 ftB（真 inject 链路）
  *   ⑤ 会话表轮询：/api/tmux/sessions 喂标签（ftA/ftB 两枚在场）
  *   ⑥ 清场：实例端口清零（814x 僵尸案教训）
+ *   ⑦ 浮窗桥手势接线（2026-09-11 手势失灵案回归钉）：假桥 addInitScript
+ *     注入后，顶条点按必须调到 floatCollapse——真机案=浮窗页无桥时
+ *     effect 判空 return，监听器没装，手势全死且无任何报错
  *
  * 跑法：先 npm run build（public/bundle.js 须含新代码），再
  *   node tests/browser/browser-organ.test.mjs
@@ -145,6 +148,36 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
   const j = await r.json().catch(() => null);
   const names = Array.isArray(j?.sessions) ? j.sessions : [];
   check('⑤/api/tmux/sessions：200+会话名表', r.status === 200 && names.includes('ftA') && names.includes('ftB'), `status=${r.status} names=${JSON.stringify(names)}`);
+}
+
+// ⑦ 浮窗桥手势接线（2026-09-11 手势失灵案回归钉，变异靶：删手势 effect
+// 的 nz?.floatDragBy 判空挂载即可打红——桥不在场时监听器必须 still 装/
+// 或装不上但点按可观测）：假桥注入 → 顶条点按 → floatCollapse 必达
+{
+  const gctx = await browser.newContext({ viewport: { width: 240, height: 520 } });
+  await gctx.addInitScript(() => {
+    (window).__floatCollapseCalls = [];
+    (window).NzNative = {
+      floatDragBy: () => {},
+      floatGhost: () => {},
+      floatCollapse: (c) => { (window).__floatCollapseCalls.push(c); },
+      browserState: () => 'mode=off;collapsed=false;ghost=false',
+    };
+  });
+  const gpage = await gctx.newPage();
+  await gpage.goto(`${BASE}/?nosplash&float=1&fs=ftA`, { waitUntil: 'domcontentloaded', timeout: 40000 }).catch(() => {});
+  const bar = await gpage.waitForSelector('[data-browser-float-bar]', { timeout: 10000 }).catch(() => null);
+  let ok = false; let detail = 'no bar';
+  if (bar) {
+    const box = await bar.boundingBox();
+    await gpage.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await sleep(400);
+    const calls = await gpage.evaluate(() => (window).__floatCollapseCalls);
+    ok = Array.isArray(calls) && calls.length > 0;
+    detail = `calls=${JSON.stringify(calls)}`;
+  }
+  check('⑦浮窗桥手势接线：顶条点按 → floatCollapse 必达', ok, detail);
+  await gctx.close().catch(() => {});
 }
 
 // ---------- 清场 ----------
