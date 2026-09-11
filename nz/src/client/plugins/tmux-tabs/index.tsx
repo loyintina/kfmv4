@@ -404,6 +404,9 @@ export function createTmuxTabsPlugin(): UiPlugin {
         };
         const enterSession = (name: string, quiet = false): void => {
           const attach = (): void => {
+            // B1 边界整格重建（2026-09-11）：上一段（旧会话/终端态）的行流
+            // 残余不得带入新会话——先换新网格再敲 attach 命令
+            (window as unknown as Record<string, unknown>).__kfmNzTermReset?.();
             termInject(`tmux new-session -A -s ${name}\r`);
             setAttached(name);
             // quiet=R1 自动重进腿：恢复现场但不抢注意力（标签排保持收起）
@@ -440,10 +443,12 @@ export function createTmuxTabsPlugin(): UiPlugin {
           expandedRef.current = true;
           setExpanded(true);
           refreshRuntime();
-          // detach 后清屏：等 tmux 客户端退出（约 600ms），清当前屏一次
-          // + ^L 重绘 prompt，避免闪两下，同时保留 scrollback 历史。
+          // detach 后整格重建（B1，2026-09-11 修法升级）：0902 只清可视屏
+          // 留 scrollback——但取证证明 scrollback 本身是跨会话混排流（TUI
+          // 重绘漏行/hook 回声/多会话素材同格混排，TASK §0.8 B1 卡），留=
+          // 留垃圾。整格重建后 ^L 重绘 prompt，0902「已彻底回来」暗示不变。
           setTimeout(() => {
-            (window as unknown as Record<string, unknown>).__kfmNzTermClear?.();
+            (window as unknown as Record<string, unknown>).__kfmNzTermReset?.();
             termInject('\u000c');
           }, 600);
         };

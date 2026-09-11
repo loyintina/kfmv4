@@ -718,6 +718,22 @@ export function applyTermBundle(ctx: Context): void {
         bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
       };
       win.__kfmNzTermClear = () => shell.clear();
+      // 整格重建（B1 跨会话行串扰修复，2026-09-11）：核+壳全换新——
+      // 等价 replay 重建路径但不喂 tail。tmux 会话切换边界（tmux-tabs
+      // enterSession/leaveTmux）专用：上一段行流残余（TUI 重绘漏行/
+      // 命令回显/hook 回声）不得带入下一段（TASK §0.8 B1 卡）。
+      win.__kfmNzTermReset = () => {
+        if (!glueCtor) return;
+        const old = card.core;
+        card.core = new glueCtor(card.cols, card.rows, SCROLLBACK_LINES);
+        card.shell.setCore(card.core);
+        old.free();
+        card.atBottom = true;
+        scrollEl.scrollTop = 0;
+        card.shell.renderFrame();
+        card.syncAlt();
+        card.placeKb();
+      };
       win.__kfmNzTermScreen = () => shell.screenText();
       // 画布重画眼（2026-08-28 用户拍板）：后台不产帧时的像素眼，
       // 原理/保真边界见 shell.canvasShot 注释。返 dataURL（空串=失败）。
