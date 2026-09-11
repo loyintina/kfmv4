@@ -267,20 +267,39 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
             }, 400);
             e.preventDefault();
           };
+          let pendDx = 0, pendDy = 0, dragRaf = 0;
+          const flushDrag = (): void => {
+            dragRaf = 0;
+            const dx = pendDx, dy = pendDy;
+            pendDx = 0; pendDy = 0;
+            if (dx !== 0 || dy !== 0) nz.floatDragBy?.(Math.round(dx), Math.round(dy));
+          };
           const onMove = (e: PointerEvent): void => {
             if (!down) return;
             const dx = e.clientX - lastX, dy = e.clientY - lastY;
             trav = Math.max(trav, Math.hypot(e.clientX - downX, e.clientY - downY));
             if (trav > slop && ghostTimer) { clearTimeout(ghostTimer); ghostTimer = 0; }
             lastX = e.clientX; lastY = e.clientY;
-            if (trav > slop) nz.floatDragBy?.(Math.round(dx * dpr), Math.round(dy * dpr));
+            if (trav > slop) {
+              // rAF 批处理（2026-09-12 卡顿案）：一帧最多一发货，增量累计
+              // 零损失，桥压降一个量级
+              pendDx += dx * dpr; pendDy += dy * dpr;
+              if (!dragRaf) dragRaf = requestAnimationFrame(flushDrag);
+            }
           };
           const onUp = (): void => {
             if (!down) return;
             down = false;
             if (ghostTimer) { clearTimeout(ghostTimer); ghostTimer = 0; }
+            if (dragRaf) { cancelAnimationFrame(dragRaf); dragRaf = 0; }
             if (ghosting) { ghosting = false; nz.floatGhost?.(false); }
-            else if (trav < slop) {
+            // 未发的尾货先走，再 (0,0)=壳侧收笔提交（translation 并回布局位）
+            if (pendDx !== 0 || pendDy !== 0) {
+              nz.floatDragBy?.(Math.round(pendDx), Math.round(pendDy));
+              pendDx = 0; pendDy = 0;
+            }
+            if (trav > slop) nz.floatDragBy?.(0, 0);
+            else {
               const c = !collapsedRef.current;
               collapsedRef.current = c;
               nz.floatCollapse?.(c);

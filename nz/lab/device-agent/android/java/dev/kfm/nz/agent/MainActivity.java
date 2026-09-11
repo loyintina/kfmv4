@@ -436,15 +436,11 @@ public class MainActivity extends Activity {
         // ── 浮窗哑原语（2026-09-11 二轮：chrome 手势全在页面 DOM 顶条，
         // 壳只执行——此后浮窗交互迭代走热更，不再打包装机）──
 
-        /** 窗口平移：dx/dy=物理 px 增量（页面侧乘 devicePixelRatio）。
-         *  拖拽每帧一发属高频，不打 mark；钳位由 layoutFloat 统一落 */
+        /** 窗口平移：dx/dy=物理 px 增量（页面侧乘 devicePixelRatio），
+         *  (0,0)=收笔提交。语义见 doFloatDragBy（拖拽热路径） */
         @JavascriptInterface
         public void floatDragBy(final int dx, final int dy) {
-            runOnUiThread(() -> {
-                floatLeft += dx;
-                floatTop += dy;
-                layoutFloat();
-            });
+            runOnUiThread(() -> doFloatDragBy(dx, dy));
         }
 
         /** 折叠/展开：收起=容器压成 24dp 浮标（页面圆角窗随视口压扁自画），
@@ -483,11 +479,7 @@ public class MainActivity extends Activity {
     private class NzFloatBridge {
         @JavascriptInterface
         public void floatDragBy(final int dx, final int dy) {
-            runOnUiThread(() -> {
-                floatLeft += dx;
-                floatTop += dy;
-                layoutFloat();
-            });
+            runOnUiThread(() -> doFloatDragBy(dx, dy));
         }
 
         @JavascriptInterface
@@ -626,7 +618,10 @@ public class MainActivity extends Activity {
 
         floatWeb = new WebView(this);
         configWeb(floatWeb);
-        floatWeb.setBackgroundColor(0x00000000);
+        // 透明檐区（标签朝外的根基）：0x00000000 在部分 WebView 实现里被
+        // 当「未设置」回退默认深底（2026-09-12 用户实拍檐区暗色一体），
+        // 业界偏方=alpha 置 1 的透明（0x01000000），页面侧 html/body 透底
+        floatWeb.setBackgroundColor(0x01000000);
         // 浮窗页也必须有桥：chrome 手势在页面 DOM，靠哑原语三桥驱动壳。
         // 但不给全量 NzNative——float 页的 firstFrame 会把开屏 bye 预测
         // 锚拉歪（浮窗首帧远晚于终端页），tap/ime 对浮窗也无意义，只挂
@@ -702,6 +697,34 @@ public class MainActivity extends Activity {
         if (browserMode) { ob.leftMargin = floatLeft + gutter + floatW / 2 - dpv * 18; ob.topMargin = Math.max(dpv * 8, floatTop - dpv * 44); }
         else { ob.leftMargin = W - dpv * 12 - dpv * 36; ob.topMargin = H / 2 - dpv * 18; }
         orbBtn.setLayoutParams(ob);
+    }
+
+    /** 浮窗拖拽热路径（2026-09-12 卡顿案：用户实拍「移 100px 动 50px +
+     *  疯狂闪烁拖影」——每发 setLayoutParams→requestLayout 全量重排是
+     *  主因）。每发只动 translation（GPU 平移，零重排）；dx/dy=0 即收笔
+     *  提交：translation 并回 floatLeft/Top，layoutFloat 落位+精确钳位 */
+    private void doFloatDragBy(int dx, int dy) {
+        if (floatContainer == null || root == null) return;
+        if (dx == 0 && dy == 0) {
+            floatLeft += Math.round(floatContainer.getTranslationX());
+            floatTop += Math.round(floatContainer.getTranslationY());
+            floatContainer.setTranslationX(0f);
+            floatContainer.setTranslationY(0f);
+            layoutFloat();
+            return;
+        }
+        float tx = floatContainer.getTranslationX() + dx;
+        float ty = floatContainer.getTranslationY() + dy;
+        int W = root.getWidth(), H = root.getHeight();
+        if (W > 0) {
+            int boxW = floatW + 26 * dpv;
+            tx = Math.max(dpv * 2 - floatLeft, Math.min(tx, W - boxW - dpv * 2 - floatLeft));
+        }
+        if (H > 0) {
+            ty = Math.max(dpv * 40 - floatTop, Math.min(ty, H - floatH - dpv * 2 - floatTop));
+        }
+        floatContainer.setTranslationX(tx);
+        floatContainer.setTranslationY(ty);
     }
 
     @Override

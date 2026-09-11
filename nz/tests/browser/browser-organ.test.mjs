@@ -157,8 +157,9 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
   const gctx = await browser.newContext({ viewport: { width: 240, height: 520 } });
   await gctx.addInitScript(() => {
     (window).__floatCollapseCalls = [];
+    (window).__floatDragCalls = [];
     (window).NzNative = {
-      floatDragBy: () => {},
+      floatDragBy: (dx, dy) => { (window).__floatDragCalls.push([dx, dy]); },
       floatGhost: () => {},
       floatCollapse: (c) => { (window).__floatCollapseCalls.push(c); },
       browserState: () => 'mode=off;collapsed=false;ghost=false',
@@ -177,6 +178,23 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
     detail = `calls=${JSON.stringify(calls)}`;
   }
   check('⑦浮窗桥手势接线：顶条点按 → floatCollapse 必达', ok, detail);
+  // ⑦b 拖拽接线（2026-09-12 卡顿案回归钉）：顶条按下+移动+抬手 →
+  // floatDragBy 必达且以 (0,0) 收笔提交（translation 语义合同）
+  let okB = false; let detailB = 'no bar';
+  if (bar) {
+    const box = await bar.boundingBox();
+    await gpage.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await gpage.mouse.down();
+    for (let i = 1; i <= 6; i++) { await gpage.mouse.move(box.x + box.width / 2 + i * 8, box.y + box.height / 2); await sleep(30); }
+    await gpage.mouse.up();
+    await sleep(300);
+    const calls = await gpage.evaluate(() => (window).__floatDragCalls);
+    const hasMove = Array.isArray(calls) && calls.some((c) => c[0] !== 0 || c[1] !== 0);
+    const hasCommit = Array.isArray(calls) && calls.some((c) => c[0] === 0 && c[1] === 0);
+    okB = hasMove && hasCommit;
+    detailB = `calls=${JSON.stringify(calls)}`;
+  }
+  check('⑦b 顶条拖拽接线：floatDragBy 必达+(0,0)收笔提交', okB, detailB);
   await gctx.close().catch(() => {});
 }
 
