@@ -59,6 +59,38 @@ async function shot(path) {
 
 if (mode === 'eval') {
   console.log(JSON.stringify(await evaluate(process.argv[3])));
+} else if (mode === 'evalt' || mode === 'shott') {
+  // evalt/shott <id前缀> <expr|png>：多 WebView 世界（B-线 termWeb/
+  // browserWeb/floatWeb 三 target 并存）按前缀定点操作，防「第一个
+  // attached」误选浮窗页。自带 mini-client（主 send 绑定的是默认目标）
+  const t = list.find(x => x.id.startsWith(process.argv[3]));
+  if (!t) { console.error('no target', process.argv[3]); process.exit(1); }
+  const w = new WebSocket(t.webSocketDebuggerUrl);
+  await new Promise((res, rej) => { w.onopen = res; w.onerror = rej; });
+  let idc2 = 0; const pend2 = new Map();
+  w.onmessage = (ev) => {
+    const m = JSON.parse(ev.data);
+    if (m.id && pend2.has(m.id)) {
+      const { resolve, reject } = pend2.get(m.id); pend2.delete(m.id);
+      m.error ? reject(new Error(m.error.message)) : resolve(m.result);
+    }
+  };
+  const send2 = (method, params = {}) => new Promise((resolve, reject) => {
+    const id = ++idc2; pend2.set(id, { resolve, reject });
+    w.send(JSON.stringify({ id, method, params }));
+  });
+  if (mode === 'evalt') {
+    const r2 = await send2('Runtime.evaluate', { expression: process.argv[4], returnByValue: true });
+    console.log(JSON.stringify(r2.exceptionDetails
+      ? { ex: (r2.exceptionDetails.exception?.description || '?').split('\n')[0] }
+      : r2.result?.value));
+  } else {
+    const r3 = await send2('Page.captureScreenshot', { format: 'png' });
+    const { writeFileSync } = await import('fs');
+    writeFileSync(process.argv[4], Buffer.from(r3.data, 'base64'));
+    console.log('shot ->', process.argv[4]);
+  }
+  w.close();
 } else if (mode === 'shot') {
   await shot(process.argv[3]);
   console.log('shot ->', process.argv[3]);

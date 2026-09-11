@@ -2071,6 +2071,18 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   注入链在实跑中仍偶发字符竞态（'dux'/'dtmux' 撕咬；屏序录像+detachShot
   取证钩已埋在 browser-organ.test.mjs ④，6/7 卡于此钉）。嫌疑=注入与
   tmux client 拆卸的字节竞态，需屏稳定判据调参或改服务端 tmux-cmd 通路。
+- C 档自动段过（2026-09-11 晚，新壳 versionCode=1789127333 装机后）：
+  L0 装机指纹对拍过（base.apk 5a4b0f9a=构建侧）；桥探针三件齐
+  （browserState/enterBrowser/exitBrowser 全 function）；浮窗页活体
+  （float=1 竖排会话标签+真渲染 kfm-na 会话内容）；我方经桥驱动
+  enterBrowser('https://example.com','kfm-na')：mode=on、browserWeb
+  真实外网导航（title=Example Domain）、浮窗几何数值自洽（604x1232
+  物理 px=设计 48%x44%、screenX/Y=右下四分之一+50dp 边距）；exitBrowser
+  复原（mode=off+browserWeb about:blank）。证据：
+  assets/2026-09-11-bline-{cweb-example,floatweb}.png。CDP 眼扩两模式
+  evalt/shott（按 target 前缀定点操作，多 WebView 世界标配）。
+  **待用户手验（原生手势，我方桥不可达）**：orb 右中观感+点击召唤
+  面板、hold 按住透明穿透、浮窗拖拽、返回键退浏览器、真实浏览一次。
 - 浮窗 IME 避让（无 insets 监听，v0 接受 adjustPan）。
 - 壳 APK 装机（新包 versionCode=1789127333 / 70262B /
   md5 5a4b0f9a08ec3b36234c2587fe8a0c57，含 orb 定位修复；装机后先 L0
