@@ -187,3 +187,9 @@ v1.1。该文本对 AI 的语义（读取文件内容作为上下文）属 AI �
 11. **行底纯色修订**（2026-09-11 用户裁决）：§3.1 逐行渐变（顶 0.02+d·0.18
    / 底 0.08+d·0.35）改为**纯色平涂** α=0.05+d·0.26（原顶底均值）——
    逐层加深纵深保留，观感去花。na 照抄纯色公式。
+12. **长按复制路径**（2026-09-11 用户拍板）：行长按 550ms（位移>10px 取消
+   =滚动意图让路）→ 复制该行相对路径。剪贴板三级链：async Clipboard API
+   （安全上下文才存在）→ execCommand 回退（WebView 非 https 可用，须用户
+   手势同步执行）。长按消费该次 click（预览/展开不触发）；toast 回执
+   1.6s+振动 30ms。观测：__kfmNzFsTree().lastCopy={path,ok}。na 对应
+   Android ClipboardManager + 长按监听（OnLongClickListener 等价语义）。

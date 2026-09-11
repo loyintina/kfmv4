@@ -92,6 +92,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 // ---------- 浏览器（fetch 计数先于页面脚本注入=独立观测源） ----------
 const browser = await launchBrowser();
 const context = await browser.newContext({ viewport: { width: 900, height: 620 } });
+await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
 await context.addInitScript(() => {
   window.__fsFetches = [];
   const of = window.fetch;
@@ -292,6 +293,50 @@ await page.keyboard.type('@');
     `open=${opened} close=${closed} poolOpen=${poolOpened} poolClose=${poolClosed} treeFinal=${treeFinal} diag=${JSON.stringify(diag)}`);
 }
 
+// ⑭⑮ 长按复制路径（§七⑫）：全新页面世代（消除前段持久化展开态/滚动位
+// 的重排幽灵）——点击展开 docs → 长按 docs/a.md：剪贴板=相对路径、预览
+// 未弹、toast+记账；再长按 docs 目录：复制但不收起（click 被消费）
+{
+  await page.goto(`${BASE}/?nosplash`, { waitUntil: 'domcontentloaded', timeout: 40000 }).catch(() => {});
+  await page.waitForFunction(() => !!(window).__kfmNzTermScreen && !!(window).__kfmNzFsTree, null, { timeout: 20000, polling: 250 }).catch(() => {});
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('kfm-nz-fstree-open')));
+  await page.waitForFunction(() => (window).__kfmNzFsTree?.().open === true, null, { timeout: 8000, polling: 200 }).catch(() => {});
+  await page.evaluate(() => { const l = document.querySelector('[data-kfm-fstree-list]'); if (l) l.scrollTop = 0; });
+  await sleep(500);
+  await page.click('[data-fstree-row="docs"]');
+  await page.waitForSelector('[data-fstree-row="docs/a.md"]', { timeout: 8000 }).catch(() => {});
+  await sleep(700); // stagger 落定
+  const row = await page.evaluate(() => { const el = document.querySelector('[data-fstree-row="docs/a.md"]'); if (!el) return null; const r = el.getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; });
+  await page.mouse.move(row.x, row.y);
+  await page.mouse.down();
+  await sleep(800); // 越过 550ms 长按阈值
+  await page.mouse.up();
+  const copied = await page.waitForFunction(
+    () => (window).__kfmNzFsTree?.().lastCopy?.path === 'docs/a.md' && (window).__kfmNzFsTree?.().lastCopy?.ok === true,
+    null, { timeout: 8000, polling: 200 },
+  ).then(() => true).catch(() => false);
+  const clip = await page.evaluate(() => navigator.clipboard.readText().catch(() => 'READ-FAIL'));
+  const h = await hookTree();
+  const toast = await page.evaluate(() => document.querySelector('[data-fstree-toast]')?.textContent ?? '');
+  check('⑭file 行长按：剪贴板=相对路径；预览未弹；toast+记账',
+    copied && clip === 'docs/a.md' && h?.selected === null && toast.includes('已复制'),
+    `copied=${copied} clip=${JSON.stringify(clip)} selected=${h?.selected} toast=${JSON.stringify(toast)}`);
+  // dir 行长按（docs 已展开 → 若 click 未被消费会收起）：复制且保持展开
+  const dRow = await page.evaluate(() => { const el = document.querySelector('[data-fstree-row="docs"]'); if (!el) return null; const r = el.getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; });
+  await page.mouse.move(dRow.x, dRow.y);
+  await page.mouse.down();
+  await sleep(800);
+  await page.mouse.up();
+  const copied2 = await page.waitForFunction(
+    () => (window).__kfmNzFsTree?.().lastCopy?.path === 'docs' && (window).__kfmNzFsTree?.().lastCopy?.ok === true,
+    null, { timeout: 8000, polling: 200 },
+  ).then(() => true).catch(() => false);
+  const clip2 = await page.evaluate(() => navigator.clipboard.readText().catch(() => 'READ-FAIL'));
+  const h2 = await hookTree();
+  check('⑮dir 行长按：复制路径且不收起（click 消费）',
+    copied2 && clip2 === 'docs' && h2?.expanded.includes('docs'),
+    `clip=${JSON.stringify(clip2)} expanded=${JSON.stringify(h2?.expanded)}`);
+}
 // ---------- 清场 ----------
 await browser.close().catch(() => {});
 await killServer();

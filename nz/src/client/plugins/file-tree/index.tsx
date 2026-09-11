@@ -20,6 +20,10 @@
  *     全局锁（§3.2：锁只防视觉抖动，DOM+CSS transition 无竞态面）；
  *   · 点文件=预览浮层（/api/fs/read：binary 拒显+截断标注），浮层内
  *     「插入 @引用」→ kfm-nz-aichat-insert 事件（composer 消费）+关树。
+ *   · 长按行（550ms，位移>10px 取消）=复制该行相对路径到剪贴板
+ *     （2026-09-11 用户拍板）：Clipboard API→execCommand 三级链（WebView
+ *     非 https 环境无 async Clipboard，execCommand 走用户手势同步执行），
+ *     toast 回执+振动。长按消费掉该次 click（不触发预览/展开）。
  *
  * 结构纪律：机态全部住 mount 域闭包（config-pool 的 core 同款），组件
  * 函数体内只有 tick+listRef 两个 hooks——hooks 出组件即 Invalid hook
@@ -111,6 +115,34 @@ const readDurNormalMs = (): number => {
   return s ? Number.parseFloat(s[1]) * 1000 : 250;
 };
 
+const LONG_PRESS_MS = 550; // 长按阈值（§七⑫）
+const LONG_PRESS_SLOP = 10; // 位移超过即取消（滚动意图让路）
+
+/** 剪贴板写入三级链（§七⑫ 长按复制）：①async Clipboard API（安全上下文
+ *  才存在）②execCommand 回退——WebView 非 https 也能用，但须用户手势
+ *  同步执行（长按抬指后的激活窗口内）。返回最终成败。 */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch { /* 权限拒/非安全上下文 → 落执行令回退 */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:-999px;left:-999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 export function createFileTreePlugin(ctx: Context): UiPlugin {
   return {
     id: 'file-tree',
@@ -130,6 +162,7 @@ export function createFileTreePlugin(ctx: Context): UiPlugin {
       const rowsFlat: { current: TreeRow[] } = { current: [] };
       const win: { current: { start: number; end: number } } = { current: { start: 0, end: 0 } };
       let listElBridge: () => HTMLDivElement | null = () => null; // TreeApp 渲染时接管
+      const lastCopyBridge: { current: { path: string; ok: boolean } | null } = { current: null };
 
       const ensureDir = async (dir: string): Promise<void> => {
         if (children.has(dir)) return;
@@ -253,8 +286,41 @@ export function createFileTreePlugin(ctx: Context): UiPlugin {
       function TreeApp(): React.ReactElement {
         const [tick, setTick] = useState(0);
         const listRef = useRef<HTMLDivElement | null>(null);
+        // 长按复制（§七⑫）：单活跃按点账 + toast 回执
+        const pressRef = useRef<{ timer: number | null; fired: boolean; x: number; y: number }>({ timer: null, fired: false, x: 0, y: 0 });
+        const [toast, setToast] = useState<string | null>(null);
+        const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
         bump = () => setTick((x) => x + 1);
         listElBridge = () => listRef.current;
+
+        const showToast = (msg: string): void => {
+          setToast(msg);
+          if (toastTimer.current) clearTimeout(toastTimer.current);
+          toastTimer.current = setTimeout(() => setToast(null), 1600);
+        };
+        const copyRow = (row: TreeRow): void => {
+          void copyText(row.path).then((ok) => {
+            lastCopyBridge.current = { path: row.path, ok };
+            showToast(ok ? `已复制 ${row.path}` : '复制失败');
+          });
+          try { (navigator as unknown as { vibrate?: (p: number) => boolean }).vibrate?.(30); } catch { /* 无振动器不挡 */ }
+        };
+        const pressStart = (e: React.PointerEvent, row: TreeRow): void => {
+          const p = pressRef.current;
+          p.fired = false; p.x = e.clientX; p.y = e.clientY;
+          if (p.timer) clearTimeout(p.timer);
+          p.timer = window.setTimeout(() => { p.timer = null; p.fired = true; copyRow(row); }, LONG_PRESS_MS);
+        };
+        const pressMove = (e: React.PointerEvent): void => {
+          const p = pressRef.current;
+          if (p.timer !== null && (Math.abs(e.clientX - p.x) > LONG_PRESS_SLOP || Math.abs(e.clientY - p.y) > LONG_PRESS_SLOP)) {
+            clearTimeout(p.timer); p.timer = null; // 滚动意图让路
+          }
+        };
+        const pressEnd = (): void => {
+          const p = pressRef.current;
+          if (p.timer) { clearTimeout(p.timer); p.timer = null; }
+        };
 
         const rows = useMemo(
           () => flatten(children, expanded),
@@ -328,7 +394,14 @@ export function createFileTreePlugin(ctx: Context): UiPlugin {
             'data-fstree-row': row.path,
             'data-fstree-type': row.type,
             className: delay !== null ? 'kfm-fstree-stagger' : undefined,
-            onClick: () => (row.type === 'dir' ? toggle(row) : openPreview(row.path)),
+            onClick: () => {
+              if (pressRef.current.fired) { pressRef.current.fired = false; return; } // 长按已消费：抑制 click
+              if (row.type === 'dir') toggle(row); else openPreview(row.path);
+            },
+            onPointerDown: (e: React.PointerEvent) => pressStart(e, row),
+            onPointerMove: pressMove,
+            onPointerUp: pressEnd,
+            onPointerCancel: pressEnd,
             style: {
               position: 'relative', height: `${ROW_H}px`, display: 'flex', alignItems: 'center', gap: '5px',
               paddingLeft: `${6 + indentPx(row.depth)}px`, paddingRight: '8px',
@@ -499,6 +572,19 @@ export function createFileTreePlugin(ctx: Context): UiPlugin {
             ),
             )
           : null,
+        // 复制回执 toast（§七⑫）：置底居中，1.6s 自灭
+        toast
+          ? createElement('div', {
+              'data-fstree-toast': '1',
+              style: {
+                position: 'absolute', left: '50%', bottom: '18px', transform: 'translateX(-50%)',
+                maxWidth: '86%', background: 'var(--kfm-surface)', border: '1px solid var(--kfm-line)',
+                borderRadius: '999px', padding: '6px 14px', fontSize: '11.5px', color: 'var(--kfm-ink)',
+                boxShadow: 'var(--kfm-shadow-raised)', zIndex: 6,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              },
+            }, toast)
+          : null,
         );
       }
 
@@ -512,6 +598,7 @@ export function createFileTreePlugin(ctx: Context): UiPlugin {
         total: rowsFlat.current.length,
         virtual: { ...win.current },
         selected: S.preview?.path ?? null,
+        lastCopy: lastCopyBridge.current,
         fetches: fetchLog.length,
         fetchLog: [...fetchLog],
         lastError,
