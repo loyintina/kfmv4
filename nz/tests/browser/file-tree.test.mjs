@@ -25,7 +25,7 @@
  * 跑法：先 npm run build（public/bundle.js 须含新代码），再
  *   node tests/browser/file-tree.test.mjs
  */
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -68,8 +68,15 @@ const srv = spawn(join(process.cwd(), 'node_modules', '.bin', 'tsx'), ['src/serv
 srv.stderr.on('data', (d) => console.log('[srv!]', String(d).slice(0, 160)));
 const killServer = async () => {
   try { process.kill(-srv.pid, 'SIGKILL'); } catch { /* 已死即达意 */ }
-  for (let t = 0; t < 10000; t += 200) {
-    try { await fetch(`http://127.0.0.1:${PORT}/healthz`, { cache: 'no-store' }); } catch { return; }
+  // 组杀对 tsx loader 不达（loader 独立进程组，2026-09-11 僵尸泄漏案：4 实例
+  // 存活致端口爬升 8141→8144）——按端口补刀直至 healthz 断气
+  for (let t = 0; t < 50; t++) {
+    let alive = false;
+    try { await fetch(`http://127.0.0.1:${PORT}/healthz`, { cache: 'no-store' }); alive = true; } catch { return; }
+    try {
+      const out = execSync(`ss -ltnp 2>/dev/null | grep ':${PORT} '`).toString();
+      for (const m of out.matchAll(/pid=(\d+)/g)) { try { process.kill(Number(m[1]), 'SIGKILL'); } catch { /* 竞态已死 */ } }
+    } catch { /* ss 无命中=监听已空，等下一轮 healthz 确认 */ }
     await sleep(200);
   }
 };
