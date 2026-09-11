@@ -2127,6 +2127,25 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   附带红利：DOM 手势 CDP Input 可自驱，折叠/拖移/隐身不再依赖用户手验。
 - 二打编译红（ghostDown 残留引用）被新鲜闸当场拦下（RC=1→deploy 拒续）
   ——闸门工作正常实录，非演习。新包 1789131794/md5 2ee8934a。
+- 三轮补案两起+手势全链闭环（2026-09-12 凌晨）：
+  ①**缓存键吃 query 案**（bf9c27f1）：bundle.js?v=hash 破缓存在本机
+  WebView 失效——缓存键吞 query，`?v=0d222d75`（全新 URL）命中上一轮
+  4250b7a1 旧字节真机实锤，immutable 一年=新包永远进不来、SPA 热更整条
+  腿堵死（此前热更全靠运气）。修= bundle/tokens 入 NO_CACHE_BASE 协商
+  304（8023 重启生效，通知钩子 204 复活，字体 immutable 保留冷启动账）。
+  钉=tests/static-cache.test.ts 3 钉（变异演习过：删名单钉①精确红）。
+  ②**浮窗手势失灵案**（同修于 bf9c27f1）：NzNative 桥只挂 termWeb，
+  float 页 window.NzNative=undefined，手势 effect 首行判空 return=监听
+  器没装且零报错——NzFloatBridge 子集桥（三原语+观测钩同形；刻意无
+  firstFrame/tap，防 float 页首帧拉歪开屏 bye 预测锚）。钉=browser-organ
+  ⑦（假桥 addInitScript+顶条点按→floatCollapse 必达）。
+  ③**CDP 合成触摸全链自测过**（scripts/float-chrome-gesture.mjs）：点按
+  折叠/展开三连（72px 浮标↔952 全窗）/顶条拖拽（左钳位 24dp+回位自由落
+  位 554,1280）/长按隐身（按住 ghost=true、松手 false，隐身中可拖）。
+  手势验证从此 CDP 自驱，不依赖用户手验。存证 docs/active/nine-zero/
+  assets/2026-09-12-float-gest-{expanded,collapsed}.png。
+  观察项：折叠后即刻再点曾有一次未吃到（合成触摸时序，三连复测全过），
+  留观察不立卡。npm test 233 全绿、B 卷 7/8（④挂账）。
 - 浮窗 IME 避让（无 insets 监听，v0 接受 adjustPan）。
 - 壳 APK 装机（新包 versionCode=1789127333 / 70262B /
   md5 5a4b0f9a08ec3b36234c2587fe8a0c57，含 orb 定位修复；装机后先 L0
