@@ -129,15 +129,10 @@ public class MainActivity extends Activity {
     private WebView browserWeb;
     private WebView floatWeb;
     private FrameLayout floatContainer;
-    private View dragBar;
-    private View pillBar;
     private View orbBtn;
     private boolean browserMode = false;
     private boolean floatCollapsed = false;
-    private boolean ghostDown = false;   // 顶条按下中（长按判定窗）
     private boolean ghostOn = false;     // 隐身态（透明让位看浏览器，松手恢复）
-    private float ghostTrav = 0;         // 本次按下的累计位移（防拖拽误触发隐身）
-    private int slopPx = 8;              // 触摸 slop（onCreate 取真值）
     private int floatLeft = 0, floatTop = 0;   // 浮窗位置（px，可拖拽）
     private int floatW = 0, floatH = 0;
     private int imeBottom = 0;                 // IME insets（浮窗避键盘钳位）
@@ -438,6 +433,41 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> doExitBrowser());
         }
 
+        // ── 浮窗哑原语（2026-09-11 二轮：chrome 手势全在页面 DOM 顶条，
+        // 壳只执行——此后浮窗交互迭代走热更，不再打包装机）──
+
+        /** 窗口平移：dx/dy=物理 px 增量（页面侧乘 devicePixelRatio）。
+         *  拖拽每帧一发属高频，不打 mark；钳位由 layoutFloat 统一落 */
+        @JavascriptInterface
+        public void floatDragBy(final int dx, final int dy) {
+            runOnUiThread(() -> {
+                floatLeft += dx;
+                floatTop += dy;
+                layoutFloat();
+            });
+        }
+
+        /** 折叠/展开：收起=容器压成 24dp 浮标（页面圆角窗随视口压扁自画），
+         *  WebView 保活不摘显 */
+        @JavascriptInterface
+        public void floatCollapse(final boolean c) {
+            runOnUiThread(() -> {
+                floatCollapsed = c;
+                layoutFloat();
+                mark("float-collapse-" + c);
+            });
+        }
+
+        /** 临时隐身让位看浏览器：alpha 0.12 保触摸（INVISIBLE 连触摸一起
+         *  关，隐身中还要能拖），false 恢复 */
+        @JavascriptInterface
+        public void floatGhost(final boolean on) {
+            runOnUiThread(() -> {
+                ghostOn = on;
+                floatContainer.setAlpha(on ? 0.12f : 1f);
+            });
+        }
+
         /** 观测钩（C 档/守视直读） */
         @JavascriptInterface
         public String browserState() {
@@ -516,7 +546,6 @@ public class MainActivity extends Activity {
             try { fs = java.net.URLEncoder.encode(session == null || session.length() == 0 ? "dsh" : session, "UTF-8"); } catch (Exception e) { /* 编码失败回落 dsh */ }
             floatWeb.loadUrl(TERM_URL + "?nosplash&float=1&fs=" + fs);
             floatContainer.setVisibility(View.VISIBLE);
-            floatWeb.setVisibility(View.VISIBLE); // 上次折叠态可能摘显，进场恒展开
             layoutFloat();
             android.view.inputmethod.InputMethodManager imm =
                     (android.view.inputmethod.InputMethodManager)
@@ -530,7 +559,6 @@ public class MainActivity extends Activity {
         runOnUiThread(() -> {
             browserMode = false;
             ghostOn = false;
-            ghostDown = false;
             floatContainer.setAlpha(1f);
             browserWeb.setVisibility(View.GONE);
             browserWeb.loadUrl("about:blank");
@@ -564,20 +592,9 @@ public class MainActivity extends Activity {
         floatContainer.addView(floatWeb, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        dragBar = new View(this);
-        dragBar.setBackground(new android.graphics.drawable.ColorDrawable(0x00000000));
-        floatContainer.addView(dragBar, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 24 * dpv, Gravity.TOP));
-        pillBar = new View(this);
-        android.graphics.drawable.GradientDrawable grab = new android.graphics.drawable.GradientDrawable();
-        grab.setColor(0xFF3A3B3F); grab.setCornerRadius(2 * dpv);
-        pillBar.setBackground(grab);
-        FrameLayout.LayoutParams pillLp = new FrameLayout.LayoutParams(36 * dpv, 4 * dpv, Gravity.TOP);
-        pillLp.topMargin = 6 * dpv;
-        floatContainer.addView(pillBar, pillLp);
-        // 顶条三合一（用户拍板「端钮功能并进浮窗顶」）：拖拽=移动；点按=
-        // 折叠/展开；长按=临时隐身让位（隐身中可继续拖动，松手恢复）
-        dragBar.setOnTouchListener(barTouch);
+        // 顶条/把手/顶条手势全部在页面 DOM（float 插件顶条），壳只留哑原语
+        // 桥 floatDragBy/floatCollapse/floatGhost——chrome 迭代走热更不装机
+        // （2026-09-11 二轮拍板）。此处不再建任何触摸目标。
 
         // 线框地球图标（用户拍板「不要加字，至少画个 svg」：原生侧 Path
         // 手绘——外圆+赤道线+中央经线椭圆，无字）
@@ -600,7 +617,6 @@ public class MainActivity extends Activity {
         obg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
         obg.setColor(0xE8232427); obg.setStroke(Math.max(1, dpv), 0xFF3A3B3F);
         orbBtn.setBackground(obg);
-        slopPx = android.view.ViewConfiguration.get(this).getScaledTouchSlop();
         orbBtn.setOnClickListener(v -> {
             if (browserMode) { doExitBrowser(); return; }
             if (termWeb != null) termWeb.evaluateJavascript(
@@ -638,65 +654,10 @@ public class MainActivity extends Activity {
         lp.leftMargin = floatLeft; lp.topMargin = floatTop;
         lp.width = boxW; lp.height = floatCollapsed ? 24 * dpv : floatH;
         floatContainer.setLayoutParams(lp);
-        // 把手居窗体中缝（左檐不是窗，不参与居中）
-        if (pillBar != null) {
-            FrameLayout.LayoutParams pl = (FrameLayout.LayoutParams) pillBar.getLayoutParams();
-            pl.leftMargin = gutter + (floatW - 36 * dpv) / 2;
-            pillBar.setLayoutParams(pl);
-        }
         FrameLayout.LayoutParams ob = (FrameLayout.LayoutParams) orbBtn.getLayoutParams();
         if (browserMode) { ob.leftMargin = floatLeft + gutter + floatW / 2 - dpv * 18; ob.topMargin = Math.max(dpv * 8, floatTop - dpv * 44); }
         else { ob.leftMargin = W - dpv * 12 - dpv * 36; ob.topMargin = H / 2 - dpv * 18; }
         orbBtn.setLayoutParams(ob);
-    }
-
-    // 顶条三合一（2026-09-11 用户拍板，holdBtn 退役）：拖拽=移动；点按=
-    // 折叠/展开；长按(400ms 且位移<slop)=临时隐身让位看浏览器。隐身用
-    // alpha 0.12 而非 INVISIBLE——INVISIBLE 连触摸一起关，隐身期间还要能拖
-    private final View.OnTouchListener barTouch = new View.OnTouchListener() {
-        private float downRawX, downRawY; private int baseLeft, baseTop;
-        @Override public boolean onTouch(View v, MotionEvent e) {
-            switch (e.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                    downRawX = e.getRawX(); downRawY = e.getRawY();
-                    baseLeft = floatLeft; baseTop = floatTop;
-                    ghostTrav = 0; ghostDown = true;
-                    v.postDelayed(() -> {
-                        if (ghostDown && ghostTrav < slopPx) {
-                            ghostOn = true;
-                            floatContainer.setAlpha(0.12f);
-                        }
-                    }, 400);
-                    return true;
-                case MotionEvent.ACTION_MOVE: {
-                    float dx = e.getRawX() - downRawX, dy = e.getRawY() - downRawY;
-                    ghostTrav = Math.max(ghostTrav, (float) Math.hypot(dx, dy));
-                    floatLeft = baseLeft + (int) dx;
-                    floatTop = baseTop + (int) dy;
-                    layoutFloat(); return true;
-                }
-                case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_CANCEL: {
-                    boolean wasGhost = ghostOn;
-                    boolean isUp = e.getActionMasked() == MotionEvent.ACTION_UP;
-                    ghostDown = false;
-                    if (wasGhost) { ghostOn = false; floatContainer.setAlpha(1f); }
-                    else if (isUp) toggleCollapse();
-                    return true;
-                }
-            }
-            return false;
-        }
-    };
-
-    /** 折叠/展开：收起=压成窗体顶条（24dp 视口把页面圆角窗压扁成浮标，
-     *  原生 pill 把手在上看护），终端 WebView 摘显示保活；展开复原。
-     *  高度统一由 layoutFloat 落。 */
-    private void toggleCollapse() {
-        floatCollapsed = !floatCollapsed;
-        floatWeb.setVisibility(floatCollapsed ? View.GONE : View.VISIBLE);
-        layoutFloat();
-        mark("float-collapse-" + floatCollapsed);
     }
 
     @Override

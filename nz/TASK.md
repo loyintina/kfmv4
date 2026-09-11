@@ -2116,6 +2116,17 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   deploy 新鲜闸（version-code≠packaged-code=拒送装）；③假故障演习过
   （坏 java→package RC=1 拦下；deploy 拒陈旧品实录）。垃圾包
   nz-agent-1789131070.apk 留在 Download 是死品勿装。
+- 浮窗三轮·chrome 热更化改造（2026-09-11 晚，用户质询「不能热更吗」）：
+  病根=浮窗 chrome（顶条手势/把手）长在壳里，页面热更永远够不到字节码。
+  二轮的原生 barTouch/把手推倒重来：**手势回页面 DOM，壳只留哑原语三桥**
+  ——floatDragBy(物理px增量，高频不打 mark)/floatCollapse(折叠=容器压
+  24dp 浮标，WebView 保活不摘显)/floatGhost(alpha 0.12 保触摸)。此后浮窗
+  交互迭代全走热更，只有原语变化才装机。配套两件：①term RO 折叠冻结
+  （isFloat 且 clientHeight<100 跳 resize——不冻会把附着会话格网拽成
+  20x5 压扁对面 TUI）②collapsed 态随 3s 轮询 browserState 对账防漂移。
+  附带红利：DOM 手势 CDP Input 可自驱，折叠/拖移/隐身不再依赖用户手验。
+- 二打编译红（ghostDown 残留引用）被新鲜闸当场拦下（RC=1→deploy 拒续）
+  ——闸门工作正常实录，非演习。新包 1789131794/md5 2ee8934a。
 - 浮窗 IME 避让（无 insets 监听，v0 接受 adjustPan）。
 - 壳 APK 装机（新包 versionCode=1789127333 / 70262B /
   md5 5a4b0f9a08ec3b36234c2587fe8a0c57，含 orb 定位修复；装机后先 L0

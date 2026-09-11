@@ -17,7 +17,7 @@
  *
  * 观测钩：__kfmBrowser() 报 {panel, native, url, session}。
  */
-import { createElement, useEffect, useRef, useState } from 'react';
+import { Fragment, createElement, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { UiPlugin, UiPluginHandle } from '../../kernel/ui-kernel.js';
 
@@ -30,6 +30,10 @@ interface NzNativeLike {
   enterBrowser?: (url: string, session: string) => void;
   exitBrowser?: () => void;
   browserState?: () => string;
+  /** 浮窗哑原语（2026-09-11 二轮：chrome 手势在页面，壳只执行） */
+  floatDragBy?: (dxPx: number, dyPx: number) => void;
+  floatCollapse?: (collapsed: boolean) => void;
+  floatGhost?: (on: boolean) => void;
 }
 
 /** 默认直达页（2026-09-11 用户拍板：limestart；点 orb 直进不落中间页） */
@@ -224,6 +228,12 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
                 }
               }
             } catch { /* 服务器不在=保持现值 */ }
+            try {
+              // 折叠态对账（原生侧为准，本地乐观值防漂移）
+              const st = native()?.browserState?.();
+              const m = st && /collapsed=(true|false)/.exec(st);
+              if (m) collapsedRef.current = m[1] === 'true';
+            } catch { /* 无桥不挡 */ }
           };
           void pull();
           const t = setInterval(pull, 3000);
@@ -235,6 +245,59 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
         // 完成；切换时才需要 C-b d 脱离舞步（已附着前提下）
         const attachedRef = useRef(session);
         const readyRef = useRef(false); // 首挂注入完成=门闩开
+
+        // 顶条三合一·DOM 手势版（2026-09-11 二轮，壳只留哑原语桥）：拖拽=
+        // floatDragBy；点按=floatCollapse 翻转；长按 400ms 且位移<slop=
+        // floatGhost 临时隐身（隐身中继续拖，松手恢复）。判据同原生版
+        const barRef = useRef<HTMLDivElement | null>(null);
+        const collapsedRef = useRef(false);
+        useEffect(() => {
+          const bar = barRef.current;
+          const nz = native();
+          if (!bar || !nz?.floatDragBy) return; // 无桥=无浮窗可操作
+          let downX = 0, downY = 0, lastX = 0, lastY = 0, trav = 0;
+          let ghostTimer = 0, ghosting = false, down = false;
+          const slop = 8;
+          const dpr = window.devicePixelRatio || 1;
+          const onDown = (e: PointerEvent): void => {
+            down = true; trav = 0; ghosting = false;
+            downX = lastX = e.clientX; downY = lastY = e.clientY;
+            ghostTimer = window.setTimeout(() => {
+              if (down && trav < slop) { ghosting = true; nz.floatGhost?.(true); }
+            }, 400);
+            e.preventDefault();
+          };
+          const onMove = (e: PointerEvent): void => {
+            if (!down) return;
+            const dx = e.clientX - lastX, dy = e.clientY - lastY;
+            trav = Math.max(trav, Math.hypot(e.clientX - downX, e.clientY - downY));
+            if (trav > slop && ghostTimer) { clearTimeout(ghostTimer); ghostTimer = 0; }
+            lastX = e.clientX; lastY = e.clientY;
+            if (trav > slop) nz.floatDragBy?.(Math.round(dx * dpr), Math.round(dy * dpr));
+          };
+          const onUp = (): void => {
+            if (!down) return;
+            down = false;
+            if (ghostTimer) { clearTimeout(ghostTimer); ghostTimer = 0; }
+            if (ghosting) { ghosting = false; nz.floatGhost?.(false); }
+            else if (trav < slop) {
+              const c = !collapsedRef.current;
+              collapsedRef.current = c;
+              nz.floatCollapse?.(c);
+            }
+          };
+          bar.addEventListener('pointerdown', onDown);
+          window.addEventListener('pointermove', onMove);
+          window.addEventListener('pointerup', onUp);
+          window.addEventListener('pointercancel', onUp);
+          return () => {
+            bar.removeEventListener('pointerdown', onDown);
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('pointercancel', onUp);
+          };
+        }, []);
+
         useEffect(() => {
           // 首挂就绪轮询：终端钩在场且屏非空（shell prompt 已画）才注入
           const t = setInterval(() => {
@@ -287,7 +350,24 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           }
         };
 
-        return createElement('div', {
+        const barEl = createElement('div', {
+          'data-browser-float-bar': '1',
+          ref: barRef,
+          key: 'bar',
+          style: {
+            position: 'fixed', top: 0, left: '26px', right: 0, height: '24px',
+            zIndex: 400, pointerEvents: 'auto', touchAction: 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          },
+        },
+        createElement('div', {
+          style: {
+            width: '36px', height: '4px', borderRadius: '2px',
+            background: '#3A3B3F',
+          },
+        }),
+        );
+        const railEl = createElement('div', {
           'data-browser-float-tabs': '1',
           style: {
             position: 'fixed', left: 0, top: 0, bottom: 0, width: '26px',
@@ -311,6 +391,7 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           },
         }, name)),
         );
+        return createElement(Fragment, null, barEl, railEl);
       }
 
       root.render(createElement(FloatTabs));

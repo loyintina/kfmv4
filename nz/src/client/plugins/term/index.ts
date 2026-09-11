@@ -988,7 +988,12 @@ export function applyTermBundle(ctx: Context): void {
       // rows 卡在旧值的真机实锤。ResizeObserver 直接盯 scrollEl 几何，
       // 布局落定后必触发，事件送不达也不卡 rows；与 vv/ALT/字体三路同走
       // scheduleResize 防抖块（重复触发幂等：行列没变就是 no-op）。
-      const scrollRO = new ResizeObserver(() => scheduleResize('ro'));
+      // 浮窗折叠态（视口压成 24dp 浮标）必须冻结格网：跟手重排会把附着
+      // 会话的 tmux 格网拽成 20x5，压扁对面 TUI（2026-09-11 二轮）
+      const scrollRO = new ResizeObserver(() => {
+        if (isFloat && scrollEl.clientHeight < 100) return;
+        scheduleResize('ro');
+      });
       scrollRO.observe(scrollEl);
       // 帧级漂移自检（同上 ranger 瞬态错量修复的最后防线）：每次输出帧
       // 校验 rows/cols 与当前几何一致——瞬态尖峰错量若逃过所有事件路径
