@@ -62,7 +62,7 @@ console.log(`[exam] 隔离实例：port=${PORT} fixture=${FIX}`);
 
 const srv = spawn(join(process.cwd(), 'node_modules', '.bin', 'tsx'), ['src/server/index.ts'], {
   cwd: process.cwd(), detached: true,
-  env: { ...process.env, NZ_PORT: String(PORT), NZ_FS_ROOTS: FIX, NZ_AI_CONFIG_DIR: join(FIX, '.ai'), NZ_GATE_DIR: join(FIX, '.gate') },
+  env: { ...process.env, NZ_PORT: String(PORT), NZ_NO_BELL_HOOK: '1', NZ_FS_ROOTS: FIX, NZ_AI_CONFIG_DIR: join(FIX, '.ai'), NZ_GATE_DIR: join(FIX, '.gate') },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 srv.stderr.on('data', (d) => console.log('[srv!]', String(d).slice(0, 160)));

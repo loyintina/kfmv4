@@ -57,8 +57,13 @@ export function alertBellHookCmd(port: number): string {
 }
 
 /** 注册 tmux alert-bell hook（幂等 set -g；失败静默=只少一条事件源，
- *  直 POST 通道不受影响）。server listen 拿到真实端口后调。 */
+ *  直 POST 通道不受影响）。server listen 拿到真实端口后调。
+ *  NZ_NO_BELL_HOOK=1 跳过：考卷/隔离实例专用——钩子是 tmux 全局的，
+ *  「后启动者赢」，临时实例会把正式钩子抢成自己的端口（2026-09-11
+ *  814x 悬空钩子案：考卷死后钩子残留，铃全发向死端口=通知管线静默
+ *  断线，还把命令文本漏进了用户窗格渲染）。 */
 export function registerBellHook(port: number, tmuxBin = 'tmux'): void {
+  if (process.env.NZ_NO_BELL_HOOK === '1') return;
   execFile(tmuxBin, ['set', '-g', 'alert-bell', alertBellHookCmd(port)], { timeout: 4000 }, () => {
     /* 失败静默，见上 */
   });

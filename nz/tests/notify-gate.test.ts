@@ -73,3 +73,30 @@ test('④端点集成：真 POST → onNotify 事件 + 节流（变异靶①）'
   off();
   await new Promise<void>((r) => server.close(() => r()));
 });
+
+test('⑤NZ_NO_BELL_HOOK=1 → registerBellHook 禁写 tmux（2026-09-11 814x 悬空钩子案回归钉）', async () => {
+  const { writeFileSync, existsSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const path = await import('node:path');
+  const marker = path.join(tmpdir(), `nz-hook-marker-${Date.now()}.flag`);
+  const fakeTmux = path.join(tmpdir(), `nz-fake-tmux-${Date.now()}.sh`);
+  writeFileSync(fakeTmux, `#!/bin/sh\ntouch "${marker}"\n`);
+  await (async () => { const { chmodSync } = await import('node:fs'); chmodSync(fakeTmux, 0o755); })();
+  const saved = process.env.NZ_NO_BELL_HOOK;
+  try {
+    process.env.NZ_NO_BELL_HOOK = '1';
+    const { registerBellHook } = await import('../src/server/notify.ts');
+    registerBellHook(8141, fakeTmux);
+    await new Promise((r) => setTimeout(r, 300));
+    assert(!existsSync(marker), '闸开时不得触碰 tmux（marker 未被 touch）');
+    process.env.NZ_NO_BELL_HOOK = '0';
+    registerBellHook(8141, fakeTmux);
+    await new Promise((r) => setTimeout(r, 300));
+    assert(existsSync(marker), '闸关时照常注册（marker 被 touch）');
+  } finally {
+    if (saved === undefined) delete process.env.NZ_NO_BELL_HOOK;
+    else process.env.NZ_NO_BELL_HOOK = saved;
+    if (existsSync(marker)) rmSync(marker);
+    if (existsSync(fakeTmux)) rmSync(fakeTmux);
+  }
+});

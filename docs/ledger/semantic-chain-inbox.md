@@ -104,3 +104,5 @@
 - 2026-09-08 ✅ 入口文档体检通过（3 臂：实错 0.33/臂 LCA 0/3 硬破界 0/3 质疑 1/3）
 - 2026-09-10 04:17 ⚠️ 7 条待裁决（SEM001×6 SEM002×1；本轮新增 0，跑 0 跳 30，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
 - 2026-09-09 ✅ 入口文档体检通过（3 臂：实错 0.00/臂 LCA 0/3 硬破界 0/3 质疑 1/3）
+- 2026-09-11 04:17 ⚠️ 7 条待裁决（SEM001×6 SEM002×1；本轮新增 0，跑 0 跳 30，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
+- 2026-09-10 ✅ 入口文档体检通过（3 臂：实错 0.00/臂 LCA 0/3 硬破界 0/3 质疑 1/3）
