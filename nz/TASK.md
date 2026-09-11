@@ -2146,6 +2146,23 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   assets/2026-09-12-float-gest-{expanded,collapsed}.png。
   观察项：折叠后即刻再点曾有一次未吃到（合成触摸时序，三连复测全过），
   留观察不立卡。npm test 233 全绿、B 卷 7/8（④挂账）。
+- 合成眼落地+「向内」终案（2026-09-12 凌晨）：
+  ①**PixelCopy 合成眼**：NzNative/NzFloatBridge 加 fullShot()——整窗
+  合成帧（硬件加速 WebView+原生层全入镜）base64 回传，「用户所见=
+  agent 所见」从此成立，浮窗类验收不再依赖用户口述。②**「向内」终案**
+  ：合成眼首拍定罪——檐区透明**早已生效**（alpha-1 修复是对的，静态
+  就能透出 limestart），「向内」真身=标签芯片 28px（content-box 膨胀
+  ：width20+竖排 padding6+border2）右缘怼死窗框线、深芯片贴深窗=融体
+  读作「被变宽终端盖住」。修=boxSizing border-box 20px+靠左+右缘 5px
+  透明缝+四边圆角投影=独立悬浮芯片（纯热更，bundle v=abffc0ff），
+  合成眼复核通过（composite-3.png：雾林透上来、芯片悬空、窗框分明）。
+  ③拖影终案：双端监控（原生几何恒定+页面采样器零振荡+无 reload）定性
+  「扩盖 tmux 栏→恢复」=WebView 表面重绘滞后的渲染伪影，非布局扩缩；
+  终案=幻影框拖拽（拖拽期真窗纹丝不动、轻描边框 1:1 跟手、收笔 (0,0)
+  落位+钳位；页面协议零改动）。脚本 drag-observe/fullshot 收编
+  lab/device-agent/build/。npm test 233 绿、B 卷 8/9（④挂账）。
+  包序列：1789144561（透明偏方+translation 拖）→1789146221（幻影拖拽）
+  →1789146995（合成眼）→1789152041（芯片 border-box，热更免装）。
 - 浮窗 IME 避让（无 insets 监听，v0 接受 adjustPan）。
 - 壳 APK 装机（新包 versionCode=1789127333 / 70262B /
   md5 5a4b0f9a08ec3b36234c2587fe8a0c57，含 orb 定位修复；装机后先 L0

@@ -401,12 +401,18 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           onClick: () => switchTo(name),
           style: {
             writingMode: 'vertical-rl', fontSize: '10px', letterSpacing: '1px',
-            padding: '8px 3px', borderRadius: '0 6px 6px 0', cursor: 'pointer',
+            padding: '8px 3px', borderRadius: '6px', cursor: 'pointer',
             background: name === active ? 'rgba(10,132,255,0.28)' : 'rgba(35,36,39,0.85)',
             opacity: 1, // 就绪态；未就绪由 switchTo 门闩兜底
             color: name === active ? '#E0E0E0' : '#A5A8AD',
-            border: '1px solid #3A3B3F', borderLeft: 'none',
-            maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis',
+            border: '1px solid #3A3B3F',
+            // 外挂可读性的关键（2026-09-12 合成眼定罪：28px 芯片居中怼在
+            // 窗框线上=与窗融体读作「向内」）：芯片 20px 靠左，右缘留 5px
+            // 透明缝与窗体分隔，四边圆角+投影=独立悬浮芯片
+            width: '20px', marginLeft: '1px', flexShrink: 0,
+            boxSizing: 'border-box', // 20 含边框内距（content-box 会膨胀回 28 怼上窗线，合成眼实测量刑）
+            boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
+            maxHeight: '160px', overflow: 'hidden', textOverflow: 'ellipsis',
           },
         }, name)),
         );
