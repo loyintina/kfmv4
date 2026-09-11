@@ -148,12 +148,30 @@ await sleep(300);
 const e1 = await screenText();
 check('⑥Reset 直考：整格重建后屏无残留', !e1.includes('RESIDUE-3341'), `screenHas=${e1.includes('RESIDUE-3341')}`);
 
+// ⑥b Nudge 钩（SIGWINCH 舞步）：钩在场 + 进入「尺寸异于页面格网」的新
+// 会话后，attach 落定屏必非空（nudge 保应用重画进新网格的合同——同尺寸
+// resize 被 tmux 忽略=零事件，无 nudge 时应用久未重绘的会话 attach 空屏）
+{
+  const hasNudge = await page.evaluate(() => typeof (window).__kfmNzTermNudge);
+  tmux('new-session -d -s ftC -x 66 -y 20'); // 尺寸异于页面格网
+  tmux(`send-keys -t ftC 'echo C-MARK-1101' Enter`);
+  await sleep(500);
+  await clickTab('ftC');
+  const atC = await waitAttached('ftC');
+  const cMark = atC && await waitScreenHas('C-MARK-1101');
+  const nonEmpty = ((await screenText()).trim().length) > 0;
+  check('⑥b Nudge：钩在场；异尺寸新会话 attach 落定屏必非空',
+    hasNudge === 'function' && atC && cMark && nonEmpty,
+    `nudge=${hasNudge} atC=${atC} cMark=${cMark} nonEmpty=${nonEmpty}`);
+  tmux('kill-session -t ftC');
+}
+
 // ---------- 清场 ----------
 await browser.close().catch(() => {});
 await killServer();
 tmux('kill-session -t ftA'); tmux('kill-session -t ftB');
 {
-  const left = execSync('tmux ls 2>/dev/null | grep -c "ftA\\|ftB" || true').toString().trim();
+  const left = execSync('tmux ls 2>/dev/null | grep -c "ftA\\|ftB\\|ftC" || true').toString().trim();
   check('⑦清场：夹具会话/实例端口清零', left === '0', `leftover sessions=${left}`);
 }
 

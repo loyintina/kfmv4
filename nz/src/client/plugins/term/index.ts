@@ -735,6 +735,15 @@ export function applyTermBundle(ctx: Context): void {
         card.placeKb();
       };
       win.__kfmNzTermScreen = () => shell.screenText();
+      // SIGWINCH 舞步（B1 配套，2026-09-11）：tmux 同尺寸 resize 被忽略=
+      // 零事件——attach 到「应用久未重绘/尺寸与上一客户端不同」的会话时，
+      // 新客户端拿到的画面可能是空的（amp 空屏案实证：强制 ±1 列后 kimi
+      // 立刻吐 316KB 重绘流）。±1 列再回来，两记 SIGWINCH 保应用重画。
+      win.__kfmNzTermNudge = () => {
+        if (!card.sessionId) return;
+        bridge.resize(card.sessionId, card.cols + 1, card.rows);
+        setTimeout(() => { if (card.sessionId) bridge.resize(card.sessionId, card.cols, card.rows); }, 120);
+      };
       // 画布重画眼（2026-08-28 用户拍板）：后台不产帧时的像素眼，
       // 原理/保真边界见 shell.canvasShot 注释。返 dataURL（空串=失败）。
       win.__kfmNzCanvasShot = (scale?: number) => shell.canvasShot(scrollEl, scale);

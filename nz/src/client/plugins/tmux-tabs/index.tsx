@@ -408,6 +408,9 @@ export function createTmuxTabsPlugin(): UiPlugin {
             // 残余不得带入新会话——先换新网格再敲 attach 命令
             (window as unknown as Record<string, unknown>).__kfmNzTermReset?.();
             termInject(`tmux new-session -A -s ${name}\r`);
+            // attach 落定后 SIGWINCH 舞步：逼应用重绘进新网格（B1 配套，
+            // 否则「应用久未重绘」的会话 attach 后空屏，amp 空屏案实证）
+            setTimeout(() => (window as unknown as Record<string, unknown>).__kfmNzTermNudge?.(), 600);
             setAttached(name);
             // quiet=R1 自动重进腿：恢复现场但不抢注意力（标签排保持收起）
             expandedRef.current = !quiet;
