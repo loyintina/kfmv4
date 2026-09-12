@@ -739,6 +739,21 @@ export function applyTermBundle(ctx: Context): void {
         card.inputToBottom(); // 注入=落字：回底纪律同 kb/IME
         bridge.input(card.sessionId, text.replace(/\n/g, '\r'));
       };
+      // 常驻管道池钩子（2026-09-12 管道池架构）：OpenPty=按命令拉一条专属
+      // tmux 客户端管道；ResizeTo=把本管道改格网（park 放大归还尺寸用）；
+      // Bind=卡片换绑到指定管道（tail 回放秒显）。切换会话从此零打字零
+      // 竞态零重排抖动（用户提案终案）
+      win.__kfmNzTermOpenPty = async (command: string, cols: number, rows: number): Promise<string> =>
+        bridge.open({ command, cols, rows });
+      win.__kfmNzTermBind = (id: string): void => {
+        if (!id) return;
+        card.sessionId = id;
+        bridge.attachSession(id);
+      };
+      win.__kfmNzTermResizeTo = (cols: number, rows: number): void => {
+        if (!card.sessionId) return;
+        bridge.resize(card.sessionId, cols, rows);
+      };
       win.__kfmNzTermClear = () => shell.clear();
       // 整格重建（B1 跨会话行串扰修复，2026-09-11）：核+壳全换新——
       // 等价 replay 重建路径但不喂 tail。tmux 会话切换边界（tmux-tabs

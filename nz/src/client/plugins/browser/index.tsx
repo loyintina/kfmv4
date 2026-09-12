@@ -340,62 +340,66 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           };
         }, []);
 
+        // 常驻管道池（2026-09-12 管道池架构终案）：每会话一条专属 tmux
+        // 客户端管道常驻复用；切换=卡片换绑（attachSession+tail 回放秒
+        // 显），零打字零竞态零重排抖动。出生绑定 fs 的管道
+        const poolRef = useRef<Map<string, string>>(new Map());
         useEffect(() => {
-          // 出生附着（常驻世界 v2）：裸 zsh 起家、屏现提示符即打 attach——
-          // 私有管道内的打字用户不可见（污染只存在于共享 pty 时代）；
-          // park 脱附后本 effect 不重跑，再附着由 kfm-float-enter 事件驱动
-          const t = setInterval(() => {
+          const t = setInterval(async () => {
             const w = window as unknown as Record<string, unknown>;
             if (parkedRef.current || attachedRef.current) { clearInterval(t); return; }
+            const openPty = w.__kfmNzTermOpenPty as ((c: string, cols: number, rows: number) => Promise<string>) | undefined;
+            const bind = w.__kfmNzTermBind as ((id: string) => void) | undefined;
             const scrFn = w.__kfmNzTermScreen as (() => string) | undefined;
-            const scr = scrFn ? scrFn() : '';
-            if (scr.trim() === '') return;
-            const inj = w.__kfmNzTermInject as (s: string) => void | undefined;
-            if (typeof inj !== 'function') return;
+            if (typeof openPty !== 'function' || typeof bind !== 'function' || typeof scrFn !== 'function') return;
+            if (scrFn().trim() === '') return;
             clearInterval(t);
-            inj(`tmux new-session -A -s ${session}\r`);
-            attachedRef.current = session;
-            readyRef.current = true; // 门闩开：此后标签切换才生效
+            try {
+              const id = await openPty(`tmux new-session -A -s ${session}`, 52, 23);
+              poolRef.current.set(session, id);
+              bind(id);
+              attachedRef.current = session;
+              readyRef.current = true;
+            } catch { /* 拉起失败：下一拍重试 */ }
           }, 300);
           return () => clearInterval(t);
           // eslint-disable-next-line react-hooks/exhaustive-deps
         }, []);
 
         const switchTo = (name: string): void => {
-          if (!readyRef.current) return; // 首挂未完成：点击无效（防与初始注入竞态）
+          if (!readyRef.current) return; // 屏未就绪：点击无效
           if (name === attachedRef.current) return;
-          const inject = (window as unknown as Record<string, unknown>).__kfmNzTermInject as ((s: string) => void) | undefined;
-          if (!inject) return;
-          if (attachedRef.current) {
-            // 专属 pty 内切换：tmux 命令提示符（C-b :）**两段式**——先开
-            // 提示符，250ms 后补命令。同帧连发会竞态：提示符未就绪，命令
-            // 字节落进会话程序输入区（2026-09-12 真机实录：命令文字出现
-            // 在主会话+橙条空挂）。打字只进浮窗专属客户端，主终端不可见；
-            // switching 锁防连点叠加
-            if (switchingRef.current) return;
-            switchingRef.current = true;
-            inject('\u0002:');
-            setTimeout(() => {
-              inject(`switch-client -t ${name}\r`);
+          const w = window as unknown as Record<string, unknown>;
+          const openPty = w.__kfmNzTermOpenPty as ((c: string, cols: number, rows: number) => Promise<string>) | undefined;
+          const bind = w.__kfmNzTermBind as ((id: string) => void) | undefined;
+          if (typeof openPty !== 'function' || typeof bind !== 'function') return;
+          if (switchingRef.current) return;
+          switchingRef.current = true;
+          void (async () => {
+            try {
+              // 池内无此会话管道则拉起（懒补）；有则直接换绑（attachSession
+              // + tail 回放秒显）——零打字零竞态
+              let id = poolRef.current.get(name);
+              if (!id) {
+                const cell = (w.__kfmNzTermScroll as (() => { cellW: number; cellH: number }) | undefined)?.() ?? { cellW: 5.2, cellH: 12.5 };
+                id = await openPty(`tmux new-session -A -s ${name}`, Math.max(20, Math.floor(innerWidth / cell.cellW)), 23);
+              }
+              poolRef.current.set(name, id);
+              bind(id);
+              attachedRef.current = name;
+              setActive(name);
+            } finally {
               switchingRef.current = false;
-            }, 250);
-            attachedRef.current = name;
-            setActive(name);
-          } else {
-            inject(`tmux new-session -A -s ${name}\r`);
-            attachedRef.current = name;
-            setActive(name);
-          }
+            }
+          })();
         };
 
         // 常驻世界生命周期（原生派发）：park=脱附回 zsh（会话尺寸归还主视
         // 图）；enter=再附着/切到目标会话（两段式）
         useEffect(() => {
           const onPark = (): void => {
-            if (attachedRef.current) {
-              const inj = (window as unknown as Record<string, unknown>).__kfmNzTermInject as ((s: string) => void) | undefined;
-              inj?.('\u0002d'); // C-b d 脱附（私有管道，用户不可见）
-            }
+            // 管道池架构：park=纯显隐。管道常驻附着、格网不变，会话无重排；
+            // （不再 C-b d 脱附——池化后无需释放尺寸给主视图）
             attachedRef.current = null;
             readyRef.current = false;
             parkedRef.current = true;
@@ -403,19 +407,25 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           const onEnter = (e: Event): void => {
             parkedRef.current = false;
             const want = ((e as CustomEvent).detail as string) || session;
-            const inject = (window as unknown as Record<string, unknown>).__kfmNzTermInject as ((s: string) => void) | undefined;
-            if (!inject) return;
+            const w = window as unknown as Record<string, unknown>;
+            const openPty = w.__kfmNzTermOpenPty as ((c: string, cols: number, rows: number) => Promise<string>) | undefined;
+            const bind = w.__kfmNzTermBind as ((id: string) => void) | undefined;
+            if (typeof openPty !== 'function' || typeof bind !== 'function') return;
             if (attachedRef.current === want) { readyRef.current = true; return; }
-            if (!attachedRef.current) {
-              // park 后裸 zsh 待命：直接打 attach（私有管道，用户不可见）
-              // ——不经 switchTo 的 ready 门闩（park 已把它关上）
-              inject(`tmux new-session -A -s ${want}\r`);
-              attachedRef.current = want;
-              readyRef.current = true;
-              setActive(want);
-              return;
-            }
-            switchTo(want); // 已附着他席=两段式切换
+            void (async () => {
+              try {
+                let id = poolRef.current.get(want);
+                if (!id) {
+                  const cell = (w.__kfmNzTermScroll as (() => { cellW: number; cellH: number }) | undefined)?.() ?? { cellW: 5.2, cellH: 12.5 };
+                  id = await openPty(`tmux new-session -A -s ${want}`, Math.max(20, Math.floor(innerWidth / cell.cellW)), 23);
+                }
+                poolRef.current.set(want, id);
+                bind(id);
+                attachedRef.current = want;
+                readyRef.current = true;
+                setActive(want);
+              } catch { /* 拉起失败：下一拍重试 */ }
+            })();
           };
           window.addEventListener('kfm-float-park', onPark);
           window.addEventListener('kfm-float-enter', onEnter as EventListener);

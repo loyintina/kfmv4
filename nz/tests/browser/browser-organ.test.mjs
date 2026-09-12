@@ -237,11 +237,9 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
     await ipage.goto(`${BASE}/?nosplash&float=1&fs=ftA`, { waitUntil: 'domcontentloaded', timeout: 40000 }).catch(() => {});
     await sleep(5000); // 旧轮询发射窗口（屏非空后 ~300ms 内打字）全覆盖
     const calls = await ipage.evaluate(() => (window).__injCalls || []);
-    // 常驻 v2 合同（2026-09-12 终案）：唯一合法注入=出生 attach 一次
-    // （tmux new-session -A -s ftA）；其余任何注入=污染
-    const expected = 'tmux new-session -A -s ftA\r';
-    const okCalls = calls.length === 1 && calls[0] === expected;
-    check('⑦d 出生附着合同：恰一次 attach 注入、无他物', okCalls, `calls=${JSON.stringify(calls)}`);
+    // 管道池架构合同（2026-09-12 终案）：浮窗页零注入——附着/切换全部
+    // 走 OpenPty/Bind 管道池，任何 tmux 命令打字注入=回归污染源
+    check('⑦d 零注入合同：浮窗页全程零 tmux 命令打字', (calls || []).length === 0, `calls=${JSON.stringify(calls)}`);
     await ictx.close().catch(() => {});
   }
   await gctx.close().catch(() => {});
