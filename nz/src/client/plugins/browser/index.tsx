@@ -260,13 +260,16 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           const bar = barRef.current;
           const nz = native();
           if (!bar || !nz?.floatDragBy) return; // 无桥=无浮窗可操作
-          let downX = 0, downY = 0, lastX = 0, lastY = 0, trav = 0;
+          let downSX = 0, downSY = 0, lastSX = 0, lastSY = 0, trav = 0;
           let ghostTimer = 0, ghosting = false, down = false;
           const slop = 8;
           const dpr = window.devicePixelRatio || 1;
           const onDown = (e: PointerEvent): void => {
             down = true; trav = 0; ghosting = false;
-            downX = lastX = e.clientX; downY = lastY = e.clientY;
+            // 屏幕坐标取差（2026-09-12 半距案根修）：窗子在动，client 坐标
+            // 系随之平移 → 增量被吃（窗总位移=指总位移/2 的反馈回路实测
+            // 成立）；screenX/Y 锚屏幕不随窗动，严格 1:1
+            downSX = lastSX = e.screenX; downSY = lastSY = e.screenY;
             ghostTimer = window.setTimeout(() => {
               if (down && trav < slop) { ghosting = true; nz.floatGhost?.(true); }
             }, 400);
@@ -281,10 +284,10 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           };
           const onMove = (e: PointerEvent): void => {
             if (!down) return;
-            const dx = e.clientX - lastX, dy = e.clientY - lastY;
-            trav = Math.max(trav, Math.hypot(e.clientX - downX, e.clientY - downY));
+            const dx = e.screenX - lastSX, dy = e.screenY - lastSY;
+            trav = Math.max(trav, Math.hypot(e.screenX - downSX, e.screenY - downSY));
             if (trav > slop && ghostTimer) { clearTimeout(ghostTimer); ghostTimer = 0; }
-            lastX = e.clientX; lastY = e.clientY;
+            lastSX = e.screenX; lastSY = e.screenY;
             if (trav > slop) {
               // rAF 批处理（2026-09-12 卡顿案）：一帧最多一发货，增量累计
               // 零损失，桥压降一个量级
