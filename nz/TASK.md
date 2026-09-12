@@ -2168,6 +2168,13 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   用 effect deps → 渲染即 ReferenceError 整插件挂死，探针 pageerror 定
   罪）。⚠ 流程债：折叠/TDZ 修复提交时未带新钉（pre-commit 拦后误走
   chore 通道，a7370f68），补钉债=折叠视觉钉+float 页零 pageerror 钉。
+- **✅ 浮窗挂载零打字终案**（2026-09-12，25bea04b）：专属 pty（main 浮窗态
+  open({command:'tmux new-session -A -s fs'})，出生即附着零注入；command 卡
+  天然跳 saved-attach 防 localStorage 串台）+ 切换改 C-b:switch-client（零脱
+  属）+ pty 派生剥 TMUX + 文件名破缓存（bundle.<hash>.js，query 串对本机
+  WebView 判死）。L2 铁证：zzA/zzB 实验全程用户 dsh 窗格零新增污染（计
+  数恒 2→滚动清零）。遗留：④考卷红（C-b:switch 在考卷环境未落地，真机待
+  复验）——与 IME 避让并列为浮窗收官仅存两项。
 - 浮窗 IME 避让（无 insets 监听，v0 接受 adjustPan）。
 - 壳 APK 装机（新包 versionCode=1789127333 / 70262B /
   md5 5a4b0f9a08ec3b36234c2587fe8a0c57，含 orb 定位修复；装机后先 L0
