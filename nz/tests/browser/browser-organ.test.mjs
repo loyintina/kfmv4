@@ -200,10 +200,12 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
   // 文字压在芯片底下（合成眼实拍定罪）
   const insetOk = await gpage.evaluate(() => {
     const c = document.querySelector('.kfm-layout');
-    return !!c && c.style.left === '26px' && getComputedStyle(c).position === 'fixed';
+    const l = document.getElementById('kfm-layer-layout');
+    return !!c && !!l && l.style.left === '26px' && !!l.style.transform
+      && c.style.left === '0px' && getComputedStyle(c).position === 'fixed';
   });
-  check('⑦c 卡身内缩：float 态终端卡身 left=26px', insetOk,
-    `left=${await gpage.evaluate(() => document.querySelector('.kfm-layout')?.style.left)}`);
+  check('⑦c 卡身归编：float 态层 transform+left26、卡身 left0（层收编裁圆角）', insetOk,
+    `layer=${await gpage.evaluate(() => document.getElementById('kfm-layer-layout')?.style.left + '/' + document.getElementById('kfm-layer-layout')?.style.transform)}, card=${await gpage.evaluate(() => document.querySelector('.kfm-layout')?.style.left)}`);
   await gctx.close().catch(() => {});
 }
 

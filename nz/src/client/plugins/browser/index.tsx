@@ -206,6 +206,11 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
             layer.style.overflow = 'hidden';
             layer.style.background = '#17181A';
             layer.style.boxShadow = '0 0 0 1px #3A3B3F';
+            // 建立包含块（2026-09-12 圆角被盖案）：终端卡身 position:fixed
+            // 本不受祖先 overflow/圆角裁剪（内容一刷就把圆角盖成矩形），
+            // transform 后卡身被层收编=裁进圆角窗+天然内缩，TermPlugin
+            // 卡身 left:0 即相对本层
+            layer.style.transform = 'translateZ(0)';
           }
           // 标签轨滚动条隐藏（多会话滚动不做可视滚动条，触摸即可滚）
           const st = document.createElement('style');

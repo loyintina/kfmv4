@@ -135,8 +135,6 @@ public class MainActivity extends Activity {
     private boolean ghostOn = false;     // 隐身态（透明让位看浏览器，松手恢复）
     private int floatLeft = 0, floatTop = 0;   // 浮窗位置（px，可拖拽）
     private int floatW = 0, floatH = 0;
-    private int ghostLeft = 0, ghostTop = 0;   // 拖拽幻影位置（提交时落为真窗位）
-    private View dragGhost;                    // 拖拽幻影框（轻量描边，替真窗跟手）
     private int imeBottom = 0;                 // IME insets（浮窗避键盘钳位）
     private int dpv = 3;                       // 密度换算（onCreate 取真值）
     private boolean dismissed = false;
@@ -643,19 +641,6 @@ public class MainActivity extends Activity {
         // 桥 floatDragBy/floatCollapse/floatGhost——chrome 迭代走热更不装机
         // （2026-09-11 二轮拍板）。此处不再建任何触摸目标。
 
-        // 拖拽幻影框（2026-09-12 拖影案）：拖拽期间真窗纹丝不动（WebView
-        // 重绘滞后=残影/闪烁/「扩盖 tmux 栏」错觉的根），由这个轻量描边框
-        // 1:1 跟手，收笔真窗一次性落到幻影位
-        dragGhost = new View(this);
-        android.graphics.drawable.GradientDrawable gg = new android.graphics.drawable.GradientDrawable();
-        gg.setColor(0x1417181A);
-        gg.setCornerRadius(12 * dpv);
-        gg.setStroke(Math.max(2, dpv), 0xFF6A6C70);
-        dragGhost.setBackground(gg);
-        dragGhost.setElevation(12 * dpv);
-        dragGhost.setVisibility(View.GONE);
-        root.addView(dragGhost, new FrameLayout.LayoutParams(1, 1));
-
         // 线框地球图标（用户拍板「不要加字，至少画个 svg」：原生侧 Path
         // 手绘——外圆+赤道线+中央经线椭圆，无字）
         orbBtn = new View(this) {
@@ -726,40 +711,30 @@ public class MainActivity extends Activity {
      *  实拖拽期几何恒定无振荡，纯渲染层伪影）。dx/dy=0 即收笔：真窗
      *  一次性落到幻影位+钳位 */
     private void doFloatDragBy(int dx, int dy) {
-        if (floatContainer == null || root == null || dragGhost == null) return;
+        if (floatContainer == null || root == null) return;
         int W = root.getWidth(), H = root.getHeight();
         if (W <= 0 || H <= 0 || floatW <= 0) return;
         int boxW = floatW + 26 * dpv;
         int boxH = floatCollapsed ? 24 * dpv : floatH;
         if (dx == 0 && dy == 0) {
-            floatLeft = Math.max(dpv * 2, Math.min(ghostLeft, W - boxW - dpv * 2));
-            floatTop = Math.max(dpv * 40, Math.min(ghostTop, H - boxH - dpv * 2));
-            dragGhost.setVisibility(View.GONE);
-            dragGhost.setTranslationX(0f);
-            dragGhost.setTranslationY(0f);
+            floatLeft = floatContainer.getLeft();
+            floatTop = floatContainer.getTop();
             layoutFloat();
             mark("float-drop");
             return;
         }
-        if (dragGhost.getVisibility() != View.VISIBLE) {
-            ghostLeft = floatLeft;
-            ghostTop = floatTop;
-            FrameLayout.LayoutParams gp = (FrameLayout.LayoutParams) dragGhost.getLayoutParams();
-            gp.width = boxW;
-            gp.height = boxH;
-            gp.leftMargin = ghostLeft;
-            gp.topMargin = ghostTop;
-            dragGhost.setLayoutParams(gp);
-            dragGhost.setTranslationX(0f);
-            dragGhost.setTranslationY(0f);
-            dragGhost.setVisibility(View.VISIBLE);
+        // 真窗 1:1 跟手（用户拍板弃幻影）：offsetLeftAndRight/TopAndBottom
+        // 走原生脏区重绘，不触发 requestLayout 全量重排（闪烁主因），也
+        // 无 translation 的表面滞后帧（闪烁主因二）。orb 同步随移防脱手
+        int curL = floatContainer.getLeft(), curT = floatContainer.getTop();
+        int newL = Math.max(dpv * 2, Math.min(curL + dx, W - boxW - dpv * 2));
+        int newT = Math.max(dpv * 40, Math.min(curT + dy, H - boxH - dpv * 2));
+        floatContainer.offsetLeftAndRight(newL - curL);
+        floatContainer.offsetTopAndBottom(newT - curT);
+        if (orbBtn != null) {
+            orbBtn.offsetLeftAndRight(newL - curL);
+            orbBtn.offsetTopAndBottom(newT - curT);
         }
-        ghostLeft = Math.max(dpv * 2, Math.min(ghostLeft + dx, W - boxW - dpv * 2));
-        ghostTop = Math.max(dpv * 40, Math.min(ghostTop + dy, H - boxH - dpv * 2));
-        // translation = 幻影现位 - 锚（margins 只在起步设一次，此后零重排）
-        FrameLayout.LayoutParams gp = (FrameLayout.LayoutParams) dragGhost.getLayoutParams();
-        dragGhost.setTranslationX(ghostLeft - gp.leftMargin);
-        dragGhost.setTranslationY(ghostTop - gp.topMargin);
     }
 
     /** 全窗合成截屏（PixelCopy，API 24+）：整窗合成帧原样抄下来——硬件

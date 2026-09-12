@@ -288,13 +288,14 @@ export function applyTermBundle(ctx: Context): void {
       // （scrollEl.clientHeight）同源自洽。box-sizing:border-box 保
       // height=vv.height 语义不被 padding 撑破。变量单源=index.html :root。
       // 浮窗专态（B-线 ?float=1）：字号降档 13→10 + 免键栏底部预留 + 卡身
-      // 跟随檐宽内缩。第三件是「向内」观感真身（2026-09-12 合成眼定罪）：
-      // 卡身 position:fixed 锚视口、无视层 26px 位移 → canvas 全宽把文字
-      // 画进檐区芯片底下；第一帧左侧无字所以看着正常，输出一到就「变回
-      // 去」。isFloat 单源在此，下游（fonts/probe/scrollEl/shell/RO）共用
+      // 归编浮窗层。第三件的历程（2026-09-12）：卡身 position:fixed 锚视
+      // 口曾把 canvas 全宽画进檐区芯片底下（「向内」真身）→ 改 left:26 内
+      // 缩 → 圆角被内容盖成矩形（fixed 不受祖先圆角裁剪）→ 终案=浮窗层
+      // transform 建包含块（浏览器插件窗皮施加），卡身 left:0 即被收编进
+      // 圆角窗。isFloat 单源在此，下游（fonts/probe/scrollEl/shell/RO）共用
       const isFloat = new URLSearchParams(location.search).get('float') === '1';
       const termFs = isFloat ? 10 : 13;
-      container.el.style.cssText = `position:fixed;left:${isFloat ? 26 : 0}px;right:0;top:0;height:100%;overflow:hidden;`
+      container.el.style.cssText = 'position:fixed;left:0;right:0;top:0;height:100%;overflow:hidden;'
         + 'box-sizing:border-box;padding-top:var(--sat,0px);padding-bottom:var(--sab,0px);';
       // 终端卡全屏期间锁死背景页滚动（boot 页比屏幕高，不锁会和终端抢
       // 滚动、被 scrollIntoView 类行为带着跑——实测闪烁根因之一）
