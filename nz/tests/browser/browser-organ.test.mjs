@@ -137,6 +137,12 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
     const b = document.querySelector('[data-browser-float-tab="ftB"]');
     return b ? b.style.background.replace(/\s/g, '').includes('10,132,255') : false;
   });
+  // 陈旧高亮回归钉（2026-09-12 setAttached 漏项定罪）：切到 ftB 后 ftA
+  // 芯片必须退高亮——高亮滞留旧会话=attached 账与 DOM 各说各话
+  const chipStale = await fpage.evaluate(() => {
+    const a = document.querySelector('[data-browser-float-tab="ftA"]');
+    return a ? a.style.background.replace(/\s/g, '').includes('10,132,255') : true;
+  });
   // 会话级证据：tmux 状态栏必须同步显示 [ftB]（switch-client 的服务端落地）
   const barFtB = await fpage.evaluate(() => (window).__kfmNzTermScreen?.().includes('[ftB]') ?? false);
   const shot = await fpage.evaluate(() => ({ detachShot: ((window).__detachShot ?? '').slice(-80), at: (window).__switchInjectedAt ?? null }));
@@ -148,7 +154,7 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
     bootTail: (window).__kfmNz?.bootLog?.slice(-4) ?? [],
   }));
   const scr = await fpage.evaluate(() => (window).__kfmNzTermScreen?.() ?? '');
-  check('④浮窗切会话：首挂就绪后点 ftB 标签 → 终端屏真换 ftB', ready && sw && sess === 'ftB' && chipHi && barFtB, `barFtB=${barFtB} chipHi=${chipHi} switched=${sw} session=${sess} screen=${JSON.stringify(scr.split('\n').filter((l) => l.trim()).slice(0, 3))} seq=${JSON.stringify(seq)} shot=${JSON.stringify(shot)} fErr=${JSON.stringify(fErrors.slice(-2))} dump=${JSON.stringify(dump)}`);
+  check('④浮窗切会话：首挂就绪后点 ftB 标签 → 终端屏真换 ftB', ready && sw && sess === 'ftB' && chipHi && !chipStale && barFtB, `barFtB=${barFtB} chipHi=${chipHi} chipStale=${chipStale} switched=${sw} session=${sess} screen=${JSON.stringify(scr.split('\n').filter((l) => l.trim()).slice(0, 3))} seq=${JSON.stringify(seq)} shot=${JSON.stringify(shot)} fErr=${JSON.stringify(fErrors.slice(-2))} dump=${JSON.stringify(dump)}`);
 }
 
 // ⑤ 会话表端点

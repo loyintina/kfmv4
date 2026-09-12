@@ -447,6 +447,7 @@ export function createTmuxTabsPlugin(): UiPlugin {
             if (!id) return;
             h.reset?.(); // B1 边界：换绑前清核（旧管道行流残余不得带入）
             h.bind(id);
+            setAttached(name);
             attachedRef.current = name;
             // quiet=R1 自动重进腿：恢复现场但不抢注意力（标签排保持收起）
             expandedRef.current = !quiet;
