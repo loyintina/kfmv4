@@ -358,31 +358,12 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           const inject = (window as unknown as Record<string, unknown>).__kfmNzTermInject as ((s: string) => void) | undefined;
           if (!inject) return;
           if (attachedRef.current) {
-            // 已附着：C-b d 脱离 → 轮询屏现 detached → 命令重进（tmux-tabs
-            // 同款；盲等 350ms 在慢分离时会漏字符进 shell——「dux 命令」案）
-            inject('\u0002d');
-            let attempts = 0;
-            const t = setInterval(() => {
-              attempts++;
-              const scr = (window as unknown as Record<string, unknown>).__kfmNzTermScreen as (() => string) | undefined;
-              const sNow = scr?.() ?? '';
-              if (sNow.includes('detached') && !(window as unknown as Record<string, unknown>).__detachShot)
-                (window as unknown as Record<string, unknown>).__detachShot = sNow;
-              // 稳定才注入：屏含 detached 且连续 2 拍（250ms）不变=shell
-              // prompt 已重绘完毕，此刻注入零竞态（tm 被撕咬案终结方案）
-              if (sNow.includes('detached')) {
-                const w2 = window as unknown as Record<string, unknown>;
-                if (w2.__lastScr !== sNow) { w2.__lastScr = sNow; w2.__stable = 0; }
-                else w2.__stable = (Number(w2.__stable ?? 0)) + 1;
-                if (Number(w2.__stable ?? 0) >= 2 || attempts > 25) {
-                  clearInterval(t);
-                  w2.__switchInjectedAt = new Date().toISOString().slice(11, 19);
-                  inject(`tmux new-session -A -s ${name}\r`);
-                  attachedRef.current = name;
-                  setActive(name);
-                }
-              }
-            }, 125);
+            // 专属 pty 内切换：tmux 命令提示符（C-b :）——零脱属、零共享
+            // 视界、零 shell 阶段（④竞态的注入舞蹈随专属 pty 终结）；
+            // 打字只进浮窗自己的客户端，用户主终端不可见
+            inject(`\u0002:switch-client -t ${name}\r`);
+            attachedRef.current = name;
+            setActive(name);
           } else {
             inject(`tmux new-session -A -s ${name}\r`);
             attachedRef.current = name;

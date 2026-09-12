@@ -167,6 +167,13 @@ export class TermConnectionService {
       });
     }
     const id = crypto.randomUUID();
+    // TMUX 剥离（2026-09-12 嵌套传染案）：server 进程可能被 tmux 会话内
+    // 的操作者拉起/重启，TMUX 变量随 process.env 传进 pty → 子壳里跑
+    // tmux 一律报「sessions should be nested」拒附（浮窗 command 卡
+    // 出生即挂载的设计被它废掉）。pty 是独立终端会话，本就不该继承
+    // 监护者的 tmux 上下文
+    const childEnv = { ...process.env, SHELL: this._shell } as Record<string, string>;
+    delete childEnv.TMUX;
     const proc = pty.spawn(this._shell, opts.command ? ['-c', opts.command] : [], {
       name: 'xterm-256color',
       cols: opts.cols ?? DEFAULT_COLS,
@@ -175,7 +182,7 @@ export class TermConnectionService {
       // SHELL 覆写为解析出的登录 shell（login 程序语义：进程 env 继承自
       // 服务拉立方，不覆写则终端里 echo $SHELL 与真实运行 shell 不符）。
       // 交互/`-c` 两分支同带——读 $SHELL 的命令得到的正是登录 shell。
-      env: { ...process.env, SHELL: this._shell } as Record<string, string>,
+      env: childEnv,
     });
     const inner: SessionInner = {
       id, proc, outCbs: new Set(), exitCbs: new Set(), tail: '', exited: false,

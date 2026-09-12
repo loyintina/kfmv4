@@ -1,0 +1,440 @@
+/**
+ * tokens.css — kfm-nz 设计 tokens 单源
+ *
+ * 职责：颜色/字体/动画时长/曲线统一变量，所有插件引用本文件变量，
+ * 禁止硬编码。未来主题切换只需加 :root[data-theme="xxx"] 覆盖。
+ *
+ * 命名规范：--kfm-{类别}-{名称}
+ */
+
+:root {
+  /* ── 颜色：深色默认（对齐 BeautifulUI 深色套） ── */
+  --kfm-page: #17181a;
+  --kfm-canvas: #1c1d1f;
+  --kfm-surface: #232427;
+  --kfm-inset: #1f2022;
+  --kfm-hover: #2a2b2e;
+  --kfm-hover-2: #313236;
+
+  --kfm-ink: #f2f3f4;
+  --kfm-ink-2: #a5a8ad;
+  --kfm-ink-3: #6c6f75;
+
+  --kfm-line: #3a3b3f;
+  --kfm-line-strong: #62656b;
+
+  --kfm-accent: #0a84ff;
+  --kfm-green: #30d158;
+  --kfm-orange: #ff9f0a;
+  --kfm-red: #ff453a;
+
+  /* tmux-tabs 专用 */
+  --kfm-bar-bg: rgba(10,16,32,0.92);
+  --kfm-chip-bg: rgba(51,65,85,0.85);
+  --kfm-overlay-bg: rgba(2,6,16,0.45);
+
+  /* keybar 专用（docs/keybar-v3-state-machine.md §五 token 收编映射）：
+   * 0903 用户拍板——栏底/键面背景透明化（融进终端画布 TERM_BG #000000，
+   * 只浮文字）；点亮色原值收编为 token（点亮时色块从黑底浮现=唯一可见
+   * 键面）。键字色取 --kfm-ink-2 档，点亮字色取 --kfm-ink 档。 */
+  --kfm-key-ink: var(--kfm-ink-2);
+  --kfm-key-on-bg: #3d5a99;
+  --kfm-key-on-ink: var(--kfm-ink);
+
+  /* ai-chat 专用（docs/ai-chat-a1-design.md §3.2：BeautifulUI dark 段原值收编；
+   * §八登记——nz 存量 --kfm-line #3a3b3f 与 BU dark --line #2e3033 不一致，
+   * 新段按 BU 原值收编新 token（--kfm-aichat-line 族），不回改存量） */
+  --kfm-field: #2b2c2f;                 /* BU dark field：气泡/输入框底 */
+  --kfm-accent-ink: #7ec0ff;
+  --kfm-accent-tint: rgba(61,154,255,0.16);  /* = BU #3d9aff29 */
+  --kfm-aichat-line: #2e3033;           /* BU dark --line 原值 */
+  --kfm-aichat-line-strong: #3a3c40;    /* BU dark --line-strong 原值 */
+  --kfm-shadow-hairline: 0 0 0 1px var(--kfm-aichat-line);
+  --kfm-shadow-card: 0 0 0 1px var(--kfm-aichat-line), 0 1px 2px #0003, 0 2px 6px #0003;
+  --kfm-shadow-raised: 0 0 0 1px var(--kfm-aichat-line), 0 2px 10px #00000038;
+  /* --kfm-aichat-composer-h 已退役（2026-09-11「撤 AI 后终端不全屏」案）：
+   * 静态 116px 默认本是兜「ai-chat 未挂/RO 未首拍」的测量竞态，ai-chat
+   * 卸场后再无人覆写 → keybar/scrollEl 的 var() 永远吃到 116px = 页底
+   * 幽灵预留（键栏悬空 116px、终端矮一截，真机 CDP 实测键栏 bottom=116px
+   * 定罪）。消费端（term/index.ts scrollEl+barStrip、config-pool 页底）
+   * 保留 var(..., 0px) 形状不回改：翻案重挂 ai-chat 时插件 ResizeObserver
+   * runtime setProperty 重新下发即复生，无需动消费端 */
+
+  /* file-tree 专用（docs/file-tree-v1-design.md §3.1/§3.3）：树页抽屉入场
+   * 320ms 独立 token（卡片级入场比 --kfm-dur-normal 慢一档，P9 禁硬编码）；
+   * 曲线用存量 --kfm-ease-spring（原值即 §3.3 判据贝塞尔 .34,1.56,.64,1） */
+  --kfm-fstree-dur-in: 320ms;
+
+  /* ── 字体 ── */
+  --kfm-font-mono: ui-monospace, Menlo, Consolas, monospace;
+  --kfm-font-sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+
+  /* ── 动画时长 ── */
+  --kfm-dur-instant: 80ms;   /* 触觉反馈：按压、hover */
+  --kfm-dur-fast: 150ms;     /* 小元素状态：标签高亮、icon 切换 */
+  --kfm-dur-normal: 250ms;   /* 面板展开/收起、毛玻璃弹出 */
+  --kfm-dur-slow: 350ms;     /* 复杂入场：多元素序列动画 */
+
+  /* ── 缓动曲线 ── */
+  --kfm-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --kfm-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --kfm-ease-sharp: cubic-bezier(0.22, 0.61, 0.25, 1);
+
+  /* ── 间距/圆角 ── */
+  --kfm-radius-sm: 6px;
+  --kfm-radius-md: 8px;
+  --kfm-radius-lg: 11px;
+  --kfm-radius-xl: 14px;
+  --kfm-radius-pill: 999px; /* 胶囊（标签行/圆形钮，2026-09-03 用户拍板） */
+}
+
+/* ── keybar 皮（迁皮件，颜色/圆角/字体唯一来源；结构尺寸在组件 inline） ── */
+
+/* 栏底透明（0903 拍板：栏融进终端纯黑画布，不再是灰色条块） */
+[data-kfm-keybar] {
+  background: transparent;
+}
+/* 键面常态透明+只浮文字；圆角/字体走 token（圆角常态不可见，点亮色块用） */
+[data-kfm-keybar] [data-kfm-key] {
+  background: transparent;
+  color: var(--kfm-key-ink);
+  font-family: var(--kfm-font-mono);
+  border-radius: var(--kfm-radius-sm);
+}
+/* 修饰键粘滞点亮（ARMED）：色块从黑底浮现=唯一可见键面 */
+[data-kfm-keybar] [data-kfm-key][data-armed] {
+  background: var(--kfm-key-on-bg);
+  color: var(--kfm-key-on-ink);
+}
+
+/* ── tmux-tabs 默认动画（BeautifulUI 逻辑：动效即解释，克制 100-350ms） ── */
+
+/* WebView 默认点按高亮（浅青浮层，2026-09-03 用户真机报告+screencast 帧
+ * 序列实证）：系统行为非 UI 动效，全局关闭。点按反馈由组件自己的
+ * :active 动效承担（orb scale(.96) 等），不损失反馈感。 */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 把手：常驻 DOM，展开时顺转 90 度，收回时逆转 90 度。
+ * 函数列表恒为 [rotate, scale]——混用 scale-only(:active) 与 rotate-only
+ * 会退化成矩阵插值：2026-09-03 真机采样实证（25ms 粒度），真触摸展开时
+ * 26-176ms 纯缩小零旋转、~200ms 才开始转、~450ms 才转完，观感=
+ * 先出标签栏后转按钮。列表一致后角度独立插值，旋转首帧可见、与标签排同步。 */
+[data-tmux-orb] {
+  transform: rotate(0deg) scale(1);
+  transition:
+    transform var(--kfm-dur-normal) var(--kfm-ease-out),
+    filter var(--kfm-dur-instant) var(--kfm-ease-out);
+}
+[data-tmux-orb].kfm-expanded {
+  transform: rotate(90deg) scale(1);
+}
+[data-tmux-orb]:hover {
+  filter: brightness(1.1);
+}
+[data-tmux-orb]:active {
+  transform: rotate(0deg) scale(0.96);
+}
+[data-tmux-orb].kfm-expanded:active {
+  transform: rotate(90deg) scale(0.96);
+}
+
+/* 标签排：常驻 DOM，伸出/收回用 scaleX + opacity transition。
+ * 选择器用独立的 [data-tmux-strip]：不能用 [data-tmux-tabs="EXPANDED"]，
+ * 否则 ①收起态属性变 COLLAPSED 后规则全失效（无过渡、scaleX 不应用）
+ * ②orb 展开时也带 EXPANDED 会被误加 transform-origin 旋转错位。 */
+[data-tmux-strip] {
+  transition:
+    transform var(--kfm-dur-normal) var(--kfm-ease-out),
+    opacity var(--kfm-dur-normal) var(--kfm-ease-out);
+  transform-origin: left center;
+}
+[data-tmux-strip].kfm-collapsed {
+  transform: scaleX(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* backdrop：显示/隐藏 */
+[data-tmux-backdrop] {
+  transition: opacity var(--kfm-dur-fast) var(--kfm-ease-out);
+}
+[data-tmux-backdrop].kfm-collapsed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 标签高亮切换 */
+[data-tmux-id] {
+  transition:
+    background-color var(--kfm-dur-fast) var(--kfm-ease-sharp),
+    color var(--kfm-dur-fast) var(--kfm-ease-sharp),
+    transform var(--kfm-dur-instant) var(--kfm-ease-out);
+}
+[data-tmux-id]:active {
+  transform: scale(0.96);
+}
+
+/* 毛玻璃页弹出：opacity + scale */
+@keyframes kfm-tmux-overlay-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+[data-tmux-overlay] {
+  animation: kfm-tmux-overlay-in var(--kfm-dur-normal) var(--kfm-ease-spring) both;
+}
+
+/* ── ai-chat 皮（[data-kfm-aichat]=AI 页、[data-kfm-aichat-bar]=全局 composer
+ * 条、[data-kfm-aichat-orb]=AI orb 三挂点；颜色/阴影/圆角/时长唯一来源，
+ * 结构尺寸留组件 inline——§3.2 翻译规则） ── */
+
+/* AI 页滑入/收起（2026-09-04 真机拍板③：整体自顶部向下平移
+ * translateY(-100%)→0，收起反向；时长/曲线走 --kfm-dur-normal/
+ * --kfm-ease-out——P11 禁硬编码，B8 考卷拨 token 杠杆反向验证） */
+@keyframes kfm-aichat-page-in {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes kfm-aichat-page-out {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-100%); }
+}
+[data-kfm-aichat] {
+  animation: kfm-aichat-page-in var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+[data-kfm-aichat].kfm-closing {
+  animation: kfm-aichat-page-out var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+/* 真触摸横向手势放行（仲裁⑪：AI 页左滑开池）：消息列表是纵向滚动容器，
+ * 默认 touch-action 下浏览器原生接管横向流 → pointercancel，手势核收不到
+ * 完整位移（真机实锤病，与池页 pan-y 同款）。pan-y=纵向滚动保持原生，
+ * 横向流完整到手。composer/textarea 不在此列（文本选择/纵向行为自理）。 */
+[data-kfm-aichat],
+[data-kfm-aichat] [data-aichat-list] {
+  touch-action: pan-y;
+}
+
+/* 层级规则（拍板④+主会话裁定⑤，§3.0/P10）：AI 页打开时 tmux orb+标签栏
+ * 隐藏——display:none 不渲染档，不是被盖；AI orb 恒可见可点为唯一开关。
+ * z 序数值（组件 inline）：终端/tmux 控件 ≤41 < AI 页 42 < composer=AI orb 43 */
+:root[data-kfm-aichat-open] [data-tmux-tabs-root] {
+  display: none;
+}
+
+/* 消息入场 fade-up（借 chat.tsx 词汇：opacity+translateY，节点身份不动=P6 兼容） */
+@keyframes kfm-aichat-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+[data-kfm-aichat] [data-aichat-msg] {
+  animation: kfm-aichat-fade-up var(--kfm-dur-slow) var(--kfm-ease-out) both;
+}
+
+/* 流式光标（借 streaming-text.tsx 词汇：竖条闪烁；逐词 blur 不搬——§3.1 裁决） */
+@keyframes kfm-aichat-cursor-blink {
+  0%, 45% { opacity: 1; }
+  50%, 95% { opacity: 0; }
+  100% { opacity: 1; }
+}
+[data-kfm-aichat] [data-aichat-cursor] {
+  display: inline-block;
+  width: 2px;
+  height: 0.95em;
+  margin-left: 2px;
+  vertical-align: -0.12em;
+  border-radius: var(--kfm-radius-pill);
+  background: var(--kfm-ink);
+  animation: kfm-aichat-cursor-blink calc(var(--kfm-dur-slow) * 3) var(--kfm-ease-sharp) infinite;
+}
+
+/* 模型菜单弹出（借 prompt-bar.tsx pop-in 词汇；挂全局 composer 条——
+ * composer 全局化后菜单两态（TERMINAL/AI_PAGE）都可开） */
+@keyframes kfm-aichat-pop-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+[data-kfm-aichat-bar] [data-aichat-model-menu] {
+  animation: kfm-aichat-pop-in var(--kfm-dur-fast) var(--kfm-ease-out) both;
+  transform-origin: bottom right;
+}
+
+/* composer 聚焦态：边框升档（借 prompt-bar.tsx focus-within 词汇） */
+[data-kfm-aichat-bar] [data-aichat-composer] {
+  transition: border-color var(--kfm-dur-fast) var(--kfm-ease-out);
+}
+[data-kfm-aichat-bar] [data-aichat-composer]:focus-within {
+  border-color: var(--kfm-aichat-line-strong) !important;
+}
+
+/* orb 运行指示灯：闲暗 / 活跃亮（静态换色零常动帧，§3.0） */
+[data-kfm-aichat-orb] {
+  transition: border-color var(--kfm-dur-fast) var(--kfm-ease-out);
+}
+[data-kfm-aichat-orb][data-aichat-lit="1"] {
+  border-color: var(--kfm-accent) !important;
+}
+
+/* ── config-pool 皮（配置池 A2a 阶段二；[data-kfm-pool]=池页、
+ * [data-pool-tab]=标签行 chip、[data-pool-overlay]=删除确认罩层。
+ * 颜色/阴影/圆角/时长唯一来源本段（P8）；池页滑入/收起只用
+ * --kfm-dur-normal/--kfm-ease-out（P9）——左滑进入 translateX(100%)→0，
+ * 收起反向播完才摘 DOM（ai-chat 页同款机关） */
+@keyframes kfm-pool-page-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes kfm-pool-page-out {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
+}
+[data-kfm-pool] {
+  animation: kfm-pool-page-in var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+[data-kfm-pool].kfm-closing {
+  animation: kfm-pool-page-out var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+/* 真触摸接管防治（2026-09-05 真机报告：池页右滑回不去；CDP 真触摸序列实锤）：
+ * body 的 touch-action:none 罩不进「触点元素自身即可滚动容器」的子树——池页
+ * 列表区（overflowY:auto）触点的实际生效值是 auto，横拖 ~slop 即被浏览器原生
+ * 接管 → pointercancel → 手势核以小位移判 null（mouse 指针无接管语义，故
+ * headless B 卷 mouse 拖动钉全绿=L1/L3 缝隙）。修法=显式 pan-y：禁 pan-x 接管
+ * （横向 pointer 流完整到手，右滑返回在列表行上成立）；纵向列表滚动保持原生
+ * （P1 冲突矩阵「池页内垂直滑=池区列表滚动」不破） */
+[data-kfm-pool],
+[data-pool-zone] {
+  touch-action: pan-y;
+}
+
+/* 置顶入场（仲裁⑫ 页面栈模型：提顶即召唤，两卡各自入场动画重播）。
+ * 类换名重启动画（同名 animation 不重播）。**播完不摘类**：摘类会把
+ * animation-name 切回基础 page-in → 底牌动画再播一遍（2026-09-05 用户
+ * 真机报告「入场动画播两遍」定罪）。类驻留无害：重播=插件「移除→reflow
+ * →再加」；关页走 .kfm-closing 换名照播；重开=元素重建类自然归零 */
+@keyframes kfm-pool-raise-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes kfm-aichat-raise-in {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+[data-kfm-pool].kfm-raise {
+  animation: kfm-pool-raise-in var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+[data-kfm-aichat].kfm-raise {
+  animation: kfm-aichat-raise-in var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+
+/* 层级规则（仲裁⑩用户修正稿，P10）：层级定死 终端/tmux < AI 页(z42) <
+ * 池页(z44) < 输入栏+光球（恒顶）。池页开（data-kfm-pool-open）时：
+ * tmux 控件 display:none（AI 页开时同款不渲染档）；输入栏+光球 inline
+ * z43 压不过池页 44 → !important 升 45 档保「恒顶」与可点。
+ * 仲裁⑩ orb 提顶档（A2a 阶段三）：光球把 AI 页提到池页之上时（AI 页开+
+ * 池页开+提顶账，属性由 ai-chat 挂），池页降 41 让位不关——层级仍严格
+ * 池页41 < AI 页42 < 球45 恒顶；orb 再点=关 AI 页，属性摘除池页复现 44 */
+:root[data-kfm-pool-open] [data-tmux-tabs-root] {
+  display: none;
+}
+:root[data-kfm-pool-open] [data-kfm-aichat-orb],
+:root[data-kfm-pool-open] [data-kfm-aichat-bar] {
+  z-index: 45 !important;
+}
+:root[data-kfm-aichat-open][data-kfm-aichat-raised] [data-kfm-pool] {
+  z-index: 41 !important;
+}
+
+/* 池页光球安全带（2026-09-07 B5a 实锤：1:1 分栏后行尾可点件滚进光球带被
+ * z45 恒顶截胡——删除 × 点不进，删除请求根本没发出）。池页开时行尾按钮
+ * 簇与详情区底部钮排右缩一个光球带宽：可点件永不进带，光球恒顶可点不动
+ * （C5 宪法不破）。带宽=orb right 12px + 直径 ~44px + 余量。作用在
+ * wrapper 上——行 inline padding 会压过 CSS（B11 轮实测） */
+:root[data-kfm-pool-open] [data-pool-row-actions] {
+  padding-right: 56px;
+}
+:root[data-kfm-pool-open] [data-pool-config-actions] {
+  padding-right: 56px;
+}
+
+/* ── file-tree 皮（文件树 v1 判据稿 §三/§七；[data-kfm-fstree]=树页、
+ * [data-fstree-row]=平面行、[data-fsat-popup]=@ 引用弹窗（住全局 composer
+ * 条）。颜色/时长/曲线唯一来源本文件（P8/P9）：树页=**左抽屉**（右滑
+ * 入口方向一致，2026-09-11 拍板；与池页右抽屉互为镜像），收起走
+ * .kfm-closing 换名照播（ai-chat/池页同款机关）── */
+@keyframes kfm-fstree-page-in {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes kfm-fstree-page-out {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-100%); }
+}
+[data-kfm-fstree] {
+  animation: kfm-fstree-page-in var(--kfm-fstree-dur-in) var(--kfm-ease-spring) both;
+}
+[data-kfm-fstree].kfm-closing {
+  animation: kfm-fstree-page-out var(--kfm-dur-normal) var(--kfm-ease-out) both;
+}
+/* 真触摸横向手势放行（池页同款防治：列表区显式 pan-y，右滑留给 v1.1、
+ * 纵向滚动保持原生） */
+[data-kfm-fstree],
+[data-kfm-fstree-list] {
+  touch-action: pan-y;
+}
+
+/* 层级规则（§七 定案）：树页 z44 与池页同档（互斥态，两页并开时 DOM
+ * 后位者在上）；树页开（data-kfm-fstree-open）时 tmux 控件藏、输入栏+
+ * 光球升 45 恒顶（池页同款机关——@ 弹窗与「插入 @引用」回流都要求
+ * composer 恒可见可点） */
+:root[data-kfm-fstree-open] [data-tmux-tabs-root] {
+  display: none;
+}
+:root[data-kfm-fstree-open] [data-kfm-aichat-orb],
+:root[data-kfm-fstree-open] [data-kfm-aichat-bar] {
+  z-index: 45 !important;
+}
+
+/* 行入场 stagger（§3.3：translateY(8px)+opacity，每行 20ms 错开上限 12
+ * 行——delay 由插件 inline 注入；类只在展开后短窗内挂，滚动补挂不重播） */
+@keyframes kfm-fstree-row-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+[data-kfm-fstree] .kfm-fstree-stagger {
+  animation: kfm-fstree-row-in var(--kfm-dur-fast) var(--kfm-ease-out) both;
+}
+
+/* @ 引用弹窗（§4.1 模糊聚焦入场：pop-in 词汇复用，origin 左下） */
+[data-kfm-aichat-bar] [data-fsat-popup] {
+  animation: kfm-aichat-pop-in var(--kfm-dur-fast) var(--kfm-ease-out) both;
+  transform-origin: bottom left;
+}
+
+/* §3.3 无障碍：prefers-reduced-motion 全部瞬移 */
+@media (prefers-reduced-motion: reduce) {
+  [data-kfm-fstree],
+  [data-kfm-fstree] .kfm-fstree-stagger {
+    animation: none;
+  }
+}
+
+
+/* 未来主题切换示例（现在不启用）：
+:root[data-theme="light"] {
+  --kfm-page: #fafafb;
+  --kfm-canvas: #f1f2f3;
+  --kfm-surface: #fff;
+  --kfm-inset: #f7f8f9;
+  --kfm-hover: #f4f5f6;
+  --kfm-hover-2: #e7e9eb;
+  --kfm-ink: #1f2124;
+  --kfm-ink-2: #62656b;
+  --kfm-ink-3: #9a9da3;
+  --kfm-line: #d9dbe0;
+  --kfm-line-strong: #b0b3b8;
+  --kfm-accent: #007aff;
+  --kfm-green: #34c759;
+  --kfm-orange: #ff9500;
+  --kfm-red: #ff3b30;
+}
+*/

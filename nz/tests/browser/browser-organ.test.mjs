@@ -40,7 +40,9 @@ console.log(`[exam] 隔离实例：port=${PORT} fixture=${FIX}`);
 
 const srv = spawn(join(process.cwd(), 'node_modules', '.bin', 'tsx'), ['src/server/index.ts'], {
   cwd: process.cwd(), detached: true,
-  env: { ...process.env, NZ_PORT: String(PORT), NZ_NO_BELL_HOOK: '1', NZ_FS_ROOTS: FIX, NZ_AI_CONFIG_DIR: join(FIX, '.ai'), NZ_GATE_DIR: join(FIX, '.gate') },
+  // TMUX 剥离（2026-09-12 嵌套传染案）：考试孵化环境若在 tmux 会话里
+  // 跑，TMUX 变量进 pty → 浮窗 command 卡的 tmux 客户端拒附（④假红）
+  env: { ...process.env, TMUX: '', NZ_PORT: String(PORT), NZ_NO_BELL_HOOK: '1', NZ_FS_ROOTS: FIX, NZ_AI_CONFIG_DIR: join(FIX, '.ai'), NZ_GATE_DIR: join(FIX, '.gate') },
   stdio: ['ignore', 'ignore', 'ignore'],
 });
 const tmux = (a) => { try { execSync(`tmux ${a}`, { stdio: 'ignore' }); return true; } catch { return false; } };

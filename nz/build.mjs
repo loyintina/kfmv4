@@ -32,24 +32,38 @@ writeFileSync('public/build-info.json', JSON.stringify({ builtAt: new Date().toI
 // :root[data-theme="xxx"] 覆盖，不改组件。
 copyFileSync('src/client/tokens.css', 'public/tokens.css');
 
-// 缓存破坏：index.html 的 bundle/tokens 引用带内容哈希 —— 真机浏览器缓存旧包
-// 会让「修复实测」测到旧代码（8.8.3b 上浮被盖排查的干扰源之一；
-// 2026-09-02 真机实证：bundle 有哈希 tokens.css 没有 → WebView 旧 CSS 配新 JS，
-// 收起态 scaleX(0) 规则缺失标签排常显）。
+// 缓存破坏（2026-09-12 查询串死刑案终修）：本机 WebView 缓存键吞 query，
+// ?v=hash 全数撞进无名字段且旧条目 immutable 一年=新包永远进不来（真机
+// 实锤：?v=0d222d75 命中 4250b7a1 旧字节，浮窗热更整条腿堵死）。终修=
+// 内容哈希进文件名（路径唯一=键唯一，任何缓存行为都无从撞键）；无哈希
+// 旧名 bundle.js/tokens.css 仍产出（no-cache 头）兜底旧引用自愈一拍。
 // 哈希随内容变才变，不造成无意义 churn。
 const hash = createHash('sha256').update(readFileSync('public/bundle.js')).digest('hex').slice(0, 8);
 const cssHash = createHash('sha256').update(readFileSync('public/tokens.css')).digest('hex').slice(0, 8);
+const bundle = readFileSync('public/bundle.js');
+writeFileSync(`public/bundle.${hash}.js`, bundle);
+writeFileSync(`public/bundle.${hash}.js.gz`, gzipSync(bundle, { level: 9 }));
+writeFileSync(`public/bundle.${hash}.js.br`, brotliCompressSync(bundle, {
+  params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 11 },
+}));
+writeFileSync(`public/tokens.${cssHash}.css`, readFileSync('public/tokens.css'));
 const html = readFileSync('public/index.html', 'utf8');
 const stamped = html
-  .replace(/bundle\.js(\?v=[a-f0-9]{8})?/, `bundle.js?v=${hash}`)
-  .replace(/tokens\.css(\?v=[a-f0-9]{8})?/, `tokens.css?v=${cssHash}`);
+  .replace(/bundle(\.[a-f0-9]{8})?\.js(\?v=[a-f0-9]{8})?/, `bundle.${hash}.js`)
+  .replace(/tokens(\.[a-f0-9]{8})?\.css(\?v=[a-f0-9]{8})?/, `tokens.${cssHash}.css`);
 if (stamped !== html) writeFileSync('public/index.html', stamped);
+// 旧哈希文件清扫（保留当前代；gz/br 随主文件一同淘汰）
+for (const f of readdirSync('public')) {
+  const m = /^(bundle|tokens)\.[a-f0-9]{8}\.(js|css)/.exec(f);
+  if (m && !f.includes(`.${hash}.`) && !f.includes(`.${cssHash}.`)) {
+    try { (await import('fs')).unlinkSync(`public/${f}`); } catch { /* 竞态忽略 */ }
+  }
+}
 
 // 编码协商预压缩（2026-09-01 bundle 增重插曲：慢隧道首载超考卷预算）：
 // gz/br 兄弟文件与 bundle 同生同灭，server 静态层见兄弟+客户端
 // Accept-Encoding 才伺服（无兄弟自动回退原文，旧资源不受影响）。
 // 实测 281KB→gzip 90KB/br 79KB（32%/28%）。
-const bundle = readFileSync('public/bundle.js');
 writeFileSync('public/bundle.js.gz', gzipSync(bundle, { level: 9 }));
 writeFileSync('public/bundle.js.br', brotliCompressSync(bundle, {
   params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 11 },

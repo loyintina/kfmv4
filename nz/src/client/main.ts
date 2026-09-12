@@ -90,9 +90,18 @@ void loadTermCoreShared()
 // 静态演示（②的 TERM_DEMO）已退役——现在页面上跑的是真 PTY 会话。
 applyTermBundle(rootCtx);
 plugtest.register('term', (ctx) => applyTermBundle(ctx));
+// 浏览器器官浮窗专态（B-线 2026-09-11）：?float=1&fs=<会话> = 本 WebView
+// 只做浮窗终端（无标签排/文件树/开屏），会话切换走浮窗左竖线标签
+const floatMode = new URLSearchParams(location.search).get('float') === '1';
+const floatSession = new URLSearchParams(location.search).get('fs') ?? 'dsh';
+
 const termCards = rootCtx.get('termCards');
 if (termCards) {
-  void termCards.open().then((instId) => {
+  // 浮窗专态：卡身以 tmux 客户端命令直接拉起=专属 pty、出生即附着、
+  // 挂载零打字（打字注入会落进共享视界污染用户输入栏，2026-09-12
+  // 用户实拍 15 条重复命令定罪）
+  void termCards.open(floatMode ? { command: `tmux new-session -A -s ${floatSession}` } : undefined).then((instId) => {
+    if (floatMode) (window as unknown as Record<string, unknown>).__kfmFloatSpawned = floatSession;
     (window as unknown as Record<string, unknown>).__kfmNzTermCard = instId;
   }).catch((e) => {
     (window as unknown as Record<string, unknown>).__kfmNzTermCard = `OPEN FAIL ${e}`;
@@ -101,11 +110,6 @@ if (termCards) {
 
 // 供守视 eval 直读
 (window as unknown as Record<string, unknown>).__kfmNz = { rootCtx, bootLog, isHelloCleaned, host, gestures, cardTypes, permissions, plugtest };
-
-// 浏览器器官浮窗专态（B-线 2026-09-11）：?float=1&fs=<会话> = 本 WebView
-// 只做浮窗终端（无标签排/文件树/开屏），会话切换走浮窗左竖线标签
-const floatMode = new URLSearchParams(location.search).get('float') === '1';
-const floatSession = new URLSearchParams(location.search).get('fs') ?? 'dsh';
 
 // ========== UI 内核（plugin-contract §6 Step 1，2026-09-01 宪法 v0） ==========
 // 契约 docs/plugin-contract.md：UI 插件 = { id, mount(slot, ctx) → handle }。
