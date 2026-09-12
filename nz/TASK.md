@@ -2240,6 +2240,16 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   排不抢注意力）。新增钩子 __kfmNzTmuxTabsEnter（编程切换口，考卷/外
   部 agent 共用）。考卷 browser-organ ⑧a/⑧b 双向钉：13/13；term-boundary
   9/9、npm test 233 绿；bundle v=9993d26a 热更。
+- **✅ 浮窗字号拟合（2026-09-12 竖直变形案）**：用户真机观察「只压了
+  横向没压纵向」——纯横向挤画=字形横瘦竖不瘦扭曲，且纵向不缩导致浮
+  窗里整会话看不全。升级=字号拟合：浮窗字号按容器宽高反解
+  （fitFloatFont，钳 4.5–10px，shell 新增 setFontSize=样式+作废缓存+
+  重画），字格随字号线性缩 → 73 列×46 行自然放进浮窗，字形等比零变
+  形、整会话一眼全收；transform 挤画降级为残余微调（字号钳底时才出
+  场，paintScale≈1 为常态）。headless 实测：300px 容器反解 fs=7.05，
+  壳自然宽 274=容器宽，paintScale≈1.0，搅动仍 11。考卷 v5 A② 断言换
+  「自然宽≤容器+字号<10」；float-grid-mismatch 5/5、browser-organ
+  13/13、term-boundary 9/9、npm test 233 绿；bundle v=98b2a560 热更。
 - 浮窗 IME 避让（无 insets 监听，v0 接受 adjustPan）。
 - 壳 APK 装机（新包 versionCode=1789127333 / 70262B /
   md5 5a4b0f9a08ec3b36234c2587fe8a0c57，含 orb 定位修复；装机后先 L0

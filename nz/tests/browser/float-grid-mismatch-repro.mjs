@@ -108,7 +108,14 @@ async function sample(page, sess) {
 console.log('\n===== A：主格网 73×46（修复合同①②③） =====');
 const A = await openFloat({ c: 73, r: 46 }, 'nzspamA');
 check('A① 格网收编（卡=管道 73×46，与容器测量无关）', A.cols === 73 && A.rows === 46, `cols=${A.cols} rows=${A.rows}`);
-check('A② 挤画生效（paintScale<1）', A.paintScale > 0 && A.paintScale < 1, `paintScale=${A.paintScale}`);
+// ② v5 字号拟合案：壳自然宽必须 ≤ 容器（字号被反解到放得下为止），
+// 字号必须 <10（拟合真发生了）；transform 挤画降级为残余微调（≈1）
+const fit = await A.page.evaluate(() => {
+  const el = document.querySelector('.nz-term');
+  const pw = el.parentElement.clientWidth;
+  return { w: Math.round(el.getBoundingClientRect().width), pw, fs: +getComputedStyle(el).fontSize.replace('px', ''), ps: (window).__kfmNzTermScroll().paintScale };
+});
+check('A② 字号拟合（自然宽≤容器+6、字号<10、paintScale≈1）', fit.w <= fit.pw + 6 && fit.fs < 10 && fit.ps <= 1.001, `w=${fit.w} pw=${fit.pw} fs=${fit.fs} paintScale=${fit.ps}`);
 startLoad('nzspamA');
 await sleep(1200);
 const ra = await sample(A.page, 'nzspamA');

@@ -300,7 +300,7 @@ export function applyTermBundle(ctx: Context): void {
       // transform 建包含块（浏览器插件窗皮施加），卡身 left:0 即被收编进
       // 圆角窗。isFloat 单源在此，下游（fonts/probe/scrollEl/shell/RO）共用
       const isFloat = new URLSearchParams(location.search).get('float') === '1';
-      const termFs = isFloat ? 10 : 13;
+      let termFs = isFloat ? 10 : 13; // 浮窗：字号拟合案运行中会被反解重设（let）
       container.el.style.cssText = 'position:fixed;left:0;right:0;top:0;height:100%;overflow:hidden;'
         + 'box-sizing:border-box;padding-top:var(--sat,0px);padding-bottom:var(--sab,0px);';
       // 终端卡全屏期间锁死背景页滚动（boot 页比屏幕高，不锁会和终端抢
@@ -531,6 +531,25 @@ export function applyTermBundle(ctx: Context): void {
         // 布局宽 > 容器宽的溢出不给出横滚（视觉已压回，横滚只会露白边）
         scrollEl.style.overflowX = 'hidden';
         card.placeKb(); // 诱饵横坐标乘数变了，重钉
+      };
+      // 字号拟合（2026-09-12 竖直变形案）：纯横向挤画=字形「横瘦竖不瘦」
+      // 扭曲（用户真机观察定罪）。升级=浮窗字号按容器反解——字格随字号
+      // 线性缩，73 列 × 46 行自然放进浮窗，字形等比无变形、整会话一眼
+      // 全收；transform 挤画降级为残余微调（字号钳到下限时才出场）。
+      const fitFloatFont = (): void => {
+        if (!isFloat) return;
+        const m = metricNow();
+        if (m.cellW <= 0 || m.cellH <= 0 || card.cols <= 0 || card.rows <= 0) return;
+        const availW = container.el.clientWidth;
+        const availH = scrollEl.clientHeight;
+        if (availW <= 0 || availH <= 0) return;
+        const s = Math.min(availW / (card.cols * m.cellW), availH / (card.rows * m.cellH), 1);
+        const want = Math.round(Math.max(4.5, Math.min(10, termFs * s)) * 100) / 100;
+        if (Math.abs(want - termFs) >= 0.25) {
+          termFs = want;
+          shell.setFontSize(want); // 内部：样式+作废缓存+重画（renderFrame 重量字格）
+          measureCell(); // 闭包探针与壳同尺（历史追踪同源）
+        }
       };
 
       // 8.8.3c scrollback 集中状态机（standard-scrollback-8.8.3c 纪律，
@@ -800,6 +819,7 @@ export function applyTermBundle(ctx: Context): void {
           card.shell.resize(grid.cols, grid.rows); // 内部 renderFrame
           card.placeKb();
         }
+        fitFloatFont();
         applySqueeze();
         bridge.attachSession(id);
       };
@@ -1036,6 +1056,7 @@ export function applyTermBundle(ctx: Context): void {
           // 浮窗格网只跟管道（挤画案）：视口事件不重测行列，只重算挤画
           // （容器宽变了 scaleX 跟随）；管道格网变更唯一入口=bind 收编
           if (isFloat) {
+            fitFloatFont();
             applySqueeze();
             reportViewport('float-squeeze', { src });
             return;
@@ -1081,6 +1102,7 @@ export function applyTermBundle(ctx: Context): void {
           // tmux 格网拽成 20x5（2026-09-11 二轮）；展开态只重算挤画——
           // 格网跟管道（挤画案），容器宽变不改列数
           if (scrollEl.clientHeight < 100) return;
+          fitFloatFont();
           applySqueeze();
           return;
         }

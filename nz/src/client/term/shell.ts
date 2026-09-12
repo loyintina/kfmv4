@@ -242,6 +242,17 @@ export class TermShell {
    *  主字体若在首量后才加载完（fonts.load 提前 resolve 的浏览器），
    *  渲染字宽突变而缓存不刷 = 列算多截断。调用后下一帧重量（cjkDrop
    *  同随重量——字体落地后墨迹 ascent 才真）。 */
+  /** 改字号（2026-09-12 浮窗字号拟合案）：浮窗按容器反解字号后整体
+   *  重渲染——字格随字号线性缩，格网不变、字形等比、横竖同时「压缩」
+   *  到位（替代 transform 竖向变形的方案）。改样式 + 作废度量缓存 +
+   *  立即重画一帧。 */
+  setFontSize(fs: number) {
+    this.opts.fontSize = fs;
+    this.el.style.font = `${fs}px/1.25 ${TERM_FONT_STACK}`;
+    this.invalidateMetrics();
+    this.renderFrame();
+  }
+
   invalidateMetrics() {
     this.cellW = 0;
     this.cellH = 0;
