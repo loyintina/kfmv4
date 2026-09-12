@@ -2175,6 +2175,12 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   WebView 判死）。L2 铁证：zzA/zzB 实验全程用户 dsh 窗格零新增污染（计
   数恒 2→滚动清零）。遗留：④考卷红（C-b:switch 在考卷环境未落地，真机待
   复验）——与 IME 避让并列为浮窗收官仅存两项。
+- **③常驻管道池架构（已拍板待实施，2026-09-12 用户提案）**：启动读会
+  话表 → 每会话预拉一条专属 pty（tmux new-session -A 常驻客户端）→ 浮
+  窗/主终端切换=纯视图换绑（attachSession+tail 回放秒显），零打字零竞
+  态零重排抖动；新会话懒补管道、死会话回收。已知边界=同会话双端观看
+  的尺寸冲突为 tmux 语义（缓解：浮窗默认错开会话/后续缩放渲染）。
+  替代并收编 park/respawn 方案。
 - 浮窗 IME 避让（无 insets 监听，v0 接受 adjustPan）。
 - 壳 APK 装机（新包 versionCode=1789127333 / 70262B /
   md5 5a4b0f9a08ec3b36234c2587fe8a0c57，含 orb 定位修复；装机后先 L0
