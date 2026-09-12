@@ -2163,6 +2163,11 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   lab/device-agent/build/。npm test 233 绿、B 卷 8/9（④挂账）。
   包序列：1789144561（透明偏方+translation 拖）→1789146221（幻影拖拽）
   →1789146995（合成眼）→1789152041（芯片 border-box，热更免装）。
+- 折叠胶囊+TDZ 入账补注（2026-09-12）：折叠态=纯胶囊（层/轨 visibility
+  藏起、顶条折叠专属外观，真机抓帧验收）+collapsed TDZ 案（声明晚于引
+  用 effect deps → 渲染即 ReferenceError 整插件挂死，探针 pageerror 定
+  罪）。⚠ 流程债：折叠/TDZ 修复提交时未带新钉（pre-commit 拦后误走
+  chore 通道，a7370f68），补钉债=折叠视觉钉+float 页零 pageerror 钉。
 - 浮窗 IME 避让（无 insets 监听，v0 接受 adjustPan）。
 - 壳 APK 装机（新包 versionCode=1789127333 / 70262B /
   md5 5a4b0f9a08ec3b36234c2587fe8a0c57，含 orb 定位修复；装机后先 L0
