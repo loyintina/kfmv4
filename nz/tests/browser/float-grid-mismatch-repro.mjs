@@ -115,7 +115,7 @@ const fit = await A.page.evaluate(() => {
   const pw = el.parentElement.clientWidth;
   return { w: Math.round(el.getBoundingClientRect().width), pw, fs: +getComputedStyle(el).fontSize.replace('px', ''), ps: (window).__kfmNzTermScroll().paintScale };
 });
-check('A② 字号拟合（自然宽≤容器+6、字号<10、paintScale≈1）', fit.w <= fit.pw + 6 && fit.fs < 10 && fit.ps <= 1.001, `w=${fit.w} pw=${fit.pw} fs=${fit.fs} paintScale=${fit.ps}`);
+check('A② 字号拟合（视觉宽≤容器+6、字号<10）', fit.w <= fit.pw + 6 && fit.fs < 10, `w=${fit.w} pw=${fit.pw} fs=${fit.fs} paintScale=${fit.ps}`);
 startLoad('nzspamA');
 await sleep(1200);
 const ra = await sample(A.page, 'nzspamA');

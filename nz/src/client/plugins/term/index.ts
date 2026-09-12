@@ -538,22 +538,36 @@ export function applyTermBundle(ctx: Context): void {
       // 全收；transform 挤画降级为残余微调（字号钳到下限时才出场）。
       const fitFloatFont = (): void => {
         if (!isFloat) return;
-        const m = metricNow();
+        let m = metricNow();
         if (m.cellW <= 0 || m.cellH <= 0 || card.cols <= 0 || card.rows <= 0) return;
         const availW = container.el.clientWidth;
         const availH = scrollEl.clientHeight;
         if (availW <= 0 || availH <= 0) return;
-        // 折算回基准字号（10px）再解比值——若按当前字号算，s 被 min(...,1)
-        // 封顶后只能缩不能涨（真机 ratchet 实锤：瞬态小容器把字号踩到钳
-        // 底，cellH 停在 4.5px 时代的度量与活字体脱钩=文字超格挤在一起）
-        const k = 10 / termFs;
-        const cellW10 = m.cellW * k, cellH10 = m.cellH * k;
-        const s = Math.min(availW / (card.cols * cellW10), availH / (card.rows * cellH10), 1);
-        const want = Math.round(Math.max(4.5, Math.min(10, 10 * s)) * 100) / 100;
-        if (Math.abs(want - termFs) >= 0.25) {
-          termFs = want;
-          shell.setFontSize(want); // 内部：样式+作废缓存+重画（renderFrame 重量字格）
-          measureCell(); // 闭包探针与壳同尺（历史追踪同源）
+        // 解算器：折算回基准字号（10px）再解比值——按当前字号算会被
+        // min(...,1) 封顶成棘轮（只能缩不能涨，真机定罪过）
+        const solve = (): number => {
+          const k = 10 / termFs;
+          const s = Math.min(availW / (card.cols * m.cellW * k), availH / (card.rows * m.cellH * k), 1);
+          return Math.round(Math.max(4.5, Math.min(10, 10 * s)) * 100) / 100;
+        };
+        // 两拍闭环（2026-09-12 超格案）：安卓 WebView 有最小渲染字号——
+        // 声明 4.5px 被强制渲染成 6.4px，声明≠渲染 → 一次性线性解必然
+        // 与真值脱钩（真机实锤：度量缓存 2.49 vs 实测推进 3.2，73 列累
+        // 计偏半格网=文字超格挤在一起）。设完字号立刻重量真值二次修正，
+        // 残余交 applySqueeze 以真值压到贴合
+        const want1 = solve();
+        if (Math.abs(want1 - termFs) >= 0.25) {
+          termFs = want1;
+          shell.setFontSize(want1);
+          m = metricNow(); // setFontSize 内 renderFrame 已重量（真值）
+          if (m.cellW > 0) {
+            const want2 = solve();
+            if (Math.abs(want2 - termFs) >= 0.25) {
+              termFs = want2;
+              shell.setFontSize(want2);
+            }
+          }
+          measureCell(); // 闭包探针与壳同尺
         }
       };
 
