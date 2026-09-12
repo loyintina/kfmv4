@@ -208,6 +208,32 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
   });
   check('⑦c 卡身归编：float 态层 transform+left26、卡身 left0（层收编裁圆角）', insetOk,
     `layer=${await gpage.evaluate(() => document.getElementById('kfm-layer-layout')?.style.left + '/' + document.getElementById('kfm-layer-layout')?.style.transform)}, card=${await gpage.evaluate(() => document.querySelector('.kfm-layout')?.style.left)}`);
+  // ⑦d 首挂注入禁绝（2026-09-12 15条命令案回归钉）：卡身 command 直拉=
+  // 出生即附着，浮窗页挂载后任何时刻不得注入 tmux new-session（旧首挂
+  // 轮询在屏非空后 300ms 打字=污染源；本钉防其以任何形态回归）
+  {
+    const ictx = await browser.newContext({ viewport: { width: 240, height: 520 } });
+    await ictx.addInitScript(() => {
+      (window).__injCalls = [];
+      let tries = 0;
+      const wrap = () => {
+        const oi = (window).__kfmNzTermInject;
+        if (typeof oi === 'function' && !oi.__wrapped) {
+          const wrapped = function(s){ (window).__injCalls.push(String(s)); return oi.call(this, s); };
+          wrapped.__wrapped = true;
+          (window).__kfmNzTermInject = wrapped;
+        } else if (tries++ < 50) setTimeout(wrap, 100);
+      };
+      wrap();
+    });
+    const ipage = await ictx.newPage();
+    await ipage.goto(`${BASE}/?nosplash&float=1&fs=ftA`, { waitUntil: 'domcontentloaded', timeout: 40000 }).catch(() => {});
+    await sleep(5000); // 旧轮询发射窗口（屏非空后 ~300ms 内打字）全覆盖
+    const calls = await ipage.evaluate(() => (window).__injCalls || []);
+    const bad = calls.filter((c) => c.includes('tmux new-session'));
+    check('⑦d 首挂注入禁绝：浮窗页 5 秒内零 tmux 命令注入', bad.length === 0, `calls=${JSON.stringify(calls)}`);
+    await ictx.close().catch(() => {});
+  }
   await gctx.close().catch(() => {});
 }
 

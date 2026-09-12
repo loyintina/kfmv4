@@ -339,13 +339,14 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
         }, []);
 
         useEffect(() => {
-          // 首挂就绪轮询：终端钩在场且屏非空（shell prompt 已画）才注入
+          // 就绪门闩（2026-09-12 零打字终案）：卡身由 main 以 tmux 客户端
+          // 命令直接拉起=出生即附着，此处只等屏非空开门，**不再注入任何
+          // 命令**——旧首挂注入打进专属 pty 的 tmux 客户端=转发进会话程
+          // 序输入区（用户输入栏 15 条重复命令案真凶，调用栈实锤）
           const t = setInterval(() => {
             const w = window as unknown as Record<string, unknown>;
-            if (typeof w.__kfmNzTermInject !== 'function') return;
             if (((w.__kfmNzTermScreen as () => string)?.() ?? '').trim() === '') return;
             clearInterval(t);
-            w.__kfmNzTermInject(`tmux new-session -A -s ${session}\r`);
             attachedRef.current = session;
             readyRef.current = true; // 门闩开：此后标签切换才生效
           }, 300);
