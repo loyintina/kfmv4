@@ -92,6 +92,7 @@
 <!-- gen:agent-inbox:start -->
 | 日期 | 信件 | 回哪条 | 状态 |
 |------|------|--------|------|
+| 09-12 | [`kfmv4-review-daily-progress-2026-09-12-report.md`](kfmv4-review-daily-progress-2026-09-12-report.md) | 无（主动通报；晨检日报的信箱化，观察者通报口径，不替代线内第一手通报） | 通报完毕（当日评审：晨检全绿无红，315 封，无停滞在途） |
 | 2026-08-15 | [`kfm-na-base-design-response.md`](kfm-na-base-design-response.md) | [`kfm-na-base-design-submission.md`](kfm-na-base-design-submission.md) | ✅ 已验证（2026-08-15 NA 通报：规格书 v1.1 落地 + `src/base/` 1105 行、考题 923 行 17 题全绿，行数核实属实） |
 | 2026-08-15 | [`kfm-na-base-design-submission.md`](kfm-na-base-design-submission.md) | —（首信；原信在 kfm-na 临时单文件信箱，整合时迁此为正本） | ✅ 已验证（回信见下行） |
 | 2026-08-15 | [`kfm-na-base-landing-report.md`](kfm-na-base-landing-report.md) | 评审回信的实施注记回呈（4 条，无需再裁） | ✅ 已核（行数与通报一致；epoch Reload 防御层等 4 条注记合理） |
