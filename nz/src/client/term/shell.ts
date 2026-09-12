@@ -156,7 +156,7 @@ export class TermShell {
     el.appendChild(this.historyDiv);
     for (let i = 0; i < opts.rows; i++) {
       const d = document.createElement('div');
-      d.style.cssText = 'white-space:pre;height:1.25em;';
+      d.style.cssText = 'white-space:pre;height:' + this.rowHpx() + ';';
       el.appendChild(d);
       this.rowDivs.push(d);
       this.rowCache.push('');
@@ -192,7 +192,7 @@ export class TermShell {
     this.histCount = 0;
     while (this.rowDivs.length < rows) {
       const d = document.createElement('div');
-      d.style.cssText = 'white-space:pre;height:1.25em;';
+      d.style.cssText = 'white-space:pre;height:' + this.rowHpx() + ';';
       this.el.insertBefore(d, this.cursorEl);
       this.rowDivs.push(d);
       this.rowCache.push('');
@@ -244,13 +244,28 @@ export class TermShell {
    *  同随重量——字体落地后墨迹 ascent 才真）。 */
   /** 改字号（2026-09-12 浮窗字号拟合案）：浮窗按容器反解字号后整体
    *  重渲染——字格随字号线性缩，格网不变、字形等比、横竖同时「压缩」
-   *  到位（替代 transform 竖向变形的方案）。改样式 + 作废度量缓存 +
-   *  立即重画一帧。 */
+   *  到位（替代 transform 竖向变形的方案）。改样式 + 行高 px 同步 +
+   *  作废度量缓存 + 立即重画一帧。 */
   setFontSize(fs: number) {
     this.opts.fontSize = fs;
     this.el.style.font = `${fs}px/1.25 ${TERM_FONT_STACK}`;
+    // 安卓最小渲染字号钳制：声明≠渲染（真机 4.5→6.4）。行高按**渲染
+    // 真值**走——按声明算的行盒装不下渲染字形=上下挤（真机实锤 rowH
+    // 5.63 装 6.4 的字）
+    const real = parseFloat(getComputedStyle(this.el).fontSize) || fs;
+    const h = `${(real * 1.25).toFixed(2)}px`;
+    for (const d of this.rowDivs) d.style.height = h;
     this.invalidateMetrics();
     this.renderFrame();
+  }
+
+  /** 行高 px（2026-09-13 浮窗上下挤案）：`1.25em` 在安卓最小字号钳制下
+   *  解析错位——声明 4.5px 被渲染成 6.4px，行盒却仍按 4.5 解（实测行盒
+   *  5.62px 装 6.4px 的字=上下挤）。显式 px，读渲染真值 */
+  private rowHpx(): string {
+    const declared = this.opts.fontSize ?? 13;
+    const real = parseFloat(getComputedStyle(this.el).fontSize) || declared;
+    return `${(real * 1.25).toFixed(2)}px`;
   }
 
   invalidateMetrics() {
@@ -396,7 +411,7 @@ export class TermShell {
     const frame = this.core.history_frame(from, h);
     for (const line of frame.split('\n')) {
       const d = document.createElement('div');
-      d.style.cssText = 'white-space:pre;height:1.25em;';
+      d.style.cssText = 'white-space:pre;height:' + this.rowHpx() + ';';
       this.renderRow(d, line); // 协议同 render_frame：样式在历史区不掉
       this.historyDiv.appendChild(d);
       this.histCount++;

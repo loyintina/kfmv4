@@ -2265,3 +2265,13 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   真格网（污账自愈）。8026 真机抓数：浮窗 inner 208×290、fs=6.4px、
   cellW=2.49（比值与主终端 0.39-0.41 一致=度量自洽）。float 卷 5/5、
   npm test 233、browser-organ 13/13；bundle v=116a1ab2 热更。
+- **✅ 浮窗行高 px 化+细字描边（2026-09-13 上下挤案）**：用户复验「左右
+  不挤了但上下挤」。根因=行盒 `1.25em` 在安卓最小字号钳制下按**声明**
+  字号（4.5）解析，而行内文字按**渲染**字号（6.4）画——行盒 5.62px 装
+  6.4px 的字=上下叠字。修=shell 行高显式 px 化（rowHpx 读渲染真值
+  computed font-size ×1.25，setFontSize 同步刷全部行盒；真机复验
+  cellH=8=rowH 咬合）。细字=用户提案「换细字体」：资产盘点无细字重
+  （NaMain/NaCJK/JBM 均 400）→ 采用背景色描边视觉削细（webkitTextStroke
+  0.35px TERM_BG，浮窗专属，主终端 13px 不适用）；真机三方案 A/B 截图
+  （NaMain/JBM/NaMain+描边）判 c 最清爽。float 卷 7/7、npm test 233、
+  bundle v=bca927f3 热更，用户目验终审。

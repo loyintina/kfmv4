@@ -29,6 +29,7 @@ import { registerCardType } from '../../card-types.js';
 import { createContainer } from '../../host.js';
 import { loadTermCoreShared, type TermCoreGlue, type TermCoreHandle } from '../../term-core.js';
 import { TermShell, TERM_FONT_STACK } from '../../term/shell.js';
+import { TERM_BG } from '../../term/palette.js';
 import { TermWsBridge } from '../../term/bridge.js';
 import { mapText } from '../../term/keymap.js';
 import { KEYBAR_H, MOD_ALT, MOD_CTRL, MOD_SHIFT } from '../../term/keybar.js';
@@ -490,6 +491,10 @@ export function applyTermBundle(ctx: Context): void {
       scrollEl.appendChild(termEl);
       const shell = new TermShell(core, termEl, { cols: size.cols, rows: size.rows, fontSize: termFs });
       liveShell = shell; // 字格单源：此后 measure/checkDrift 吃壳渲染尺
+      // 浮窗细字（2026-09-13 用户拍板「换细字体观感更好」）： tiny 字号下
+      // 常规字重糊成小墨团——背景色描边=视觉削细笔画（假细体，零字体资
+      // 产成本），浮窗专属；主终端 13px 不需要（描了发飘）
+      if (isFloat) termEl.style.webkitTextStroke = `0.35px ${TERM_BG}`;
       // 底锚定两件套（构造后补——构造函数会重写 cssText，属性级补设不冲）
       termEl.style.marginTop = 'auto';
       termEl.style.flex = 'none';

@@ -133,6 +133,18 @@ const rb = await sample(B.page, 'nzspamB');
 console.log(`[B] 搅动度=${rb.churn} 行次/6s`);
 check('B② 同样静止（搅动 ≤18 行次/6s）', rb.churn <= 18, `churn=${rb.churn}`);
 
+// ---------- ⑥ 行高咬合钉（2026-09-13 上下挤案回归位） ----------
+// 安卓最小字号钳制：声明≠渲染。行盒若按声明（em/声明 px）解析就会
+// 装不下渲染字形=上下叠字。钉：行盒高必须 ≈ 渲染字号×1.25（渲染真值）
+const rowFit = await A.page.evaluate(() => {
+  const el = document.querySelector('.nz-term');
+  const row = el.children[1];
+  const real = +getComputedStyle(el).fontSize.replace('px', '');
+  const rowH = +row.getBoundingClientRect().height.toFixed(2);
+  return { rowH, want: +(real * 1.25).toFixed(2) };
+});
+check('⑥ 行高咬合（行盒高≈渲染字号×1.25，±0.3）', Math.abs(rowFit.rowH - rowFit.want) <= 0.3, `rowH=${rowFit.rowH} want=${rowFit.want}`);
+
 // ---------- ⑤ ratchet 反向钉（2026-09-12 竖直变形案第二案） ----------
 // v1 棘轮：按当前字号解比值 + min(...,1) 封顶 = 字号只能缩不能涨——
 // 瞬态小容器踩到钳底后永世不得翻身（真机「文字超格挤在一起」根因）。
