@@ -132,6 +132,11 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
     () => (window).__kfmNzTermScreen?.().includes('BMB-ORGAN-5248'), null, { timeout: 15000, polling: 300 },
   ).then(() => true).catch(() => false);
   const sess = await fpage.evaluate(() => (window).__kfmBrowserFloat?.().session);
+  // 两段式切换的视觉合同（2026-09-12 补强）：active 芯片高亮必须跟随
+  const chipHi = await fpage.evaluate(() => {
+    const b = document.querySelector('[data-browser-float-tab="ftB"]');
+    return b ? b.style.background.replace(/\s/g, '').includes('10,132,255') : false;
+  });
   const shot = await fpage.evaluate(() => ({ detachShot: ((window).__detachShot ?? '').slice(-80), at: (window).__switchInjectedAt ?? null }));
   const seq = await fpage.evaluate(() => { clearInterval((window).__rec); return (window).__scrSeq.map((s) => s.replace(/\s+$/,'').slice(0, 60)); });
   const dump = await fpage.evaluate(() => ({
@@ -141,7 +146,7 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
     bootTail: (window).__kfmNz?.bootLog?.slice(-4) ?? [],
   }));
   const scr = await fpage.evaluate(() => (window).__kfmNzTermScreen?.() ?? '');
-  check('④浮窗切会话：首挂就绪后点 ftB 标签 → 终端屏真换 ftB', ready && sw && sess === 'ftB', `switched=${sw} session=${sess} screen=${JSON.stringify(scr.split('\n').filter((l) => l.trim()).slice(0, 3))} seq=${JSON.stringify(seq)} shot=${JSON.stringify(shot)} fErr=${JSON.stringify(fErrors.slice(-2))} dump=${JSON.stringify(dump)}`);
+  check('④浮窗切会话：首挂就绪后点 ftB 标签 → 终端屏真换 ftB', ready && sw && sess === 'ftB' && chipHi, `chipHi=${chipHi} switched=${sw} session=${sess} screen=${JSON.stringify(scr.split('\n').filter((l) => l.trim()).slice(0, 3))} seq=${JSON.stringify(seq)} shot=${JSON.stringify(shot)} fErr=${JSON.stringify(fErrors.slice(-2))} dump=${JSON.stringify(dump)}`);
 }
 
 // ⑤ 会话表端点

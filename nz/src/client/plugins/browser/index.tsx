@@ -256,10 +256,11 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           if (rail) (rail as HTMLElement).style.visibility = collapsed ? 'hidden' : 'visible';
         }, [collapsed]);
 
-        // 附着账（浮窗世界起家=裸 zsh 未进 tmux）：首挂由下面的就绪轮询
-        // 完成；切换时才需要 C-b d 脱离舞步（已附着前提下）
+        // 附着账（2026-09-12 终案）：卡身由 main 以 tmux 客户端命令直接
+        // 拉起=出生即附着；就绪门闩等屏非空开后，标签切换才生效
         const attachedRef = useRef(session);
-        const readyRef = useRef(false); // 首挂注入完成=门闩开
+        const readyRef = useRef(false);
+        const switchingRef = useRef(false); // 两段式切换进行中（防连点叠加）
 
         // 顶条三合一·DOM 手势版（2026-09-11 二轮，壳只留哑原语桥）：拖拽=
         // floatDragBy；点按=floatCollapse 翻转；长按 400ms 且位移<slop=
@@ -359,10 +360,18 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           const inject = (window as unknown as Record<string, unknown>).__kfmNzTermInject as ((s: string) => void) | undefined;
           if (!inject) return;
           if (attachedRef.current) {
-            // 专属 pty 内切换：tmux 命令提示符（C-b :）——零脱属、零共享
-            // 视界、零 shell 阶段（④竞态的注入舞蹈随专属 pty 终结）；
-            // 打字只进浮窗自己的客户端，用户主终端不可见
-            inject(`\u0002:switch-client -t ${name}\r`);
+            // 专属 pty 内切换：tmux 命令提示符（C-b :）**两段式**——先开
+            // 提示符，250ms 后补命令。同帧连发会竞态：提示符未就绪，命令
+            // 字节落进会话程序输入区（2026-09-12 真机实录：命令文字出现
+            // 在主会话+橙条空挂）。打字只进浮窗专属客户端，主终端不可见；
+            // switching 锁防连点叠加
+            if (switchingRef.current) return;
+            switchingRef.current = true;
+            inject('\u0002:');
+            setTimeout(() => {
+              inject(`switch-client -t ${name}\r`);
+              switchingRef.current = false;
+            }, 250);
             attachedRef.current = name;
             setActive(name);
           } else {
