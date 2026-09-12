@@ -342,8 +342,10 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
 
         // 常驻管道池（2026-09-12 管道池架构终案）：每会话一条专属 tmux
         // 客户端管道常驻复用；切换=卡片换绑（attachSession+tail 回放秒
-        // 显），零打字零竞态零重排抖动。出生绑定 fs 的管道
-        const poolRef = useRef<Map<string, string>>(new Map());
+        // 显），零打字零竞态零重排抖动。出生绑定 fs 的管道。值带格网账
+        // （挤画案）：管道拉起时的尺寸入账，bind 时收编给卡片——卡片
+        // 格网恒=管道格网，自测量列数退役
+        const poolRef = useRef<Map<string, { id: string; grid: { cols: number; rows: number } }>>(new Map());
         // 主终端格网（主世界 resize 时广播进 localStorage）：管道池按主格
         // 网拉起=会话恒定全宽，主终端切换零窄闪（2026-09-12 窄闪案终修）
         const mainGrid = (): { cols: number; rows: number } => {
@@ -358,7 +360,7 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
             const w = window as unknown as Record<string, unknown>;
             if (parkedRef.current || attachedRef.current) { clearInterval(t); return; }
             const openPty = w.__kfmNzTermOpenPty as ((c: string, cols: number, rows: number) => Promise<string>) | undefined;
-            const bind = w.__kfmNzTermBind as ((id: string) => void) | undefined;
+            const bind = w.__kfmNzTermBind as ((id: string, grid?: { cols: number; rows: number }) => void) | undefined;
             const scrFn = w.__kfmNzTermScreen as (() => string) | undefined;
             if (typeof openPty !== 'function' || typeof bind !== 'function' || typeof scrFn !== 'function') return;
             if (scrFn().trim() === '') return;
@@ -366,8 +368,8 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
             try {
               const g0 = mainGrid();
               const id = await openPty(`tmux new-session -A -s ${session}`, g0.cols, g0.rows);
-              poolRef.current.set(session, id);
-              bind(id);
+              poolRef.current.set(session, { id, grid: g0 });
+              bind(id, g0);
               attachedRef.current = session;
               readyRef.current = true;
             } catch { /* 拉起失败：下一拍重试 */ }
@@ -381,7 +383,7 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           if (name === attachedRef.current) return;
           const w = window as unknown as Record<string, unknown>;
           const openPty = w.__kfmNzTermOpenPty as ((c: string, cols: number, rows: number) => Promise<string>) | undefined;
-          const bind = w.__kfmNzTermBind as ((id: string) => void) | undefined;
+          const bind = w.__kfmNzTermBind as ((id: string, grid?: { cols: number; rows: number }) => void) | undefined;
           if (typeof openPty !== 'function' || typeof bind !== 'function') return;
           if (switchingRef.current) return;
           switchingRef.current = true;
@@ -389,13 +391,13 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
             try {
               // 池内无此会话管道则拉起（懒补）；有则直接换绑（attachSession
               // + tail 回放秒显）——零打字零竞态
-              let id = poolRef.current.get(name);
-              if (!id) {
+              let e = poolRef.current.get(name);
+              if (!e) {
                 const g = mainGrid();
-                id = await openPty(`tmux new-session -A -s ${name}`, g.cols, g.rows);
+                e = { id: await openPty(`tmux new-session -A -s ${name}`, g.cols, g.rows), grid: g };
               }
-              poolRef.current.set(name, id);
-              bind(id);
+              poolRef.current.set(name, e);
+              bind(e.id, e.grid);
               attachedRef.current = name;
               setActive(name);
             } finally {
@@ -419,18 +421,20 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
             const want = ((e as CustomEvent).detail as string) || session;
             const w = window as unknown as Record<string, unknown>;
             const openPty = w.__kfmNzTermOpenPty as ((c: string, cols: number, rows: number) => Promise<string>) | undefined;
-            const bind = w.__kfmNzTermBind as ((id: string) => void) | undefined;
+            const bind = w.__kfmNzTermBind as ((id: string, grid?: { cols: number; rows: number }) => void) | undefined;
             if (typeof openPty !== 'function' || typeof bind !== 'function') return;
             if (attachedRef.current === want) { readyRef.current = true; return; }
             void (async () => {
               try {
-                let id = poolRef.current.get(want);
-                if (!id) {
-                  const cell = (w.__kfmNzTermScroll as (() => { cellW: number; cellH: number }) | undefined)?.() ?? { cellW: 5.2, cellH: 12.5 };
-                  id = await openPty(`tmux new-session -A -s ${want}`, Math.max(20, Math.floor(innerWidth / cell.cellW)), 23);
+                let e = poolRef.current.get(want);
+                if (!e) {
+                  // 懒补统一走主格网（挤画案）：此前 innerWidth 自算列数
+                  // 是格网错位的又一处来源，随管道池格网账一并退役
+                  const g = mainGrid();
+                  e = { id: await openPty(`tmux new-session -A -s ${want}`, g.cols, g.rows), grid: g };
                 }
-                poolRef.current.set(want, id);
-                bind(id);
+                poolRef.current.set(want, e);
+                bind(e.id, e.grid);
                 attachedRef.current = want;
                 readyRef.current = true;
                 setActive(want);

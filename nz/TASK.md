@@ -2193,6 +2193,33 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   池附着跨进出保持；rail 两段式切换真机过。浮窗页 10s 自愈热更在常驻世
   界下照常工作。验收清单余项：拖拽 1:1/折叠胶囊/rail 切换手感（用户终
   验）。
+- **✅ 浮窗挤画终修（2026-09-12 刷屏案）**：用户报「kimi 输出时浮窗被
+  状态等待条反复往上刷，根本看不到输出」。根因=上一条尺寸仲裁案只做了
+  管道按主格网拉起半件事，浮窗渲染卡仍按自容器量列（headless 54 列），
+  73 列流进窄核逐帧折行重绘定位全错=刷屏；上上条提交信息声称的「挤画
+  （73→52 列）」无实现（git show e17c8e5b 定罪，实改仅 22 行）。修法=
+  补完另一半：①`__kfmNzTermBind(id, grid?)` 格网收编（卡片格网=拉起时
+  管道格网，tail 回放按收编后行列重建；主终端 tmux-tabs 不传 grid 零
+  变化）②壳 scaleX 挤画（termEl 自然宽+scaleX 压进浮窗宽，sy 恒 1 滚
+  动语义不碰；paintScale 判卷字段入 Scroll 钩）③浮窗冻结自测量重排
+  （checkDrift/scheduleResize/RO 格网只跟管道，折叠<100px 冻结保留）
+  ④placeKb 横坐标乘 paintScale+shell.cellAtPoint 挤压态视觉字宽反推
+  ⑤shell.resize 升 (cols,rows) 双参（opts.cols 必须跟，cellAtPoint 边
+  界/canvasShot 宽不吃旧值）⑥浮窗管道池带格网账+onEnter 懒补统一主格
+  网（innerWidth 自算列数是错位又一来源，退役）。
+  **观测教训（三连假阴性换一课）**：tmux 客户端帧带 ?1049h=ALT 屏，
+  histLen 恒 0 是设计内——histLen/scrollHeight 判卷双盲，刷屏唯一有效
+  指纹=屏面搅动度（churn：相邻两拍不同行数）；另 send-keys 负载引号嵌
+  套会被外层 shell 吃掉（单引号直投）+出生附着门闩必须等
+  __kfmBrowserFloat().attached===会话名（sessionId 在出生 zsh 就非空）。
+  考卷 float-grid-mismatch-repro v4（收编+挤画+churn 双列断言）：A 页
+  73×46 收编 paintScale=0.75、churn=11（修复前同负载错位页=211，A/B
+  分离定罪卷宗在 git 历史里）；browser-organ 11/11、term-boundary 9/9、
+  npm test 233 绿；bundle v=946c0b31 已上 8023 实服。L3 真机像素验收
+  待壳 CDP 隧道（8031）回连后补。运维事故入账：排障中 curl 误打中继
+  控制口（8028/8031 是 DIAL 线控协议非 HTTP）顶掉 APK 控制信道并致旧
+  中继进程僵死（accept 后事件不醒、CLOSE-WAIT 堆积），已按原参重启；
+  教训=中继三口只有 client 口可 HTTP 探，控制/桥口禁碰。
 - 浮窗 IME 避让（无 insets 监听，v0 接受 adjustPan）。
 - 壳 APK 装机（新包 versionCode=1789127333 / 70262B /
   md5 5a4b0f9a08ec3b36234c2587fe8a0c57，含 orb 定位修复；装机后先 L0

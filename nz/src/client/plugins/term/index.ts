@@ -74,6 +74,12 @@ interface TermCardInstance {
    * 正确性），渲染按档位调度——平常 16ms 内上屏（打字手感不变），
    * 洪峰（500ms 窗内 >16KB）降 150ms 档跳帧，尾帧必画。 */
   scheduleRender: (nBytes: number) => void;
+  /** 挤画横向缩放（2026-09-12 刷屏案）：浮窗卡格网=管道格网后，壳用
+   * scaleX 压进浮窗宽度（e17c8e5b 只做了「管道按主格网拉起」半件事，
+   * 卡片仍按自容器量列=73 列流进窄核逐帧折行泵行=刷屏，A/B 考卷
+   * 211 vs 11 行次/6s 定罪）。1=未挤（主终端恒 1）。placeKb 反缩放
+   * 乘数、判卷直读。 */
+  paintScale: number;
 }
 
 /** 洪峰节流渲染调度器（2026-08-30 attach 洪峰定罪：300KB/1.2s 到齐、
@@ -491,9 +497,41 @@ export function applyTermBundle(ctx: Context): void {
         cardId, sessionId: null, core, shell, cols: size.cols, rows: size.rows,
         placeKb: () => {}, atBottom: true, followOutput: () => {}, inputToBottom: () => {},
         syncAlt: () => {}, checkDrift: () => {}, scheduleRender: () => {},
+        paintScale: 1,
       };
       instances.set(cardId, card);
       card.scheduleRender = makeRenderScheduler(card);
+
+      // 挤画应用器（2026-09-12 刷屏案终修）：浮窗卡格网收编管道格网后，
+      // 壳画布保持自然宽（cols×cellW），scaleX 压进容器可视宽。只动视觉
+      // 不动格网：行内容/光标画在 termEl 内随之缩放（无需改壳）；纵向恒
+      // sy=1（滚动语义不碰）。sy 若哪天要压，placeKb/cellAtPoint/renderFrame
+      // nearest 的坐标换算都得跟——现阶段明确不做。
+      let paintScale = 1;
+      const applySqueeze = (): void => {
+        if (!isFloat) return; // 主终端永不挤（格网=自容器测量，两码事）
+        const m = metricNow();
+        if (m.cellW <= 0) return; // 字格未量出（首帧前）：下一帧/RO 再试
+        const naturalW = card.cols * m.cellW;
+        const availW = container.el.clientWidth;
+        if (naturalW <= 0 || availW <= 0) return;
+        const sx = Math.min(1, availW / naturalW);
+        if (Math.abs(sx - paintScale) < 0.005) return; // 幂等：没变不动
+        paintScale = sx;
+        card.paintScale = sx;
+        if (sx < 1) {
+          termEl.style.width = `${Math.round(naturalW)}px`;
+          termEl.style.transformOrigin = 'left top';
+          termEl.style.transform = `scaleX(${sx.toFixed(4)})`;
+        } else {
+          // 容器比格网还宽：回自然布局宽，清变换
+          termEl.style.transform = '';
+          termEl.style.width = '';
+        }
+        // 布局宽 > 容器宽的溢出不给出横滚（视觉已压回，横滚只会露白边）
+        scrollEl.style.overflowX = 'hidden';
+        card.placeKb(); // 诱饵横坐标乘数变了，重钉
+      };
 
       // 8.8.3c scrollback 集中状态机（standard-scrollback-8.8.3c 纪律，
       // 散写必翻车）：atBottom 初始 true；新输出仅 true 才跟底（follow
@@ -639,6 +677,8 @@ export function applyTermBundle(ctx: Context): void {
         // C4 对照题取数口：壳渲染尺（宽 span 断言用）
         cellW: shell.metrics.cellW,
         cellH: shell.metrics.cellH,
+        // 挤画缩放（2026-09-12 刷屏案判卷字段：<1=挤压中，1=未挤）
+        paintScale: card.paintScale,
         getContainer: () => scrollEl,
       });
       // 会话续命判卷钩子（热更闭环考卷用，并列扩展不碰既有语义）：
@@ -684,7 +724,9 @@ export function applyTermBundle(ctx: Context): void {
       card.placeKb = () => {
         const off = shell.cursorOffset();
         if (!off) return;
-        kb.style.left = `${off.x}px`;
+        // 挤画反缩放：cursorOffset 报 termEl 自然坐标，诱饵挂容器坐标系
+        // （transform 之外），横向乘 paintScale 对齐视觉位（sy 恒 1，纵向不动）
+        kb.style.left = `${off.x * paintScale}px`;
         kb.style.top = `${off.y - scrollEl.scrollTop}px`;
       };
 
@@ -745,9 +787,20 @@ export function applyTermBundle(ctx: Context): void {
       // 竞态零重排抖动（用户提案终案）
       win.__kfmNzTermOpenPty = async (command: string, cols: number, rows: number): Promise<string> =>
         bridge.open({ command, cols, rows });
-      win.__kfmNzTermBind = (id: string): void => {
+      win.__kfmNzTermBind = (id: string, grid?: { cols: number; rows: number }): void => {
         if (!id) return;
         card.sessionId = id;
+        // 格网收编（挤画案，2026-09-12）：浮窗绑定时把卡片格网对齐管道
+        // 尺寸——tail 回放的核重建按收编后行列走。不带 grid 的调用（主终
+        // 端 tmux-tabs 换绑）行为零变化。
+        if (grid && (grid.cols !== card.cols || grid.rows !== card.rows)) {
+          card.cols = grid.cols;
+          card.rows = grid.rows;
+          card.core.resize(grid.cols, grid.rows);
+          card.shell.resize(grid.cols, grid.rows); // 内部 renderFrame
+          card.placeKb();
+        }
+        applySqueeze();
         bridge.attachSession(id);
       };
       win.__kfmNzTermResizeTo = (cols: number, rows: number): void => {
@@ -980,6 +1033,13 @@ export function applyTermBundle(ctx: Context): void {
             reportViewport('ime-pan', { src });
             return;
           }
+          // 浮窗格网只跟管道（挤画案）：视口事件不重测行列，只重算挤画
+          // （容器宽变了 scaleX 跟随）；管道格网变更唯一入口=bind 收编
+          if (isFloat) {
+            applySqueeze();
+            reportViewport('float-squeeze', { src });
+            return;
+          }
           // 行数对卡身量：scrollEl.clientHeight 源自 vv 锚定的卡身（已被
           // 真可见区限高 + overflow:hidden 硬裁剪），rows×cellH 恒
           // ≤ 真可见区——chrome 显隐/键盘弹收都物理画不出卡外。
@@ -995,7 +1055,7 @@ export function applyTermBundle(ctx: Context): void {
             card.cols = s.cols;
             card.rows = s.rows;
             card.core.resize(s.cols, s.rows);
-            card.shell.resize(s.rows); // 内部 renderFrame → 光标 nearest 兜底
+            card.shell.resize(s.cols, s.rows); // 内部 renderFrame → 光标 nearest 兜底
             card.placeKb();
             if (card.sessionId) bridge.resize(card.sessionId, s.cols, s.rows);
             // 重测落地后补报一条：让读日志的 agent 看到「事件→行列落地」的
@@ -1016,7 +1076,14 @@ export function applyTermBundle(ctx: Context): void {
       // 浮窗折叠态（视口压成 24dp 浮标）必须冻结格网：跟手重排会把附着
       // 会话的 tmux 格网拽成 20x5，压扁对面 TUI（2026-09-11 二轮）
       const scrollRO = new ResizeObserver(() => {
-        if (isFloat && scrollEl.clientHeight < 100) return;
+        if (isFloat) {
+          // 折叠态（视口压成 24dp 浮标）冻结：跟手重排会把附着会话的
+          // tmux 格网拽成 20x5（2026-09-11 二轮）；展开态只重算挤画——
+          // 格网跟管道（挤画案），容器宽变不改列数
+          if (scrollEl.clientHeight < 100) return;
+          applySqueeze();
+          return;
+        }
         scheduleResize('ro');
       });
       scrollRO.observe(scrollEl);
@@ -1029,6 +1096,9 @@ export function applyTermBundle(ctx: Context): void {
         // 先钉到 live vv：vv 事件不送达时 visualViewport.height 仍是当前
         // 真值（属性直读不依赖事件）——输出帧驱动下卡身总会收敛到真可见区
         pinToVv();
+        // 浮窗格网只跟管道（挤画案）：自测量重排退役——56 行核把 73 列流
+        // 折行泵行=刷屏真凶，纠「容器宽度 vs 卡列不一致」恰恰是它的来源
+        if (isFloat) return;
         // IME 闸：键盘占位期 rows 故意 ≠ floor(clientH/cellH)（格网解耦），
         // 漂移自愈必须认得这不是漂移——不纠，纠了=把洪峰放回来。
         updateImeState();
@@ -1147,6 +1217,7 @@ export function applyTermBundle(ctx: Context): void {
         // 三节③：ALT 内容物理画不出卡外，overflow:hidden 防 TUI 溢出撑
         // 出滚动条；三路禁滚治程序化赋值，与此正交）
         scrollEl.style.overflow = altNow ? 'hidden' : 'auto';
+        if (isFloat && !altNow) scrollEl.style.overflowX = 'hidden'; // 挤画布局溢出不横滚（挤画案）
         scheduleResize();
         reportViewport(altNow ? 'alt-enter' : 'alt-exit'); // TUI 翻转=超屏诊断关键事件
       };

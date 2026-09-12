@@ -179,11 +179,15 @@ export class TermShell {
     this.histEvicted = 0;
   }
 
-  /** 改行数（容器可视高度变化时）：增删行 div，行缓存同步伸缩并重排。
-   * resize 会让核对历史区重排（reflow）——本地增量游标失效，历史块
-   * 整段重建（renderHistory 的 histCount=0 路径）。 */
-  resize(rows: number) {
-    if (rows === this.opts.rows) return;
+  /** 改格网（列+行；挤画案 2026-09-12 起带列——浮窗收编管道格网时列数
+   * 与容器测量不同，opts.cols 必须跟上，cellAtPoint 边界/canvasShot 宽度
+   * 才不吃旧值。容器可视高度变化时行数变化同此口。）：增删行 div，行
+   * 缓存同步伸缩并重排。resize 会让核对历史区重排（reflow）——本地增
+   * 量游标失效，历史块整段重建（renderHistory 的 histCount=0 路径）。 */
+  resize(cols: number, rows: number) {
+    if (cols === this.opts.cols && rows === this.opts.rows) return;
+    this.opts.cols = cols;
+    if (rows === this.opts.rows) { this.renderFrame(); return; } // 仅列变：格网内容重排后补一帧
     this.historyDiv.textContent = '';
     this.histCount = 0;
     while (this.rowDivs.length < rows) {
@@ -569,7 +573,12 @@ export class TermShell {
   cellAtPoint(clientX: number, clientY: number): { col: number; row: number } | null {
     if (this.cellW <= 0 || this.cellH <= 0) return null;
     const r = this.el.getBoundingClientRect();
-    const col = Math.floor((clientX - r.left) / this.cellW);
+    // 挤画案（2026-09-12）：termEl 被 scaleX 时 rect.width 是视觉宽，
+    // 除自然字宽会多算 1/sx 倍列——视觉字宽从 rect 反推；未挤时
+    // r.width/cols ≈ cellW，但布局宽=容器宽（≠格网宽），仍走 cellW 原尺
+    const squeezed = !!this.el.style.transform;
+    const cw = squeezed && this.opts.cols > 0 ? r.width / this.opts.cols : this.cellW;
+    const col = Math.floor((clientX - r.left) / cw);
     const row = Math.floor((clientY - r.top - this.historyDiv.offsetHeight) / this.cellH);
     if (col < 0 || col >= this.opts.cols || row < 0 || row >= this.opts.rows) return null;
     return { col, row };
