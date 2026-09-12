@@ -97,11 +97,11 @@ const floatSession = new URLSearchParams(location.search).get('fs') ?? 'dsh';
 
 const termCards = rootCtx.get('termCards');
 if (termCards) {
-  // 浮窗专态：卡身以 tmux 客户端命令直接拉起=专属 pty、出生即附着、
-  // 挂载零打字（打字注入会落进共享视界污染用户输入栏，2026-09-12
-  // 用户实拍 15 条重复命令定罪）
-  void termCards.open(floatMode ? { command: `tmux new-session -A -s ${floatSession}` } : undefined).then((instId) => {
-    if (floatMode) (window as unknown as Record<string, unknown>).__kfmFloatSpawned = floatSession;
+  // 浮窗专态：卡身=裸 zsh 专属 pty（2026-09-12 常驻世界 v2 终案）——
+  // 附着走页面侧打字（私有管道不可见）；park 脱附后 zsh 兜底、卡片常
+  // 驻不死。曾试 command 直拉 tmux：脱附即 sh -c 链断、pty 死、卡片变
+  // 「进程已退出」且无法复活（真机实录）——故必须裸壳
+  void termCards.open().then((instId) => {
     (window as unknown as Record<string, unknown>).__kfmNzTermCard = instId;
   }).catch((e) => {
     (window as unknown as Record<string, unknown>).__kfmNzTermCard = `OPEN FAIL ${e}`;
