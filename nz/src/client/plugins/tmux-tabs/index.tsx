@@ -390,6 +390,24 @@ export function createTmuxTabsPlugin(): UiPlugin {
         const termInject = (s2: string): void => {
           (window as unknown as Record<string, unknown>).__kfmNzTermInject?.(s2);
         };
+        /** 常驻管道池（2026-09-12 终案）：每会话一条专属 tmux 客户端管道
+         *  常驻复用；切换=卡身换绑（tail 回放秒显）——零打字零脱附，
+         *  detach 闪烁与 0902 的 0.5-0.7s 延迟随打字驱动一并终结 */
+        const poolRef = useRef<Map<string, string>>(new Map());
+        /** 出生 zsh 管道 id（终端态的归处；boot 后由轮询捕获） */
+        const zshIdRef = useRef<string | null>(null);
+        const termHooks = (): {
+          openPty?: (c: string, cols: number, rows: number) => Promise<string>;
+          bind?: (id: string) => void;
+          reset?: () => void;
+        } => {
+          const w = window as unknown as Record<string, unknown>;
+          return {
+            openPty: w.__kfmNzTermOpenPty as ((c: string, cols: number, rows: number) => Promise<string>) | undefined,
+            bind: w.__kfmNzTermBind as ((id: string) => void) | undefined,
+            reset: w.__kfmNzTermReset as (() => void) | undefined,
+          };
+        };
         const deriveState = (): TmuxTabsState =>
           overlayRef.current === 'OVERLAY_NEW' ? 'OVERLAY_NEW'
             : overlayRef.current === 'OVERLAY_CLOSE' ? 'OVERLAY_CLOSE'
@@ -402,58 +420,57 @@ export function createTmuxTabsPlugin(): UiPlugin {
           };
           push({ t: Date.now(), state: runtimeRef.current.state, expanded: expandedRef.current, n: sessionsRef.current.length });
         };
+        // 出生 zsh 管道捕获（boot 后 ~1s 内出现；leaveTmux 的归处）
+        useEffect(() => {
+          const t = setInterval(() => {
+            const id = (window as unknown as Record<string, unknown>).__kfmNzTermSession as string | undefined;
+            if (id) { zshIdRef.current = id; clearInterval(t); }
+          }, 250);
+          return () => clearInterval(t);
+        }, []);
         const enterSession = (name: string, quiet = false): void => {
-          const attach = (): void => {
-            // B1 边界整格重建（2026-09-11）：上一段（旧会话/终端态）的行流
-            // 残余不得带入新会话——先换新网格再敲 attach 命令
-            (window as unknown as Record<string, unknown>).__kfmNzTermReset?.();
-            termInject(`tmux new-session -A -s ${name}\r`);
-            // attach 落定后 SIGWINCH 舞步：逼应用重绘进新网格（B1 配套，
-            // 否则「应用久未重绘」的会话 attach 后空屏，amp 空屏案实证）
-            setTimeout(() => (window as unknown as Record<string, unknown>).__kfmNzTermNudge?.(), 600);
-            setAttached(name);
+          // 管道池切换（2026-09-12 终案）：卡身换绑到该会话的常驻专属管道
+          // （B1 清界 → attachSession → tail 回放秒显）——零打字零脱附，
+          // detach 闪烁与 0902 的 0.5-0.7s 延迟随打字驱动一并终结
+          const h = termHooks();
+          if (typeof h.openPty !== 'function' || typeof h.bind !== 'function' || typeof h.reset !== 'function') return;
+          void (async () => {
+            let id = poolRef.current.get(name);
+            if (!id) {
+              const g = (window as unknown as Record<string, unknown>).__kfmNzTermScroll as (() => { cols: number; rows: number }) | undefined;
+              const grid = g ? g() : { cols: 80, rows: 24 };
+              try {
+                id = await h.openPty(`tmux new-session -A -s ${name}`, grid.cols, grid.rows);
+                poolRef.current.set(name, id);
+              } catch { /* 拉起失败：下一拍重试 */ }
+            }
+            if (!id) return;
+            h.reset?.(); // B1 边界：换绑前清核（旧管道行流残余不得带入）
+            h.bind(id);
+            attachedRef.current = name;
             // quiet=R1 自动重进腿：恢复现场但不抢注意力（标签排保持收起）
             expandedRef.current = !quiet;
             setExpanded(!quiet);
             refreshRuntime();
-          };
-          if (attachedRef.current) {
-            // T2s：tmux 嵌套禁止——先 detach 再附（P7）。
-            // 0902 优化：固定 350ms 等待是用户感知「0.5-0.7s 延迟」的主因；
-            // 改为轮询检测 detach 完成（屏幕出现 "detached (from session ...)"），
-            // 通常 80-150ms 即可完成，上限 600ms 兜底。
-            const prev = attachedRef.current;
-            termInject('\u0002d');
-            setAttached(null);
-            refreshRuntime();
-            const screen = () => (window as unknown as Record<string, unknown>).__kfmNzTermScreen?.() as string || '';
-            let attempts = 0;
-            const timer = setInterval(() => {
-              attempts++;
-              if (screen().includes(`detached (from session ${prev})`) || attempts > 12) {
-                clearInterval(timer);
-                attach();
-              }
-            }, 50);
-          } else attach();
+          })();
         };
         const leaveTmux = (): void => {
-          termInject('\u0002d'); // Ctrl-B d：TUI 运行中也安全
+          // 管道池：换绑回出生 zsh 管道（终端态）——当前会话的管道保持附
+          // 着待命（零脱附），随时一键切回；B1 清界后 ^L 重绘 prompt，
+          // 0902「已彻底回来」暗示不变
+          const h = termHooks();
+          const zshId = zshIdRef.current;
+          if (zshId && typeof h.bind === 'function' && typeof h.reset === 'function') {
+            h.reset();
+            h.bind(zshId);
+            termInject('\u000c');
+          } else {
+            termInject('\u0002d'); // 兜底：无账（理论不可达）
+          }
           setAttached(null);
-          // 0902 用户仲裁：T3 回终端态时标签排保持展开（选择态），但清掉
-          // tmux 残留画面；随后 Ctrl-L 重绘 prompt，给用户「已彻底回来」
-          // 的视觉暗示。
           expandedRef.current = true;
           setExpanded(true);
           refreshRuntime();
-          // detach 后整格重建（B1，2026-09-11 修法升级）：0902 只清可视屏
-          // 留 scrollback——但取证证明 scrollback 本身是跨会话混排流（TUI
-          // 重绘漏行/hook 回声/多会话素材同格混排，TASK §0.8 B1 卡），留=
-          // 留垃圾。整格重建后 ^L 重绘 prompt，0902「已彻底回来」暗示不变。
-          setTimeout(() => {
-            (window as unknown as Record<string, unknown>).__kfmNzTermReset?.();
-            termInject('\u000c');
-          }, 600);
         };
         const onChipClick = (s: TmuxSessionInfo): void => {
           if (attachedRef.current === s.name) leaveTmux(); // T3
