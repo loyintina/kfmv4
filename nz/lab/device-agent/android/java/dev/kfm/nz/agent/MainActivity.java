@@ -128,6 +128,7 @@ public class MainActivity extends Activity {
     // (拖拽/点按折叠/长按隐身让位) + 原生 orb(线框地球图标，召唤/退回)
     private WebView browserWeb;
     private WebView floatWeb;
+    private String browserUrl;                 // 浏览器页当前地址（同址不重载）
     private boolean floatLoaded = false;       // 常驻浮窗页是否已首载
     private FrameLayout floatContainer;
     private View orbBtn;
@@ -578,7 +579,12 @@ public class MainActivity extends Activity {
             ghostOn = false;
             floatContainer.setAlpha(1f);
             browserWeb.setVisibility(View.VISIBLE);
-            browserWeb.loadUrl(url);
+            // 同址不重载（2026-09-12 抖动案）：浏览器页常驻保温，重复进出
+            // 零导航零闪动；换址才真正导航
+            if (!url.equals(browserUrl)) {
+                browserWeb.loadUrl(url);
+                browserUrl = url;
+            }
             String fs = "dsh";
             try { fs = java.net.URLEncoder.encode(session == null || session.length() == 0 ? "dsh" : session, "UTF-8"); } catch (Exception e) { /* 编码失败回落 dsh */ }
             // 常驻浮窗世界（2026-09-12 终案）：首载才 loadUrl（页面出生=裸
@@ -607,7 +613,7 @@ public class MainActivity extends Activity {
             ghostOn = false;
             floatContainer.setAlpha(1f);
             browserWeb.setVisibility(View.GONE);
-            browserWeb.loadUrl("about:blank");
+            // 常驻世界：浏览器页保温不销毁（隐藏即离开，再进同址零重载）
             // 常驻世界：浮窗页不销毁，通知它脱附（C-b d，私有管道）——
             // 会话尺寸即刻归还主视图；浮窗回退到裸 zsh 待命
             floatWeb.evaluateJavascript(
