@@ -14,6 +14,8 @@
  *   ⑦ 浮窗桥手势接线（2026-09-11 手势失灵案回归钉）：假桥 addInitScript
  *     注入后，顶条点按必须调到 floatCollapse——真机案=浮窗页无桥时
  *     effect 判空 return，监听器没装，手势全死且无任何报错
+ *   ⑧ 全局会话账（2026-09-12 浮窗同步案回归钉）：浮窗切→主终端跟绑、
+ *     主终端切→浮窗跟绑，双向（storage 事件即时 + 2.5s 对账兜底）
  *
  * 跑法：先 npm run build（public/bundle.js 须含新代码），再
  *   node tests/browser/browser-organ.test.mjs
@@ -155,6 +157,25 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
   }));
   const scr = await fpage.evaluate(() => (window).__kfmNzTermScreen?.() ?? '');
   check('④浮窗切会话：首挂就绪后点 ftB 标签 → 终端屏真换 ftB', ready && sw && sess === 'ftB' && chipHi && !chipStale && barFtB, `barFtB=${barFtB} chipHi=${chipHi} chipStale=${chipStale} switched=${sw} session=${sess} screen=${JSON.stringify(scr.split('\n').filter((l) => l.trim()).slice(0, 3))} seq=${JSON.stringify(seq)} shot=${JSON.stringify(shot)} fErr=${JSON.stringify(fErrors.slice(-2))} dump=${JSON.stringify(dump)}`);
+
+  // ⑧ 全局会话账（2026-09-12 浮窗同步案回归钉）：当前会话跨 WebView 单源
+  //   ——浮窗切 → 主终端静默跟绑（storage 事件/2.5s 对账二选一必达）；
+  //   主终端切 → 浮窗跟绑。双向都要绿，任何一环断=同步死
+  // ⑧a 浮窗④切到 ftB 后，主终端应已跟绑 ftB（事件即时或对账 2.5s 兜底）
+  const followedFtB = await page.waitForFunction(
+    () => (window).__kfmNzTmuxTabs?.().attachedSession === 'ftB',
+    null, { timeout: 12000, polling: 400 },
+  ).then(() => true).catch(() => false);
+  const mainAttached = await page.evaluate(() => (window).__kfmNzTmuxTabs?.().attachedSession);
+  check('⑧a 浮窗切换 → 主终端静默跟绑', followedFtB, `mainAttached=${mainAttached}（expect ftB）`);
+  // ⑧b 反向：主终端编程切换 ftA → 浮窗跟绑 ftA
+  await page.evaluate(() => (window).__kfmNzTmuxTabsEnter?.('ftA'));
+  const followedFtA = await fpage.waitForFunction(
+    () => (window).__kfmBrowserFloat?.().attached === 'ftA',
+    null, { timeout: 12000, polling: 400 },
+  ).then(() => true).catch(() => false);
+  const fstate = await fpage.evaluate(() => (window).__kfmBrowserFloat?.());
+  check('⑧b 主终端切换 → 浮窗跟绑', followedFtA, `floatAttached=${JSON.stringify(fstate?.attached ?? null)}（expect ftA）`);
 }
 
 // ⑤ 会话表端点

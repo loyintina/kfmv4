@@ -262,6 +262,8 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
         const readyRef = useRef(false);
         const parkedRef = useRef(false);
         const switchingRef = useRef(false); // 两段式切换进行中（防连点叠加）
+        /** 本地最近一次用户切换时刻（对账压制窗，防跟在途切换打架） */
+        const lastLocalSwitchRef = useRef(0);
 
         // 顶条三合一·DOM 手势版（2026-09-11 二轮，壳只留哑原语桥）：拖拽=
         // floatDragBy；点按=floatCollapse 翻转；长按 400ms 且位移<slop=
@@ -399,6 +401,12 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
               poolRef.current.set(name, e);
               bind(e.id, e.grid);
               attachedRef.current = name;
+              // 全局会话账（2026-09-12 浮窗同步案）：跨 WebView 单源，主终
+              // 端 storage 到账静默跟绑；等值闸防环
+              lastLocalSwitchRef.current = Date.now();
+              try {
+                if (localStorage.getItem('kfmActiveSession') !== name) localStorage.setItem('kfmActiveSession', name);
+              } catch { /* 隐私模式不挡 */ }
               setActive(name);
             } finally {
               switchingRef.current = false;
@@ -449,6 +457,33 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           };
           // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [switchTo]);
+
+        // 全局会话账跟随（2026-09-12 浮窗同步案）：主终端切标签 → 浮窗
+        // 静默跟绑。storage 事件只在「别的文档」触发=写作方收不到自己
+        // （防环第一道）；2.5s 对账腿兜底；未入账会话不跟；本地动作 3s
+        // 压制窗防对账腿跟在途切换打架
+        const switchRef = useRef(switchTo);
+        switchRef.current = switchTo;
+        useEffect(() => {
+          const follow = (name: string): void => {
+            if (!name || attachedRef.current === name) return;
+            if (Date.now() - lastLocalSwitchRef.current < 3000) return;
+            if (!sessionsRef.current.includes(name)) return;
+            switchRef.current(name);
+          };
+          const onStorage = (e: StorageEvent): void => {
+            if (e.key === 'kfmActiveSession') follow(e.newValue || '');
+          };
+          const reconcile = (): void => {
+            try { follow(localStorage.getItem('kfmActiveSession') || ''); } catch { /* 隐私模式不挡 */ }
+          };
+          window.addEventListener('storage', onStorage);
+          const t = setInterval(reconcile, 2500);
+          return () => {
+            window.removeEventListener('storage', onStorage);
+            clearInterval(t);
+          };
+        }, []);
 
         const barEl = createElement('div', {
           'data-browser-float-bar': '1',

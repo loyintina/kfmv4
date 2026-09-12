@@ -396,6 +396,9 @@ export function createTmuxTabsPlugin(): UiPlugin {
         const poolRef = useRef<Map<string, string>>(new Map());
         /** 出生 zsh 管道 id（终端态的归处；boot 后由轮询捕获） */
         const zshIdRef = useRef<string | null>(null);
+        /** 本地最近一次用户切换时刻（全局会话账的对账压制窗：防对账腿
+         *  拿到旧账跟在途切换打架，2026-09-12 浮窗同步案） */
+        const lastLocalSwitchRef = useRef(0);
         const termHooks = (): {
           openPty?: (c: string, cols: number, rows: number) => Promise<string>;
           bind?: (id: string) => void;
@@ -434,6 +437,7 @@ export function createTmuxTabsPlugin(): UiPlugin {
           // detach 闪烁与 0902 的 0.5-0.7s 延迟随打字驱动一并终结
           const h = termHooks();
           if (typeof h.openPty !== 'function' || typeof h.bind !== 'function' || typeof h.reset !== 'function') return;
+          lastLocalSwitchRef.current = Date.now();
           void (async () => {
             let id = poolRef.current.get(name);
             if (!id) {
@@ -449,6 +453,12 @@ export function createTmuxTabsPlugin(): UiPlugin {
             h.bind(id);
             setAttached(name);
             attachedRef.current = name;
+            // 全局会话账（2026-09-12 浮窗同步案）：当前会话跨 WebView 单源
+            // ——写 kfmActiveSession，浮窗 storage 到账静默跟绑；等值闸防环
+            // （跟随路径到账时已是本值，不再广播）
+            try {
+              if (localStorage.getItem('kfmActiveSession') !== name) localStorage.setItem('kfmActiveSession', name);
+            } catch { /* 隐私模式不挡 */ }
             // quiet=R1 自动重进腿：恢复现场但不抢注意力（标签排保持收起）
             expandedRef.current = !quiet;
             setExpanded(!quiet);
@@ -468,7 +478,12 @@ export function createTmuxTabsPlugin(): UiPlugin {
           } else {
             termInject('\u0002d'); // 兜底：无账（理论不可达）
           }
+          lastLocalSwitchRef.current = Date.now();
           setAttached(null);
+          // 全局会话账：终端态=空账（浮窗读到空串不跟——它无终端态概念）
+          try {
+            if (localStorage.getItem('kfmActiveSession') !== '') localStorage.setItem('kfmActiveSession', '');
+          } catch { /* 隐私模式不挡 */ }
           expandedRef.current = true;
           setExpanded(true);
           refreshRuntime();
@@ -477,6 +492,36 @@ export function createTmuxTabsPlugin(): UiPlugin {
           if (attachedRef.current === s.name) leaveTmux(); // T3
           else enterSession(s.name); // T2/T2s
         };
+
+        // 全局会话账跟随（2026-09-12 浮窗同步案）：浮窗里切标签 → 主终端
+        // 静默跟绑。storage 事件只在「别的文档」触发=写作方天然收不到自己
+        // （防环第一道）；2.5s 对账腿兜底事件丢失/会话表晚到（最终一致）；
+        // 未入账会话不跟（new-session -A 会凭空造会话）；本地动作 3s 压制
+        // 窗防对账腿拿旧账跟在途切换打架
+        const enterRef = useRef(enterSession);
+        enterRef.current = enterSession;
+        useEffect(() => {
+          const follow = (name: string): void => {
+            if (!name || attachedRef.current === name) return;
+            if (Date.now() - lastLocalSwitchRef.current < 3000) return;
+            if (!sessionsRef.current.some((s) => s.name === name)) return;
+            enterRef.current(name, true); // quiet：跟绑不弹标签排（注意力不抢）
+          };
+          const onStorage = (e: StorageEvent): void => {
+            if (e.key === 'kfmActiveSession') follow(e.newValue || '');
+          };
+          const reconcile = (): void => {
+            try { follow(localStorage.getItem('kfmActiveSession') || ''); } catch { /* 隐私模式不挡 */ }
+          };
+          window.addEventListener('storage', onStorage);
+          const t = setInterval(reconcile, 2500);
+          // 判卷/自动化钩子（考卷 ⑧ 与外部 agent 编程切换口）
+          (window as unknown as Record<string, unknown>).__kfmNzTmuxTabsEnter = (name: string): void => enterRef.current(name);
+          return () => {
+            window.removeEventListener('storage', onStorage);
+            clearInterval(t);
+          };
+        }, []);
 
         useEffect(() => {
           const recomputeMissing = (): void => {
