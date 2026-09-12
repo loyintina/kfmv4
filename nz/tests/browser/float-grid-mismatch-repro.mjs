@@ -133,6 +133,19 @@ const rb = await sample(B.page, 'nzspamB');
 console.log(`[B] 搅动度=${rb.churn} 行次/6s`);
 check('B② 同样静止（搅动 ≤18 行次/6s）', rb.churn <= 18, `churn=${rb.churn}`);
 
+// ---------- ⑤ ratchet 反向钉（2026-09-12 竖直变形案第二案） ----------
+// v1 棘轮：按当前字号解比值 + min(...,1) 封顶 = 字号只能缩不能涨——
+// 瞬态小容器踩到钳底后永世不得翻身（真机「文字超格挤在一起」根因）。
+// 钉：容器由小变大后字号必须能涨回去（对称拟合）。
+const fsSmall = await A.page.evaluate(() => +getComputedStyle(document.querySelector('.nz-term')).fontSize.replace('px', ''));
+await A.page.setViewportSize({ width: 500, height: 900 });
+await sleep(2500); // RO→scheduleResize(150ms 防抖)→fitFloatFont
+const fitBig = await A.page.evaluate(() => {
+  const el = document.querySelector('.nz-term');
+  return { fs: +getComputedStyle(el).fontSize.replace('px', ''), w: Math.round(el.getBoundingClientRect().width), pw: el.parentElement.clientWidth };
+});
+check('⑤ ratchet 反向（容器变大字号必须涨回，且仍贴合容器）', fitBig.fs > fsSmall + 0.5 && fitBig.w <= fitBig.pw + 6, `fs ${fsSmall}→${fitBig.fs}, w=${fitBig.w} pw=${fitBig.pw}`);
+
 // ---------- 裁决 ----------
 console.log('\n===== 裁决 =====');
 const pass = results.every(Boolean);

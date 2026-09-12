@@ -543,8 +543,13 @@ export function applyTermBundle(ctx: Context): void {
         const availW = container.el.clientWidth;
         const availH = scrollEl.clientHeight;
         if (availW <= 0 || availH <= 0) return;
-        const s = Math.min(availW / (card.cols * m.cellW), availH / (card.rows * m.cellH), 1);
-        const want = Math.round(Math.max(4.5, Math.min(10, termFs * s)) * 100) / 100;
+        // 折算回基准字号（10px）再解比值——若按当前字号算，s 被 min(...,1)
+        // 封顶后只能缩不能涨（真机 ratchet 实锤：瞬态小容器把字号踩到钳
+        // 底，cellH 停在 4.5px 时代的度量与活字体脱钩=文字超格挤在一起）
+        const k = 10 / termFs;
+        const cellW10 = m.cellW * k, cellH10 = m.cellH * k;
+        const s = Math.min(availW / (card.cols * cellW10), availH / (card.rows * cellH10), 1);
+        const want = Math.round(Math.max(4.5, Math.min(10, 10 * s)) * 100) / 100;
         if (Math.abs(want - termFs) >= 0.25) {
           termFs = want;
           shell.setFontSize(want); // 内部：样式+作废缓存+重画（renderFrame 重量字格）
@@ -1067,8 +1072,11 @@ export function applyTermBundle(ctx: Context): void {
           const s = measure();
           // 主终端格网广播（2026-09-12 管道池架构）：浮窗管道池按主格网
           // 拉起/对齐，会话恒定全宽、主终端切换零窄闪（localStorage 同
-          // 源共享，浮窗页读之）；浮窗自身不广播（它跟随会话格网）
-          if (!isFloat) {
+          // 源共享，浮窗页读之）；浮窗自身不广播（它跟随会话格网）。
+          // 健全闸（2026-09-12 污账案）：离屏/零尺寸世界量出地板值
+          // （20×5）也走这里——真主格网被覆盖后浮窗新管道按兜底拉起，
+          // manual 窗下裁成小角。量出像样终端几何才准入账
+          if (!isFloat && s.cols >= 30 && s.rows >= 15) {
             try { localStorage.setItem('kfmMainGrid', JSON.stringify({ c: s.cols, r: s.rows })); } catch { /* 隐私模式不挡 */ }
           }
           if (s.cols !== card.cols || s.rows !== card.rows) {
@@ -1278,6 +1286,11 @@ export function applyTermBundle(ctx: Context): void {
       shell.renderFrame();
       mark('first-frame');
       card.placeKb();
+      // boot 即广播主格网（污账自愈，2026-09-12）：20×5 之类离屏地板值
+      // 一旦入账，主世界不重排就不会覆写——每次主世界 boot 用真测量冲一次
+      if (!isFloat && card.cols >= 30 && card.rows >= 15) {
+        try { localStorage.setItem('kfmMainGrid', JSON.stringify({ c: card.cols, r: card.rows })); } catch { /* 隐私模式不挡 */ }
+      }
       // 开页即报（Stage①：真实设备开 ?debug 页即自报基线几何，agent 直读）
       reportViewport('open');
       // CJK 基线探针（2026-08-26 随症字段，ranger-cjk-baseline-review；
