@@ -184,6 +184,7 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
       function FloatTabs(): React.ReactElement {
         const [sessions, setSessions] = useState<string[]>([session]);
         const [active, setActive] = useState(session);
+        const [collapsed, setCollapsed] = useState(false);
         useEffect(() => {
           sessionsRef.current = sessions; activeRef.current = active;
           if (attachedRefBridge) attachedRefBridge.current = attachedRef.current;
@@ -237,7 +238,7 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
               // 折叠态对账（原生侧为准，本地乐观值防漂移）
               const st = native()?.browserState?.();
               const m = st && /collapsed=(true|false)/.exec(st);
-              if (m) collapsedRef.current = m[1] === 'true';
+              if (m) { collapsedRef.current = m[1] === 'true'; setCollapsed(m[1] === 'true'); }
             } catch { /* 无桥不挡 */ }
           };
           void pull();
@@ -245,6 +246,15 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           return () => clearInterval(t);
           // eslint-disable-next-line react-hooks/exhaustive-deps
         }, []);
+
+        // 折叠态视觉（2026-09-12 用户拍板「收起来就是收起来」）：终端层与
+        // 标签轨藏起，24dp 视口只剩顶条自身=干净把手浮标
+        useEffect(() => {
+          const layer = document.getElementById('kfm-layer-layout');
+          const rail = document.querySelector('[data-browser-float-tabs]');
+          if (layer) layer.style.visibility = collapsed ? 'hidden' : 'visible';
+          if (rail) (rail as HTMLElement).style.visibility = collapsed ? 'hidden' : 'visible';
+        }, [collapsed]);
 
         // 附着账（浮窗世界起家=裸 zsh 未进 tmux）：首挂由下面的就绪轮询
         // 完成；切换时才需要 C-b d 脱离舞步（已附着前提下）
@@ -260,6 +270,8 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           const bar = barRef.current;
           const nz = native();
           if (!bar || !nz?.floatDragBy) return; // 无桥=无浮窗可操作
+          // （折叠态视觉应用在下方 [collapsed] effect：层与轨藏起，24dp
+          //  视口只剩顶条自身=干净把手浮标）
           let downSX = 0, downSY = 0, lastSX = 0, lastSY = 0, trav = 0;
           let ghostTimer = 0, ghosting = false, down = false;
           const slop = 8;
@@ -310,6 +322,7 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
             else {
               const c = !collapsedRef.current;
               collapsedRef.current = c;
+              setCollapsed(c);
               nz.floatCollapse?.(c);
             }
           };
@@ -385,6 +398,11 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
             position: 'fixed', top: 0, left: '26px', right: 0, height: '24px',
             zIndex: 400, pointerEvents: 'auto', touchAction: 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            // 折叠态=可见胶囊（纯细缝肉眼找不到，2026-09-12 验收定罪）
+            background: collapsed ? '#17181A' : 'transparent',
+            borderRadius: collapsed ? '12px' : '0px',
+            border: collapsed ? '1px solid #3A3B3F' : 'none',
+            boxSizing: 'border-box',
           },
         },
         createElement('div', {
