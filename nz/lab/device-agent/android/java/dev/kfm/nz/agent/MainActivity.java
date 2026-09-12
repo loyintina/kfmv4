@@ -128,6 +128,7 @@ public class MainActivity extends Activity {
     // (拖拽/点按折叠/长按隐身让位) + 原生 orb(线框地球图标，召唤/退回)
     private WebView browserWeb;
     private WebView floatWeb;
+    private boolean floatLoaded = false;       // 常驻浮窗页是否已首载
     private FrameLayout floatContainer;
     private View orbBtn;
     private boolean browserMode = false;
@@ -580,7 +581,16 @@ public class MainActivity extends Activity {
             browserWeb.loadUrl(url);
             String fs = "dsh";
             try { fs = java.net.URLEncoder.encode(session == null || session.length() == 0 ? "dsh" : session, "UTF-8"); } catch (Exception e) { /* 编码失败回落 dsh */ }
-            floatWeb.loadUrl(TERM_URL + "?nosplash&float=1&fs=" + fs);
+            // 常驻浮窗世界（2026-09-12 终案）：首载才 loadUrl（页面出生=裸
+            // zsh 专属 pty），此后进出只 show + 派发事件，页面自行附着/切
+            // 换——不再 reload = 零孤儿 pty、秒进
+            if (!floatLoaded) {
+                floatWeb.loadUrl(TERM_URL + "?nosplash&float=1&fs=" + fs);
+                floatLoaded = true;
+            } else {
+                floatWeb.evaluateJavascript(
+                        "window.dispatchEvent(new CustomEvent('kfm-float-enter',{detail:'" + fs + "'}))", null);
+            }
             floatContainer.setVisibility(View.VISIBLE);
             layoutFloat();
             android.view.inputmethod.InputMethodManager imm =
@@ -598,6 +608,10 @@ public class MainActivity extends Activity {
             floatContainer.setAlpha(1f);
             browserWeb.setVisibility(View.GONE);
             browserWeb.loadUrl("about:blank");
+            // 常驻世界：浮窗页不销毁，通知它脱附（C-b d，私有管道）——
+            // 会话尺寸即刻归还主视图；浮窗回退到裸 zsh 待命
+            floatWeb.evaluateJavascript(
+                    "window.dispatchEvent(new CustomEvent('kfm-float-park'))", null);
             floatContainer.setVisibility(View.GONE);
             layoutFloat();
             mark("browser-exit");

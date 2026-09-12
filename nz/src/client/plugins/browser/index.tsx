@@ -256,10 +256,11 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           if (rail) (rail as HTMLElement).style.visibility = collapsed ? 'hidden' : 'visible';
         }, [collapsed]);
 
-        // 附着账（2026-09-12 终案）：卡身由 main 以 tmux 客户端命令直接
-        // 拉起=出生即附着；就绪门闩等屏非空开后，标签切换才生效
-        const attachedRef = useRef(session);
+        // 附着账（2026-09-12 终案）：null=未附着（裸 zsh）；readyRef=屏已
+        // 画出会话内容、标签切换门闩开
+        const attachedRef = useRef<string | null>(null);
         const readyRef = useRef(false);
+        const parkedRef = useRef(false);
         const switchingRef = useRef(false); // 两段式切换进行中（防连点叠加）
 
         // 顶条三合一·DOM 手势版（2026-09-11 二轮，壳只留哑原语桥）：拖拽=
@@ -340,20 +341,26 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
         }, []);
 
         useEffect(() => {
-          // 就绪门闩（2026-09-12 零打字终案）：卡身由 main 以 tmux 客户端
-          // 命令直接拉起=出生即附着，此处只等屏非空开门，**不再注入任何
-          // 命令**——旧首挂注入打进专属 pty 的 tmux 客户端=转发进会话程
-          // 序输入区（用户输入栏 15 条重复命令案真凶，调用栈实锤）
+          // 出生附着（常驻世界 v2）：裸 zsh 起家、屏现提示符即打 attach——
+          // 私有管道内的打字用户不可见（污染只存在于共享 pty 时代）；
+          // park 脱附后本 effect 不重跑，再附着由 kfm-float-enter 事件驱动
           const t = setInterval(() => {
             const w = window as unknown as Record<string, unknown>;
-            if (((w.__kfmNzTermScreen as () => string)?.() ?? '').trim() === '') return;
+            if (parkedRef.current || attachedRef.current) { clearInterval(t); return; }
+            const scrFn = w.__kfmNzTermScreen as (() => string) | undefined;
+            const scr = scrFn ? scrFn() : '';
+            if (scr.trim() === '') return;
+            const inj = w.__kfmNzTermInject as (s: string) => void | undefined;
+            if (typeof inj !== 'function') return;
             clearInterval(t);
+            inj(`tmux new-session -A -s ${session}\r`);
             attachedRef.current = session;
             readyRef.current = true; // 门闩开：此后标签切换才生效
           }, 300);
           return () => clearInterval(t);
           // eslint-disable-next-line react-hooks/exhaustive-deps
         }, []);
+
         const switchTo = (name: string): void => {
           if (!readyRef.current) return; // 首挂未完成：点击无效（防与初始注入竞态）
           if (name === attachedRef.current) return;
@@ -380,6 +387,44 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
             setActive(name);
           }
         };
+
+        // 常驻世界生命周期（原生派发）：park=脱附回 zsh（会话尺寸归还主视
+        // 图）；enter=再附着/切到目标会话（两段式）
+        useEffect(() => {
+          const onPark = (): void => {
+            if (attachedRef.current) {
+              const inj = (window as unknown as Record<string, unknown>).__kfmNzTermInject as ((s: string) => void) | undefined;
+              inj?.('\u0002d'); // C-b d 脱附（私有管道，用户不可见）
+            }
+            attachedRef.current = null;
+            readyRef.current = false;
+            parkedRef.current = true;
+          };
+          const onEnter = (e: Event): void => {
+            parkedRef.current = false;
+            const want = ((e as CustomEvent).detail as string) || session;
+            const inject = (window as unknown as Record<string, unknown>).__kfmNzTermInject as ((s: string) => void) | undefined;
+            if (!inject) return;
+            if (attachedRef.current === want) { readyRef.current = true; return; }
+            if (!attachedRef.current) {
+              // park 后裸 zsh 待命：直接打 attach（私有管道，用户不可见）
+              // ——不经 switchTo 的 ready 门闩（park 已把它关上）
+              inject(`tmux new-session -A -s ${want}\r`);
+              attachedRef.current = want;
+              readyRef.current = true;
+              setActive(want);
+              return;
+            }
+            switchTo(want); // 已附着他席=两段式切换
+          };
+          window.addEventListener('kfm-float-park', onPark);
+          window.addEventListener('kfm-float-enter', onEnter as EventListener);
+          return () => {
+            window.removeEventListener('kfm-float-park', onPark);
+            window.removeEventListener('kfm-float-enter', onEnter);
+          };
+          // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [switchTo]);
 
         const barEl = createElement('div', {
           'data-browser-float-bar': '1',

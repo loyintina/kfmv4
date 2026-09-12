@@ -137,6 +137,8 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
     const b = document.querySelector('[data-browser-float-tab="ftB"]');
     return b ? b.style.background.replace(/\s/g, '').includes('10,132,255') : false;
   });
+  // 会话级证据：tmux 状态栏必须同步显示 [ftB]（switch-client 的服务端落地）
+  const barFtB = await fpage.evaluate(() => (window).__kfmNzTermScreen?.().includes('[ftB]') ?? false);
   const shot = await fpage.evaluate(() => ({ detachShot: ((window).__detachShot ?? '').slice(-80), at: (window).__switchInjectedAt ?? null }));
   const seq = await fpage.evaluate(() => { clearInterval((window).__rec); return (window).__scrSeq.map((s) => s.replace(/\s+$/,'').slice(0, 60)); });
   const dump = await fpage.evaluate(() => ({
@@ -146,7 +148,7 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
     bootTail: (window).__kfmNz?.bootLog?.slice(-4) ?? [],
   }));
   const scr = await fpage.evaluate(() => (window).__kfmNzTermScreen?.() ?? '');
-  check('④浮窗切会话：首挂就绪后点 ftB 标签 → 终端屏真换 ftB', ready && sw && sess === 'ftB' && chipHi, `chipHi=${chipHi} switched=${sw} session=${sess} screen=${JSON.stringify(scr.split('\n').filter((l) => l.trim()).slice(0, 3))} seq=${JSON.stringify(seq)} shot=${JSON.stringify(shot)} fErr=${JSON.stringify(fErrors.slice(-2))} dump=${JSON.stringify(dump)}`);
+  check('④浮窗切会话：首挂就绪后点 ftB 标签 → 终端屏真换 ftB', ready && sw && sess === 'ftB' && chipHi && barFtB, `barFtB=${barFtB} chipHi=${chipHi} switched=${sw} session=${sess} screen=${JSON.stringify(scr.split('\n').filter((l) => l.trim()).slice(0, 3))} seq=${JSON.stringify(seq)} shot=${JSON.stringify(shot)} fErr=${JSON.stringify(fErrors.slice(-2))} dump=${JSON.stringify(dump)}`);
 }
 
 // ⑤ 会话表端点
@@ -235,8 +237,11 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
     await ipage.goto(`${BASE}/?nosplash&float=1&fs=ftA`, { waitUntil: 'domcontentloaded', timeout: 40000 }).catch(() => {});
     await sleep(5000); // 旧轮询发射窗口（屏非空后 ~300ms 内打字）全覆盖
     const calls = await ipage.evaluate(() => (window).__injCalls || []);
-    const bad = calls.filter((c) => c.includes('tmux new-session'));
-    check('⑦d 首挂注入禁绝：浮窗页 5 秒内零 tmux 命令注入', bad.length === 0, `calls=${JSON.stringify(calls)}`);
+    // 常驻 v2 合同（2026-09-12 终案）：唯一合法注入=出生 attach 一次
+    // （tmux new-session -A -s ftA）；其余任何注入=污染
+    const expected = 'tmux new-session -A -s ftA\r';
+    const okCalls = calls.length === 1 && calls[0] === expected;
+    check('⑦d 出生附着合同：恰一次 attach 注入、无他物', okCalls, `calls=${JSON.stringify(calls)}`);
     await ictx.close().catch(() => {});
   }
   await gctx.close().catch(() => {});
