@@ -344,6 +344,15 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
         // 客户端管道常驻复用；切换=卡片换绑（attachSession+tail 回放秒
         // 显），零打字零竞态零重排抖动。出生绑定 fs 的管道
         const poolRef = useRef<Map<string, string>>(new Map());
+        // 主终端格网（主世界 resize 时广播进 localStorage）：管道池按主格
+        // 网拉起=会话恒定全宽，主终端切换零窄闪（2026-09-12 窄闪案终修）
+        const mainGrid = (): { cols: number; rows: number } => {
+          try {
+            const g = JSON.parse(localStorage.getItem('kfmMainGrid') || '{}') as { c?: number; r?: number };
+            if ((g.c ?? 0) > 20 && (g.r ?? 0) > 10) return { cols: g.c as number, rows: g.r as number };
+          } catch { /* 无账回退 */ }
+          return { cols: 52, rows: 23 };
+        };
         useEffect(() => {
           const t = setInterval(async () => {
             const w = window as unknown as Record<string, unknown>;
@@ -355,7 +364,8 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
             if (scrFn().trim() === '') return;
             clearInterval(t);
             try {
-              const id = await openPty(`tmux new-session -A -s ${session}`, 52, 23);
+              const g0 = mainGrid();
+              const id = await openPty(`tmux new-session -A -s ${session}`, g0.cols, g0.rows);
               poolRef.current.set(session, id);
               bind(id);
               attachedRef.current = session;
@@ -381,8 +391,8 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
               // + tail 回放秒显）——零打字零竞态
               let id = poolRef.current.get(name);
               if (!id) {
-                const cell = (w.__kfmNzTermScroll as (() => { cellW: number; cellH: number }) | undefined)?.() ?? { cellW: 5.2, cellH: 12.5 };
-                id = await openPty(`tmux new-session -A -s ${name}`, Math.max(20, Math.floor(innerWidth / cell.cellW)), 23);
+                const g = mainGrid();
+                id = await openPty(`tmux new-session -A -s ${name}`, g.cols, g.rows);
               }
               poolRef.current.set(name, id);
               bind(id);

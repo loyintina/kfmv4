@@ -984,6 +984,12 @@ export function applyTermBundle(ctx: Context): void {
           // 真可见区限高 + overflow:hidden 硬裁剪），rows×cellH 恒
           // ≤ 真可见区——chrome 显隐/键盘弹收都物理画不出卡外。
           const s = measure();
+          // 主终端格网广播（2026-09-12 管道池架构）：浮窗管道池按主格网
+          // 拉起/对齐，会话恒定全宽、主终端切换零窄闪（localStorage 同
+          // 源共享，浮窗页读之）；浮窗自身不广播（它跟随会话格网）
+          if (!isFloat) {
+            try { localStorage.setItem('kfmMainGrid', JSON.stringify({ c: s.cols, r: s.rows })); } catch { /* 隐私模式不挡 */ }
+          }
           if (s.cols !== card.cols || s.rows !== card.rows) {
             dbg.resizesApplied++;
             card.cols = s.cols;
