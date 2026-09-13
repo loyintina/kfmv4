@@ -280,33 +280,38 @@ test('①attach 帧带管道真值 cols/rows', async () => {
 test('②spawn 口退化闸+钉窗 sweep：无权威放行/有权威替换/存量治愈', async () => {
   const env = await newEnv();
   const c = await client(env.url);
-  // 无权威账：退化尺寸原样放行（考卷夹具/特殊小管道不受伤）
-  c.send({ t: 'open', command: 'cat', cols: 20, rows: 5 });
-  const opened = await c.wait((m) => m.t === 'opened', 'opened 帧');
-  const id = String(opened.id);
-  const seen = new Set([id]);
-  c.send({ t: 'attach', id });
-  let att = await c.wait((m) => m.t === 'attached' && m.id === id, 'attached 帧');
-  assert(att.cols === 20 && att.rows === 5, `无权威放行=${att.cols}x${att.rows}（expect 20x5）`);
-  // 钉权威（显式夹具名单防波及）→ 落账即 sweep：已存活的 20×5 治到权威
+  // 夹具清理挂 finally：断言中途红也绝不在 tmux 服务器上留尸
+  // （2026-09-13 泄漏案：本考卷挂 Assertion → kill 没跑 → nztruth-* 六连尸）
   const TP = `nztruth-${Date.now() % 100000}`;
-  try { sh(`tmux kill-session -t ${TP} 2>/dev/null || true`); } catch { /* 不存在即可 */ }
-  sh(`tmux new-session -d -s ${TP} -x 50 -y 12`);
-  c.send({ t: 'tmux-grid-pin', cols: 80, rows: 30, sessions: [TP] });
-  await new Promise((r) => setTimeout(r, 300));
-  c.send({ t: 'attach', id });
-  att = await c.wait((m) => m.t === 'attached' && m.id === id && m.cols === 80, 'sweep 后 attached 帧', 8000);
-  assert(att.cols === 80 && att.rows === 30, `sweep 治愈=${att.cols}x${att.rows}（expect 80x30）`);
-  // spawn 口闸：权威在，退化 open 出生即权威格网
-  c.send({ t: 'open', command: 'cat', cols: 20, rows: 5 });
-  const opened2 = await c.wait((m) => m.t === 'opened' && !seen.has(String(m.id)), 'opened2 帧', 8000);
-  const id2 = String(opened2.id);
-  c.send({ t: 'attach', id: id2 });
-  att = await c.wait((m) => m.t === 'attached' && m.id === id2, 'attached2 帧', 8000);
-  assert(att.cols === 80 && att.rows === 30, `spawn 闸替换=${att.cols}x${att.rows}（expect 80x30）`);
-  c.send({ t: 'close', id });
-  c.send({ t: 'close', id: id2 });
-  c.close();
-  sh(`tmux kill-session -t ${TP} 2>/dev/null || true`);
-  await env.closeServer();
+  try {
+    // 无权威账：退化尺寸原样放行（考卷夹具/特殊小管道不受伤）
+    c.send({ t: 'open', command: 'cat', cols: 20, rows: 5 });
+    const opened = await c.wait((m) => m.t === 'opened', 'opened 帧');
+    const id = String(opened.id);
+    const seen = new Set([id]);
+    c.send({ t: 'attach', id });
+    let att = await c.wait((m) => m.t === 'attached' && m.id === id, 'attached 帧');
+    assert(att.cols === 20 && att.rows === 5, `无权威放行=${att.cols}x${att.rows}（expect 20x5）`);
+    // 钉权威（显式夹具名单防波及）→ 落账即 sweep：已存活的 20×5 治到权威
+    try { sh(`tmux kill-session -t ${TP} 2>/dev/null || true`); } catch { /* 不存在即可 */ }
+    sh(`tmux new-session -d -s ${TP} -x 50 -y 12`);
+    c.send({ t: 'tmux-grid-pin', cols: 80, rows: 30, sessions: [TP] });
+    await new Promise((r) => setTimeout(r, 300));
+    c.send({ t: 'attach', id });
+    att = await c.wait((m) => m.t === 'attached' && m.id === id && m.cols === 80, 'sweep 后 attached 帧', 8000);
+    assert(att.cols === 80 && att.rows === 30, `sweep 治愈=${att.cols}x${att.rows}（expect 80x30）`);
+    // spawn 口闸：权威在，退化 open 出生即权威格网
+    c.send({ t: 'open', command: 'cat', cols: 20, rows: 5 });
+    const opened2 = await c.wait((m) => m.t === 'opened' && !seen.has(String(m.id)), 'opened2 帧', 8000);
+    const id2 = String(opened2.id);
+    c.send({ t: 'attach', id: id2 });
+    att = await c.wait((m) => m.t === 'attached' && m.id === id2, 'attached2 帧', 8000);
+    assert(att.cols === 80 && att.rows === 30, `spawn 闸替换=${att.cols}x${att.rows}（expect 80x30）`);
+    c.send({ t: 'close', id });
+    c.send({ t: 'close', id: id2 });
+    c.close();
+  } finally {
+    sh(`tmux kill-session -t ${TP} 2>/dev/null || true`);
+    await env.closeServer();
+  }
 });
