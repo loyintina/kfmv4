@@ -2338,3 +2338,41 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   ④挂账：float/browser 目标 CDP 截图挂根因（疑 WebView 创建配置差异，
   查 MainActivity 与 termWeb 分歧）+fullShot 浏览器模式失效根因——两件
   直接决定 agent 浏览器模式自观测能力（B-线器官之眼）。
+- **✅ 浏览器多窗管理器（2026-09-13，用户拍板 Edge 手机端式）**：壳层多
+  WebView 窗口账（show/hide 保活=切窗零丢态，关窗真 destroy 释放）+管理
+  器暗罩卡片格（标题/域名/×关闭/聚焦蓝描边/尾部＋新窗卡）+⋮ 栏四键（回
+  退/刷新/管理器▣/新窗⊕）+NzNative.browserChrome 扩 mgr/new/tab:i/
+  close:i+browserTabs() 账直读。末窗拒关；TAB_MAX=6 防 OOM（每窗一个
+  WebView 无上限=闪退定时炸弹）；管理器达上限灰字提示。三修：①
+  browserTabs() 桥线程直调 getUrl 抛 RuntimeException（WebView 方法只
+  许 UI 线程碰）→latch 采账（doFullShot 同款）；②新窗补「点页面收 ⋮ 栏」
+  触摸同规；③configWeb 挂 WebChromeClient（题名捕获+外站 alert/confirm
+  从静默吞变真弹窗=修正）。卡片缩略图挂账（硬件 WebView 画不进 canvas
+  老墙）。误读件清账：首版把「切换窗口」做成 tmux 会话循环（kfm-float-
+  cycle 监听+考卷⑩）与用户本意不符，已连钉清掉，organ 15/15。装包
+  1789282038/md5 f37c89ee，用户验「功能可以」。
+- **✅ 滚轮手感案（2026-09-13 第三案）**：用户报「终端式逐行上滚没了，
+  只剩原生滚动且只能回滚一屏」。考古+四层实测定罪：①手感真身=触摸→壳
+  译 SGR 滚轮→tmux（mouse on）→窗格应用开鼠标（kimi-code
+  mouse_any_flag=1）转发滚轮应用内逐行滚/普通应用进 copy-mode——干净
+  实验（zzS script 抓包 attach 带 ?1049h?1006h+SGR 灌入 pane_in_mode=1）
+  证 tmux 侧全链健康；②死因=**核重建不携带模式位**：模式序列只在 tmux
+  发送瞬间在流上（attach/选项变更/窗格应用开关鼠标），换绑 tail 回放/
+  __kfmNzTermReset 无 tail 重建都吃不到→mouseMode=0→壳不翻译触摸；
+  位又随窗格应用重启随机回场=时好时坏；amp/psh 能滚 dsh/kfm-na 不能
+  =重建路径 lottery 实证；③归因修正：此前「histLen 恒 0=ALT 屏设计内」
+  不完全（现测 dsh alt=false，非 ALT 也恒 0——全屏应用滚动区域滚动不
+  产生终端回滚史才是底层机制）。
+  持久修=服务端逐管道模式位账（term-connection scanModes/serializeModes
+  纯函数，carry 首尾拼接治序列劈开，Set 幂等）+attached 帧带 modes+
+  bridge onAttached 钩（先于 tail 回放发）+客户端 modeStash：tail 回放
+  与 Reset 路径一律先回放位再喂屏面（1049h 先进 ALT 再画才语义正确）。
+  热修=CoreFeed 直喂鼠标位。新卷 term-modes 3 钉（自首：断言把 ?10+02h
+  拼成 ?1002h 错认 1000，实现对考卷错）；npm test 237、organ 15/15；
+  bundle v=8f2a1b85 热更+server restart-req；修后活核 mm=3/alt=true
+  自动到账实证。诊断脚本沉淀 build/{scroll-mode-diag,swipe-whodoneit,
+  core-parse-probe,tail-inspect,e2e-copymode-v2,bridge-sync-probe}.mjs。
+  教训入账：①node -e 含括号代码被 shell 绞三次=拉黑，一律脚本文件；
+  ②考卷读窗钩必须 f() 调用形（漏括号读成函数对象属性恒 null，引发
+  「桥镜像倒退」假案一轮）；③ WebView 方法跨线程=RuntimeException，
+  桥同步取数走 latch。

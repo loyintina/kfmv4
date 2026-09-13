@@ -215,7 +215,14 @@ export function applyTermBundle(ctx: Context): void {
     });
     mountLinkBanner(linkTracker, bannerContainer.el);
   }
+  // 模式位账（滚轮手感案 2026-09-13）：attach 帧带服务端记账的终端模式
+  // 序列（?1006h/?1000h/?1049h…），任何核重建（tail 回放/Reset）后先回放
+  // 位再喂屏面——位一丢壳就不翻译触摸=滚轮浏览死亡且随机复活
+  const modeStash = new Map<string, string>();
   const bridge = new TermWsBridge(`${location.origin.replace(/^http/, 'ws')}/ws/term`, {
+    onAttached(id, modes) {
+      modeStash.set(id, modes);
+    },
     onOutput(id, data, replay) {
       for (const inst of instances.values()) {
         if (inst.sessionId !== id) continue;
@@ -224,6 +231,10 @@ export function applyTermBundle(ctx: Context): void {
           inst.core.free();
           inst.core = new glueCtor(inst.cols, inst.rows, SCROLLBACK_LINES);
           inst.shell.setCore(inst.core);
+          // 模式位先于 tail：1049h 先进 ALT 再画屏面才语义正确；
+          // 鼠标位是壳翻译触摸→滚轮的前提（server 端 term-connection 记账）
+          const modes = modeStash.get(id);
+          if (modes) inst.core.feed(new TextEncoder().encode(modes));
         }
         inst.core.feed(new TextEncoder().encode(data));
         inst.syncAlt();
@@ -876,6 +887,10 @@ export function applyTermBundle(ctx: Context): void {
         const old = card.core;
         card.core = new glueCtor(card.cols, card.rows, SCROLLBACK_LINES);
         card.shell.setCore(card.core);
+        // 模式位回放（滚轮手感案）：Reset 换核只换屏面不换模式——位丢了
+        // 触摸→滚轮翻译就死。位账来自最近一次 attach 帧的 onAttached
+        const modes = modeStash.get(card.sessionId);
+        if (modes) card.core.feed(new TextEncoder().encode(modes));
         old.free();
         card.atBottom = true;
         scrollEl.scrollTop = 0;

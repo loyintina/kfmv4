@@ -50,6 +50,8 @@ export interface TermSession {
   onExit(cb: (code: number) => void): () => void;
   /** 回环尾迹（封顶）：重连者补齐断档期输出用 */
   replayTail(): string;
+  /** 当前记账中的终端模式位序列（DECSET h 串，升序）——核重建后回放 */
+  termModes(): string;
 }
 
 interface SessionInner {
@@ -63,10 +65,39 @@ interface SessionInner {
   subscriberCount: number;
   /** 最近一次有订阅者的时刻（收割宽限起点） */
   lastSubscribedAt: number;
+  /** 终端模式位账（滚轮手感案 2026-09-13）：DECSET/DECRESET 私有模式
+   *  逐管道记账——核重建（tail 回放/Reset 路径）只吃屏面字节，模式序列
+   *  （?1006h 等）只在 tmux 发送瞬间出现，位一丢壳就不再翻译触摸=滚轮
+   *  浏览死亡且随机复活。任何核重建后按账回放 */
+  modeBits: Set<number>;
+  /** 序列跨 chunk 劈开扫描的接续缓冲（末 12 字符；对象壳保跨 chunk 持久） */
+  modeCarry: { s: string };
 }
 
 const DEFAULT_COLS = 80;
 const DEFAULT_ROWS = 24;
+
+/** 模式位记账范围：鼠标三态（滚轮翻译的前提）+ ALT 屏 + 括号粘贴 */
+const MODE_TRACKED = new Set([1000, 1002, 1003, 1006, 1049, 2004]);
+
+/** 逐 chunk 扫描 DECSET/DECRESET，维护活跃位集合。carry 首尾拼接治
+ *  序列跨 chunk 劈开；Set 语义使重扫幂等（h=add/l=delete） */
+export function scanModes(active: Set<number>, carry: { s: string }, chunk: string): void {
+  const buf = carry.s + chunk;
+  carry.s = buf.slice(-12);
+  for (const m of buf.matchAll(/\x1b\[\?(\d{3,4})([hl])/g)) {
+    const n = Number(m[1]);
+    if (!MODE_TRACKED.has(n)) continue;
+    if (m[2] === 'h') active.add(n);
+    else active.delete(n);
+  }
+}
+
+/** 活跃位 → 可回放序列（升序 DECSET h 串）；空账=空串 */
+export function serializeModes(active: Set<number>): string {
+  return [...active].sort((a, b) => a - b).map((n) => `\x1b[?${n}h`).join('');
+}
+
 /** 回环尾迹封顶（字节）——够重连补屏，不够成内存坑 */
 const TAIL_CAP = 64 * 1024;
 
@@ -187,9 +218,11 @@ export class TermConnectionService {
     const inner: SessionInner = {
       id, proc, outCbs: new Set(), exitCbs: new Set(), tail: '', exited: false,
       subscriberCount: 0, lastSubscribedAt: Date.now(),
+      modeBits: new Set(), modeCarry: { s: '' },
     };
     proc.onData((data) => {
       inner.tail = (inner.tail + data).slice(-TAIL_CAP);
+      scanModes(inner.modeBits, inner.modeCarry, data);
       for (const cb of inner.outCbs) cb(data);
       this._ctx.emit('term/output', id, data);
     });
@@ -238,6 +271,7 @@ export class TermConnectionService {
       id: inner.id,
       sendInput: (data) => { if (!inner.exited) inner.proc.write(data); },
       resize: (cols, rows) => { if (!inner.exited) inner.proc.resize(cols, rows); },
+      termModes: () => serializeModes(inner.modeBits),
       close: () => {
         if (this._sessions.delete(inner.id)) {
           try { inner.proc.kill(); } catch { /* 已死 */ }

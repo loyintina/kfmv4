@@ -12,6 +12,9 @@ export interface BridgeEvents {
   /** 会话输出（含 attach 的 tail 回放——回放帧 replay=true） */
   onOutput(id: string, data: string, replay: boolean): void;
   onExit(id: string, code: number): void;
+  /** attach 到账（tail 回放前发）：modes=服务端记账的终端模式位序列，
+   *  消费方须在任何核重建后先回放位再喂屏面字节（滚轮手感案 2026-09-13） */
+  onAttached?(id: string, modes: string): void;
   /** 链路状态（UI 亮灯用） */
   onLink?(up: boolean): void;
   /** 会话死透（重连后服务端报「会话不存在」=服务端重启过，旧会话全灭）——
@@ -81,6 +84,7 @@ export class TermWsBridge {
         case 'attached': {
           const id = String(m.id);
           this._sessions.add(id);
+          this._ev.onAttached?.(id, String(m.modes ?? ''));
           const tail = String(m.tail ?? '');
           if (tail) this._ev.onOutput(id, tail, true);
           this._attachWaiters.get(id)?.(true);

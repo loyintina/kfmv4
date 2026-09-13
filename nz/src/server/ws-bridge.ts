@@ -133,7 +133,7 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
             break;
           }
           subscribe(m.id);
-          send({ t: 'attached', id: m.id, tail: sess.replayTail() });
+          send({ t: 'attached', id: m.id, tail: sess.replayTail(), modes: sess.termModes() });
           break;
         }
         case 'input':

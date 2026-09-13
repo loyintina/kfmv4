@@ -187,7 +187,13 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
         const [collapsed, setCollapsed] = useState(false);
         useEffect(() => {
           sessionsRef.current = sessions; activeRef.current = active;
+          renderCountRef.current += 1;
           if (attachedRefBridge) attachedRefBridge.current = attachedRef.current;
+          // dbg 镜像（mount 闭包看不到组件 ref——esbuild 不查作用域，直引
+          // 即 ReferenceError；render 域写串、钩读，attachedRefBridge 同款）
+          dbgMirror.current = JSON.stringify({ att: attachedRef.current, ready: readyRef.current, parked: parkedRef.current, rc: renderCountRef.current, switching: switchingRef.current });
+          dbgHist.current.push(dbgMirror.current + '@' + (Date.now() % 100000));
+          if (dbgHist.current.length > 14) dbgHist.current.shift();
         });
 
         // 窗体外挂改造（2026-09-11 用户拍板「标签朝外，盖住终端很难看」）：
@@ -290,6 +296,8 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
         const switchingRef = useRef(false); // 两段式切换进行中（防连点叠加）
         /** 本地最近一次用户切换时刻（对账压制窗，防跟在途切换打架） */
         const lastLocalSwitchRef = useRef(0);
+        // 渲染计数（观测钩 dbg 字段源）：桥镜像竞态诊断+未来排障通用
+        const renderCountRef = useRef(0);
 
         // 顶条三合一·DOM 手势版（2026-09-11 二轮，壳只留哑原语桥）：拖拽=
         // floatDragBy；点按=floatCollapse 翻转；长按 400ms 且位移<slop=
@@ -583,6 +591,8 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
       (window as unknown as Record<string, unknown>).__kfmBrowserFloat = () => ({
         session: activeRef.current, sessions: sessionsRef.current,
         attached: attachedRefBridge.current,
+        dbg: dbgMirror.current,
+        hist: dbgHist.current,
       });
       return {
         unmount: () => {
@@ -598,3 +608,5 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
 const sessionsRef: { current: string[] } = { current: [] };
 const activeRef: { current: string } = { current: '' };
 const attachedRefBridge: { current: string } = { current: '' };
+const dbgMirror: { current: string } = { current: '' };
+const dbgHist: { current: string[] } = { current: [] };

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.ViewGroup;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -132,6 +133,20 @@ public class MainActivity extends Activity {
     private boolean floatLoaded = false;       // 常驻浮窗页是否已首载
     private FrameLayout floatContainer;
     private View orbBtn;
+    private View chromeBtn;                    // 浏览器 chrome 召唤钮（浏览器态左下 ⋮）
+    private android.widget.LinearLayout chromeBar; // ⋮ 弹出竖栏（回退/刷新/管理器/新窗）
+    private boolean chromeOpen = false;
+    // 浏览器多窗（2026-09-13 用户拍板 Edge 手机端式窗口管理器）：每窗一个
+    // WebView，show/hide 保活=切窗零丢态（页面 JS/滚动/表单全在）。tab0=
+    // 常驻保温首窗（browserWeb 别名）。账/题名 UI 线程专用
+    private final java.util.ArrayList<WebView> browserTabs = new java.util.ArrayList<>();
+    private final java.util.HashMap<WebView, String> tabTitles = new java.util.HashMap<>();
+    private int activeTab = 0;
+    private FrameLayout mgrOverlay;            // 窗口管理器暗罩（卡片格+＋新窗）
+    private android.widget.LinearLayout mgrList;
+    private android.widget.TextView mgrCount;
+    private boolean mgrOpen = false;
+    private static final int TAB_MAX = 6;      // 多窗上限：每窗一个 WebView，防 OOM
     private boolean browserMode = false;
     private boolean floatCollapsed = false;
     private boolean ghostOn = false;     // 隐身态（透明让位看浏览器，松手恢复）
@@ -296,6 +311,16 @@ public class MainActivity extends Activity {
         // 用户看见「跳浏览器开 8023」×3，WebView 内页面纹丝不动=reload
         // 「被吞」假象真凶）。空 Client=全部导航自持。
         w.setWebViewClient(new WebViewClient());
+        // 题名捕获（多窗管理器卡片表意用）：任意 WebView 的标题到账记档，
+        // 在浏览器账内的才入 map；管理器开着就活刷
+        w.setWebChromeClient(new WebChromeClient() {
+            @Override public void onReceivedTitle(WebView v, String t) {
+                if (browserTabs.contains(v)) {
+                    tabTitles.put(v, t == null ? "" : t);
+                    if (mgrOpen) refreshMgr();
+                }
+            }
+        });
     }
 
     /** 终端页 first-frame 桥（页面侧 mark() 里 window.NzNative?.firstFrame()） */
@@ -475,6 +500,52 @@ public class MainActivity extends Activity {
                     + ";collapsed=" + floatCollapsed
                     + ";ghost=" + ghostOn;
         }
+
+        /** 浏览器 chrome 原语（agent 同权操作入口）：back/reload/mgr/new/
+         *  tab:i/close:i。tap 只达 termWeb 压不到原生钮——桥原语即 agent
+         *  的 chrome 之手，也是无头验证通路 */
+        @JavascriptInterface
+        public void browserChrome(final String action) {
+            runOnUiThread(() -> doBrowserChrome(action));
+        }
+
+        /** 多窗账直读（agent 观测眼）：{tabs:[{title,url}...],active,mgr,mode}。
+         *  getUrl 等 WebView 方法只许 UI 线程碰（桥线程直调=RuntimeException
+         *  实测）——latch 采账，doFullShot 同款 */
+        @JavascriptInterface
+        public String browserTabs() {
+            final String[] out = { null };
+            final java.util.concurrent.CountDownLatch latch =
+                    new java.util.concurrent.CountDownLatch(1);
+            runOnUiThread(() -> {
+                try {
+                    org.json.JSONArray a = new org.json.JSONArray();
+                    for (int i = 0; i < browserTabs.size(); i++) {
+                        WebView w = browserTabs.get(i);
+                        org.json.JSONObject o = new org.json.JSONObject();
+                        String t = tabTitles.get(w);
+                        o.put("title", t == null || t.length() == 0 ? "新窗口" : t);
+                        o.put("url", w.getUrl() == null ? "" : w.getUrl());
+                        a.put(o);
+                    }
+                    org.json.JSONObject r = new org.json.JSONObject();
+                    r.put("tabs", a);
+                    r.put("active", activeTab);
+                    r.put("mgr", mgrOpen);
+                    r.put("mode", browserMode);
+                    out[0] = r.toString();
+                } catch (Throwable t) {
+                    out[0] = "{\"err\":\"" + t.getClass().getSimpleName() + "\"}";
+                }
+                latch.countDown();
+            });
+            try {
+                latch.await(3, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (InterruptedException ie) {
+                return "{}";
+            }
+            return out[0] == null ? "{}" : out[0];
+        }
     }
 
     /** 浮窗页专用桥（子集）：chrome 手势哑原语 + 观测钩。刻意不含
@@ -570,11 +641,14 @@ public class MainActivity extends Activity {
             floatCollapsed = false;
             ghostOn = false;
             floatContainer.setAlpha(1f);
-            browserWeb.setVisibility(View.VISIBLE);
+            // 活动窗上屏在尾部显隐循环统一做（此处不再直写 browserWeb——
+            // tab0 也可能已被关）
             // 同址不重载（2026-09-12 抖动案）：浏览器页常驻保温，重复进出
             // 零导航零闪动；换址才真正导航
             if (!url.equals(browserUrl)) {
-                browserWeb.loadUrl(url);
+                // 多窗语义：导航落在当前活动窗（切窗/关窗后 activeTab 跟随，
+                // browserWeb 别名不再直用——tab0 也可能被关）
+                if (!browserTabs.isEmpty()) browserTabs.get(activeTab).loadUrl(url);
                 browserUrl = url;
             }
             String fs = "dsh";
@@ -591,6 +665,12 @@ public class MainActivity extends Activity {
             }
             floatContainer.setVisibility(View.VISIBLE);
             layoutFloat();
+            if (chromeBtn != null) chromeBtn.setVisibility(View.VISIBLE);
+            closeChromeBar();
+            // 多窗显隐：只有活动窗上屏，其余保活暗藏（零丢态）
+            for (int k = 0; k < browserTabs.size(); k++) {
+                browserTabs.get(k).setVisibility(k == activeTab ? View.VISIBLE : View.GONE);
+            }
             android.view.inputmethod.InputMethodManager imm =
                     (android.view.inputmethod.InputMethodManager)
                             getSystemService(INPUT_METHOD_SERVICE);
@@ -604,13 +684,17 @@ public class MainActivity extends Activity {
             browserMode = false;
             ghostOn = false;
             floatContainer.setAlpha(1f);
-            browserWeb.setVisibility(View.GONE);
             // 常驻世界：浏览器页保温不销毁（隐藏即离开，再进同址零重载）
             // 常驻世界：浮窗页不销毁，通知它脱附（C-b d，私有管道）——
             // 会话尺寸即刻归还主视图；浮窗回退到裸 zsh 待命
             floatWeb.evaluateJavascript(
                     "window.dispatchEvent(new CustomEvent('kfm-float-park'))", null);
             floatContainer.setVisibility(View.GONE);
+            closeChromeBar();
+            closeMgr();
+            if (chromeBtn != null) chromeBtn.setVisibility(View.GONE);
+            // 全窗下屏（保活不销毁，再进零重载）
+            for (int k = 0; k < browserTabs.size(); k++) browserTabs.get(k).setVisibility(View.GONE);
             layoutFloat();
             mark("browser-exit");
         });
@@ -621,7 +705,15 @@ public class MainActivity extends Activity {
     private void buildBrowserStack() {
         browserWeb = new WebView(this);
         configWeb(browserWeb);
+        browserTabs.add(browserWeb);              // tab0=常驻保温首窗
+        tabTitles.put(browserWeb, "新窗口");
         browserWeb.setVisibility(View.GONE);
+        // 点外即收（交互纪律「收栏与动作同拍」）：ACTION_DOWN 收栏并返回
+        // false，触摸继续走 WebView=网页操作不受栏关闭拖累
+        browserWeb.setOnTouchListener((v, e) -> {
+            if (e.getActionMasked() == android.view.MotionEvent.ACTION_DOWN) closeChromeBar();
+            return false;
+        });
         root.addView(browserWeb, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
@@ -680,6 +772,59 @@ public class MainActivity extends Activity {
                     "window.dispatchEvent(new CustomEvent('kfm-browser-panel-open'))", null);
         });
         root.addView(orbBtn, new FrameLayout.LayoutParams(36 * dpv, 36 * dpv));
+
+        // 浏览器 chrome（2026-09-13 用户提案+同日多窗拍板）：外站文档非我方
+        // DOM 进不去，chrome 必须长壳层。左下 ⋮ 钮 → 竖向小栏四键（回退/
+        // 刷新/管理器▣/新窗⊕），线框描边与 orb 同族。回退/刷新=活动窗直通；
+        // 管理器/多窗见 buildMgr/browserTabs。agent 操作走 NzNative.
+        // browserChrome（tap 只达 termWeb，压不到原生钮——桥原语即 chrome
+        // 之手兼验证通路），多窗账直读 browserTabs()
+        chromeBtn = new View(this) {
+            @Override protected void onDraw(android.graphics.Canvas c) {
+                android.graphics.Paint p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+                p.setColor(0xFFD8DADE);
+                float cx = getWidth() / 2f;
+                for (int i = -1; i <= 1; i++) {
+                    c.drawCircle(cx, getHeight() / 2f + i * 5.5f * dpv, 1.6f * dpv, p);
+                }
+            }
+        };
+        android.graphics.drawable.GradientDrawable cbg = new android.graphics.drawable.GradientDrawable();
+        cbg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        cbg.setColor(0xE8232427); cbg.setStroke(Math.max(1, dpv), 0xFF3A3B3F);
+        chromeBtn.setBackground(cbg);
+        chromeBtn.setElevation(6 * dpv);
+        chromeBtn.setVisibility(View.GONE);
+        chromeBtn.setOnClickListener(v -> toggleChromeBar());
+        root.addView(chromeBtn, new FrameLayout.LayoutParams(40 * dpv, 40 * dpv));
+
+        chromeBar = new android.widget.LinearLayout(this);
+        chromeBar.setOrientation(android.widget.LinearLayout.VERTICAL);
+        android.graphics.drawable.GradientDrawable barg = new android.graphics.drawable.GradientDrawable();
+        barg.setCornerRadius(14 * dpv);
+        barg.setColor(0xF217181A); barg.setStroke(Math.max(1, dpv), 0xFF3A3B3F);
+        chromeBar.setBackground(barg);
+        chromeBar.setElevation(6 * dpv);   // 低于浮窗 8dp：浮窗拖到左下时盖钮为自然语义
+        chromeBar.setVisibility(View.GONE);
+        chromeBar.setAlpha(0f);
+        int cpad = 5 * dpv;
+        chromeBar.setPadding(cpad, cpad, cpad, cpad);
+        chromeBar.addView(chromeItem("back"), new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 40 * dpv));
+        chromeBar.addView(chromeItem("reload"), new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 40 * dpv));
+        chromeBar.addView(chromeItem("mgr"), new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 40 * dpv));
+        chromeBar.addView(chromeItem("new"), new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 40 * dpv));
+        root.addView(chromeBar, new FrameLayout.LayoutParams(50 * dpv,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        // 窗口管理器（Edge 手机端式）：暗罩+窗口卡片格+＋新窗卡。纯原生
+        // ——硬件 WebView 画不进 canvas（softShot 案），卡片以标题/域名+
+        // 聚焦描边表意，实况缩略图挂账
+        buildMgr();
+
         // 首定位必须等 root 真有尺寸：onCreate 期 View.post 走
         // HandlerActionQueue，随首次 traversal 的 dispatchAttachedToWindow
         // 执行——在 performLayout **之前**，root.getWidth()==0，layoutFloat
@@ -717,6 +862,22 @@ public class MainActivity extends Activity {
         ob.leftMargin = W - dpv * 12 - dpv * 36;
         ob.topMargin = dpv * 12;
         orbBtn.setLayoutParams(ob);
+        // chrome 钮固定左下（与 orb 同一布局节拍；H 已扣 imeBottom=键盘
+        // 弹起不遮）。栏与钮同心（钮心 36dp−栏半宽 25dp=11dp），栏底距
+        // 钮顶 8dp；栏高恒 170dp（4×40+2×5 padding，GONE 期 getHeight()=0
+        // 不可信，用构造常数）
+        if (chromeBtn != null) {
+            FrameLayout.LayoutParams cb = (FrameLayout.LayoutParams) chromeBtn.getLayoutParams();
+            cb.leftMargin = dpv * 16;
+            cb.topMargin = H - dpv * 16 - dpv * 40;
+            chromeBtn.setLayoutParams(cb);
+        }
+        if (chromeBar != null) {
+            FrameLayout.LayoutParams cp = (FrameLayout.LayoutParams) chromeBar.getLayoutParams();
+            cp.leftMargin = dpv * 11;
+            cp.topMargin = H - dpv * 16 - dpv * 40 - dpv * 8 - dpv * 170;
+            chromeBar.setLayoutParams(cp);
+        }
     }
 
     /** 浮窗拖拽（2026-09-12 拖影案终案）：真窗纹丝不动，幻影框跟手。
@@ -769,6 +930,291 @@ public class MainActivity extends Activity {
         mark("float-collapse-" + c);
     }
 
+    /** 浏览器 chrome 动作（按钮与 agent 桥同归口）：back/reload 直通活动
+     *  窗；mgr=窗口管理器；new=新窗（保留现有窗）+开管理器；tab:i/close:i
+     *  =多窗操作。全部 mark 留痕（真机排障的面包屑） */
+    private void doBrowserChrome(final String action) {
+        if (!browserMode || browserTabs.isEmpty()) { mark("chrome-ignore-" + action); return; }
+        try {
+            if ("back".equals(action)) {
+                WebView w = browserTabs.get(activeTab);
+                if (w.canGoBack()) w.goBack();
+            } else if ("reload".equals(action)) {
+                browserTabs.get(activeTab).reload();
+            } else if ("mgr".equals(action)) {
+                toggleMgr();
+            } else if ("new".equals(action)) {
+                newTab();
+                if (!mgrOpen) toggleMgr(); else refreshMgr();
+            } else if (action.startsWith("tab:")) {
+                switchTab(Integer.parseInt(action.substring(4)));
+                if (mgrOpen) refreshMgr();
+            } else if (action.startsWith("close:")) {
+                closeTab(Integer.parseInt(action.substring(6)));
+            }
+        } catch (Throwable t) { mark("chrome-err"); }
+        mark("chrome-" + action);
+    }
+
+    /** chrome 竖栏展开/收回：220ms ease-out 淡入+上移归位（与浮窗折叠同
+     *  motion 语言），180ms 退出 */
+    private void toggleChromeBar() {
+        if (chromeBar == null) return;
+        chromeOpen = !chromeOpen;
+        if (chromeOpen) {
+            chromeBar.setTranslationY(6 * dpv);
+            chromeBar.setVisibility(View.VISIBLE);
+            chromeBar.animate().alpha(1f).translationY(0f).setDuration(220)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+        } else {
+            chromeBar.animate().alpha(0f).translationY(6 * dpv).setDuration(180)
+                    .withEndAction(() -> { if (chromeBar != null) chromeBar.setVisibility(View.GONE); })
+                    .start();
+        }
+        mark("chrome-bar-" + chromeOpen);
+    }
+
+    private void closeChromeBar() {
+        if (chromeOpen) toggleChromeBar();
+    }
+
+    // ── 浏览器多窗（2026-09-13 用户拍板 Edge 手机端式窗口管理器）──
+
+    /** 新窗（保留现有窗）：起步页语义与 enterBrowser 同源（browserUrl=
+     *  最近一次进入地址；空则 limestart，与网页侧 DEFAULT_URL 同值，改需
+     *  两头同步）。暗藏创建，切换/进浏览器态才上屏。上限 TAB_MAX——每窗
+     *  一个 WebView，无上限开=OOM 闪退定时炸弹（本项目有前科） */
+    private void newTab() {
+        if (browserTabs.size() >= TAB_MAX) { mark("tab-new-reject-cap"); return; }
+        WebView w = new WebView(this);
+        configWeb(w);
+        tabTitles.put(w, "新窗口");
+        w.setVisibility(View.GONE);
+        // 与 tab0 同规：点页面即收 ⋮ 栏（收栏与动作同拍，触摸穿透）
+        w.setOnTouchListener((v, e) -> {
+            if (e.getActionMasked() == android.view.MotionEvent.ACTION_DOWN) closeChromeBar();
+            return false;
+        });
+        root.addView(w, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        browserTabs.add(w);
+        String start = browserUrl != null && browserUrl.length() > 4 ? browserUrl : "https://www.limestart.cn/";
+        w.loadUrl(start);
+        mark("tab-new-" + browserTabs.size());
+    }
+
+    /** 切窗：show/hide 保活（页面 JS/滚动/表单零丢态），GONE 暗藏不渲染 */
+    private void switchTab(int i) {
+        if (i < 0 || i >= browserTabs.size() || i == activeTab) return;
+        browserTabs.get(activeTab).setVisibility(View.GONE);
+        activeTab = i;
+        if (browserMode) browserTabs.get(i).setVisibility(View.VISIBLE);
+        mark("tab-switch-" + i);
+    }
+
+    /** 关窗：摘账+removeView+destroy（真释放内存）；末窗拒绝关（留操作
+     *  底座）。活动窗被关→账指针归位并按位重排显隐 */
+    private void closeTab(int i) {
+        if (i < 0 || i >= browserTabs.size() || browserTabs.size() <= 1) { mark("tab-close-reject-" + i); return; }
+        WebView w = browserTabs.remove(i);
+        tabTitles.remove(w);
+        root.removeView(w);
+        w.destroy();
+        if (activeTab > i) activeTab -= 1;
+        if (activeTab >= browserTabs.size()) activeTab = browserTabs.size() - 1;
+        if (browserMode) {
+            for (int k = 0; k < browserTabs.size(); k++) {
+                browserTabs.get(k).setVisibility(k == activeTab ? View.VISIBLE : View.GONE);
+            }
+        }
+        if (mgrOpen) refreshMgr();
+        mark("tab-close-" + i + "-left-" + browserTabs.size());
+    }
+
+    /** 窗口管理器暗罩：暗底+头行（窗数+×）+卡片滚动列（标题/域名/×，聚焦
+     *  蓝描边）+尾部「＋新窗口」卡。点空白=收；纯原生（硬件 WebView 画不
+     *  进 canvas=softShot 案，实况缩略图挂账） */
+    private void buildMgr() {
+        mgrOverlay = new FrameLayout(this);
+        mgrOverlay.setBackgroundColor(0xF60D0E11);
+        mgrOverlay.setVisibility(View.GONE);
+        mgrOverlay.setElevation(9 * dpv);   // 压浮窗(8)/chrome 栏(6)：管理器是模态
+        mgrOverlay.setOnClickListener(v -> toggleMgr());
+        root.addView(mgrOverlay, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        android.widget.LinearLayout col = new android.widget.LinearLayout(this);
+        col.setOrientation(android.widget.LinearLayout.VERTICAL);
+        int p = 14 * dpv;
+        col.setPadding(p, p, p, p);
+        mgrOverlay.addView(col, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        android.widget.LinearLayout head = new android.widget.LinearLayout(this);
+        head.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        head.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        mgrCount = new TextView(this);
+        mgrCount.setTextColor(0xFFE0E0E0);
+        mgrCount.setTextSize(15);
+        head.addView(mgrCount, new android.widget.LinearLayout.LayoutParams(
+                0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        TextView x = new TextView(this);
+        x.setText("×");
+        x.setTextColor(0xFFA5A8AD);
+        x.setTextSize(18);
+        x.setPadding(12 * dpv, 4 * dpv, 4 * dpv, 4 * dpv);
+        x.setOnClickListener(v -> toggleMgr());
+        head.addView(x, new android.widget.LinearLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
+        col.addView(head, new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        android.widget.ScrollView sc = new android.widget.ScrollView(this);
+        mgrList = new android.widget.LinearLayout(this);
+        mgrList.setOrientation(android.widget.LinearLayout.VERTICAL);
+        sc.addView(mgrList, new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
+        android.widget.LinearLayout.LayoutParams slp = new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        slp.topMargin = 6 * dpv;
+        col.addView(sc, slp);
+    }
+
+    /** 卡片格重建（开销小：窗数量级，开罩/题名到账/多窗操作时刷） */
+    private void refreshMgr() {
+        if (mgrList == null) return;
+        mgrList.removeAllViews();
+        if (mgrCount != null) {
+            mgrCount.setText("窗口 " + (activeTab + 1) + " / " + browserTabs.size());
+        }
+        for (int i = 0; i < browserTabs.size(); i++) {
+            final int idx = i;
+            WebView w = browserTabs.get(i);
+            android.widget.LinearLayout card = new android.widget.LinearLayout(this);
+            card.setOrientation(android.widget.LinearLayout.VERTICAL);
+            card.setPadding(10 * dpv, 8 * dpv, 10 * dpv, 8 * dpv);
+            android.graphics.drawable.GradientDrawable cg = new android.graphics.drawable.GradientDrawable();
+            cg.setCornerRadius(10 * dpv);
+            cg.setColor(i == activeTab ? 0xFF26282E : 0xFF1B1C20);
+            cg.setStroke(Math.max(1, dpv), i == activeTab ? 0xFF5A7CD8 : 0xFF3A3B3F);
+            card.setBackground(cg);
+
+            android.widget.LinearLayout row = new android.widget.LinearLayout(this);
+            row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            TextView title = new TextView(this);
+            String t = tabTitles.get(w);
+            title.setText(t == null || t.length() == 0 ? "新窗口" : t);
+            title.setTextColor(0xFFE0E0E0);
+            title.setTextSize(13);
+            title.setMaxLines(1);
+            title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            row.addView(title, new android.widget.LinearLayout.LayoutParams(
+                    0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            if (browserTabs.size() > 1) {
+                TextView cx = new TextView(this);
+                cx.setText("×");
+                cx.setTextColor(0xFF8A8D93);
+                cx.setTextSize(15);
+                cx.setPadding(10 * dpv, 0, 0, 0);
+                cx.setOnClickListener(v -> closeTab(idx));
+                row.addView(cx, new android.widget.LinearLayout.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
+            }
+            card.addView(row, new android.widget.LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
+            TextView url = new TextView(this);
+            String u = w.getUrl() == null ? "" : w.getUrl().replaceFirst("^https?://", "");
+            url.setText(u);
+            url.setTextColor(0xFF8A8D93);
+            url.setTextSize(11);
+            url.setMaxLines(1);
+            url.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            android.widget.LinearLayout.LayoutParams ulp = new android.widget.LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+            ulp.topMargin = 2 * dpv;
+            card.addView(url, ulp);
+            card.setOnClickListener(v -> { switchTab(idx); toggleMgr(); });
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.topMargin = (i == 0 ? 0 : 8 * dpv);
+            mgrList.addView(card, lp);
+        }
+        // ＋ 新窗口卡（尾部通栏；达上限=灰字提示，点击无效）
+        android.widget.TextView add = new android.widget.TextView(this);
+        boolean capped = browserTabs.size() >= TAB_MAX;
+        add.setText(capped ? "窗口已达上限（" + TAB_MAX + "）" : "＋ 新窗口");
+        add.setTextColor(capped ? 0xFF5A5D63 : 0xFFA5A8AD);
+        add.setTextSize(13);
+        add.setGravity(android.view.Gravity.CENTER);
+        android.graphics.drawable.GradientDrawable ag = new android.graphics.drawable.GradientDrawable();
+        ag.setCornerRadius(10 * dpv);
+        ag.setColor(0x001B1C20);
+        ag.setStroke(Math.max(1, dpv), capped ? 0xFF2A2B30 : 0xFF3A3B3F);
+        add.setBackground(ag);
+        if (!capped) add.setOnClickListener(v -> { newTab(); refreshMgr(); });
+        android.widget.LinearLayout.LayoutParams alp = new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 52 * dpv);
+        alp.topMargin = 10 * dpv;
+        mgrList.addView(add, alp);
+    }
+
+    /** 管理器开/收：200ms 淡入（与 chrome 栏同 motion 语言），收=瞬隐 */
+    private void toggleMgr() {
+        if (mgrOverlay == null) return;
+        mgrOpen = !mgrOpen;
+        if (mgrOpen) {
+            refreshMgr();
+            mgrOverlay.setAlpha(0f);
+            mgrOverlay.setVisibility(View.VISIBLE);
+            mgrOverlay.animate().alpha(1f).setDuration(200)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+        } else {
+            mgrOverlay.setVisibility(View.GONE);
+        }
+        mark("mgr-" + mgrOpen);
+    }
+
+    private void closeMgr() {
+        if (mgrOpen) toggleMgr();
+    }
+
+    /** chrome 栏图标项：线框描边同族（orb 同 stroke 语言），无字。点按=
+     *  动作+收栏（选择完即回到操作，主终端标签排同款交互观） */
+    private View chromeItem(final String action) {
+        View v = new View(this) {
+            @Override protected void onDraw(android.graphics.Canvas c) {
+                android.graphics.Paint p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+                p.setStyle(android.graphics.Paint.Style.STROKE);
+                p.setStrokeWidth(1.6f * dpv);
+                p.setStrokeCap(android.graphics.Paint.Cap.ROUND);
+                p.setColor(0xFFD8DADE);
+                float cx = getWidth() / 2f, cy = getHeight() / 2f, r = 8 * dpv;
+                if ("back".equals(action)) { // ←
+                    c.drawLine(cx + r, cy, cx - r, cy, p);
+                    c.drawLine(cx - r, cy, cx - r + 4 * dpv, cy - 4 * dpv, p);
+                    c.drawLine(cx - r, cy, cx - r + 4 * dpv, cy + 4 * dpv, p);
+                } else if ("reload".equals(action)) { // ↻ 缺口圆+箭头
+                    android.graphics.RectF o = new android.graphics.RectF(cx - r, cy - r, cx + r, cy + r);
+                    c.drawArc(o, -60f, 300f, false, p);
+                    c.drawLine(cx + r * 0.55f, cy - r * 0.9f, cx + r * 1.02f, cy - r * 0.28f, p);
+                } else if ("mgr".equals(action)) { // ▣ 双层圆角矩形=窗口格
+                    android.graphics.RectF a = new android.graphics.RectF(
+                            cx - r, cy - r, cx + r * 0.45f, cy + r * 0.45f);
+                    c.drawRoundRect(a, 2.5f * dpv, 2.5f * dpv, p);
+                    android.graphics.RectF b = new android.graphics.RectF(
+                            cx - r * 0.45f, cy - r * 0.45f, cx + r, cy + r);
+                    c.drawRoundRect(b, 2.5f * dpv, 2.5f * dpv, p);
+                } else { // ⊕ 新窗
+                    c.drawLine(cx - r, cy, cx + r, cy, p);
+                    c.drawLine(cx, cy - r, cx, cy + r, p);
+                }
+            }
+        };
+        v.setOnClickListener(iv -> { doBrowserChrome(action); toggleChromeBar(); });
+        return v;
+    }
+
     /** 全窗合成截屏（PixelCopy，API 24+）：整窗合成帧原样抄下来——硬件
      *  加速 WebView/原生层全入镜（decor 软绘全黑的坑绕开），「用户所见=
      *  agent 所见」的合成眼（檐区透明/幻影拖拽/轨位置验收用）。
@@ -806,6 +1252,7 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
+        if (browserMode && mgrOpen) { toggleMgr(); return; } // 管理器模态：返回先收罩
         if (browserMode) { doExitBrowser(); return; }
         if (termWeb != null && termWeb.canGoBack()) {
             termWeb.goBack();
