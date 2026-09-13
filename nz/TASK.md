@@ -2307,20 +2307,6 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   set-window-option manual+resize-window 跟随——窗恒=卡格网，填充点阵
   结构性绝迹；格网变化天然去抖（scheduleResize 值变守卫）。npm test
   233、organ 13/13、float 卷 8/8；bundle v=0a535968 + server restart-req。
-- **✅ 回终端慢案修复（2026-09-13 第二案，我方回归自首）**：用户报「点
-  聚焦签回终端延迟、像重启网页、标签重新加载，以前瞬时」。两层根因：
-  ①旧病=服务端今晚多次重启（钉窗帧部署）连带杀死出生 zsh 管道，
-  leaveTmux 盲绑死会话→attach error 帧→onSessionDead→全页自愈 reload
-  （设计内恢复，但体感=重启）；②新病=我第一刀修复引用了 tmux-tabs 作
-  用域不存在的 bridge/card → ReferenceError 被吞=点击完全无效果（真机
-  click-probe 抓获：native click 派发成功、attached 纹丝不动）。修=
-  ①term 新增 __kfmNzTermAlive 存活探针（bridge.sessionIds）②leaveTmux
-  先验存活：活→瞬时换绑；死→现场开新 zsh 接棒（零 reload）。真机
-  复验：点聚焦签 800ms 回终端（死 zsh 自愈接棒路径）+nav=1 零重载，
-  后续点击恢复瞬时。npm test 234、organ 13/13；bundle v=38d6f2e9 热更。
-  教训：跨插件作用域引用必须过窗口钩子（termHooks 同款）；esbuild 不
-  类型检查，ReferenceError 只在运行时爆——leaveTmux 这类核心路径改动
-  必须真机点击回归，headless 卷④只盖浮窗侧。
 - **✅ 回终端慢案修复（2026-09-13 第二案，自首回归）**：用户报「点聚焦
   签回终端延迟、像重启网页、标签重新加载，以前瞬时」。两层根因：①旧
   病=服务端今晚多次重启（钉窗帧部署）连带杀死出生 zsh 管道，leaveTmux
@@ -2335,3 +2321,20 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   15/15；npm test 234。教训：跨插件作用域引用必须过窗口钩子；esbuild
   不做类型检查，ReferenceError 只在运行时爆——核心路径改动必须真机
   点击回归（headless 卷④只盖浮窗侧）。
+- **✅ 浏览器人味操作演示+眼睛能力图谱（2026-09-13）**：用户问「能否像
+  人一样直接操作浏览器」。①操作链全通=主页面 NzNative.enterBrowser
+  上屏（同址零重载）→ CDP Input 真注入点击 limestart 搜索框
+  （activeElement 落位）→ insertText 打 'kimi'（值落位）→ 回车 → 同页
+  跳百度移动结果页（title="kimi - 百度"）；DOM 证据链+用户目验双闭环，
+  脚本沉淀 lab/device-agent/build/browser-demo-human3.mjs。②**熄屏墙
+  指纹**（与 na 线熄屏案同墙，正式入账）：熄屏时全目标
+  Page.captureScreenshot 挂死+fullShot 空+visibilityState=hidden，而
+  Runtime.evaluate/Input 注入照常——「手活能干、眼睛全瞎」，操作类验证
+  不受熄屏影响，像素取证必须亮屏。③**眼睛能力图谱**（亮屏标定，
+  calibrate-shots.mjs + calib-*.jpg）：主终端 CDP 截图 ✓（浏览器模式
+  也在场）/浮窗目标 CDP 截图 ✗（可见态仍挂）/浏览器目标 CDP 截图 ✗
+  （同）/fullShot 普通模式 ✓（451KB）/浏览器模式 ✗（两连空）。含义：
+  浏览器模式内像素观测暂无通道，浏览器模式验收=DOM 读数+用户目验。
+  ④挂账：float/browser 目标 CDP 截图挂根因（疑 WebView 创建配置差异，
+  查 MainActivity 与 termWeb 分歧）+fullShot 浏览器模式失效根因——两件
+  直接决定 agent 浏览器模式自观测能力（B-线器官之眼）。
