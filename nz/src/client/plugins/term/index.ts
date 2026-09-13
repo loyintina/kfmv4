@@ -833,6 +833,9 @@ export function applyTermBundle(ctx: Context): void {
       win.__kfmNzTermBind = (id: string, grid?: { cols: number; rows: number }): void => {
         if (!id) return;
         card.sessionId = id;
+        // 切换光标动画（2026-09-13 用户提案）：换绑时光标脉冲标新落点，
+        // 终端/浮窗同链路共用
+        shell.cursorPulse();
         // 格网收编（挤画案，2026-09-12）：浮窗绑定时把卡片格网对齐管道
         // 尺寸——tail 回放的核重建按收编后行列走。不带 grid 的调用（主终
         // 端 tmux-tabs 换绑）行为零变化。

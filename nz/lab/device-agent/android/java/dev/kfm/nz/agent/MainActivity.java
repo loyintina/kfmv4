@@ -455,11 +455,7 @@ public class MainActivity extends Activity {
          *  WebView 保活不摘显 */
         @JavascriptInterface
         public void floatCollapse(final boolean c) {
-            runOnUiThread(() -> {
-                floatCollapsed = c;
-                layoutFloat();
-                mark("float-collapse-" + c);
-            });
+            runOnUiThread(() -> animateFloatCollapse(c));
         }
 
         /** 临时隐身让位看浏览器：alpha 0.12 保触摸（INVISIBLE 连触摸一起
@@ -492,11 +488,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void floatCollapse(final boolean c) {
-            runOnUiThread(() -> {
-                floatCollapsed = c;
-                layoutFloat();
-                mark("float-collapse-" + c);
-            });
+            runOnUiThread(() -> animateFloatCollapse(c));
         }
 
         @JavascriptInterface
@@ -720,8 +712,10 @@ public class MainActivity extends Activity {
         lp.width = boxW; lp.height = floatCollapsed ? 24 * dpv : floatH;
         floatContainer.setLayoutParams(lp);
         FrameLayout.LayoutParams ob = (FrameLayout.LayoutParams) orbBtn.getLayoutParams();
-        if (browserMode) { ob.leftMargin = floatLeft + gutter + floatW / 2 - dpv * 18; ob.topMargin = Math.max(dpv * 8, floatTop - dpv * 44); }
-        else { ob.leftMargin = W - dpv * 12 - dpv * 36; ob.topMargin = H / 2 - dpv * 18; }
+        // orb 固定右上（2026-09-13 用户拍板）：召唤/退回都钉这一个点，
+        // 不随浮窗漂、不随拖拽走——常驻入口位置恒定才好找
+        ob.leftMargin = W - dpv * 12 - dpv * 36;
+        ob.topMargin = dpv * 12;
         orbBtn.setLayoutParams(ob);
     }
 
@@ -745,16 +739,34 @@ public class MainActivity extends Activity {
         }
         // 真窗 1:1 跟手（用户拍板弃幻影）：offsetLeftAndRight/TopAndBottom
         // 走原生脏区重绘，不触发 requestLayout 全量重排（闪烁主因），也
-        // 无 translation 的表面滞后帧（闪烁主因二）。orb 同步随移防脱手
+        // 无 translation 的表面滞后帧（闪烁主因二）。orb 固定右上不随移
+        // （2026-09-13 用户拍板）
         int curL = floatContainer.getLeft(), curT = floatContainer.getTop();
         int newL = Math.max(dpv * 2, Math.min(curL + dx, W - boxW - dpv * 2));
         int newT = Math.max(dpv * 40, Math.min(curT + dy, H - boxH - dpv * 2));
         floatContainer.offsetLeftAndRight(newL - curL);
         floatContainer.offsetTopAndBottom(newT - curT);
-        if (orbBtn != null) {
-            orbBtn.offsetLeftAndRight(newL - curL);
-            orbBtn.offsetTopAndBottom(newT - curT);
-        }
+    }
+
+    /** 折叠/展开过渡（2026-09-13 用户提案）：窗高 220ms ease-out 逐帧落
+     *  LayoutParams——把手胶囊与展开窗「长出来/收回去」而非瞬跳。宽度/
+     *  位置不动只动高，终点几何与 layoutFloat 同规。两座桥共用 */
+    private void animateFloatCollapse(final boolean c) {
+        if (floatContainer == null || root == null) return;
+        floatCollapsed = c;
+        final FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) floatContainer.getLayoutParams();
+        final int from = lp.height;
+        final int to = c ? 24 * dpv : floatH;
+        if (from == to) { mark("float-collapse-" + c); return; }
+        android.animation.ValueAnimator an = android.animation.ValueAnimator.ofInt(from, to);
+        an.setDuration(220);
+        an.setInterpolator(new android.view.animation.DecelerateInterpolator());
+        an.addUpdateListener(animation -> {
+            lp.height = (int) animation.getAnimatedValue();
+            floatContainer.setLayoutParams(lp);
+        });
+        an.start();
+        mark("float-collapse-" + c);
     }
 
     /** 全窗合成截屏（PixelCopy，API 24+）：整窗合成帧原样抄下来——硬件

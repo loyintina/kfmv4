@@ -2275,3 +2275,12 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   0.35px TERM_BG，浮窗专属，主终端 13px 不适用）；真机三方案 A/B 截图
   （NaMain/JBM/NaMain+描边）判 c 最清爽。float 卷 7/7、npm test 233、
   bundle v=bca927f3 热更，用户目验终审。
+- **✅ 浮窗交互三连（2026-09-13 用户拍板）**：①浏览器 orb 固定右上
+  （壳层 layoutFloat 去分支钉 W-12dp/12dp + 拖拽不再随移——常驻入口位
+  置恒定）；②浮窗折叠/展开 ValueAnimator 过渡（220ms ease-out 逐帧落
+  LayoutParams，双桥 floatCollapse 归口 animateFloatCollapse，把手胶囊
+  「长出来/收回去」）；③切换光标动画（shell.cursorPulse：WAAPI 淡入+
+  辉光扩散 340ms，bind 换绑即播，终端/浮窗同链路共用，抑制态不播）。
+  壳 APK versionCode=1789258595 / 70262B / md5 76950cb605ad61a48ca5fd9
+  e3138c85b（L0 指纹入账，dex 闸过）；web bundle v=83caa2d9 热更；
+  npm test 233、browser-organ 13/13、float 卷 8/8。

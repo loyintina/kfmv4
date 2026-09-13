@@ -129,6 +129,19 @@ export class TermShell {
     this.cursorSuppressed = on;
     this.renderFrame(); // 立即生效，不等下一帧输出
   }
+  /** 切换脉冲（2026-09-13 用户提案「切换光标动画」）：会话换绑时光标
+   *  淡入+一圈辉光扩散，标出新落点。WAAPI 播完即弃不留样式残留；
+   *  隐身/抑制态不播（TUI 浏览与自绘光标场景不打扰） */
+  cursorPulse(): void {
+    if (this.cursorSuppressed || this.cursorEl.style.display === 'none') return;
+    this.cursorEl.animate(
+      [
+        { transform: 'scale(1.9)', opacity: 0.15, boxShadow: '0 0 0 0 rgba(122,162,247,0.55)' },
+        { transform: 'scale(1)', opacity: 0.7, boxShadow: '0 0 0 7px rgba(122,162,247,0)' },
+      ],
+      { duration: 340, easing: 'ease-out' },
+    );
+  }
   /** 渲染健康统计（?debug 骨架常驻字段源：frames/rowsPainted/scrolls——
    * scrolls = nearest 兜底实际滚动次数；rp/sc 突增 = 重绘或滚动挤兑） */
   readonly stats = { frames: 0, rowsPainted: 0, scrolls: 0 };
