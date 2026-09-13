@@ -2307,3 +2307,31 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   set-window-option manual+resize-window 跟随——窗恒=卡格网，填充点阵
   结构性绝迹；格网变化天然去抖（scheduleResize 值变守卫）。npm test
   233、organ 13/13、float 卷 8/8；bundle v=0a535968 + server restart-req。
+- **✅ 回终端慢案修复（2026-09-13 第二案，我方回归自首）**：用户报「点
+  聚焦签回终端延迟、像重启网页、标签重新加载，以前瞬时」。两层根因：
+  ①旧病=服务端今晚多次重启（钉窗帧部署）连带杀死出生 zsh 管道，
+  leaveTmux 盲绑死会话→attach error 帧→onSessionDead→全页自愈 reload
+  （设计内恢复，但体感=重启）；②新病=我第一刀修复引用了 tmux-tabs 作
+  用域不存在的 bridge/card → ReferenceError 被吞=点击完全无效果（真机
+  click-probe 抓获：native click 派发成功、attached 纹丝不动）。修=
+  ①term 新增 __kfmNzTermAlive 存活探针（bridge.sessionIds）②leaveTmux
+  先验存活：活→瞬时换绑；死→现场开新 zsh 接棒（零 reload）。真机
+  复验：点聚焦签 800ms 回终端（死 zsh 自愈接棒路径）+nav=1 零重载，
+  后续点击恢复瞬时。npm test 234、organ 13/13；bundle v=38d6f2e9 热更。
+  教训：跨插件作用域引用必须过窗口钩子（termHooks 同款）；esbuild 不
+  类型检查，ReferenceError 只在运行时爆——leaveTmux 这类核心路径改动
+  必须真机点击回归，headless 卷④只盖浮窗侧。
+- **✅ 回终端慢案修复（2026-09-13 第二案，自首回归）**：用户报「点聚焦
+  签回终端延迟、像重启网页、标签重新加载，以前瞬时」。两层根因：①旧
+  病=服务端今晚多次重启（钉窗帧部署）连带杀死出生 zsh 管道，leaveTmux
+  盲绑死会话→attach error 帧→onSessionDead→全页自愈 reload（设计内恢
+  复，但体感=重启+重建标签）；②新病=我第一刀修复引用 tmux-tabs 作用
+  域不存在的 bridge/card → ReferenceError 被吞=聚焦签点击完全无效果
+  （真机 click-probe 定罪：native 派发成功、attached 纹丝不动）。修=
+  ①term 新增 __kfmNzTermAlive 存活探针（bridge.sessionIds）②leaveTmux
+  先验存活：活→瞬时换绑；死→现场开新 zsh 接棒零 reload（跨插件一律走
+  窗口钩子）。真机复验：点聚焦签 800ms 回终端（死 zsh 接棒路径）+
+  nav=1 零重载。回归钉=browser-organ ⑨a 探针契约/⑨b 零重载回终端，
+  15/15；npm test 234。教训：跨插件作用域引用必须过窗口钩子；esbuild
+  不做类型检查，ReferenceError 只在运行时爆——核心路径改动必须真机
+  点击回归（headless 卷④只盖浮窗侧）。

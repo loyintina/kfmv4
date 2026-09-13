@@ -179,6 +179,27 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
   ).then(() => true).catch(() => false);
   const fstate = await fpage.evaluate(() => (window).__kfmBrowserFloat?.());
   check('⑧b 主终端切换 → 浮窗跟绑', followedFtA, `floatAttached=${JSON.stringify(fstate?.attached ?? null)}（expect ftA）`);
+
+  // ⑨ 回终端慢案回归钉（2026-09-13）：点聚焦签 → leaveTmux 瞬时回终端
+  //   态，且存活探针契约成立（活会话=true / 乱造 id=false）；全程零
+  //   reload（旧病：死 zsh 盲绑→onSessionDead→全页 reload=用户体感重启）
+  {
+    const main0 = await page.evaluate(() => ({ att: (window).__kfmNzTmuxTabs().attachedSession, nav: performance.getEntriesByType('navigation').length }));
+    await page.evaluate(() => (window).__kfmNzTmuxTabsEnter?.('ftB'));
+    await page.waitForFunction(() => (window).__kfmNzTmuxTabs().attachedSession === 'ftB', null, { timeout: 12000, polling: 250 }).catch(() => {});
+    const aliveProbe = await page.evaluate(() => {
+      const sid = (window).__kfmNzTermSession().sessionId;
+      return { sidAlive: (window).__kfmNzTermAlive ? (window).__kfmNzTermAlive(sid) : null, deadFalse: (window).__kfmNzTermAlive ? (window).__kfmNzTermAlive('nonexistent-xyz') === false : null };
+    });
+    await page.evaluate(() => document.querySelector(`[data-tmux-win="${(window).__kfmNzTmuxTabs().attachedSession}"]`).click());
+    const left = await page.waitForFunction(
+      () => (window).__kfmNzTmuxTabs().attachedSession === null,
+      null, { timeout: 8000, polling: 200 },
+    ).then(() => true).catch(() => false);
+    const after = await page.evaluate(() => ({ nav: performance.getEntriesByType('navigation').length, screen: ((window).__kfmNzTermScreen() || '').length }));
+    check('⑨a 存活探针契约（活=true/假 id=false）', aliveProbe.sidAlive === true && aliveProbe.deadFalse === true, JSON.stringify(aliveProbe));
+    check('⑨b 点聚焦签瞬时回终端+零重载', left && after.nav === main0.nav && after.screen > 5, `left=${left} nav ${main0.nav}→${after.nav} screenLen=${after.screen}`);
+  }
 }
 
 // ⑤ 会话表端点

@@ -499,23 +499,44 @@ export function createTmuxTabsPlugin(): UiPlugin {
           // 着待命（零脱附），随时一键切回；B1 清界后 ^L 重绘 prompt，
           // 0902「已彻底回来」暗示不变
           const h = termHooks();
+          const w = window as unknown as Record<string, unknown>;
+          const goTerminal = (zshId: string | null): void => {
+            if (zshId && typeof h.bind === 'function' && typeof h.reset === 'function') {
+              h.reset();
+              h.bind(zshId);
+              termInject('\u000c');
+            } else {
+              termInject('\u0002d'); // 兜底：无账（理论不可达）
+            }
+            lastLocalSwitchRef.current = Date.now();
+            setAttached(null);
+            // 全局会话账：终端态=空账（浮窗读到空串不跟——它无终端态概念）
+            try {
+              if (localStorage.getItem('kfmActiveSession') !== '') localStorage.setItem('kfmActiveSession', '');
+            } catch { /* 隐私模式不挡 */ }
+            expandedRef.current = true;
+            setExpanded(true);
+            refreshRuntime();
+          };
           const zshId = zshIdRef.current;
-          if (zshId && typeof h.bind === 'function' && typeof h.reset === 'function') {
-            h.reset();
-            h.bind(zshId);
-            termInject('\u000c');
-          } else {
-            termInject('\u0002d'); // 兜底：无账（理论不可达）
-          }
+          // 出生管道存活校验（2026-09-13 回终端慢案）：服务端重启会把出
+          // 生 zsh 连人带会话清掉——盲绑死会话=attach error 帧=onSession
+          // Dead 全页 reload（用户体感「像重启了网页，重新加载终端和标签」）。
+          // 死了就现场开一条新 zsh 接棒，瞬时回终端、零自愈重载
+          const alive = w.__kfmNzTermAlive as ((id: string) => boolean) | undefined;
+          if (zshId && (!alive || alive(zshId))) { goTerminal(zshId); return; }
+          if (typeof h.openPty !== 'function') { goTerminal(null); return; }
           lastLocalSwitchRef.current = Date.now();
-          setAttached(null);
-          // 全局会话账：终端态=空账（浮窗读到空串不跟——它无终端态概念）
-          try {
-            if (localStorage.getItem('kfmActiveSession') !== '') localStorage.setItem('kfmActiveSession', '');
-          } catch { /* 隐私模式不挡 */ }
-          expandedRef.current = true;
-          setExpanded(true);
-          refreshRuntime();
+          void (async () => {
+            try {
+              const g = w.__kfmNzTermScroll as (() => { cols: number; rows: number }) | undefined;
+              const grid = g ? g() : { cols: 80, rows: 24 };
+              const nid = await h.openPty('', grid.cols, grid.rows);
+              if (!nid) { goTerminal(null); return; }
+              zshIdRef.current = nid;
+              goTerminal(nid);
+            } catch { goTerminal(null); }
+          })();
         };
         const onChipClick = (s: TmuxSessionInfo): void => {
           if (attachedRef.current === s.name) leaveTmux(); // T3

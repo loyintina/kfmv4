@@ -838,6 +838,10 @@ export function applyTermBundle(ctx: Context): void {
       // 竞态零重排抖动（用户提案终案）
       win.__kfmNzTermOpenPty = async (command: string, cols: number, rows: number): Promise<string> =>
         bridge.open({ command, cols, rows });
+      // 会话存活探针（2026-09-13 回终端慢案）：tmux-tabs leaveTmux 绑定
+      // 出生 zsh 前先问桥——死会话盲绑=attach error=onSessionDead 全页
+      // reload（用户体感「像重启了网页」）
+      win.__kfmNzTermAlive = (id: string): boolean => bridge.sessionIds.includes(id);
       win.__kfmNzTermBind = (id: string, grid?: { cols: number; rows: number }): void => {
         if (!id) return;
         card.sessionId = id;
