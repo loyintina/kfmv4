@@ -411,4 +411,5 @@
 | 2026-09-12 | [`kfmv4-9.0-nz-amp-relay-mixup-notice.md`](kfmv4-9.0-nz-amp-relay-mixup-notice.md) | nz 排障「壳 CDP 不通」跨线误伤案（自查发现） | 通报完毕（2026-09-12 nz：中继已按原参重启，功能无改动） |
 | 2026-09-12 | [`kfmv4-review-daily-progress-2026-09-12-report.md`](kfmv4-review-daily-progress-2026-09-12-report.md) | 无（主动通报；晨检日报的信箱化，观察者通报口径，不替代线内第一手通报） | 通报完毕（当日评审：晨检全绿无红，315 封，无停滞在途） |
 | 2026-09-13 | [`kfmv4-review-daily-progress-2026-09-13-report.md`](kfmv4-review-daily-progress-2026-09-13-report.md) | 无（主动通报；晨检日报的信箱化，观察者通报口径，不替代线内第一手通报） | 通报完毕（当日评审：晨检全绿无红，318 封，无停滞在途） |
+| 2026-09-13 深夜 | [`kfmv4-nz-c-line-term-core-exam-audit.md`](kfmv4-nz-c-line-term-core-exam-audit.md) | 无前信（C 线主动产出） | 已发（审计矩阵+缺口定位；无代码变更） |
 <!-- gen:agent-inbox:end -->
