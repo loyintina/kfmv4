@@ -2493,3 +2493,16 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   自证）；补钉先改实现后补断言、replace 未咬中即 21 挂回退（两连绿是最后
   防线）；calls.log 命名对不上=空断言（空断言比没断言危险）。v2 前置=
   na 开考令正式格式+流量路径实证（na 十二修闭环后）。
+- **📄 na 交割开考令格式+首科口径（2026-09-14 深夜，v2 输入契约冻结）**：
+  na 回信赞成附条件（接入点三选全否→开考令显式落盘制：na 每修收尾落
+  `/root/kfm-na/target/autoexam/order.json` 七字段一行 JSON（seq 幂等键/
+  commit/build/vc 三戳/ts/subjects 建议科目/note），nz 只读归档拷贝不许
+  原地改删；subjects 语义=建议非命令，smoke/regress+chaos:* 前缀留 nz）。
+  首科 chaos:loss25 判卷口径三绿制：①伤检（注入 30s 内报表间隔真劣化，
+  否则考题无效重审注入路径）②回场 SLO（撤混沌 T0→首条新报表 T1≤15s，
+  期间静默不算死）③身份连续（回场 boot 戳=注入前→存活回场；变了=重生
+  另记 chaos:oom）。3 轮各自报值不许只报均值；25%/60s/15s=起手标定。
+  **v2 改造点**：消费语义从 mv 改为 seq 幂等+只读归档拷贝（na 令不许动）；
+  subjects 语义对齐（smoke/regress/chaos:*）；编排脚本自留目录
+  （na scripts 只读乐器库）。na 信箱格式代修补齐（七字段/线名枚举/状态
+  词表/report 尾词）。
