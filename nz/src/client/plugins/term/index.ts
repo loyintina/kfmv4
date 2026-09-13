@@ -75,6 +75,10 @@ interface TermCardInstance {
    * 正确性），渲染按档位调度——平常 16ms 内上屏（打字手感不变），
    * 洪峰（500ms 窗内 >16KB）降 150ms 档跳帧，尾帧必画。 */
   scheduleRender: (nBytes: number) => void;
+  /** 触发一次格网重测+三方同步（scheduleResize 的卡面出口，半屏盲打
+   * 案 2026-09-13）：真值收编后调用一拍，量测差值自然触发管道重发；
+   * 效果构造期置空占位，效果内挂真身 */
+  requestResize?: () => void;
   /** 挤画横向缩放（2026-09-12 刷屏案）：浮窗卡格网=管道格网后，壳用
    * scaleX 压进浮窗宽度（e17c8e5b 只做了「管道按主格网拉起」半件事，
    * 卡片仍按自容器量列=73 列流进窄核逐帧折行泵行=刷屏，A/B 考卷
@@ -220,8 +224,23 @@ export function applyTermBundle(ctx: Context): void {
   // 位再喂屏面——位一丢壳就不翻译触摸=滚轮浏览死亡且随机复活
   const modeStash = new Map<string, string>();
   const bridge = new TermWsBridge(`${location.origin.replace(/^http/, 'ws')}/ws/term`, {
-    onAttached(id, modes) {
+    onAttached(id, modes, size) {
       modeStash.set(id, modes);
+      // 管道真值收编（2026-09-13 半屏盲打卡）：卡账对齐管道真身——账=
+      // 真值后，量测差值重新可见，scheduleResize 的 no-op 闸不再漏过
+      // 「账=量测≠管道」的失同步（浮动核几何只 resize 不重建，屏面内容
+      // 保留；随后 requestResize 一拍收敛到视口权威格网）
+      if (!size) return;
+      for (const inst of instances.values()) {
+        if (inst.sessionId !== id) continue;
+        if (inst.cols === size.cols && inst.rows === size.rows) continue;
+        inst.cols = size.cols;
+        inst.rows = size.rows;
+        inst.core.resize(size.cols, size.rows);
+        inst.shell.resize(size.cols, size.rows); // 内部 renderFrame
+        inst.placeKb();
+        inst.requestResize?.();
+      }
     },
     onOutput(id, data, replay) {
       for (const inst of instances.values()) {
@@ -1145,6 +1164,9 @@ export function applyTermBundle(ctx: Context): void {
           }
         }, 150);
       };
+      // 卡面出口（半屏盲打卡 2026-09-13）：真值收编（onAttached）后从
+      // 插件作用域触发一拍重测——差值收敛的唯一通道
+      card.requestResize = () => scheduleResize('attach-truth');
       let resizeTimer: ReturnType<typeof setTimeout> | undefined;
       // 自愈观测（2026-08-26 真机 ranger rows 未缩定位，
       // ranger-rows-not-shrink-review）：vv 事件与字体事件在个别浏览器

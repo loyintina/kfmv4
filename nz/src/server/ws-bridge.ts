@@ -8,7 +8,10 @@
  *
  * 帧协议（JSON 文本帧；输出走文本帧，量产后视痛点再上二进制）：
  *   C→S  {t:'open', command?, cols?, rows?}      → {t:'opened', id}
- *        {t:'attach', id}                        → {t:'attached', id, tail}（重连补断档）
+ *        （cols/rows 退化（<30×15）且有主格网权威账时，spawn 口替换成
+ *          权威格网——幽灵管道出生口绝迹，半屏盲打卡 2026-09-13）
+ *        {t:'attach', id}                        → {t:'attached', id, tail, cols, rows}
+ *        （tail=重连补断档；cols/rows=管道格网真值，客户端卡账收编用）
  *        {t:'input', id, data}
  *        {t:'resize', id, cols, rows}
  *        {t:'close', id}
@@ -49,6 +52,28 @@ type Msg =
 
 export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): void {
   const wss = new WebSocketServer({ noServer: true });
+
+  // 主格网权威账（2026-09-13 半屏盲打卡）：tmux-grid-pin 帧落账。三个
+  // 消费点共用——①open 帧退化尺寸（<30 列或 <15 行，如 0×0 隐形世界量
+  // 出的 20×5）在 spawn 口替换成权威格网，幽灵管道不再出生；②钉窗后
+  // sweep 把已存活的退化管道一把治到权威格网；③60s 巡逻兜底。
+  // 阈值与客户端 scheduleResize 广播闸（term/index.ts ≥30×15）同源。
+  const GRID_MIN_COLS = 30;
+  const GRID_MIN_ROWS = 15;
+  let pinTruth: { cols: number; rows: number } | null = null;
+  const degenerate = (cols: number, rows: number): boolean =>
+    cols < GRID_MIN_COLS || rows < GRID_MIN_ROWS;
+  const sweepPipes = (): void => {
+    if (!pinTruth) return;
+    for (const id of ctx.termConn.list()) {
+      const sess = ctx.termConn.attach(id);
+      if (!sess) continue;
+      const s = sess.size();
+      if (degenerate(s.cols, s.rows)) sess.resize(pinTruth.cols, pinTruth.rows);
+    }
+  };
+  const patrolTimer = setInterval(sweepPipes, 60_000);
+  patrolTimer.unref?.();
 
   // pool/changed 广播腿（配置池 A2a §1.6）：池数据层 emit → 订阅过的连接
   // 收 {t:'pool-changed'} 帧。订阅制（pool-watch 开关）与 tmux-sessions 同款
@@ -120,12 +145,22 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
       }
       const conn = ctx.termConn;
       switch (m.t) {
-        case 'open':
-          void conn.open({ command: m.command, cols: m.cols, rows: m.rows }).then((s) => {
+        case 'open': {
+          // spawn 口退化闸（2026-09-13 半屏盲打卡）：显式传了退化尺寸的
+          // open（0×0 隐形世界/瞬态量测）替换成主格网权威——幽灵管道
+          // （20×5 家族）在出生口绝迹；未传尺寸/正常尺寸零感知
+          let cols = m.cols;
+          let rows = m.rows;
+          if (pinTruth && typeof cols === 'number' && typeof rows === 'number' && degenerate(cols, rows)) {
+            cols = pinTruth.cols;
+            rows = pinTruth.rows;
+          }
+          void conn.open({ command: m.command, cols, rows }).then((s) => {
             subscribe(s.id);
             send({ t: 'opened', id: s.id });
           });
           break;
+        }
         case 'attach': {
           const sess = conn.attach(m.id);
           if (!sess) {
@@ -133,7 +168,8 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
             break;
           }
           subscribe(m.id);
-          send({ t: 'attached', id: m.id, tail: sess.replayTail(), modes: sess.termModes() });
+          const sz = sess.size();
+          send({ t: 'attached', id: m.id, tail: sess.replayTail(), modes: sess.termModes(), cols: sz.cols, rows: sz.rows });
           break;
         }
         case 'input':
@@ -162,6 +198,7 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
         case 'tmux-grid-pin': {
           const cols = Math.max(20, Math.min(300, Math.round(m.cols)));
           const rows = Math.max(10, Math.min(200, Math.round(m.rows)));
+          pinTruth = { cols, rows }; // 落账：open 退化闸+sweep 的权威来源
           const sessions = Array.isArray(m.sessions) && m.sessions.length
             ? m.sessions.slice(0, 32).map((s: unknown) => String(s).slice(0, 64))
             : await listSessions();
@@ -172,6 +209,9 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
               await tmuxSessionCmd(['resize-window', '-t', s, '-x', String(cols), '-y', String(rows)]);
             }
           })();
+          // 权威落账即 sweep 一把：已存活的退化管道立刻治到新权威
+          // （不等 60s 巡逻拍；考卷也借此同步判卷）
+          sweepPipes();
           break;
         }
         // tmux 控制通道开门（宪法 §6 Step 2）：一连接一通道，state 推送
@@ -247,5 +287,5 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
     });
   });
 
-  ctx.effect(() => () => { offPoolChanged(); offNotify(); wss.close(); });
+  ctx.effect(() => () => { offPoolChanged(); offNotify(); clearInterval(patrolTimer); wss.close(); });
 }

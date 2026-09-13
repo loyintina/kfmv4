@@ -49,12 +49,13 @@ async function client(url: string) {
   await new Promise<void>((r, j) => { ws.on('open', r); ws.on('error', j); });
   return {
     send: (m: Record<string, unknown>) => ws.send(JSON.stringify(m)),
-    /** 等一条满足条件的帧（先查存货再等新的，3s 超时） */
-    wait(pred: (m: Record<string, unknown>) => boolean, what: string): Promise<Record<string, unknown>> {
+    /** 等一条满足条件的帧（先查存货再等新的，默认 3s 超时；并发全量跑
+     *  时服务端+tmux 夹具负载重，真值卷的往返可放宽） */
+    wait(pred: (m: Record<string, unknown>) => boolean, what: string, ms = 3000): Promise<Record<string, unknown>> {
       const hit = inbox.find(pred);
       if (hit) return Promise.resolve(hit);
       return new Promise((resolve, reject) => {
-        const t = setTimeout(() => reject(new Error(`等不到帧：${what}`)), 3000);
+        const t = setTimeout(() => reject(new Error(`等不到帧：${what}`)), ms);
         waiters.push((m) => {
           if (!pred(m)) return false;
           clearTimeout(t);
@@ -254,3 +255,58 @@ test('tmux-grid-pin：全部会话窗 manual+尺寸跟随主格网', async () =>
     console.error('[nail] cleanup done');
   }
 }, { tag: 'nail-pin' });
+
+// ========== 管道格网真值（2026-09-13 半屏盲打卡回归钉）==========
+// 机制：卡账=量测≠管道的失同步对 no-op 闸不可见（半屏结构性盲区）——
+// 修=attach 帧带管道真值（客户端收编）+spawn 口退化闸+钉窗 sweep。
+// 变异靶子：attach 帧删 cols/rows → 钉①红；open 闸删替换 → 钉②后半红；
+// pin 落账删 sweepPipes() → 钉②中段红。
+group('ws-bridge 管道格网真值');
+
+test('①attach 帧带管道真值 cols/rows', async () => {
+  const env = await newEnv();
+  const c = await client(env.url);
+  c.send({ t: 'open', command: 'cat', cols: 80, rows: 24 });
+  const opened = await c.wait((m) => m.t === 'opened', 'opened 帧');
+  const id = String(opened.id);
+  c.send({ t: 'attach', id });
+  const att = await c.wait((m) => m.t === 'attached' && m.id === id, 'attached 帧');
+  assert(att.cols === 80 && att.rows === 24, `真值=${att.cols}x${att.rows}（expect 80x24）`);
+  c.send({ t: 'close', id });
+  c.close();
+  await env.closeServer();
+});
+
+test('②spawn 口退化闸+钉窗 sweep：无权威放行/有权威替换/存量治愈', async () => {
+  const env = await newEnv();
+  const c = await client(env.url);
+  // 无权威账：退化尺寸原样放行（考卷夹具/特殊小管道不受伤）
+  c.send({ t: 'open', command: 'cat', cols: 20, rows: 5 });
+  const opened = await c.wait((m) => m.t === 'opened', 'opened 帧');
+  const id = String(opened.id);
+  const seen = new Set([id]);
+  c.send({ t: 'attach', id });
+  let att = await c.wait((m) => m.t === 'attached' && m.id === id, 'attached 帧');
+  assert(att.cols === 20 && att.rows === 5, `无权威放行=${att.cols}x${att.rows}（expect 20x5）`);
+  // 钉权威（显式夹具名单防波及）→ 落账即 sweep：已存活的 20×5 治到权威
+  const TP = `nztruth-${Date.now() % 100000}`;
+  try { sh(`tmux kill-session -t ${TP} 2>/dev/null || true`); } catch { /* 不存在即可 */ }
+  sh(`tmux new-session -d -s ${TP} -x 50 -y 12`);
+  c.send({ t: 'tmux-grid-pin', cols: 80, rows: 30, sessions: [TP] });
+  await new Promise((r) => setTimeout(r, 300));
+  c.send({ t: 'attach', id });
+  att = await c.wait((m) => m.t === 'attached' && m.id === id && m.cols === 80, 'sweep 后 attached 帧', 8000);
+  assert(att.cols === 80 && att.rows === 30, `sweep 治愈=${att.cols}x${att.rows}（expect 80x30）`);
+  // spawn 口闸：权威在，退化 open 出生即权威格网
+  c.send({ t: 'open', command: 'cat', cols: 20, rows: 5 });
+  const opened2 = await c.wait((m) => m.t === 'opened' && !seen.has(String(m.id)), 'opened2 帧', 8000);
+  const id2 = String(opened2.id);
+  c.send({ t: 'attach', id: id2 });
+  att = await c.wait((m) => m.t === 'attached' && m.id === id2, 'attached2 帧', 8000);
+  assert(att.cols === 80 && att.rows === 30, `spawn 闸替换=${att.cols}x${att.rows}（expect 80x30）`);
+  c.send({ t: 'close', id });
+  c.send({ t: 'close', id: id2 });
+  c.close();
+  sh(`tmux kill-session -t ${TP} 2>/dev/null || true`);
+  await env.closeServer();
+});

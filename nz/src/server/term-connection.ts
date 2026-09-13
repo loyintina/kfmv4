@@ -52,6 +52,9 @@ export interface TermSession {
   replayTail(): string;
   /** 当前记账中的终端模式位序列（DECSET h 串，升序）——核重建后回放 */
   termModes(): string;
+  /** 管道格网真值（node-pty 账面 cols/rows）——attach 帧带给客户端，
+   *  卡账收编后 no-op 闸重见差值（半屏盲打卡 2026-09-13） */
+  size(): { cols: number; rows: number };
 }
 
 interface SessionInner {
@@ -271,6 +274,7 @@ export class TermConnectionService {
       id: inner.id,
       sendInput: (data) => { if (!inner.exited) inner.proc.write(data); },
       resize: (cols, rows) => { if (!inner.exited) inner.proc.resize(cols, rows); },
+      size: () => ({ cols: inner.proc.cols, rows: inner.proc.rows }),
       termModes: () => serializeModes(inner.modeBits),
       close: () => {
         if (this._sessions.delete(inner.id)) {

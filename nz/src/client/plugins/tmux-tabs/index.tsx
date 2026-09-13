@@ -467,11 +467,21 @@ export function createTmuxTabsPlugin(): UiPlugin {
           const h = termHooks();
           if (typeof h.openPty !== 'function' || typeof h.bind !== 'function' || typeof h.reset !== 'function') return;
           lastLocalSwitchRef.current = Date.now();
+          // 主格网账优先（2026-09-13 半屏盲打卡）：管道拉起尺寸=主格网账
+          // （由主卡 scheduleResize 广播、IME 闸保证无键盘瞬态），账缺席
+          // 回退活体量测——spawn 口吃瞬态格网的重生 lottery 从源头钉死
+          const spawnGrid = (): { cols: number; rows: number } => {
+            try {
+              const g = JSON.parse(localStorage.getItem('kfmMainGrid') || '{}') as { c?: number; r?: number };
+              if ((g.c ?? 0) >= 30 && (g.r ?? 0) >= 15) return { cols: g.c as number, rows: g.r as number };
+            } catch { /* 无账回退 */ }
+            const live = (window as unknown as Record<string, unknown>).__kfmNzTermScroll as (() => { cols: number; rows: number }) | undefined;
+            return live ? live() : { cols: 80, rows: 24 };
+          };
           void (async () => {
             let id = poolRef.current.get(name);
             if (!id) {
-              const g = (window as unknown as Record<string, unknown>).__kfmNzTermScroll as (() => { cols: number; rows: number }) | undefined;
-              const grid = g ? g() : { cols: 80, rows: 24 };
+              const grid = spawnGrid();
               try {
                 id = await h.openPty(`tmux new-session -A -s ${name}`, grid.cols, grid.rows);
                 poolRef.current.set(name, id);
