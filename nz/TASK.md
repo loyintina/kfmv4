@@ -2376,3 +2376,20 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   ②考卷读窗钩必须 f() 调用形（漏括号读成函数对象属性恒 null，引发
   「桥镜像倒退」假案一轮）；③ WebView 方法跨线程=RuntimeException，
   桥同步取数走 latch。
+- **滚轮手感案后续两钉（2026-09-13 晚）**：①用户报「dsh 仍无法滚动+前半
+  段看不到，其余三窗正常」——8022 实为手机侧 SSH 端口非 HTTP（psh kimi
+  实证 ssh -p 8022 localhost 直登 V2339FA），截屏经 scp 取回定罪=**kimi
+  视口只画顶部 24 行、下方大片黑**。层层排除（tmux 窗口/客户/窗格全
+  73×59、内核 ioctl kimi tty=59×73、SIGWINCH 直发进程树无效、无 LINES
+  环境焊死、同 binary kfm-na 实例画满 59 行）→ 定性=**dsh 的 kimi-code
+  进程实例（Sep04 起常驻）内部布局锁死 24 行**，kimi-code 自身状态病，
+  唯一可靠修复=重启该进程（kimi -c 接回，会话落盘不丢）——打断当前
+  对话，时机归用户拍板。②管道世界顺手修复：20×5 幽灵客户端已 detach、
+  client/pane/window 全对齐 73×59、manual 钉在位。挂账=管道重生尺寸
+  lottery（共享管道被谁先拉起就吃谁的格网：浮窗 38/主格网 59/污染账
+  20×5 三套并存过）+ 20×5 幽灵源头（离屏世界污染账）未绝根；修法方向
+  =管道 spawn 统一走主格网权威+健全闸前移到 spawn 口。dsh 深历史三选
+  一待用户拍板：kimi 内滚（深度实测）/copy-mode（kimi ALT 屏记录不在
+  pane 回滚史里=基本无用）/会话记录回看器（读落盘会话文件=真解）。
+  观测手段：ssh@8022+tmux capture-pane 对照+ioctl TIOCGWINSZ+kill
+  -WINCH 直发。
