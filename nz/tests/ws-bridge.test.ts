@@ -221,3 +221,36 @@ test('socket 断开→控制客户端收尸（不占 tmux 客户端位）', asyn
   sh(`tmux kill-session -t ${TS} 2>/dev/null || true`);
   await env.closeServer();
 });
+
+// ========== 主格网钉窗（2026-09-13 点阵案回归钉）==========
+// 帧：C→S {t:'tmux-grid-pin',cols,rows} → 全部会话窗 manual+resize-window
+// 跟随主格网——窗恒=卡格网，tmux「客户端>窗」的填充点阵结构性绝迹
+group('ws-bridge 主格网钉窗');
+test('tmux-grid-pin：全部会话窗 manual+尺寸跟随主格网', async () => {
+  const TP = `nzpin-${Date.now() % 100000}`;
+  console.error('[nail] start', TP);
+  try { sh(`tmux kill-session -t ${TP} 2>/dev/null || true`); } catch { /* 不存在即可 */ }
+  sh(`tmux new-session -d -s ${TP} -x 50 -y 12`);
+  console.error('[nail] fixture ok');
+  const env = await newEnv();
+  console.error('[nail] env ok');
+  try {
+    const c = await client(env.url);
+    console.error('[nail] client ok');
+    // 显式会话名单=只钉夹具（防波及闸：活体窗永不被考卷演练）
+    c.send({ t: 'tmux-grid-pin', cols: 80, rows: 30, sessions: [TP] });
+    console.error('[nail] pin sent');
+    await new Promise((r) => setTimeout(r, 1500));
+    const mode = sh(`tmux show-window-options -v -t ${TP} window-size`).trim();
+    console.error('[nail] mode=', mode);
+    assert(mode === 'manual', `window-size=${mode}（expect manual）`);
+    const size = sh(`tmux display-message -p -t ${TP} '#{window_width}x#{window_height}'`).trim();
+    console.error('[nail] size=', size);
+    assert(size === '80x30', `窗尺寸=${size}（expect 80x30）`);
+    c.close();
+  } finally {
+    sh(`tmux kill-session -t ${TP} 2>/dev/null || true`);
+    await env.closeServer();
+    console.error('[nail] cleanup done');
+  }
+}, { tag: 'nail-pin' });

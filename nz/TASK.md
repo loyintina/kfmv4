@@ -2296,3 +2296,14 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   延 210ms 切（展开即时显）。考卷 ④ 断言迁移到滑块几何（chipHi=滑块
   压 ftB/chipStale=不压 ftA）13/13、float 卷 8/8、npm test 233 绿；
   bundle v=0a535968 热更（壳层 orb 固右上+收放动画在 1789258595 包）。
+- **✅ 主格网钉窗+点阵案（2026-09-13）**：用户报「nz 窗口只有半屏可用，
+  其余小点填充」。定罪=点阵是 tmux 对「客户端>窗」区域的填充：主卡按
+  今日全高视口量出 73×59，而窗还钉在昨晚 CLI 手打的 73×46（manual 死
+  值 vs 视口活值）——卡比窗大 13 行，填充点阵全出。另抓到 20×5 游离
+  客户端（离屏世界被全局会话账传染，按污染账开的管道）已 detach。
+  修=①CLI 重钉四窗 73×59+踢游离客户端（即时）②持久=主世界格网权威
+  钉窗：新增 ws 帧 tmux-grid-pin（桥 pinGrid），主世界 boot 广播与
+  scheduleResize 真值广播时同步调用，服务端对全部会话窗
+  set-window-option manual+resize-window 跟随——窗恒=卡格网，填充点阵
+  结构性绝迹；格网变化天然去抖（scheduleResize 值变守卫）。npm test
+  233、organ 13/13、float 卷 8/8；bundle v=0a535968 + server restart-req。

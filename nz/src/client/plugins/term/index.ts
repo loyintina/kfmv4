@@ -148,6 +148,14 @@ function keyToBytes(e: KeyboardEvent): string | null {
   }
 }
 
+/** nz 会话名单（2026-09-13 点阵案：主世界钉窗范围）——从 tmux-tabs
+ *  运行时账取；boot 早期表未回=undefined=服务端按全部会话钉 */
+function nzSessionNames(): string[] | undefined {
+  const t = (window as unknown as Record<string, unknown>).__kfmNzTmuxTabs as (() => { sessions: { name: string }[] }) | undefined;
+  const names = t?.().sessions?.map((s) => s.name).filter(Boolean);
+  return names && names.length ? names : undefined;
+}
+
 export function applyTermBundle(ctx: Context): void {
   registerCardType(ctx, { id: 'term', name: '终端' });
 
@@ -1100,6 +1108,7 @@ export function applyTermBundle(ctx: Context): void {
           // manual 窗下裁成小角。量出像样终端几何才准入账
           if (!isFloat && s.cols >= 30 && s.rows >= 15) {
             try { localStorage.setItem('kfmMainGrid', JSON.stringify({ c: s.cols, r: s.rows })); } catch { /* 隐私模式不挡 */ }
+            bridge.pinGrid(s.cols, s.rows, nzSessionNames()); // manual 窗跟随主格网（点阵案）
           }
           if (s.cols !== card.cols || s.rows !== card.rows) {
             dbg.resizesApplied++;
@@ -1312,6 +1321,7 @@ export function applyTermBundle(ctx: Context): void {
       // 一旦入账，主世界不重排就不会覆写——每次主世界 boot 用真测量冲一次
       if (!isFloat && card.cols >= 30 && card.rows >= 15) {
         try { localStorage.setItem('kfmMainGrid', JSON.stringify({ c: card.cols, r: card.rows })); } catch { /* 隐私模式不挡 */ }
+        bridge.pinGrid(card.cols, card.rows, nzSessionNames()); // boot 自愈：冲掉污染账并把窗钉回真格网
       }
       // 开页即报（Stage①：真实设备开 ?debug 页即自报基线几何，agent 直读）
       reportViewport('open');

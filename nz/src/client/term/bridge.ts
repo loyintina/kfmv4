@@ -188,6 +188,13 @@ export class TermWsBridge {
     this._send({ t: 'resize', id, cols, rows });
   }
 
+  /** 主世界格网钉窗（2026-09-13 点阵案）：manual 窗跟随主格网。只有
+   *  主世界调用（浮窗/离屏世界的广播已闸）。sessions=显式钉窗范围
+   *  （缺省=全部会话；考卷传夹具名单=永不波及活体） */
+  pinGrid(cols: number, rows: number, sessions?: string[]): void {
+    this._send({ t: 'tmux-grid-pin', cols, rows, ...(sessions ? { sessions } : {}) });
+  }
+
   close(id: string): void {
     this._send({ t: 'close', id });
     this._sessions.delete(id);

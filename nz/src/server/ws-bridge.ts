@@ -42,6 +42,7 @@ type Msg =
   | { t: 'tmux-close'; session: string }
   | { t: 'tmux-cmd'; session: string; cmd: string }
   | { t: 'tmux-sessions-open' }
+  | { t: 'tmux-grid-pin'; cols: number; rows: number; sessions?: string[] }
   | { t: 'tmux-session-new'; name: string }
   | { t: 'tmux-session-kill'; name: string }
   | { t: 'pool-watch' }; // 配置池 A2a：订阅 pool/changed 推送（§1.6，多路复用同桥）
@@ -154,6 +155,25 @@ export function mountWsBridge(ctx: Context, server: Server, path = '/ws/term'): 
         case 'ping':
           send({ t: 'pong' });
           break;
+        // 主世界格网钉窗（2026-09-13 点阵案）：manual 窗跟随主格网——
+        // 卡片格网是唯一权威，会话窗统一 manual+resize；窗与卡等大
+        // 则 tmux 的「客户端>窗」填充点阵永不出现。sessions 缺省=全部
+        // 会话；显式列表=只钉声明范围（考卷/多线共存时的防波及闸）。钳位防灌
+        case 'tmux-grid-pin': {
+          const cols = Math.max(20, Math.min(300, Math.round(m.cols)));
+          const rows = Math.max(10, Math.min(200, Math.round(m.rows)));
+          const sessions = Array.isArray(m.sessions) && m.sessions.length
+            ? m.sessions.slice(0, 32).map((s: unknown) => String(s).slice(0, 64))
+            : await listSessions();
+          void (async () => {
+            for (const s of sessions) {
+              const o = await tmuxSessionCmd(['set-window-option', '-t', s, 'window-size', 'manual']);
+              if (!o.ok) continue;
+              await tmuxSessionCmd(['resize-window', '-t', s, '-x', String(cols), '-y', String(rows)]);
+            }
+          })();
+          break;
+        }
         // tmux 控制通道开门（宪法 §6 Step 2）：一连接一通道，state 推送
         // 由 TmuxControl 的 debounce 刷新驱动；socket 断开统一收尸
         // （close 只杀控制客户端，session 不死——tmux-connection ④钉）。
