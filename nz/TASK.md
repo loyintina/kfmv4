@@ -2443,3 +2443,25 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   不许客户端凭记忆决策**。观测手段：tmux list-clients 三层几何 + CDP
   evaluate 四世界视口/格网 + capture-pane 窗格侧排除（L2+L3 双路，
   用户目验待收口）。诊断脚本 lab/device-agent/build/viewer-grid-probe.mjs。
+- **✅ A 线：会话记录回看器正式版（2026-09-13 晚 024dc66e）**：v0 静态
+  页升级为常驻服务+live 页。**服务端 transcript.ts**：TranscriptDoc
+  字节位记账+残行 carry 增量解析（v0 语义继承：用户=append_message
+  text 部件、助手=content.part 按 turnId 聚合（新旧进程世代通吃）、
+  tool.call 芯片、tool.result 回填滤除、think 不产消息、同轮续写同 seq
+  合并）；`GET /api/transcript/sessions`（名册 50 封顶）+`GET
+  /api/transcript/messages`（since 增量/tail 首屏，单响应 2000 条闸）；
+  key 双段白名单+resolve 越界 fail-closed；doc LRU 封顶 4。**客户端
+  public/transcript.html**：会话选择器（localStorage 记忆）+3s 增量轮询
+  +底部自适应自动滚+搜索过滤高亮+工具芯片。入口=浏览器模式气泡→
+  `http://127.0.0.1:8023/transcript.html`（壳内嵌入口挂账 v2）。
+  **验证**：L1 考卷 244 绿（回看器 5 钉：解析语义/残行 carry/名册/key
+  安全闸/真 socket E2E）；revert 过程修出真 bug=残行 offset 回算把残行
+  字节让磁盘重读一遍、与内存 carry 拼成双份非法行被静默吞——教训：
+  **carry 字节已入内存绝不重读，offset 一律推进到 buf 末尾**。L2 线上
+  实测：71MB 崩溃会话首次解析 0.9s、total=2809 与 v0 精确一致（解析器
+  对等性实证），当前会话尾条=数秒前的对话（live 咬合实证）。na 抄答案
+  要点：**kimi 会话文件格式契约（append_message/content.part/turnId/
+  tool.call 四事件语义）+增量 tail 协议（offset 记账+残行 carry+since
+  游标+同 seq 替换）+只读端点安全闸形状（双段白名单+根内 resolve）**。
+  挂账 v2：壳内嵌入口、工具调用展开卡（含 result 对照）、think 折叠、
+  jump-to-time。
