@@ -247,14 +247,40 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           // eslint-disable-next-line react-hooks/exhaustive-deps
         }, []);
 
-        // 折叠态视觉（2026-09-12 用户拍板「收起来就是收起来」）：终端层与
-        // 标签轨藏起，24dp 视口只剩顶条自身=干净把手浮标
+        // 折叠态视觉（2026-09-12 用户拍板「收起来就是收起来」→ 2026-09-13
+        // 加过渡：内容 200ms 淡出与壳层 220ms 收窗并行=「边收边隐」，
+        // visibility 延到淡出播完再切（展开即时显不等人）
         useEffect(() => {
           const layer = document.getElementById('kfm-layer-layout');
-          const rail = document.querySelector('[data-browser-float-tabs]');
-          if (layer) layer.style.visibility = collapsed ? 'hidden' : 'visible';
-          if (rail) (rail as HTMLElement).style.visibility = collapsed ? 'hidden' : 'visible';
+          const rail = document.querySelector('[data-browser-float-tabs]') as HTMLElement | null;
+          const fade = (elm: HTMLElement | null): void => {
+            if (!elm) return;
+            elm.style.transition = 'opacity 200ms ease-out';
+            elm.style.opacity = collapsed ? '0' : '1';
+          };
+          fade(layer); fade(rail);
+          const t = setTimeout(() => {
+            if (layer) layer.style.visibility = collapsed ? 'hidden' : 'visible';
+            if (rail) rail.style.visibility = collapsed ? 'hidden' : 'visible';
+          }, collapsed ? 210 : 0);
+          return () => clearTimeout(t);
         }, [collapsed]);
+
+        // 滑块跟随（与主终端标签排同款，竖向）：active 变化量聚焦签几何，
+        // 蓝胶囊滑过去
+        useEffect(() => {
+          requestAnimationFrame(() => {
+            const rail = document.querySelector('[data-browser-float-tabs]');
+            const ind = document.querySelector('[data-browser-float-indicator]') as HTMLElement | null;
+            if (!rail || !ind) return;
+            if (!active) { ind.style.opacity = '0'; return; }
+            const chip = rail.querySelector(`[data-browser-float-tab="${CSS.escape(active)}"]`) as HTMLElement | null;
+            if (!chip) { ind.style.opacity = '0'; return; }
+            ind.style.top = `${chip.offsetTop}px`;
+            ind.style.height = `${chip.offsetHeight}px`;
+            ind.style.opacity = '1';
+          });
+        }, [active, sessions]);
 
         // 附着账（2026-09-12 终案）：null=未附着（裸 zsh）；readyRef=屏已
         // 画出会话内容、标签切换门闩开
@@ -516,6 +542,17 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
             overflowY: 'auto', overflowX: 'hidden', // 多会话：标签轨触摸滚动
           },
         },
+        // 滑块（2026-09-13 用户提案「聚焦块在标签间移动」）：蓝胶囊竖向
+        // 滑行，聚焦签底色转透明由滑块接管
+        createElement('div', {
+          'data-browser-float-indicator': '1',
+          style: {
+            position: 'absolute', left: '1px', right: '1px', top: '0px', height: '0px',
+            borderRadius: '6px', background: 'rgba(10,132,255,0.28)', opacity: '0',
+            transition: 'top .24s cubic-bezier(.4,0,.2,1), height .24s cubic-bezier(.4,0,.2,1), opacity .18s ease-out',
+            zIndex: 1, pointerEvents: 'none', flex: '0 0 auto',
+          },
+        }),
         sessions.map((name) => createElement('div', {
           key: name,
           'data-browser-float-tab': name,
@@ -523,7 +560,8 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
           style: {
             writingMode: 'vertical-rl', fontSize: '10px', letterSpacing: '1px',
             padding: '8px 3px', borderRadius: '6px', cursor: 'pointer',
-            background: name === active ? 'rgba(10,132,255,0.28)' : 'rgba(35,36,39,0.85)',
+            // 聚焦底色转透明（滑块接管，z2 压滑块 z1 之上文字不挡）
+            background: name === active ? 'transparent' : 'rgba(35,36,39,0.85)',
             opacity: 1, // 就绪态；未就绪由 switchTo 门闩兜底
             color: name === active ? '#E0E0E0' : '#A5A8AD',
             border: '1px solid #3A3B3F',
@@ -534,6 +572,7 @@ export function createBrowserFloatPlugin(session: string): UiPlugin {
             boxSizing: 'border-box', // 20 含边框内距（content-box 会膨胀回 28 怼上窗线，合成眼实测量刑）
             boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
             maxHeight: '160px', overflow: 'hidden', textOverflow: 'ellipsis',
+            position: 'relative', zIndex: 2,
           },
         }, name)),
         );

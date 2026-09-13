@@ -134,16 +134,19 @@ await page.waitForFunction(() => !!(window).__kfmBrowser && !!(window).__kfmNzTm
     () => (window).__kfmNzTermScreen?.().includes('BMB-ORGAN-5248'), null, { timeout: 15000, polling: 300 },
   ).then(() => true).catch(() => false);
   const sess = await fpage.evaluate(() => (window).__kfmBrowserFloat?.().session);
-  // 两段式切换的视觉合同（2026-09-12 补强）：active 芯片高亮必须跟随
+  // ④ 聚焦视觉（2026-09-13 滑块案）：聚焦胶囊滑到 ftB、不压 ftA——
+  // 聚焦底色已转透明由滑块接管，断言改量滑块几何
   const chipHi = await fpage.evaluate(() => {
+    const ind = document.querySelector('[data-browser-float-indicator]');
     const b = document.querySelector('[data-browser-float-tab="ftB"]');
-    return b ? b.style.background.replace(/\s/g, '').includes('10,132,255') : false;
+    if (!ind || !b) return false;
+    return ind.style.opacity === '1' && Math.abs(ind.offsetTop - b.offsetTop) <= 2;
   });
-  // 陈旧高亮回归钉（2026-09-12 setAttached 漏项定罪）：切到 ftB 后 ftA
-  // 芯片必须退高亮——高亮滞留旧会话=attached 账与 DOM 各说各话
   const chipStale = await fpage.evaluate(() => {
+    const ind = document.querySelector('[data-browser-float-indicator]');
     const a = document.querySelector('[data-browser-float-tab="ftA"]');
-    return a ? a.style.background.replace(/\s/g, '').includes('10,132,255') : true;
+    if (!ind || !a) return true;
+    return ind.style.opacity === '1' && Math.abs(ind.offsetTop - a.offsetTop) <= 2;
   });
   // 会话级证据：tmux 状态栏必须同步显示 [ftB]（switch-client 的服务端落地）
   const barFtB = await fpage.evaluate(() => (window).__kfmNzTermScreen?.().includes('[ftB]') ?? false);

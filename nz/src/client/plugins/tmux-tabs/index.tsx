@@ -184,6 +184,22 @@ function TmuxTabs(props: {
   const [newName, setNewName] = useState('');
   // 输入状态随毛玻璃页开关清零（0901 考卷实锤：残留旧名→二次建同名）
   useEffect(() => { if (overlay?.kind === 'new') setNewName(''); }, [overlay?.kind]);
+  // 滑块跟随（2026-09-13 用户提案「聚焦块在标签间移动」）：附着变化后
+  // 量聚焦签几何，蓝胶囊滑过去（CSS transition 出行程动画）；收起态/
+  // 终端态隐没
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      const strip = document.querySelector('[data-tmux-strip]');
+      const ind = document.querySelector('[data-tmux-indicator]') as HTMLElement | null;
+      if (!strip || !ind) return;
+      if (!expanded || !attachedSession) { ind.style.opacity = '0'; return; }
+      const chip = strip.querySelector(`[data-tmux-win="${CSS.escape(attachedSession)}"]`) as HTMLElement | null;
+      if (!chip) { ind.style.opacity = '0'; return; }
+      ind.style.left = `${chip.offsetLeft}px`;
+      ind.style.width = `${chip.offsetWidth}px`;
+      ind.style.opacity = '1';
+    });
+  }, [attachedSession, sessions, expanded]);
 
   // 常驻把手（光球规格 32px 圆、左上）：展开/收起都渲染，通过 class 控制
   // 旋转动画。收起态点击=展开；展开态点击=收起。
@@ -208,7 +224,18 @@ function TmuxTabs(props: {
   }, svgGrid);
 
   // 常驻标签排：通过 class 控制伸出/收回动画（DOM 常驻，scaleX 变换）。
-  // ＋固定右端（新标签出现位）
+  // ＋固定右端（新标签出现位）。滑块（2026-09-13 用户提案「聚焦块在标
+  // 签间移动」）：蓝色胶囊从旧签滑到新签——聚焦签底色转透明由滑块接管
+  // （滑块 z1 在签底之上、签内容 z2 之下），行程=各栏间移动
+  const indicator = createElement('div', {
+    'data-tmux-indicator': '1',
+    style: {
+      position: 'absolute', top: '4px', bottom: '4px', left: '0px', width: '0px',
+      borderRadius: 'var(--kfm-radius-md)', background: BAR_ACCENT, opacity: '0',
+      transition: 'left .26s cubic-bezier(.4,0,.2,1), width .26s cubic-bezier(.4,0,.2,1), opacity .18s ease-out',
+      zIndex: 1, pointerEvents: 'none',
+    },
+  });
   const strip = createElement('div', {
     'data-tmux-tabs': expanded ? 'EXPANDED' : 'COLLAPSED',
     'data-tmux-strip': '1',
@@ -226,6 +253,7 @@ function TmuxTabs(props: {
     },
     onClick: () => onExpand(false),
   },
+  indicator,
   sessions.map((s) => createElement('div', { key: s.name, style: { display: 'flex', alignItems: 'center', flex: '0 0 auto' } },
     createElement('div', {
       'data-tmux-win': s.name,
@@ -233,9 +261,10 @@ function TmuxTabs(props: {
       onClick: (e: ReactMouseEvent) => { e.stopPropagation(); onChipClick(s); },
       style: {
         padding: '5px 12px 5px 14px', borderRadius: 'var(--kfm-radius-md)', fontSize: '12px',
-        background: attachedSession === s.name ? BAR_ACCENT : 'var(--kfm-chip-bg)',
+        // 聚焦底色转透明（滑块接管绘制，z2 压滑块 z1 之上文字不挡）
+        background: attachedSession === s.name ? 'transparent' : 'var(--kfm-chip-bg)',
         color: attachedSession === s.name ? 'var(--kfm-ink)' : 'var(--kfm-ink-2)', cursor: 'pointer', whiteSpace: 'nowrap',
-        display: 'flex', alignItems: 'center', gap: '6px', position: 'relative' as const,
+        display: 'flex', alignItems: 'center', gap: '6px', position: 'relative' as const, zIndex: 2,
       },
     },
       // R2 活动点（判据稿③）：非聚焦会话有输出/响铃 → 名前青点；

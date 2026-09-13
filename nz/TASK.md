@@ -2284,3 +2284,15 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   壳 APK versionCode=1789258595 / 70262B / md5 76950cb605ad61a48ca5fd9
   e3138c85b（L0 指纹入账，dex 闸过）；web bundle v=83caa2d9 热更；
   npm test 233、browser-organ 13/13、float 卷 8/8。
+- **✅ 标签滑块+折叠淡出（2026-09-13 用户拍板三连补刀）**：用户指正
+  「切换光标动画」真意=tmux 标签聚焦蓝块在标签间**滑动**（非终端光标
+  脉冲，脉冲保留但降为配角）。实现=滑块指示器：①主终端标签排
+  data-tmux-indicator（蓝胶囊 left/width .26s 过渡，聚焦签底色转透明
+  由滑块接管，滑块 z1 签内容 z2 文字不挡）；②浮窗标签轨
+  data-browser-float-indicator（竖向 top/height .24s 同款）；各自
+  effect 量聚焦签 offset 几何驱动（CSS transition 出行程动画）。折叠
+  动画补完：壳层 ValueAnimator 在跑但 web 侧 visibility 瞬切把内容藏
+  了=缩的是看不见的空壳——改 200ms opacity 淡出与收窗并行，visibility
+  延 210ms 切（展开即时显）。考卷 ④ 断言迁移到滑块几何（chipHi=滑块
+  压 ftB/chipStale=不压 ftA）13/13、float 卷 8/8、npm test 233 绿；
+  bundle v=0a535968 热更（壳层 orb 固右上+收放动画在 1789258595 包）。
