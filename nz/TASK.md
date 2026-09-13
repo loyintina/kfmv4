@@ -2463,5 +2463,10 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   要点：**kimi 会话文件格式契约（append_message/content.part/turnId/
   tool.call 四事件语义）+增量 tail 协议（offset 记账+残行 carry+since
   游标+同 seq 替换）+只读端点安全闸形状（双段白名单+根内 resolve）**。
-  挂账 v2：壳内嵌入口、工具调用展开卡（含 result 对照）、think 折叠、
-  jump-to-time。
+  **v2（2026-09-13 深夜 85130abd）**：工具调用展开卡（callId 配对参数
+  +结果对照，args 500/结果 1500 字预览截断；真 wire 实证 tool.result 无
+  turnId，走 callId 反查表不碰轮次状态机）+think 折叠块+touch 增量语义
+  （结果晚于轮次首屏到账时老 seq 也能推达，after 参数+按 seq 替换）；
+  搜索面扩到参数/结果/思考流。线上实证：尾 200 条 49 条带卡，md5sum
+  参数/结果配对可见。挂账 v3：壳内嵌入口、jump-to-time、未回场调用的
+  轮询刷新动画。
