@@ -2393,3 +2393,16 @@ empty/never_attached 是空页，用它做实验）②relay 8026 只听 IPv6 ::1
   pane 回滚史里=基本无用）/会话记录回看器（读落盘会话文件=真解）。
   观测手段：ssh@8022+tmux capture-pane 对照+ioctl TIOCGWINSZ+kill
   -WINCH 直发。
+- **会话记录回看器 v0（2026-09-13 晚，应急真解第一步）**：dsh 深历史三路
+  全堵（kimi ALT 内容不进 pane 回滚史/滚轮被 kimi 吞且 Ink 空白区命中丢
+  弃/无记录展开键位）+ 重启 kimi 后新进程仍 ALT+鼠标（当前版本默认行为
+  ，老三窗=旧进程祖传形态）→「把 dsh 变得跟其他窗一样」无法靠重启达成
+  。落地方案=绕开 TUI：gen-transcript.mjs 读 wire.jsonl（main, 74MB/98k
+  行）——助手正文=content.part 流（part.type=text，turnId 分组=每轮一
+  条，新旧进程世代通吃）、用户=append_message(role=user)，时间线归并 →
+  public/transcript-dsh.html（3.2MB/2809 条：用户 1984+助手 825 轮），
+  8023 直开（浏览器模式气泡→地址栏，或任意浏览器走隧道）。尾部覆盖实
+  证（8022 谜底/小半瓶均入库）。产物入 gitignore（可再生不入仓）。
+  挂账：正式回看器（SPA 内嵌+live tail+工具卡折叠+增量刷新）；kimi TUI
+  24 行布局锁死之谜（新进程复现，排除环境/版本/管线，kimi-code 内部问
+  题——可请 psh kimi 认领研究）。
