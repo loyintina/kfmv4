@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>会话记录回看器</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{background:#0d0e11;color:#d8dade;font:14px/1.65 -apple-system,'PingFang SC',sans-serif;margin:0;padding:0 0 90px}
+header{position:sticky;top:0;z-index:9;background:#0d0e11f2;border-bottom:1px solid #26272b;padding:8px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+select,input{background:#16171b;color:#d8dade;border:1px solid #33343a;border-radius:8px;padding:6px 8px;font-size:13px}
+select{max-width:46vw}
+input#q{flex:1;min-width:120px}
+#stat{font-size:11px;color:#7a7d84;width:100%}
+.msg{margin:12px 10px;padding:10px 12px;border-radius:10px;border:1px solid #26272b}
+.user{background:#141a26;border-color:#2a3a5c}
+.assistant{background:#121316}
+.meta{font-size:11px;color:#7a7d84;margin-bottom:6px;display:flex;gap:8px;flex-wrap:wrap}
+.user .meta{color:#7d9fd4}
+.who{font-weight:600}
+.text{white-space:pre-wrap;word-break:break-word}
+.tool{display:inline-block;font-size:11px;background:#1c1d21;border:1px solid #33343a;border-radius:6px;padding:1px 7px;margin:6px 4px 0 0;color:#9a9da3}
+mark{background:#5c4a1e;color:#ffd479;border-radius:3px;padding:0 2px}
+.hide{display:none}
+#bottomBtn{position:fixed;bottom:14px;right:12px;background:#0d0e11e6;border:1px solid #33343a;color:#8ab4ff;border-radius:20px;padding:6px 14px;font-size:13px;display:none}
+#err{color:#e07b7b;font-size:12px;padding:6px 10px}
+</style>
+</head>
+<body>
+<header>
+  <select id="sess"></select>
+  <input id="q" type="search" placeholder="搜索正文（清空=恢复）">
+  <div id="stat">载入中…</div>
+  <div id="err"></div>
+</header>
+<main id="feed"></main>
+<button id="bottomBtn">↓ 回到底部</button>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const feed = $('feed'), sess = $('sess'), q = $('q'), stat = $('stat'), err = $('err'), bottomBtn = $('bottomBtn');
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const fmtTime = (ms) => { if (!ms) return ''; const d = new Date(ms);
+    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  const bySeq = new Map();          // seq → {el, msg}
+  let cursor = 0, key = localStorage.getItem('transcriptKey') || '', total = 0, nearBottom = true;
+
+  const renderText = (el, text, kw) => {
+    el.innerHTML = kw
+      ? esc(text).replace(new RegExp(esc(kw).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), (m) => `<mark>${m}</mark>`)
+      : esc(text);
+  };
+  const applyFilter = () => {
+    const kw = q.value.trim().toLowerCase();
+    let shown = 0;
+    for (const { el, msg } of bySeq.values()) {
+      const hit = !kw || (msg.text + ' ' + msg.tools.join(' ')).toLowerCase().includes(kw);
+      el.classList.toggle('hide', !hit);
+      if (hit) shown++;
+      if (kw && hit) renderText(el.querySelector('.text'), msg.text, kw);
+      else renderText(el.querySelector('.text'), msg.text, '');
+    }
+    return { kw, shown };
+  };
+  const paint = (msg) => {
+    let rec = bySeq.get(msg.seq);
+    if (rec) { // 续写：同 seq 替换内容
+      renderText(rec.el.querySelector('.text'), msg.text, '');
+      const tools = rec.el.querySelector('.tools');
+      tools.innerHTML = msg.tools.map((t) => `<span class="tool">🔧 ${esc(t)}</span>`).join('');
+      rec.msg = msg;
+      return rec.el;
+    }
+    const el = document.createElement('div');
+    el.className = 'msg ' + (msg.kind === 'user' ? 'user' : 'assistant');
+    const who = msg.kind === 'user' ? '用户' : '我';
+    el.innerHTML = `<div class="meta"><span class="who">#${msg.seq} ${who}</span><span>${fmtTime(msg.time)}</span></div>
+      <div class="text"></div><div class="tools">${msg.tools.map((t) => `<span class="tool">🔧 ${esc(t)}</span>`).join('')}</div>`;
+    feed.appendChild(el);
+    renderText(el.querySelector('.text'), msg.text, '');
+    bySeq.set(msg.seq, { el, msg });
+    return el;
+  };
+  const toBottom = () => { window.scrollTo(0, document.body.scrollHeight); };
+  window.addEventListener('scroll', () => {
+    nearBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 120;
+    bottomBtn.style.display = nearBottom ? 'none' : 'block';
+  });
+  bottomBtn.addEventListener('click', toBottom);
+
+  const load = async (first) => {
+    try {
+      const url = first
+        ? `/api/transcript/messages?key=${encodeURIComponent(key)}&tail=300`
+        : `/api/transcript/messages?key=${encodeURIComponent(key)}&since=${cursor}`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      cursor = d.cursor; total = d.total;
+      let last = null;
+      for (const m of d.messages) last = paint(m);
+      const { kw, shown } = applyFilter();
+      stat.textContent = `#${total} 条 · 游标 ${cursor}` + (kw ? ` · 搜索命中 ${shown}` : '');
+      if (first || (nearBottom && last)) toBottom();
+      err.textContent = '';
+    } catch (e) { err.textContent = '拉取失败：' + e.message + '（3s 后重试）'; }
+  };
+  const fillSessions = async () => {
+    const r = await fetch('/api/transcript/sessions');
+    const d = await r.json();
+    sess.innerHTML = '';
+    for (const s of d.sessions) {
+      const o = document.createElement('option');
+      o.value = s.key;
+      const dt = new Date(s.mtime);
+      o.textContent = `${s.key.split('/')[1].replace('session_', '')} · ${dt.getMonth() + 1}/${dt.getDate()} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')} · ${Math.round(s.size / 1048576)}MB`;
+      sess.appendChild(o);
+    }
+    if (key && d.sessions.some((s) => s.key === key)) sess.value = key;
+    key = sess.value;
+    localStorage.setItem('transcriptKey', key);
+  };
+  sess.addEventListener('change', () => {
+    key = sess.value;
+    localStorage.setItem('transcriptKey', key);
+    cursor = 0; bySeq.clear(); feed.innerHTML = '';
+    load(true);
+  });
+  let searchTimer;
+  q.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(applyFilter, 200); });
+  fillSessions().then(() => load(true)).then(() => setInterval(() => load(false), 3000));
+})();
+</script>
+</body>
+</html>

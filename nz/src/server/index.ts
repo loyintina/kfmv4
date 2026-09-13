@@ -72,6 +72,7 @@ import { mountAiChatRoutes } from './ai/route.ts';
 import { mountPoolRoutes } from './pool/route.ts';
 import { mountNotifyRoutes, registerBellHook } from './notify.ts';
 import { mountFsRoutes } from './fs.ts';
+import { mountTranscriptRoutes } from './transcript.ts';
 import { listSessions } from './tmux-connection.js';
 
 // ========== 静态服务 ==========
@@ -109,11 +110,14 @@ export function createNzServer(): Server {
   const handleNotify = mountNotifyRoutes();
   // 文件树卡片 + @ 文件引用（v1 判据稿 §二）：fail-closed 文件 API
   const handleFs = mountFsRoutes();
+  // 会话记录回看器（A 线正式版 2026-09-13）：wire.jsonl 增量 tail 只读端点
+  const handleTranscript = mountTranscriptRoutes();
   return createServer((req, res) => {
     if (handleAiChat(req, res)) return;
     if (handlePool(req, res)) return;
     if (handleNotify(req, res)) return;
     if (handleFs(req, res)) return;
+    if (handleTranscript(req, res)) return;
     // 浏览器器官浮窗（B-线）：tmux 会话名表（浮窗左竖线标签轮询用；
     // 只出名不出内容，no-store）
     if (req.method === 'GET' && (req.url ?? '').split('?')[0] === '/api/tmux/sessions') {

@@ -16,6 +16,7 @@ import './term-connection.test.ts';
 import './term-modes.test.ts';
 import './tmux-connection.test.ts';
 import './ws-bridge.test.ts';
+import './transcript.test.ts';
 import './bridge-heartbeat.test.ts';
 import './term-core-shared.test.ts';
 import './keymap.test.ts';
