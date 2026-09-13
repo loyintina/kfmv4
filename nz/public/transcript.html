@@ -20,7 +20,14 @@ input#q{flex:1;min-width:120px}
 .user .meta{color:#7d9fd4}
 .who{font-weight:600}
 .text{white-space:pre-wrap;word-break:break-word}
-.tool{display:inline-block;font-size:11px;background:#1c1d21;border:1px solid #33343a;border-radius:6px;padding:1px 7px;margin:6px 4px 0 0;color:#9a9da3}
+details.think{margin:4px 0 2px;border:1px dashed #33343a;border-radius:8px;padding:4px 8px}
+details.think summary{font-size:12px;color:#9a7dd4;cursor:pointer;user-select:none}
+details.think .tbody{white-space:pre-wrap;font-size:12px;color:#a9a3c0;max-height:40vh;overflow:auto;margin-top:4px}
+.chip{display:inline-block;font-size:11px;background:#1c1d21;border:1px solid #33343a;border-radius:6px;padding:2px 8px;margin:6px 4px 0 0;color:#9a9da3;cursor:pointer;user-select:none}
+.chip:active{background:#26272b}
+.tcard{margin-top:6px;border:1px solid #33343a;border-radius:8px;background:#0f1013;padding:6px 8px;font-size:12px}
+.tcard .lbl{color:#7a7d84;font-size:11px;margin:4px 0 2px}
+.tcard .pre{white-space:pre-wrap;word-break:break-word;max-height:30vh;overflow:auto;background:#131418;border-radius:6px;padding:4px 6px}
 mark{background:#5c4a1e;color:#ffd479;border-radius:3px;padding:0 2px}
 .hide{display:none}
 #bottomBtn{position:fixed;bottom:14px;right:12px;background:#0d0e11e6;border:1px solid #33343a;color:#8ab4ff;border-radius:20px;padding:6px 14px;font-size:13px;display:none}
@@ -30,7 +37,7 @@ mark{background:#5c4a1e;color:#ffd479;border-radius:3px;padding:0 2px}
 <body>
 <header>
   <select id="sess"></select>
-  <input id="q" type="search" placeholder="搜索正文（清空=恢复）">
+  <input id="q" type="search" placeholder="搜索正文/工具（清空=恢复）">
   <div id="stat">载入中…</div>
   <div id="err"></div>
 </header>
@@ -44,41 +51,62 @@ mark{background:#5c4a1e;color:#ffd479;border-radius:3px;padding:0 2px}
   const fmtTime = (ms) => { if (!ms) return ''; const d = new Date(ms);
     return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
   const bySeq = new Map();          // seq → {el, msg}
-  let cursor = 0, key = localStorage.getItem('transcriptKey') || '', total = 0, nearBottom = true;
+  const expanded = new Set();       // `${seq}:${idx}` 工具卡展开态（重渲染保活）
+  let cursor = 0, after = 0, key = localStorage.getItem('transcriptKey') || '', total = 0, nearBottom = true;
 
-  const renderText = (el, text, kw) => {
-    el.innerHTML = kw
-      ? esc(text).replace(new RegExp(esc(kw).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), (m) => `<mark>${m}</mark>`)
-      : esc(text);
+  const hl = (text, kw) => kw
+    ? esc(text).replace(new RegExp(esc(kw).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), (m) => `<mark>${m}</mark>`)
+    : esc(text);
+
+  const render = (msg, el) => {
+    const kw = q.value.trim();
+    const think = msg.think
+      ? `<details class="think"${expanded.has(msg.seq + ':think') ? ' open' : ''}><summary>思考过程（${msg.think.length} 字）</summary><div class="tbody">${hl(msg.think, kw)}</div></details>`
+      : '';
+    const cards = (msg.calls || []).map((c, i) => {
+      const open = expanded.has(msg.seq + ':' + i);
+      const body = open
+        ? `<div class="tcard"><div class="lbl">调用参数</div><div class="pre">${hl(c.args || '（无）', kw)}</div>`
+          + `<div class="lbl">结果</div><div class="pre">${hl(c.result || '（未回场/进行中）', kw)}</div></div>`
+        : '';
+      return `<span class="chip" data-idx="${i}">🔧 ${esc(c.name)}${c.result ? '' : ' ⏳'}${open ? ' ▾' : ''}</span>${body}`;
+    }).join('');
+    el.innerHTML = `<div class="meta"><span class="who">#${msg.seq} ${msg.kind === 'user' ? '用户' : '我'}</span><span>${fmtTime(msg.time)}</span></div>`
+      + think
+      + `<div class="text">${hl(msg.text, kw)}</div>`
+      + cards;
+    el.querySelectorAll('.chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const i = chip.dataset.idx;
+        const k = msg.seq + ':' + i;
+        expanded.has(k) ? expanded.delete(k) : expanded.add(k);
+        render(msg, el);
+      });
+    });
+    const th = el.querySelector('details.think');
+    if (th) th.addEventListener('toggle', () => {
+      th.open ? expanded.add(msg.seq + ':think') : expanded.delete(msg.seq + ':think');
+    });
   };
+
   const applyFilter = () => {
     const kw = q.value.trim().toLowerCase();
     let shown = 0;
     for (const { el, msg } of bySeq.values()) {
-      const hit = !kw || (msg.text + ' ' + msg.tools.join(' ')).toLowerCase().includes(kw);
+      const hay = (msg.text + ' ' + msg.tools.join(' ') + ' ' + (msg.think || '') + ' ' + (msg.calls || []).map((c) => c.name + ' ' + c.args + ' ' + c.result).join(' ')).toLowerCase();
+      const hit = !kw || hay.includes(kw);
       el.classList.toggle('hide', !hit);
-      if (hit) shown++;
-      if (kw && hit) renderText(el.querySelector('.text'), msg.text, kw);
-      else renderText(el.querySelector('.text'), msg.text, '');
+      if (hit) { shown++; render(msg, el); }
     }
     return { kw, shown };
   };
   const paint = (msg) => {
     let rec = bySeq.get(msg.seq);
-    if (rec) { // 续写：同 seq 替换内容
-      renderText(rec.el.querySelector('.text'), msg.text, '');
-      const tools = rec.el.querySelector('.tools');
-      tools.innerHTML = msg.tools.map((t) => `<span class="tool">🔧 ${esc(t)}</span>`).join('');
-      rec.msg = msg;
-      return rec.el;
-    }
+    if (rec) { rec.msg = msg; render(msg, rec.el); return rec.el; }
     const el = document.createElement('div');
     el.className = 'msg ' + (msg.kind === 'user' ? 'user' : 'assistant');
-    const who = msg.kind === 'user' ? '用户' : '我';
-    el.innerHTML = `<div class="meta"><span class="who">#${msg.seq} ${who}</span><span>${fmtTime(msg.time)}</span></div>
-      <div class="text"></div><div class="tools">${msg.tools.map((t) => `<span class="tool">🔧 ${esc(t)}</span>`).join('')}</div>`;
     feed.appendChild(el);
-    renderText(el.querySelector('.text'), msg.text, '');
+    render(msg, el);
     bySeq.set(msg.seq, { el, msg });
     return el;
   };
@@ -93,11 +121,11 @@ mark{background:#5c4a1e;color:#ffd479;border-radius:3px;padding:0 2px}
     try {
       const url = first
         ? `/api/transcript/messages?key=${encodeURIComponent(key)}&tail=300`
-        : `/api/transcript/messages?key=${encodeURIComponent(key)}&since=${cursor}`;
+        : `/api/transcript/messages?key=${encodeURIComponent(key)}&since=${cursor}&after=${after}`;
       const r = await fetch(url);
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const d = await r.json();
-      cursor = d.cursor; total = d.total;
+      cursor = d.cursor; total = d.total; after = d.now || after;
       let last = null;
       for (const m of d.messages) last = paint(m);
       const { kw, shown } = applyFilter();
@@ -124,7 +152,7 @@ mark{background:#5c4a1e;color:#ffd479;border-radius:3px;padding:0 2px}
   sess.addEventListener('change', () => {
     key = sess.value;
     localStorage.setItem('transcriptKey', key);
-    cursor = 0; bySeq.clear(); feed.innerHTML = '';
+    cursor = 0; after = 0; bySeq.clear(); feed.innerHTML = '';
     load(true);
   });
   let searchTimer;

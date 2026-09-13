@@ -24,13 +24,32 @@ import { readdir, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 
+export interface ToolCallInfo {
+  callId: string;
+  name: string;
+  /** 参数预览（JSON 序列化截断） */
+  args: string;
+  /** 结果预览（截断；未回场=空串） */
+  result: string;
+}
+
 export interface TranscriptMessage {
   seq: number;
   kind: 'user' | 'asst';
   time: number;
   text: string;
   tools: string[];
+  /** 工具调用明细（v2：芯片点开=调用+结果对照） */
+  calls?: ToolCallInfo[];
+  /** 思考流（part.type=think，v2 折叠块） */
+  think?: string;
+  /** 最近一次内容变动时刻（增量轮询的「旧 seq 有更新」判据） */
+  touch?: number;
 }
+
+const ARGS_CAP = 500;
+const RESULT_CAP = 1500;
+const clip = (s: string, n: number): string => (s.length <= n ? s : s.slice(0, n) + `…(截断,共${s.length}字符)`);
 
 const SINGLE_READ_CAP = 8 * 1024 * 1024; // 单拍读取封顶，内循环追平
 
@@ -42,6 +61,8 @@ export class TranscriptDoc {
   private carry = '';
   private msgs: TranscriptMessage[] = [];
   private turnById = new Map<string, TranscriptMessage>();
+  private callById = new Map<string, ToolCallInfo>();
+  private callTurn = new Map<string, string>();
   private activeTurnId: string | null = null;
   private seq = 0;
   /** 新增/更新待取队列（poll 消费后清空；续写重发整条=客户端按 seq 替换） */
@@ -65,9 +86,15 @@ export class TranscriptDoc {
     return { messages: this.msgs.slice(-n), cursor: this.seq, total: this.msgs.length };
   }
 
-  /** since 之后的新消息（增量轮询）；同 seq 重复出现=续写，按 seq 替换 */
-  since(sinceSeq: number): { messages: TranscriptMessage[]; cursor: number; total: number } {
-    return { messages: this.msgs.filter((m) => m.seq > sinceSeq), cursor: this.seq, total: this.msgs.length };
+  /** since 之后的新消息；changedAfter>0 时连带「旧 seq 但 touch 更新」的
+   *  消息（工具结果晚到等场景），客户端按 seq 替换 */
+  since(sinceSeq: number, changedAfter = 0): { messages: TranscriptMessage[]; cursor: number; total: number; now: number } {
+    return {
+      messages: this.msgs.filter((m) => m.seq > sinceSeq || (changedAfter > 0 && (m.touch ?? 0) > changedAfter)),
+      cursor: this.seq,
+      total: this.msgs.length,
+      now: Date.now(),
+    };
   }
 
   private emit(m: TranscriptMessage): void {
@@ -84,7 +111,7 @@ export class TranscriptDoc {
   private turnBuffer(turnId: string, time: number): TranscriptMessage {
     let t = this.turnById.get(turnId);
     if (!t) {
-      t = { seq: ++this.seq, kind: 'asst', time, text: '', tools: [] };
+      t = { seq: ++this.seq, kind: 'asst', time, text: '', tools: [], touch: Date.now() };
       this.turnById.set(turnId, t);
       this.msgs.push(t);
       this.emit(t);
@@ -95,18 +122,50 @@ export class TranscriptDoc {
   private handleLoopEvent(ev: Record<string, unknown>, time: number): void {
     const part = ev.part as { type?: string; text?: string } | undefined;
     const isText = ev.type === 'content.part' && part?.type === 'text' && !!part.text;
-    const isTool = ev.type === 'tool.call';
-    if (!isText && !isTool) return;
+    const isThink = ev.type === 'content.part' && part?.type === 'think' && !!part.text;
+    const isToolCall = ev.type === 'tool.call';
+    const isToolResult = ev.type === 'tool.result';
+    if (!isText && !isThink && !isToolCall && !isToolResult) return;
+    // tool.result 无 turnId（真 wire 实证）：走 callId 配对表，不碰轮次状态机
+    if (isToolResult) {
+      const callId = String(ev.toolCallId ?? '');
+      const call = this.callById.get(callId);
+      if (call) {
+        const result = (ev.result as { output?: unknown } | undefined)?.output;
+        call.result = clip(typeof result === 'string' ? result : JSON.stringify(result ?? ''), RESULT_CAP);
+        const turn = this.callTurn.get(callId) ? this.turnById.get(this.callTurn.get(callId) as string) : undefined;
+        if (turn) {
+          turn.touch = Date.now();
+          this.emit(turn); // 结果到账重发整条，客户端按 seq 替换
+        }
+      }
+      return;
+    }
     const turnId = String(ev.turnId ?? ev.stepUuid ?? 'x');
     if (turnId !== this.activeTurnId) this.activeTurnId = turnId;
     const turn = this.turnBuffer(turnId, time);
     if (isText) {
       turn.text += (part as { text: string }).text;
+    } else if (isThink) {
+      turn.think = (turn.think ?? '') + (part as { text: string }).text;
     } else {
-      const nm = ev as { call?: { name?: string }; name?: string; tool?: string };
-      const name = nm.call?.name || nm.name || nm.tool || 'tool';
-      if (name && !turn.tools.includes(name)) turn.tools.push(name);
+      const t = ev as { toolCallId?: string; name?: string; args?: unknown };
+      const name = t.name || 'tool';
+      if (!turn.calls) turn.calls = [];
+      const call: ToolCallInfo = {
+        callId: String(t.toolCallId ?? `noid-${turn.calls.length}`),
+        name,
+        args: clip(typeof t.args === 'string' ? t.args : JSON.stringify(t.args ?? ''), ARGS_CAP),
+        result: '',
+      };
+      turn.calls.push(call);
+      if (call.callId) {
+        this.callById.set(call.callId, call);
+        this.callTurn.set(call.callId, turnId);
+      }
+      if (!turn.tools.includes(name)) turn.tools.push(name);
     }
+    turn.touch = Date.now();
     this.emit(turn); // 增量重发整条（首见=新增，再见=续写）
   }
 
@@ -258,11 +317,15 @@ export function mountTranscriptRoutes(svc = new TranscriptService()): (req: impo
       }
       void doc.poll().then(() => {
         const since = url.searchParams.get('since');
-        const r = since !== null
-          ? doc.since(toInt(since, 0))
-          : doc.tail(Math.min(Math.max(toInt(url.searchParams.get('tail'), 300), 1), 2000));
-        if (r.messages.length > 2000) r.messages = r.messages.slice(-2000); // 单响应巨包闸
-        json(res, 200, { key, ...r });
+        if (since !== null) {
+          const after = toInt(url.searchParams.get('after'), 0);
+          const r = doc.since(toInt(since, 0), after);
+          if (r.messages.length > 2000) r.messages = r.messages.slice(-2000); // 单响应巨包闸
+          json(res, 200, { key, ...r });
+          return;
+        }
+        const tail = toInt(url.searchParams.get('tail'), 300);
+        json(res, 200, { key, ...doc.tail(Math.min(Math.max(tail, 1), 2000)) });
       }).catch(() => json(res, 500, { error: '读取失败' }));
       return true;
     }

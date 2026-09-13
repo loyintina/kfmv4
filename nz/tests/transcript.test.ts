@@ -27,12 +27,15 @@ const seedWire = async (): Promise<void> => {
   const L = [
     JSON.stringify({ type: 'context.append_message', time: 1000, message: { role: 'user', content: [{ type: 'text', text: '你好' }] } }),
     JSON.stringify({ type: 'context.append_loop_event', time: 1100, event: { type: 'content.part', turnId: 't1', part: { type: 'text', text: '回答一' } } }),
-    JSON.stringify({ type: 'context.append_loop_event', time: 1200, event: { type: 'tool.call', turnId: 't1', call: { name: 'Bash' } } }),
+    // tool.call 带参数（真 wire 形状：args 对象 + toolCallId）
+    JSON.stringify({ type: 'context.append_loop_event', time: 1200, event: { type: 'tool.call', turnId: 't1', toolCallId: 'call_x1', name: 'Bash', args: { command: 'ls /root', description: '列目录' } } }),
     // 工具结果回填走 user 角色、无 text 部件 → 必须滤除
     JSON.stringify({ type: 'context.append_message', time: 1250, message: { role: 'user', content: [{ type: 'tool_result', text: 'raw output' }] } }),
+    // tool.result 按 callId 配对到 t1 的调用卡（无 turnId，真 wire 形状）
+    JSON.stringify({ type: 'context.append_loop_event', time: 1260, event: { type: 'tool.result', toolCallId: 'call_x1', result: { output: 'AGENTS.md\nbuild.mjs' } } }),
     // 同轮（t1）跨 tool.result 续写 → 同 seq 合并
     JSON.stringify({ type: 'context.append_loop_event', time: 1300, event: { type: 'content.part', turnId: 't1', part: { type: 'text', text: '+续写' } } }),
-    // 新轮 t2 + think 部件（不产消息）
+    // 新轮 t2 + think 部件（折叠块数据源，不产独立消息）
     JSON.stringify({ type: 'context.append_loop_event', time: 1400, event: { type: 'content.part', turnId: 't2', part: { type: 'text', text: '轮二' } } }),
     JSON.stringify({ type: 'context.append_loop_event', time: 1450, event: { type: 'content.part', turnId: 't2', part: { type: 'think', text: 'thinking…' } } }),
     JSON.stringify({ type: 'context.append_message', time: 1500, message: { role: 'user', content: [{ type: 'text', text: '第二条' }] } }),
@@ -56,7 +59,12 @@ test('①解析语义：角色/聚合/滤除/续写合并', async () => {
   assert(all[0].kind === 'user' && all[0].text === '你好', '首条=用户你好');
   assert(all[1].kind === 'asst' && all[1].text === '回答一+续写', `t1 续写合并=「回答一+续写」，实「${all[1].text}」`);
   assert(all[1].tools.includes('Bash'), 't1 应带 Bash 芯片');
+  const call = all[1].calls?.[0];
+  const ok = !!call && call.callId === 'call_x1' && call.name === 'Bash'
+    && call.args.includes('ls /root') && call.result.includes('AGENTS.md');
+  assert(ok, `调用卡按 callId 配对完整（参数+结果），实 ${JSON.stringify(call)}`);
   assert(all[2].kind === 'asst' && all[2].text === '轮二', 't2=轮二');
+  assert(all[2].think === 'thinking…', 'think 捕获为折叠块数据源');
   assert(all[3].kind === 'user' && all[3].text === '第二条', '尾条=用户第二条');
 });
 
